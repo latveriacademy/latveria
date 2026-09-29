@@ -30,7 +30,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-`pnpm db:seed` menambah satu topik dan tiga soal dummy; aman dijalankan ulang tanpa menggandakan data. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
+`pnpm db:seed` menambah empat topik dan delapan soal dummy (dua soal per topik); aman dijalankan ulang tanpa menggandakan data. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
 
 Adminer tersedia di `http://127.0.0.1:8080`. Pilih **PostgreSQL**, server **postgres**, pengguna **latveria**, kata sandi **latveria**, database **latveria**. Kredensial ini hanya untuk pengembangan lokal; Compose tidak digunakan di produksi.
 
@@ -68,7 +68,7 @@ pnpm test src/lib/env.test.ts     # pengujian validasi konfigurasi di apps/web
 pnpm db:generate                 # buat SQL dari perubahan skema, tanpa koneksi DB
 pnpm db:check                    # uji koneksi DB; memerlukan DATABASE_URL
 pnpm db:migrate                  # terapkan SQL; memerlukan DATABASE_MIGRATION_URL
-pnpm db:seed                     # sisipkan satu topik dan tiga soal dummy secara idempoten
+pnpm db:seed                     # sisipkan empat topik dan delapan soal dummy secara idempoten
 pnpm db:admin email@contoh.test  # promosikan akun yang sudah terdaftar di database lokal
 pnpm start                      # jalankan hasil pnpm build
 ```
