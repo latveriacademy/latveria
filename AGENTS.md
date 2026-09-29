@@ -1,0 +1,13 @@
+# Latveria
+
+- Arah produk: situs belajar dan latihan dengan unsur permainan untuk persiapan UTBK di Indonesia. Baca `PLAN.md` untuk usulan tahapan pengembangan dan keputusan produk yang masih terbuka.
+- Fondasi P0 berupa monorepo pnpm dengan aplikasi Next.js App Router di `apps/web` (TypeScript strict, Tailwind, Drizzle). Saat ini fokus pada landing page; PostgreSQL melalui Supabase sudah disetujui, tetapi fitur latihan belum dibangun. Baca `ARCHITECTURE.md` untuk rancangan lanjutannya.
+- Gunakan Node.js 22 (minimal 22.12) dan pnpm 11.24.0. Penyiapan: `pnpm install --frozen-lockfile`; pengembangan: `pnpm dev`; pemeriksaan: `pnpm check` (lint → tipe → pengujian → build). Uji terarah: `pnpm test src/lib/env.test.ts`.
+- `pnpm typecheck` menjalankan `next typegen` sebelum `tsc`; ini diperlukan pada clone bersih. Build dan halaman awal tidak memerlukan kredensial database.
+- Skrip akar mendelegasikan ke `@latveria/web`; uji terarah `pnpm test src/lib/env.test.ts` mencari berkas relatif terhadap `apps/web`. `pnpm db:generate` membuat SQL secara luring; `pnpm db:check` memakai `DATABASE_URL`; `pnpm db:migrate` memakai `DATABASE_MIGRATION_URL`. CLI memuat `apps/web/.env.local` melalui `@next/env`. Lihat `README.md` untuk konfigurasi pooler/SSL; migrasi tidak berjalan otomatis saat build.
+- `apps/web/src/lib/db/index.ts` khusus server. Tabel topik mengaktifkan RLS tanpa akses publik; koneksi server tetap harus memeriksa kepemilikan data pada fitur berikutnya. Koneksi Supabase dan penerapan migrasi belum diverifikasi.
+- `pnpm-workspace.yaml` mencakup `apps/*`, saat ini baru `@latveria/web`; jangan membuat paket tambahan tanpa kebutuhan nyata. ESLint 9 dipertahankan karena batas kompatibilitas plugin; jangan memperbaruinya sendiri ke 10 tanpa memeriksa dependensi sejawat.
+- Acuan awal berupa papan tulis dalam `~/Downloads/Project.jpg` yang diberikan pada sesi awal. Gambar tersebut bukan aset repositori dan sebagian detailnya tidak terbaca; konteks yang dapat digunakan dirangkum dalam `PLAN.md`. Jangan menyimpulkan rumus penilaian atau aturan ujian yang pasti dari sketsa tersebut.
+- Pisahkan hasil latihan, poin pengalaman (EXP), dan penilaian resmi UTBK. Papan tersebut menyebut EXP/level, tetapi tidak menetapkan konversi nilai UTBK yang tervalidasi.
+- PvP (kompetisi antarpemain), peringkat kompetitif, musim kompetisi, jenjang, dan lencana secara eksplisit ditandai sebagai ide masa depan. Jangan memasukkannya ke alur latihan awal tanpa keputusan tentang cakupan fitur.
+- Gunakan Playwright hanya jika interaksi peramban atau pemeriksaan visual memang diperlukan; utamakan pemeriksaan berkas dan perintah terminal yang terarah.
