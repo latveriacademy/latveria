@@ -61,6 +61,9 @@ h2 em { font-style: normal; color: var(--forest); }
 .closing p:not(.hand-note) { font-size: 20px; line-height: 1.6; max-width: 52ch; margin: 25px auto 0; color: var(--soft-ink); }
 .closing .closing-note { font-weight: 700; }
 .site-footer { padding: 25px 5%; display: flex; align-items: center; justify-content: space-between; gap: 24px; font-size: 15px; color: var(--soft-ink); }
+.math-inline { white-space: nowrap; }
+.math-display { display: block; max-width: 100%; margin-block: .75em; overflow-x: auto; overflow-y: hidden; }
+.math-error { text-decoration: underline wavy #7c241d; text-underline-offset: 3px; }
 @media (max-width: 1023px) {
   h1 { font-size: clamp(46px, 7.4vw, 76px); }
   .hero { min-height: 580px; padding-block: 50px; }

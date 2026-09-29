@@ -9,6 +9,7 @@ export function QuestionForm({ topics }: { topics: { id: string; name: string }[
   return (
     <form action={action} className="grid max-w-2xl gap-4 rounded border border-[var(--rule)] bg-[var(--paper-light)] p-6">
       <label className="grid gap-1">Topik<select className="min-h-11 border border-[var(--rule)] bg-[var(--paper)] px-3" name="topicId" required>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label>
+      <p className="text-sm">Rumus: <code>$x^2$</code> untuk inline, <code>$$\frac&#123;1&#125;&#123;2&#125;$$</code> untuk blok.</p>
       <label className="grid gap-1">Pertanyaan<textarea className="min-h-24 border border-[var(--rule)] bg-[var(--paper)] p-3" name="prompt" minLength={5} required /></label>
       {[0, 1, 2, 3].map((index) => <label className="grid gap-1" key={index}>Opsi {index + 1}<input className="min-h-11 border border-[var(--rule)] bg-[var(--paper)] px-3" name={`option-${index}`} required /></label>)}
       <label className="grid gap-1">Jawaban benar<select className="min-h-11 border border-[var(--rule)] bg-[var(--paper)] px-3" name="correctAnswer">{[0, 1, 2, 3].map((index) => <option key={index} value={index}>Opsi {index + 1}</option>)}</select></label>

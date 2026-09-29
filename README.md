@@ -32,6 +32,8 @@ pnpm dev
 
 `pnpm db:seed` menambah empat topik dan delapan soal dummy (dua soal per topik); aman dijalankan ulang tanpa menggandakan data. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
 
+Konten soal mendukung LaTeX melalui KaTeX. Gunakan `$x^2$` untuk rumus inline dan `$$\frac{1}{2}$$` untuk rumus blok pada pertanyaan, opsi, atau pembahasan. Source disimpan sebagai teks; HTML tidak dieksekusi dan sintaks LaTeX yang salah ditampilkan sebagai teks bertanda.
+
 Adminer tersedia di `http://127.0.0.1:8080`. Pilih **PostgreSQL**, server **postgres**, pengguna **latveria**, kata sandi **latveria**, database **latveria**. Kredensial ini hanya untuk pengembangan lokal; Compose tidak digunakan di produksi.
 
 ### Akun dan otorisasi

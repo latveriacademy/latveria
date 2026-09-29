@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Alegreya_Sans, Caveat } from "next/font/google";
 import logo from "../../../../latveria.webp";
 import "./globals.css";
+import "katex/dist/katex.min.css";
 
 const sans = Alegreya_Sans({
   variable: "--font-sans",

@@ -6,6 +6,7 @@ import { getDb } from "../../../../lib/db";
 import { questions, topics } from "../../../../lib/db/schema";
 import styles from "../../dashboard.module.css";
 import { submitPractice } from "./actions";
+import { MathText } from "../../../../components/math-text";
 
 export const metadata: Metadata = { title: "Latsol | Latveria" };
 
@@ -17,6 +18,6 @@ export default async function PracticePage({ params, searchParams }: { params: P
   const action = submitPractice.bind(null, slug);
   return <section className={styles.practice}><Link href="/dashboard/topik">← Topik</Link><h1>{topic.name.replace(" (dummy)", "")}</h1><p>{items.length} soal. Semua soal harus dijawab sebelum dikumpulkan.</p>
     {(await searchParams).error && <p className={styles.error} role="alert">Jawab semua soal terlebih dahulu.</p>}
-    <form action={action}>{items.map((item, index) => <fieldset className={styles.question} key={item.id}><legend>{index + 1}. {item.prompt}</legend>{item.options.map((option, optionIndex) => <label key={option}><input type="radio" name={`answer-${item.id}`} value={optionIndex} required /> <span>{option}</span></label>)}</fieldset>)}<button className={styles.primary}>Kumpulkan jawaban</button></form>
+    <form action={action}>{items.map((item, index) => <fieldset className={styles.question} key={item.id}><legend>{index + 1}. <MathText>{item.prompt}</MathText></legend>{item.options.map((option, optionIndex) => <label key={option}><input type="radio" name={`answer-${item.id}`} value={optionIndex} required /> <span><MathText>{option}</MathText></span></label>)}</fieldset>)}<button className={styles.primary}>Kumpulkan jawaban</button></form>
   </section>;
 }
