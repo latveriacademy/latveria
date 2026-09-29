@@ -1,0 +1,21 @@
+{
+  "name": "latveria",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @latveria/web dev",
+    "build": "pnpm --filter @latveria/web build",
+    "start": "pnpm --filter @latveria/web start",
+    "lint": "pnpm --filter @latveria/web lint",
+    "typecheck": "pnpm --filter @latveria/web typecheck",
+    "test": "pnpm --filter @latveria/web test",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "db:generate": "pnpm --filter @latveria/web db:generate",
+    "db:migrate": "pnpm --filter @latveria/web db:migrate",
+    "db:check": "pnpm --filter @latveria/web db:check"
+  }
+}
