@@ -1,6 +1,6 @@
 # Latveria — Rencana situs belajar UTBK
 
-Status: fondasi aplikasi P0 sudah dibuat; tahapan fitur berikutnya masih berupa rencana. PostgreSQL melalui Supabase telah disetujui.
+Status: landing page, pratinjau dashboard, database dan akun lokal, serta halaman admin penyisipan soal telah dibuat. Fitur latihan masih berupa rencana; Supabase sebagai database produksi belum diverifikasi.
 
 Rekomendasi stack TypeScript, arsitektur MVP, model data, dan urutan penyiapan tersedia di `ARCHITECTURE.md`.
 
@@ -18,7 +18,8 @@ Usulan bahasa utama: Bahasa Indonesia untuk navigasi dan penjelasan, dengan Baha
 - [x] Landing page berbahasa Indonesia yang menjelaskan tujuan produk, alur belajar yang direncanakan, dan status pengembangan.
 - [x] Koneksi database khusus server, validasi konfigurasi, dan migrasi awal tabel topik dengan RLS.
 - [x] Perintah lint, pemeriksaan tipe, pengujian, dan build; seluruh pemeriksaan lokal lolos.
-- [ ] Konfigurasi proyek Supabase pengembangan dalam `.env.local`, verifikasi koneksi, dan penerapan migrasi. Menunggu kredensial lokal.
+- [x] PostgreSQL dan Adminer lokal, seed soal dummy, serta autentikasi/otorisasi awal.
+- [ ] Verifikasi koneksi dan penerapan migrasi pada Supabase terpisah. Menunggu kredensial proyek.
 
 P0 adalah fondasi teknis, belum alur latihan. Panduan menjalankan aplikasi dan menyiapkan database tersedia di `README.md`.
 

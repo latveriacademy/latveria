@@ -8,6 +8,20 @@
       "when": 1790698624706,
       "tag": "0000_sour_rafael_vega",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790703862704,
+      "tag": "0001_freezing_mother_askani",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790705632154,
+      "tag": "0002_rich_weapon_omega",
+      "breakpoints": true
     }
   ]
 }

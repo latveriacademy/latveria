@@ -11,11 +11,16 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:check": "tsx scripts/check-db.ts"
+    "db:check": "tsx scripts/check-db.ts",
+    "db:seed": "tsx scripts/seed-db.ts",
+    "db:admin": "tsx scripts/promote-admin.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.6",
     "@next/env": "16.3.7",
+    "better-auth": "1.7.6",
     "drizzle-orm": "0.45.3",
+    "gsap": "^3.15.0",
     "next": "16.3.7",
     "postgres": "^3.4.9",
     "react": "19.3.0",

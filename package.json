@@ -16,6 +16,8 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:generate": "pnpm --filter @latveria/web db:generate",
     "db:migrate": "pnpm --filter @latveria/web db:migrate",
-    "db:check": "pnpm --filter @latveria/web db:check"
+    "db:check": "pnpm --filter @latveria/web db:check",
+    "db:seed": "pnpm --filter @latveria/web db:seed",
+    "db:admin": "pnpm --filter @latveria/web db:admin"
   }
 }

@@ -1,6 +1,6 @@
 # Arsitektur MVP Latveria
 
-Status: PostgreSQL melalui Supabase sudah disetujui. Fondasi P0 adalah monorepo pnpm dengan aplikasi `apps/web` (Next.js, TypeScript, Tailwind, Drizzle, validasi konfigurasi, landing page, dan perangkat pemeriksaan). Alur latihan, autentikasi, serta deployment masih berupa rancangan. Koneksi Supabase dan penerapan migrasi menunggu konfigurasi lokal. Cakupan produk mengikuti `PLAN.md`.
+Status: PostgreSQL melalui Supabase sudah disetujui untuk tahap lanjutan, sedangkan pengembangan saat ini memakai PostgreSQL lokal lewat Compose. Monorepo `apps/web` sudah memiliki landing page, dashboard frontend, Better Auth lokal, dan halaman admin untuk menyisipkan soal draft. Alur latihan serta deployment masih berupa rancangan. Koneksi Supabase belum diverifikasi. Cakupan produk mengikuti `PLAN.md`.
 
 ## Cakupan MVP
 
@@ -18,7 +18,7 @@ Tryout, kamus, kartu belajar, papan peringkat, PvP, dan editor soal khusus menyu
 | Aplikasi | Next.js App Router pada Node.js LTS | Halaman dan operasi server berada dalam satu aplikasi. |
 | Antarmuka | React dan Tailwind CSS | Komponen latihan sederhana dengan tampilan responsif; gunakan elemen HTML bawaan untuk formulir. |
 | Database | PostgreSQL melalui Supabase | Menyimpan relasi soal, sesi, jawaban, dan hadiah dengan transaksi. |
-| Akun | Supabase Auth, email OTP | Tidak perlu membangun pengelolaan kata sandi sendiri. Pengiriman email produksi memerlukan konfigurasi SMTP. |
+| Akun | Better Auth dengan PostgreSQL lokal; autentikasi produksi perlu diputuskan | Email/kata sandi lokal dan pemeriksaan role server tersedia; pendaftaran produksi ditutup hingga verifikasi email/onboarding diputuskan. |
 | Akses database | Drizzle ORM dan Drizzle Kit | Skema TypeScript, kueri SQL, dan migrasi yang dapat ditinjau. |
 | Validasi masukan | Zod | Memeriksa masukan formulir dan berkas impor di server; tipe TypeScript saja tidak memvalidasi data saat aplikasi berjalan. |
 | Pengelola paket | pnpm workspace | Monorepo dengan satu aplikasi `apps/web`, manifest per paket, dan satu lockfile di akar. |
@@ -33,7 +33,7 @@ Tetapkan versi stabil yang kompatibel saat penyiapan proyek, lalu simpan lockfil
 ```text
 Peramban peserta
     │
-    ├── Masuk dengan email OTP ── Supabase Auth
+    ├── Masuk dengan email/kata sandi ── Better Auth ── PostgreSQL
     │
     └── Next.js
           ├── Halaman dan komponen React
@@ -62,13 +62,13 @@ apps/web/
   drizzle/             migrasi SQL
 ```
 
-Struktur ini adalah target MVP. P0 baru menyediakan `apps/web/src/app/`, `apps/web/src/lib/env.ts`, `apps/web/src/lib/db/`, skrip pemeriksaan koneksi, dan migrasi topik; folder konten serta modul autentikasi/latihan belum dibuat. Mulai dengan modul latihan biasa; pecah ketika tanggung jawabnya benar-benar membesar.
+Struktur ini adalah target MVP. Saat ini `apps/web` telah berisi halaman awal, dashboard peserta, autentikasi, halaman admin draft soal, skema/migrasi, dan skrip seed lokal; modul latihan serta folder konten yang ditinjau belum dibuat. Mulai dengan modul latihan biasa; pecah ketika tanggung jawabnya benar-benar membesar.
 
 ## Model data minimum
 
 | Data | Isi dan aturan utama |
 | --- | --- |
-| Pengguna | Identitas dari Supabase Auth; belum perlu tabel profil tambahan. |
+| Pengguna | Tabel Better Auth di PostgreSQL menyimpan akun, sesi, dan role; tidak ada tabel profil tambahan. |
 | Topik | ID, nama, dan deskripsi singkat. |
 | Versi soal | ID versi, ID soal tetap, topik, pertanyaan, pilihan ber-ID, ID jawaban benar, pembahasan, sumber/izin, dan status publikasi. |
 | Sesi latihan | ID, ID pengguna, topik, status `in_progress`/`submitted`, waktu mulai/kumpul, jumlah benar, serta EXP yang diberikan. |
@@ -93,7 +93,7 @@ Usulan hasil awal: soal kosong dihitung sebagai tidak dijawab dan tidak menambah
 ## Keamanan dan konfigurasi
 
 - Simpan koneksi PostgreSQL dan kredensial istimewa hanya di server, tanpa awalan `NEXT_PUBLIC_`. Modul database dan penilaian harus ditandai khusus server.
-- Validasi sesi Supabase di server menggunakan mekanisme resmi pustakanya; jangan memercayai ID pengguna dari formulir atau data sesi yang belum diverifikasi.
+- Validasi sesi Better Auth dan role pada server menggunakan `requireUser`/`requireAdmin`; jangan memercayai ID pengguna atau role dari formulir.
 - Periksa kepemilikan pada setiap pembacaan maupun perubahan sesi. Aktifkan RLS tanpa kebijakan akses langsung untuk tabel latihan agar API publik Supabase tidak membuka tabel tersebut. Koneksi server tetap wajib melakukan pemeriksaan kepemilikan karena peran database server dapat melewati RLS.
 - Gunakan koneksi pooler yang sesuai untuk lingkungan serverless saat aplikasi berjalan. Jalankan migrasi melalui koneksi yang direkomendasikan Supabase untuk migrasi, dengan kredensial terpisah bila diperlukan.
 - Sediakan `.env.example` berisi nama variabel dan keterangan tanpa rahasia. Pisahkan proyek/database pengembangan dan produksi; deployment pratinjau tidak boleh memakai database produksi.
@@ -103,7 +103,7 @@ Usulan hasil awal: soal kosong dihitung sebagai tidak dijawab dan tidak menambah
 Urutan implementasi:
 
 1. Siapkan Next.js, TypeScript strict, pnpm, ESLint, dan Vitest; catat perintah sebenarnya di `AGENTS.md`.
-2. Buat proyek Supabase pengembangan, konfigurasi email OTP, skema database, dan migrasi awal.
+2. Gunakan PostgreSQL lokal via Compose untuk pengembangan, migrasi Drizzle, seed dummy, dan akun Better Auth; proyek Supabase terpisah untuk uji koneksi/deployment nanti.
 3. Buat impor soal yang memvalidasi ID unik, pilihan jawaban, kunci, pembahasan, serta sumber materi. Impor tidak boleh menimpa versi soal yang sudah dipakai.
 4. Bangun satu alur lengkap dari pemilihan topik hingga pembahasan, kemudian riwayat dan hadiah EXP.
 5. Jalankan pemeriksaan, terapkan migrasi yang telah ditinjau, impor konten yang disetujui, lalu terapkan aplikasi. Jangan menjalankan migrasi otomatis pada setiap permintaan atau build pratinjau.
@@ -119,7 +119,7 @@ Perintah P0 tersedia di `package.json`: `pnpm dev` untuk pengembangan dan `pnpm 
 
 ## Keputusan yang masih terbuka
 
-- Konfigurasi proyek Supabase pengembangan, serta persetujuan layanan hosting dan anggaran operasionalnya. Fondasi stack telah dipasang; koneksi PostgreSQL belum diverifikasi.
+- Konfigurasi proyek Supabase terpisah, keputusan autentikasi produksi dan verifikasi email, serta persetujuan layanan hosting dan anggaran operasionalnya. PostgreSQL lokal sudah diverifikasi, Supabase belum.
 - Topik dan jumlah soal pertama, pemilik peninjauan konten, serta izin penggunaan soal.
 - Persetujuan wajib akun untuk riwayat tersimpan.
 - Rumus EXP, aturan latihan ulang, dan ambang level. Jangan mengarang angka dari sketsa papan.

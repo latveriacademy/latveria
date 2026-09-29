@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getDatabaseUrl } from "../env";
 import * as schema from "./schema";
+import * as authSchema from "./auth-schema";
 
 function createDatabase() {
   const client = postgres(getDatabaseUrl("DATABASE_URL"), {
@@ -11,7 +12,7 @@ function createDatabase() {
     idle_timeout: 20,
     connect_timeout: 10,
   });
-  return drizzle(client, { schema });
+  return drizzle(client, { schema: { ...schema, ...authSchema } });
 }
 
 const cache = globalThis as typeof globalThis & { latveriaDatabase?: ReturnType<typeof createDatabase> };
