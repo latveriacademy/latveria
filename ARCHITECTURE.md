@@ -1,6 +1,6 @@
 # Arsitektur MVP Latveria
 
-Status: PostgreSQL melalui Supabase sudah disetujui untuk tahap lanjutan, sedangkan pengembangan saat ini memakai PostgreSQL lokal lewat Compose. Monorepo `apps/web` sudah memiliki landing page, dashboard frontend, Better Auth lokal, dan halaman admin untuk menyisipkan soal draft. Alur latihan serta deployment masih berupa rancangan. Koneksi Supabase belum diverifikasi. Cakupan produk mengikuti `PLAN.md`.
+Status: PostgreSQL melalui Supabase sudah disetujui untuk tahap lanjutan, sedangkan pengembangan saat ini memakai PostgreSQL lokal lewat Compose. Monorepo `apps/web` sudah memiliki landing page, dashboard ber-route, Better Auth lokal, latsol minimum dengan hasil/riwayat, dan halaman admin untuk menyisipkan soal draft. Penyimpanan sesi latihan bertahap, versi soal immutable, EXP, dan deployment masih berupa rancangan. Koneksi Supabase belum diverifikasi. Cakupan produk mengikuti `PLAN.md`.
 
 ## Cakupan MVP
 

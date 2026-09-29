@@ -4,7 +4,7 @@ Situs belajar dan latihan untuk persiapan UTBK, dengan pembahasan soal dan perke
 
 ## Status pengembangan
 
-Tersedia: monorepo pnpm dengan aplikasi Next.js di `apps/web`, landing page, dashboard peserta, akun lokal, halaman admin untuk memasukkan soal, dan PostgreSQL lewat Docker Compose. Latihan dan EXP belum diimplementasikan.
+Tersedia: monorepo pnpm dengan aplikasi Next.js di `apps/web`, landing page, dashboard peserta, akun lokal, latsol per topik dengan hasil/pembahasan dan riwayat, halaman admin untuk memasukkan soal, serta PostgreSQL lewat Docker Compose. EXP belum diimplementasikan.
 
 PostgreSQL melalui Supabase disetujui untuk tahap lanjutan, tetapi saat ini pengembangan menggunakan PostgreSQL lokal. Koneksi Supabase belum diverifikasi. Build serta landing page tidak memerlukan database; halaman login, dashboard, dan admin memerlukannya.
 
@@ -42,7 +42,7 @@ Daftarkan akun di `http://localhost:3000/login` saat `pnpm dev` berjalan. Pendaf
 pnpm db:admin email@contoh.test
 ```
 
-Lalu masuk kembali jika perlu dan buka `/admin` untuk menambah soal; hanya admin yang dapat membaca halaman dan menjalankan aksi penyimpanannya. `/dashboard` memerlukan sesi masuk. Tombol keluar mencabut sesi. Tidak ada akun admin atau kata sandi default yang di-seed.
+Lalu masuk kembali jika perlu dan buka `/admin`; hanya admin yang dapat membaca halaman dan menjalankan aksi penyimpanannya. Ringkasan, daftar soal, dan formulir tambah soal memakai route terpisah. `/dashboard` memerlukan sesi masuk; pengguna memilih topik di `/dashboard/topik`, mengerjakan latsol, lalu membuka hasil/pembahasan dan riwayat. Tombol keluar mencabut sesi. Tidak ada akun admin atau kata sandi default yang di-seed.
 
 Autentikasi memakai Better Auth dengan sesi di PostgreSQL lokal. `BETTER_AUTH_SECRET` minimal 32 karakter dan `BETTER_AUTH_URL` wajib diatur. Untuk deployment, gunakan secret dan URL baru; pendaftaran produksi tetap tertutup sampai verifikasi email/onboarding ditentukan. Kredensial database dan secret tidak boleh disimpan di Git.
 

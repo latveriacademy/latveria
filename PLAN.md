@@ -1,6 +1,6 @@
 # Latveria — Rencana situs belajar UTBK
 
-Status: landing page, pratinjau dashboard, database dan akun lokal, serta halaman admin penyisipan soal telah dibuat. Fitur latihan masih berupa rencana; Supabase sebagai database produksi belum diverifikasi.
+Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, serta halaman admin penyisipan soal telah dibuat. Supabase sebagai database produksi belum diverifikasi.
 
 Rekomendasi stack TypeScript, arsitektur MVP, model data, dan urutan penyiapan tersedia di `ARCHITECTURE.md`.
 
@@ -24,6 +24,8 @@ Usulan bahasa utama: Bahasa Indonesia untuk navigasi dan penjelasan, dengan Baha
 P0 adalah fondasi teknis, belum alur latihan. Panduan menjalankan aplikasi dan menyiapkan database tersedia di `README.md`.
 
 ### 1. Satu alur latihan yang lengkap
+
+Alur minimum lokal sudah tersedia untuk data dummy: pilih topik → jawab semua soal → kumpulkan → lihat hasil/pembahasan → buka riwayat. Pekerjaan berikutnya adalah versi soal immutable, penyimpanan jawaban selama sesi, status belum dijawab, dan konten yang benar-benar ditinjau.
 
 - Pilih satu topik UTBK dan sejumlah kecil soal yang sudah ditinjau sebelum memperluas cakupan. Sesuaikan dengan kategori ujian terkini yang telah diverifikasi; contoh kosakata/matematika pada papan bukan silabus lengkap.
 - Bangun alur pemilihan topik → sesi latihan → pengumpulan jawaban → hasil → tinjauan tiap soal.
