@@ -1,5 +1,4 @@
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
+import { serveStatic } from "hono/bun";
 import { app } from "./app";
 
 if (process.env.NODE_ENV === "production") {
@@ -7,5 +6,7 @@ if (process.env.NODE_ENV === "production") {
   app.use("/*", serveStatic({ root: "../web/dist" }));
   app.get("*", serveStatic({ path: "../web/dist/index.html" }));
 }
+
 const port = Number(process.env.PORT ?? (process.env.NODE_ENV === "production" ? 3000 : 3001));
-serve({ fetch: app.fetch, port }, () => console.info(`Latveria API listening on http://localhost:${port}`));
+const server = Bun.serve({ port, fetch: app.fetch });
+console.info(`Latveria API listening on http://localhost:${server.port}`);
