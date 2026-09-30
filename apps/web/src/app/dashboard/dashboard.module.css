@@ -129,13 +129,26 @@
 .error { margin-top: 18px; color: #7c241d; font-weight: 700; }
 .score { margin: 5px 0 36px; color: var(--forest); font-size: 26px; font-weight: 800; }
 .review { padding: 28px 0; border-top: 1px solid var(--edge); }
-.review h2 { font-size: 24px; line-height: 1.35; }
+.reviewQuestionHeading { display: flex; align-items: start; justify-content: space-between; gap: 15px; }
+.reviewQuestionHeading h2 { font-size: 24px; line-height: 1.35; }
 .review > p { margin: 14px 0; }
-.review > div { margin-top: 18px; padding: 18px; border-radius: 12px; background: var(--surface); }
-.review > div p { margin: 7px 0 0; line-height: 1.5; }
-.correct, .incorrect { margin-left: 8px; font-weight: 800; }
-.correct { color: var(--forest); }
-.incorrect { color: #7c241d; }
+.reviewQuestionHeading > span { flex: none; padding: 5px 11px; border: 1px solid; border-radius: 999px; font-size: 14px; font-weight: 800; }
+.correct { border-color: #6b9472 !important; background: #e0eddf; color: #214c2c; }
+.incorrect { border-color: #bd7770 !important; background: #f4e3df; color: #762820; }
+.answerOptions { display: grid; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; }
+.answerOption { display: flex; min-height: 48px; align-items: center; gap: 12px; padding: 8px 13px; border: 1px solid var(--edge); border-radius: 8px; background: var(--surface); }
+.optionLetter { display: grid; width: 28px; height: 28px; flex: none; place-items: center; border: 1px solid var(--edge); border-radius: 50%; font-size: 13px; font-weight: 800; }
+.answerOption > span:nth-child(2) { flex: 1; }
+.answerOption strong { flex: none; font-size: 12px; }
+.answerCorrect { border-color: #6b9472; background: #e0eddf; color: #214c2c; }
+.answerWrong { border-color: #bd7770; background: #f4e3df; color: #762820; }
+.explanation { margin-top: 20px; padding: 20px; border: 1px solid var(--edge); border-radius: 12px; background: var(--surface); }
+.explanation h3 { margin: 0 0 14px; font-size: 20px; }
+.explanation dl { display: grid; gap: 12px; }
+.explanation dl div { display: grid; gap: 4px; }
+.explanation dt { color: var(--forest-dark); font-size: 14px; font-weight: 800; }
+.explanation dd { margin: 0; line-height: 1.5; }
+.conclusion { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--edge); font-weight: 700; }
 @media (max-width: 1180px) {
   .shell { grid-template-columns: 210px minmax(0, 1fr); }
   .homeColumns { grid-template-columns: minmax(0, 1fr) minmax(230px, 280px); gap: 18px; }
