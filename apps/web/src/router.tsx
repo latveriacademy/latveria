@@ -74,7 +74,7 @@ export const router = createBrowserRouter([
   { path: "/", element: <Home />, errorElement: <ErrorPage /> },
   { path: "/login", element: <Login />, errorElement: <ErrorPage /> },
   { path: "/forbidden", element: <main className="p-12"><h1 className="!text-4xl">Akses khusus admin</h1><Link to="/dashboard">Dashboard</Link></main> },
-  { path: "/dashboard", element: <LatveriaOSApp />, errorElement: <ErrorPage /> },
+  { path: "/dashboard", loader: () => guard("user"), element: <LatveriaOSApp />, errorElement: <ErrorPage /> },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
   { path: "/profile", element: <Navigate to="/dashboard?tab=profile" replace /> },

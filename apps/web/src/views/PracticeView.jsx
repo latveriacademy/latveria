@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { UTBK_SUBJECTS, MOCK_QUESTIONS } from '../data/questionsData';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { LatveriaCalculator } from '../components/LatveriaCalculator';
 import { MathText } from '../components/math-text';
@@ -47,11 +46,13 @@ export const PracticeView = () => {
     toggleFlag,
     finishSession,
     exitPractice,
-    openLexicon
+    openLexicon,
+    topics,
+    loading
   } = useApp();
 
   // Selection Screen State
-  const [selectedSubject, setSelectedSubject] = useState('PU');
+  const [selectedSubject, setSelectedSubject] = useState(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState('Latverian Elite');
   const [selectedMode, setSelectedMode] = useState('Practice');
   const [questionCount, setQuestionCount] = useState(10);
@@ -121,10 +122,10 @@ export const PracticeView = () => {
 
       // Only allow answer selection if not yet evaluated
       if (!activeSession.isEvaluated) {
-        if (['A', 'B', 'C', 'D', 'E'].includes(key)) {
+        if (['A', 'B', 'C', 'D'].includes(key)) {
           selectAnswer(currIdx, key);
-        } else if (['1', '2', '3', '4', '5'].includes(key)) {
-          const keyMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' };
+        } else if (['1', '2', '3', '4'].includes(key)) {
+          const keyMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' };
           selectAnswer(currIdx, keyMap[key]);
         } else if (key === 'F') {
           toggleFlag(currIdx);
@@ -1077,7 +1078,7 @@ export const PracticeView = () => {
 
       {/* Subject Cards Grid */}
       <div className="subjects-grid">
-        {UTBK_SUBJECTS.map((subject) => {
+        {topics.map((subject) => {
           const Icon = getSubjectIcon(subject.id);
           const isSelected = selectedSubject === subject.id;
 
@@ -1103,17 +1104,15 @@ export const PracticeView = () => {
               {/* Progress and Accuracy Metrics */}
               <div className="subject-metrics-strip">
                 <div className="s-metric">
-                  <span className="s-label font-mono">PROGRESS</span>
-                  <span className="s-val font-serif">{subject.progress}%</span>
+                  <span className="s-label font-mono">SOAL</span>
+                  <span className="s-val font-serif">{subject.questionsCount}</span>
                 </div>
-                <div className="s-metric">
-                  <span className="s-label font-mono">ACCURACY</span>
-                  <span className="s-val font-serif text-sage">{subject.accuracy}%</span>
-                </div>
-                <div className="s-metric">
-                  <span className="s-label font-mono">COMPLETED</span>
-                  <span className="s-val font-serif">{subject.questionsCount} Q</span>
-                </div>
+                {subject.accuracy != null && (
+                  <div className="s-metric">
+                    <span className="s-label font-mono">ACCURACY</span>
+                    <span className="s-val font-serif text-sage">{subject.accuracy}%</span>
+                  </div>
+                )}
               </div>
 
               <div className="subject-card-action">
@@ -1150,7 +1149,7 @@ export const PracticeView = () => {
                 <span>SESSION CONFIGURATION PROTOCOL</span>
               </div>
               <h2 id="modal-config-title" className="modal-title font-serif">
-                Konfigurasi Latihan: {UTBK_SUBJECTS.find((s) => s.id === selectedSubject)?.name}
+                Konfigurasi Latihan: {topics.find((s) => s.id === selectedSubject)?.name}
               </h2>
             </div>
 
@@ -1228,7 +1227,7 @@ export const PracticeView = () => {
                   startPractice(selectedSubject, selectedMode, questionCount, selectedDifficulty);
                 }}
               >
-                <span>MULAI SESI LATIHAN</span>
+                <span>{loading ? 'MEMUAT...' : 'MULAI SESI LATIHAN'}</span>
                 <Play size={15} fill="currentColor" />
               </button>
             </div>

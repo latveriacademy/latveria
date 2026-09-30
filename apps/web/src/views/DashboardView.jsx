@@ -20,7 +20,7 @@ import {
 import { sound } from '../utils/audioFeedback';
 
 export const DashboardView = () => {
-  const { user, setCurrentTab, startPractice, completeDailyTraining } = useApp();
+  const { user, topics, setCurrentTab, startPractice, completeDailyTraining } = useApp();
   const [chartMetric, setChartMetric] = useState('questions'); // 'questions' | 'xp' | 'accuracy'
 
   const completedTrainingCount = user.todayTraining.filter((t) => t.completed).length;
@@ -32,7 +32,8 @@ export const DashboardView = () => {
 
   const handleLaunchTraining = (subjectId) => {
     sound.playClick();
-    startPractice(subjectId || 'PU', 'Practice', 10, 'Latverian Elite');
+    const targetId = subjectId || (topics[0]?.id ?? 'PU');
+    startPractice(targetId, 'Practice', 10, 'Latverian Elite');
   };
 
   return (

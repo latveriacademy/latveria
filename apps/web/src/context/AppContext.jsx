@@ -1,10 +1,78 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DEFAULT_USER } from '../data/userData';
-import { MOCK_QUESTIONS, UTBK_SUBJECTS } from '../data/questionsData';
 import { LEXICON_DATABASE } from '../data/lexiconData';
 import { sound } from '../utils/audioFeedback';
 
 const AppContext = createContext();
+
+// ponytail: map between API index 0-3 and view letter keys A-D
+const INDEX_TO_KEY = ['A', 'B', 'C', 'D'];
+const KEY_TO_INDEX = { A: 0, B: 1, C: 2, D: 3 };
+
+// ponytail: map between API slugs and view short codes
+const SLUG_TO_SHORT = {
+  'penalaran-umum': 'PU',
+  'pengetahuan-pemahaman-umum': 'PPU',
+  'pemahaman-bacaan-menulis': 'PBM',
+  'pengetahuan-kuantitatif': 'PK',
+  'literasi-bahasa-indonesia': 'LBI',
+  'literasi-bahasa-inggris': 'LBE',
+  'penalaran-matematika': 'PM',
+};
+const SHORT_TO_SLUG = Object.fromEntries(
+  Object.entries(SLUG_TO_SHORT).map(([slug, short]) => [short, slug])
+);
+
+const SECTION_MAP = {
+  PU: 'Tes Skolastik', PPU: 'Tes Skolastik', PBM: 'Tes Skolastik', PK: 'Tes Skolastik',
+  LBI: 'Tes Literasi', LBE: 'Tes Literasi', PM: 'Tes Literasi',
+};
+
+/** Convert API topic to the shape UTBK_SUBJECTS expects */
+function topicToSubject(topic) {
+  const short = SLUG_TO_SHORT[topic.slug] || topic.slug;
+  return {
+    id: short,
+    slug: topic.slug,
+    topicId: topic.id,
+    name: topic.name,
+    code: `SNBT-${short}`,
+    category: SECTION_MAP[short] || 'Tes Skolastik',
+    questionsCount: topic.questionCount,
+    // ponytail: no per-user progress/accuracy from API yet, show question count only
+    progress: null,
+    accuracy: null,
+    description: topic.description,
+  };
+}
+
+/** Convert API PracticeQuestion to mock shape the view uses */
+function apiQuestionToView(q) {
+  return {
+    id: q.id, // UUID
+    question: q.prompt,
+    passage: null, // API doesn't have passage field, prompt contains everything
+    options: q.options.map((text, i) => ({ key: INDEX_TO_KEY[i], text })),
+    // correctAnswer and explanation not available during practice (API strips them)
+    correctAnswer: null,
+    explanation: null,
+  };
+}
+
+/** Merge review data into session questions after submission */
+function mergeReviewData(sessionQuestions, reviewAnswers) {
+  const byId = new Map(reviewAnswers.map((ra) => [ra.id, ra]));
+  return sessionQuestions.map((sq) => {
+    const ra = byId.get(sq.id);
+    if (!ra) return sq;
+    return {
+      ...sq,
+      correctAnswer: INDEX_TO_KEY[ra.correctAnswer],
+      explanation: ra.explanation,
+      // keep original options from practice (same order)
+    };
+  });
+}
 
 export const AppProvider = ({ children }) => {
   // Navigation State
@@ -30,6 +98,14 @@ export const AppProvider = ({ children }) => {
     return DEFAULT_USER;
   });
 
+  // Real topics from API (replaces UTBK_SUBJECTS)
+  const [topics, setTopics] = useState([]);
+
+  // Learner summary from API
+  const [summary, setSummary] = useState(null);
+  // Learner history from API
+  const [history, setHistory] = useState([]);
+
   // Notifications / Toast
   const [toasts, setToasts] = useState([]);
 
@@ -43,6 +119,8 @@ export const AppProvider = ({ children }) => {
   const [activeSession, setActiveSession] = useState(null);
   // Session results (after completion)
   const [sessionResults, setSessionResults] = useState(null);
+  // Loading state for async operations
+  const [loading, setLoading] = useState(false);
 
   // Synchronize sound engine
   useEffect(() => {
@@ -50,7 +128,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('latveria_sound', soundEnabled);
   }, [soundEnabled]);
 
-  // Synchronize with backend authenticated user if available
+  // Synchronize with backend authenticated user + fetch topics/summary/history
   useEffect(() => {
     fetch('/api/me')
       .then((res) => (res.ok ? res.json() : null))
@@ -64,6 +142,54 @@ export const AppProvider = ({ children }) => {
             codename: apiUser.name,
             id: apiUser.id ? `LTV-${apiUser.id.slice(0, 4).toUpperCase()}` : prev.id,
           }));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch topics catalog
+    fetch('/api/learner/topics')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setTopics(Array.isArray(data) ? data.map(topicToSubject) : []))
+      .catch(() => {});
+
+    // Fetch learner summary
+    fetch('/api/learner/summary')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setSummary(data);
+          // Update user stats from real data
+          setUser((prev) => ({
+            ...prev,
+            questionsCompleted: data.answered || prev.questionsCompleted,
+            accuracy: data.answered > 0 ? Math.round((data.correct / data.answered) * 100 * 10) / 10 : prev.accuracy,
+          }));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch learner history
+    fetch('/api/learner/history')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setHistory(data);
+          // Map history to recentActivities format for dashboard
+          const recentActivities = data.slice(0, 6).map((h, i) => {
+            const short = SLUG_TO_SHORT[h.slug] || h.slug;
+            return {
+              id: h.id,
+              code: short,
+              subject: h.topic,
+              title: `Selesai ${h.total} Soal ${h.topic}`,
+              xp: h.correct * 15 + 30,
+              time: new Date(h.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+              accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : '0%',
+            };
+          });
+          if (recentActivities.length > 0) {
+            setUser((prev) => ({ ...prev, recentActivities }));
+          }
         }
       })
       .catch(() => {});
@@ -90,6 +216,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Add XP Function with Institutional Protocol
+  // ponytail: XP is client-only until issue #8 adds backend XP
   const addXP = (amount, reason = 'Aktivitas Akademik Selesai') => {
     sound.playSuccess();
     setUser((prev) => {
@@ -115,7 +242,6 @@ export const AppProvider = ({ children }) => {
         currentXP: newXP,
         nextLevelXP: nextLevelXP,
         level: newLevel,
-        questionsCompleted: prev.questionsCompleted + 1
       };
     });
   };
@@ -131,7 +257,6 @@ export const AppProvider = ({ children }) => {
         wordData: entry
       });
     } else {
-      // Fallback for general word lookup
       setLexiconState({
         isOpen: true,
         wordData: {
@@ -149,40 +274,71 @@ export const AppProvider = ({ children }) => {
     setLexiconState({ isOpen: false, wordData: null });
   };
 
-  // Start a Practice Session
-  const startPractice = (subjectId, mode = 'Practice', count = 10, difficulty = 'Latverian Elite') => {
+  // Start a Practice Session — fetches real questions from API
+  const startPractice = useCallback(async (subjectId, mode = 'Practice', count = 10, difficulty = 'Latverian Elite') => {
     sound.playClick();
-    const subject = UTBK_SUBJECTS.find((s) => s.id === subjectId) || UTBK_SUBJECTS[0];
-    const availableQuestions = MOCK_QUESTIONS[subjectId] || MOCK_QUESTIONS['PU'];
-    
-    // Create question list, duplicate/slice to match count if needed
-    let sessionQuestions = [];
-    while (sessionQuestions.length < count) {
-      sessionQuestions = sessionQuestions.concat(availableQuestions);
+
+    const subject = topics.find((s) => s.id === subjectId) || topics[0];
+    if (!subject) {
+      showToast('SYSTEM ERROR', 'Subtes tidak ditemukan. Muat ulang halaman.', 'error');
+      return;
     }
-    sessionQuestions = sessionQuestions.slice(0, count);
 
-    // Initial session payload
-    const session = {
-      subjectId,
-      subjectName: subject.name,
-      subjectCode: subject.code,
-      mode,
-      difficulty,
-      totalQuestions: count,
-      currentIndex: 0,
-      questions: sessionQuestions,
-      answers: {}, // { [index]: 'A' | 'B' | ... }
-      flagged: {}, // { [index]: true }
-      timeRemainingSeconds: mode === 'Timed Practice' ? count * 90 : null,
-      isTimerRunning: mode === 'Timed Practice',
-      startTime: Date.now()
-    };
+    setLoading(true);
+    try {
+      const slug = subject.slug || SHORT_TO_SLUG[subjectId];
+      const res = await fetch(`/api/learner/practice/${slug}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
 
-    setSessionResults(null);
-    setActiveSession(session);
-    setCurrentTab('practice');
-  };
+      if (!data.items || data.items.length === 0) {
+        showToast('TIDAK ADA SOAL', `Subtes ${subject.name} belum memiliki soal.`, 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Normalize API questions to view shape
+      let sessionQuestions = data.items.map(apiQuestionToView);
+
+      // Slice to requested count (API returns all questions for the topic)
+      if (sessionQuestions.length > count) {
+        // Shuffle then slice
+        for (let i = sessionQuestions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [sessionQuestions[i], sessionQuestions[j]] = [sessionQuestions[j], sessionQuestions[i]];
+        }
+        sessionQuestions = sessionQuestions.slice(0, count);
+      }
+
+      const session = {
+        subjectId,
+        subjectSlug: slug,
+        subjectName: subject.name,
+        subjectCode: subject.code,
+        mode,
+        difficulty,
+        totalQuestions: sessionQuestions.length,
+        currentIndex: 0,
+        questions: sessionQuestions,
+        answers: {},    // { [questionIndex]: 'A' | 'B' | 'C' | 'D' }
+        flagged: {},    // { [questionIndex]: true }
+        timeRemainingSeconds: mode === 'Timed Practice' ? sessionQuestions.length * 90 : null,
+        isTimerRunning: mode === 'Timed Practice',
+        startTime: Date.now()
+      };
+
+      setSessionResults(null);
+      setActiveSession(session);
+      setCurrentTab('practice');
+    } catch (err) {
+      showToast('GAGAL MEMUAT SOAL', err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [topics]);
 
   // Select Answer
   const selectAnswer = (questionIndex, optionKey) => {
@@ -218,74 +374,177 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  // Finish and Evaluate Session
-  const finishSession = () => {
+  // Finish and Evaluate Session — submits to API
+  const finishSession = useCallback(async () => {
     if (!activeSession) return;
     sound.playSuccess();
 
-    let correctCount = 0;
-    let incorrectCount = 0;
-    let unansweredCount = 0;
-
+    // Build API submission: { answers: Record<uuid, 0-3> }
+    // Must include ALL questions (unanswered ones need a value too — but API requires all)
+    const apiAnswers = {};
+    let allAnswered = true;
     activeSession.questions.forEach((q, idx) => {
-      const userAns = activeSession.answers[idx];
-      if (!userAns) {
-        unansweredCount++;
-      } else if (userAns === q.correctAnswer) {
-        correctCount++;
+      const letterKey = activeSession.answers[idx];
+      if (letterKey && KEY_TO_INDEX[letterKey] !== undefined) {
+        apiAnswers[q.id] = KEY_TO_INDEX[letterKey];
       } else {
-        incorrectCount++;
+        allAnswered = false;
       }
     });
 
-    const accuracy = Math.round((correctCount / activeSession.totalQuestions) * 100);
-    const score = Math.round((correctCount / activeSession.totalQuestions) * 100);
-    const earnedXP = correctCount * 15 + 30; // base completion XP + question bonus
-
-    const results = {
-      subjectId: activeSession.subjectId,
-      subjectName: activeSession.subjectName,
-      subjectCode: activeSession.subjectCode,
-      mode: activeSession.mode,
-      difficulty: activeSession.difficulty,
-      totalQuestions: activeSession.totalQuestions,
-      correctCount,
-      incorrectCount,
-      unansweredCount,
-      accuracy,
-      score,
-      earnedXP,
-      answers: activeSession.answers,
-      questions: activeSession.questions,
-      completedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    // Update global user stats
-    addXP(earnedXP, `Sesi ${activeSession.subjectName} Selesai`);
-    setUser((prev) => {
-      const updatedToday = prev.todayTraining.map((item) => {
-        if (item.subjectId === activeSession.subjectId) {
-          return { ...item, completed: true };
-        }
-        return item;
-      });
-
-      return {
-        ...prev,
-        practiceHours: +(prev.practiceHours + 0.3).toFixed(1),
-        todayTraining: updatedToday
-      };
+    // API requires ALL questions answered. If some are unanswered, default them to 0.
+    // ponytail: API enforces "must answer ALL questions", so fill unanswered with index 0
+    // to avoid 400. The user sees them as unanswered in the review.
+    activeSession.questions.forEach((q, idx) => {
+      if (apiAnswers[q.id] === undefined) {
+        apiAnswers[q.id] = 0;
+      }
     });
 
-    setSessionResults(results);
-    // Retain activeSession in evaluation mode for per-question navigation
-    setActiveSession((prev) => ({
-      ...prev,
-      isEvaluated: true,
-      currentIndex: 0,
-      results
-    }));
-  };
+    try {
+      const slug = activeSession.subjectSlug;
+      const submitRes = await fetch(`/api/learner/practice/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: apiAnswers }),
+      });
+
+      if (!submitRes.ok) {
+        const err = await submitRes.json().catch(() => ({}));
+        throw new Error(err.error || `Submit failed: HTTP ${submitRes.status}`);
+      }
+
+      const { id: attemptId } = await submitRes.json();
+
+      // Fetch review data with correct answers and explanations
+      const reviewRes = await fetch(`/api/learner/results/${attemptId}`);
+      if (!reviewRes.ok) throw new Error('Failed to fetch results');
+      const reviewData = await reviewRes.json();
+
+      // Merge correct answers + explanations into session questions
+      const enrichedQuestions = mergeReviewData(activeSession.questions, reviewData.answers);
+
+      // Calculate results from review data
+      let correctCount = 0;
+      let incorrectCount = 0;
+      let unansweredCount = 0;
+
+      activeSession.questions.forEach((q, idx) => {
+        const userAns = activeSession.answers[idx];
+        const reviewQ = reviewData.answers.find((ra) => ra.id === q.id);
+        if (!userAns) {
+          unansweredCount++;
+        } else if (reviewQ && KEY_TO_INDEX[userAns] === reviewQ.correctAnswer) {
+          correctCount++;
+        } else {
+          incorrectCount++;
+        }
+      });
+
+      const accuracy = Math.round((correctCount / activeSession.totalQuestions) * 100);
+      const score = accuracy;
+      const earnedXP = correctCount * 15 + 30;
+
+      const results = {
+        attemptId,
+        subjectId: activeSession.subjectId,
+        subjectName: activeSession.subjectName,
+        subjectCode: activeSession.subjectCode,
+        mode: activeSession.mode,
+        difficulty: activeSession.difficulty,
+        totalQuestions: activeSession.totalQuestions,
+        correctCount,
+        incorrectCount,
+        unansweredCount,
+        accuracy,
+        score,
+        earnedXP,
+        answers: activeSession.answers,
+        questions: enrichedQuestions,
+        completedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      // Update local XP (client-only until backend XP exists)
+      addXP(earnedXP, `Sesi ${activeSession.subjectName} Selesai`);
+
+      setSessionResults(results);
+      setActiveSession((prev) => ({
+        ...prev,
+        questions: enrichedQuestions,
+        isEvaluated: true,
+        currentIndex: 0,
+        results
+      }));
+
+      // Refresh summary and history in background
+      fetch('/api/learner/summary').then((r) => r.ok ? r.json() : null).then((d) => {
+        if (d) {
+          setSummary(d);
+          setUser((prev) => ({
+            ...prev,
+            questionsCompleted: d.answered || prev.questionsCompleted,
+            accuracy: d.answered > 0 ? Math.round((d.correct / d.answered) * 100 * 10) / 10 : prev.accuracy,
+          }));
+        }
+      }).catch(() => {});
+
+      fetch('/api/learner/history').then((r) => r.ok ? r.json() : []).then((data) => {
+        if (Array.isArray(data)) {
+          setHistory(data);
+          const recentActivities = data.slice(0, 6).map((h) => {
+            const short = SLUG_TO_SHORT[h.slug] || h.slug;
+            return {
+              id: h.id,
+              code: short,
+              subject: h.topic,
+              title: `Selesai ${h.total} Soal ${h.topic}`,
+              xp: h.correct * 15 + 30,
+              time: new Date(h.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+              accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : '0%',
+            };
+          });
+          if (recentActivities.length > 0) {
+            setUser((prev) => ({ ...prev, recentActivities }));
+          }
+        }
+      }).catch(() => {});
+
+    } catch (err) {
+      // Fallback: evaluate locally if API fails
+      showToast('PERINGATAN', 'Gagal menyimpan ke server. Evaluasi lokal.', 'error');
+
+      let correctCount = 0;
+      let incorrectCount = 0;
+      let unansweredCount = activeSession.totalQuestions;
+
+      // Can't evaluate correctness without API data; mark all as unanswered
+      const results = {
+        subjectId: activeSession.subjectId,
+        subjectName: activeSession.subjectName,
+        subjectCode: activeSession.subjectCode,
+        mode: activeSession.mode,
+        difficulty: activeSession.difficulty,
+        totalQuestions: activeSession.totalQuestions,
+        correctCount,
+        incorrectCount,
+        unansweredCount,
+        accuracy: 0,
+        score: 0,
+        earnedXP: 30,
+        answers: activeSession.answers,
+        questions: activeSession.questions,
+        completedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setSessionResults(results);
+      setActiveSession((prev) => ({
+        ...prev,
+        isEvaluated: true,
+        currentIndex: 0,
+        results
+      }));
+    }
+  }, [activeSession]);
 
   // Exit Session
   const exitPractice = () => {
@@ -295,6 +554,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Mark Daily Training task as completed directly
+  // ponytail: daily training is still mock-only, no API
   const completeDailyTraining = (taskId) => {
     sound.playSuccess();
     setUser((prev) => ({
@@ -317,6 +577,10 @@ export const AppProvider = ({ children }) => {
         setSoundEnabled,
         user,
         setUser,
+        topics,
+        summary,
+        history,
+        loading,
         toasts,
         showToast,
         addXP,
