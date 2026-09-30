@@ -1,4 +1,5 @@
 import { lazy, useState } from "react";
+import { isRouteErrorResponse } from "react-router";
 import { createBrowserRouter, Link, Navigate, Outlet, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useRouteLoaderData, useSearchParams, useLocation } from "react-router";
 import { ArrowLeft, Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { credentialsSchema, signupSchema, type Bank, type QuestionDetail, type Topic, type User } from "@latveria/shared";
@@ -22,7 +23,7 @@ async function guard(role: "user" | "admin") {
   let user: User;
   try { user = await api<User>("/me"); } catch (error) { if (error instanceof ApiError && error.status === 401) throw redirect("/login"); throw error; }
   if (role === "user" && user.role === "admin") throw redirect("/admin");
-  if (role === "admin" && user.role !== "admin") throw redirect("/forbidden");
+  if (role === "admin" && user.role !== "admin") throw new Response(null, { status: 404 });
   return user;
 }
 function Logout() {
@@ -68,12 +69,13 @@ function Preview() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   return <><header className={as.pageHeader}><div><p>{item.topic} / {item.category ?? "Tanpa kategori"}</p><h1>Pratinjau soal</h1></div><Button asChild variant="outline"><Link to={`/admin/soal?subtes=${item.slug}`}><ArrowLeft />Bank soal</Link></Button></header><article className={as.preview}><div className={as.previewHeader}>{item.source}</div><div className={as.previewPrompt}><MathText>{item.prompt}</MathText></div><ol className={as.previewOptions}>{item.options.map((option, index) => <li key={index} className={index === item.correctAnswer ? as.correctOption : undefined}><span className={as.optionLetter}>{String.fromCharCode(65 + index)}</span><span className={as.optionText}><MathText>{option}</MathText></span>{index === item.correctAnswer && <strong>Kunci jawaban</strong>}</li>)}</ol><section className={as.previewExplanation}><h2>Pembahasan</h2><MathText>{item.explanation}</MathText></section></article><div className={as.previewActions}>{item.usage ? <p>Soal sudah dipakai dalam {item.usage} jawaban peserta sehingga tidak dapat diedit atau dihapus.</p> : <><Button asChild variant="outline"><Link to={`/admin/soal/${item.id}/edit`}><Pencil />Edit soal</Link></Button>{confirmDelete ? <div className="flex flex-wrap items-center gap-2"><span>Hapus soal ini?</span><Button variant="outline" onClick={() => setConfirmDelete(false)}>Batal</Button><Button onClick={async () => { try { await api(`/admin/questions/${item.id}`, { method: "DELETE" }); navigate(`/admin/soal?subtes=${item.slug}`); } catch (error) { setError(error instanceof Error ? error.message : "Gagal hapus."); } }}><Trash2 />Ya, hapus</Button></div> : <Button variant="outline" onClick={() => setConfirmDelete(true)}><Trash2 />Hapus soal</Button>}</>}{error && <p role="alert">{error}</p>}</div></>;
 }
-function ErrorPage() { const error = useRouteError(); const revalidator = useRevalidator(); return <main className="mx-auto grid max-w-xl gap-5 p-12"><h1 className="!text-4xl">Tidak dapat membuka halaman</h1><p role="alert">{error instanceof Error ? error.message : "Halaman tidak ditemukan."}</p><Button onClick={() => revalidator.revalidate()}>Coba lagi</Button><Link to="/">Beranda</Link></main>; }
+function NotFound() { return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-5 px-6 py-12"><h1 className="!mb-0 !text-4xl">Halaman tidak ditemukan</h1><Link to="/">Kembali ke beranda</Link></main>; }
+function ErrorPage() { const error = useRouteError(); const revalidator = useRevalidator(); if ((isRouteErrorResponse(error) && error.status === 404) || (error instanceof ApiError && [403, 404].includes(error.status))) return <NotFound />; return <main className="mx-auto grid max-w-xl gap-5 p-12"><h1 className="!text-4xl">Tidak dapat membuka halaman</h1><p role="alert">{error instanceof Error ? error.message : "Halaman tidak ditemukan."}</p><Button onClick={() => revalidator.revalidate()}>Coba lagi</Button><Link to="/">Beranda</Link></main>; }
 
 export const router = createBrowserRouter([
   { path: "/", element: <Home />, errorElement: <ErrorPage /> },
   { path: "/login", element: <Login />, errorElement: <ErrorPage /> },
-  { path: "/forbidden", element: <main className="p-12"><h1 className="!text-4xl">Akses khusus admin</h1><Link to="/dashboard">Dashboard</Link></main> },
+  { path: "/forbidden", element: <NotFound /> },
   { path: "/dashboard", loader: () => guard("user"), element: <LatveriaOSApp />, errorElement: <ErrorPage /> },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
@@ -95,5 +97,5 @@ export const router = createBrowserRouter([
     }, element: <EditQuestion /> },
     { path: "soal/:id", loader: ({ params }) => api<QuestionDetail>(`/admin/questions/${params.id}`), element: <Preview /> },
   ] },
-  { path: "*", element: <Navigate to="/" replace /> },
+  { path: "*", element: <NotFound /> },
 ]);

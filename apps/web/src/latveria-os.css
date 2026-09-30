@@ -95,6 +95,25 @@ body::before { display: none; }
 }
 .site-shell .wordmark img { display: block; }
 
+.site-shell {
+  --emerald: #62b780;
+  --emerald-hover: #80c797;
+  --emerald-dark: #62b780;
+  --emerald-glow: transparent;
+  --bronze: #62b780;
+  --forest-dark: #62b780;
+}
+[data-theme='parchment'] .site-shell, [data-theme='light'] .site-shell {
+  --emerald: #286443;
+  --emerald-hover: #1b5033;
+  --emerald-dark: #286443;
+  --bronze: #286443;
+  --forest-dark: #286443;
+}
+.site-shell .main-link { background: var(--emerald); color: var(--bg-app); box-shadow: none; }
+.site-shell .main-link:hover { background: var(--emerald-hover); box-shadow: none; }
+.site-shell .hero-logo { filter: none; }
+
 /* ==========================================================================
    IMPERIAL PARCHMENT THEME (LIGHT EDITORIAL MODE)
    ========================================================================== */
