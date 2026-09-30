@@ -1,15 +1,28 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpenText, Calculator, Brain, Languages, List, PenLine, Sigma, SpellCheck, type LucideIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 
 type Tab = { slug: string; name: string; value: number };
+const icons: Record<string, LucideIcon> = {
+  semua: List,
+  "penalaran-umum": Brain,
+  "pengetahuan-pemahaman-umum": BookOpenText,
+  "pemahaman-bacaan-menulis": PenLine,
+  "pengetahuan-kuantitatif": Calculator,
+  "literasi-bahasa-indonesia": SpellCheck,
+  "literasi-bahasa-inggris": Languages,
+  "penalaran-matematika": Sigma,
+};
 
 export function QuestionSubtestTabs({ tabs, selected }: { tabs: Tab[]; selected: string }) {
   const router = useRouter();
   return <Tabs value={selected} onValueChange={(value) => router.push(value === "semua" ? "/admin/soal" : `/admin/soal?subtes=${value}`)}>
-    <TabsList aria-label="Subtes bank soal">{tabs.map((tab) => <TabsTrigger key={tab.slug} value={tab.slug}>{tab.name}<span className="ml-1 text-xs">{tab.value}</span></TabsTrigger>)}</TabsList>
+    <TabsList aria-label="Subtes bank soal" className="flex h-auto max-w-full flex-wrap justify-start">
+      {tabs.map((tab) => { const Icon = icons[tab.slug] ?? List; return <TabsTrigger key={tab.slug} value={tab.slug} className="min-h-10"><Icon aria-hidden="true" /><span>{tab.name}</span><span className="text-xs">{tab.value}</span></TabsTrigger>; })}
+    </TabsList>
   </Tabs>;
 }
 
