@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { bankQuerySchema, credentialsSchema, signupSchema, idSchema, questionSchema, submissionSchema, utbkSubtests, type Bank, type HistoryItem, type QuestionDetail, type Result, type Topic, type User } from "@latveria/shared";
 import { getAuth } from "./lib/auth";
 import { getDb } from "./lib/db";
+import { allowedOrigins } from "./lib/origins";
 import { practiceAnswers, practiceAttempts, questions, topics } from "./lib/db/schema";
 
 export const app = new Hono<{ Variables: { user: User } }>();
@@ -21,7 +22,7 @@ app.use("/api/*", async (c, next) => {
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
   c.set("user", { id: session.user.id, email: session.user.email, name: session.user.name, role: session.user.role });
   if (!["GET", "HEAD"].includes(c.req.method)) {
-    if (c.req.header("origin") !== new URL(process.env.BETTER_AUTH_URL!).origin) throw new HTTPException(403, { message: "Origin tidak diizinkan." });
+    if (!allowedOrigins().includes(c.req.header("origin") ?? "")) throw new HTTPException(403, { message: "Origin tidak diizinkan." });
   }
   await next();
 });

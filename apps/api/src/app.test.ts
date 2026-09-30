@@ -23,3 +23,13 @@ it("blocks cross-origin writes and invalid question input", async () => {
   expect((await app.request("/api/admin/questions", { method: "POST", headers: { Origin: "https://other.example" }, body: "{}" })).status).toBe(403);
   expect((await app.request("/api/admin/questions", { method: "POST", headers: { Origin: "http://localhost:3000", "Content-Type": "application/json" }, body: "{}" })).status).toBe(400);
 });
+
+it("accepts only the configured tunnel for development writes", async () => {
+  vi.stubEnv("NODE_ENV", "development");
+  vi.stubEnv("DEV_TUNNEL_ORIGIN", "https://latveria.dorrit.dev");
+  getSession.mockResolvedValue({ user: { id: "a", role: "admin", name: "Admin", email: "a@example.test" } });
+  const write = (origin: string) => app.request("/api/admin/questions", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}" });
+  expect((await write("https://latveria.dorrit.dev")).status).toBe(400);
+  expect((await write("https://other.dorrit.dev")).status).toBe(403);
+  vi.unstubAllEnvs();
+});

@@ -2,6 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { getDb } from "./db";
 import * as schema from "./db/auth-schema";
+import { allowedOrigins } from "./origins";
 
 function createAuth() {
   if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32 || !process.env.BETTER_AUTH_URL) {
@@ -10,6 +11,7 @@ function createAuth() {
   return betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL,
+    trustedOrigins: allowedOrigins(),
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     emailAndPassword: { enabled: true, disableSignUp: process.env.NODE_ENV !== "development" },
     user: { additionalFields: { role: { type: "string", defaultValue: "user", input: false } } },
