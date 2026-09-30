@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { count, eq } from "drizzle-orm";
-import { getDb } from "../../../lib/db";
-import { questions, topics } from "../../../lib/db/schema";
 import styles from "../dashboard.module.css";
+import { getPracticeTopics } from "../topic-data";
+import { TopicList } from "../topic-list";
 
-export const metadata: Metadata = { title: "Topik | Latveria" };
+export const metadata: Metadata = { title: "Latihan | Latveria" };
 
 export default async function TopicsPage() {
-  const items = await getDb().select({ slug: topics.slug, name: topics.name, description: topics.description, questionCount: count(questions.id) })
-    .from(topics).leftJoin(questions, eq(questions.topicId, topics.id)).groupBy(topics.id).orderBy(topics.name);
-  return <section className={styles.page}><div className={styles.heading}><div><h1>Topik</h1><p>Pilih materi untuk membuka latsol.</p></div></div>
-    <div className={styles.topicGrid}>{items.map((topic) => <article className={styles.topic} key={topic.slug}><h2>{topic.name.replace(" (dummy)", "")}</h2><p>{topic.description.replace(" Data pengembangan, bukan materi resmi UTBK.", "")}</p><div><span>{topic.questionCount} soal</span><Link href={`/dashboard/topik/${topic.slug}`}>Buka latsol</Link></div></article>)}</div>
+  const items = await getPracticeTopics();
+  return <section className={styles.page}><div className={styles.pageHeading}><h1>Latihan</h1><p>Pilih topik untuk mulai mengerjakan soal contoh.</p></div>
+    <div className={styles.topicPageList}><TopicList items={items} /></div>
   </section>;
 }

@@ -17,6 +17,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-sans), sans-serif; }
 /* Tekstur tetap terpisah dari konten yang dianimasikan. */
 body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background-image: radial-gradient(#46513f12 .65px, transparent .8px); background-size: 5px 7px; }
+body:has([data-dashboard])::before { display: none; }
 ::selection { background: var(--forest); color: var(--paper-light); }
 a { color: inherit; text-underline-offset: 5px; }
 a:focus-visible { outline: 3px solid var(--forest); outline-offset: 5px; }

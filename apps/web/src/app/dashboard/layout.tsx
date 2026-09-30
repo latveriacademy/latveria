@@ -8,17 +8,20 @@ import { DashboardNav } from "./nav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  return <div className={styles.shell}>
+  return <div className={styles.shell} data-dashboard>
     <a className="skip-link" href="#konten">Lewati navigasi</a>
     <aside className={styles.sidebar}>
-      <Link href="/" className={styles.brand}><Image src={logo} width={38} height={38} alt="" />latveria</Link>
+      <Link href="/dashboard" className={styles.brand}><Image src={logo} width={34} height={34} alt="" />latveria</Link>
       <DashboardNav />
-      <div className={styles.sidebarBottom}>{user.role === "admin" && <Link href="/admin">Panel admin</Link>}<SignOut /></div>
-      {user.role === "admin" && <Link className={styles.mobileAdmin} href="/admin">Panel admin</Link>}
+      <div className={styles.sidebarBottom}>
+        <div className={styles.identity}><span className={styles.avatar} aria-hidden="true">{user.name.slice(0, 1).toUpperCase()}</span><div><strong>{user.name}</strong><small>{user.email}</small></div></div>
+        {user.role === "admin" && <Link href="/admin">Panel admin</Link>}
+        <SignOut />
+      </div>
     </aside>
     <main id="konten" className={styles.main}>
-      <header className={styles.topbar}><span>{user.name}</span><span>{user.role === "admin" ? "Admin" : "Peserta"}</span></header>
-      {children}
+      <header className={styles.topbar}><span>Ruang belajar</span><span className={styles.topbarContext}>Latihan UTBK</span></header>
+      <div className={styles.content}>{children}</div>
     </main>
   </div>;
 }
