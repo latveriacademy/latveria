@@ -14,7 +14,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <Link href="/admin" className={styles.brand}><Image src={logo} width={34} height={34} alt="" />latveria <span>admin</span></Link>
       <AdminNav />
       <div className={styles.sidebarBottom}>
-        <Link href="/dashboard">Ruang peserta</Link>
         <span className={styles.identity}>{admin.name}</span>
         <SignOut />
       </div>

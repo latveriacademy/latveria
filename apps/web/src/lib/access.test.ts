@@ -18,6 +18,6 @@ it("menolak pengunjung tanpa sesi dari halaman pengguna dan admin", async () => 
 
 it("menolak pengguna biasa dari admin dan menerima admin", async () => {
   getSession.mockResolvedValueOnce({ user: { id: "u1", role: "user" } }).mockResolvedValueOnce({ user: { id: "a1", role: "admin" } });
-  await expect(requireAdmin()).rejects.toThrow("REDIRECT:/dashboard");
+  await expect(requireAdmin()).rejects.toThrow("REDIRECT:/forbidden");
   await expect(requireAdmin()).resolves.toEqual({ id: "a1", role: "admin" });
 });

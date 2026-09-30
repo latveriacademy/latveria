@@ -3,14 +3,20 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "./auth";
 
+async function getSession() {
+  return getAuth().api.getSession({ headers: await headers() });
+}
+
 export async function requireUser() {
-  const session = await getAuth().api.getSession({ headers: await headers() });
+  const session = await getSession();
   if (!session) redirect("/login");
+  if (session.user.role === "admin") redirect("/admin");
   return session.user;
 }
 
 export async function requireAdmin() {
-  const user = await requireUser();
-  if (user.role !== "admin") redirect("/dashboard");
-  return user;
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.user.role !== "admin") redirect("/forbidden");
+  return session.user;
 }

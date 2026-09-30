@@ -18,6 +18,7 @@ export const questions = pgTable("questions", {
   correctAnswer: integer("correct_answer").notNull(),
   explanation: text("explanation").notNull(),
   source: text("source").notNull(),
+  category: text("category"),
 }, (table) => [
   check("questions_four_options", sql`array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 4 and array_position(${table.options}, null) is null`),
   check("questions_valid_answer", sql`${table.correctAnswer} between 0 and 3`),
