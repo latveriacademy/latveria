@@ -48,7 +48,9 @@ export const PracticeView = () => {
     exitPractice,
     openLexicon,
     topics,
-    loading
+    loading,
+    submitting,
+    submissionError
   } = useApp();
 
   // Selection Screen State
@@ -90,7 +92,7 @@ export const PracticeView = () => {
 
   // Timer Effect when Timed Practice is active
   useEffect(() => {
-    if (!activeSession || activeSession.isEvaluated || activeSession.mode !== 'Timed Practice' || timerPaused) return;
+    if (!activeSession || activeSession.isEvaluated || activeSession.attemptId || activeSession.mode !== 'Timed Practice' || timerPaused || timeLeft === 0) return;
 
     if (timeLeft === null) {
       setTimeLeft(activeSession.totalQuestions * 90);
@@ -121,7 +123,7 @@ export const PracticeView = () => {
       const key = e.key.toUpperCase();
 
       // Only allow answer selection if not yet evaluated
-      if (!activeSession.isEvaluated) {
+      if (!activeSession.isEvaluated && !activeSession.attemptId && !submitting) {
         if (['A', 'B', 'C', 'D'].includes(key)) {
           selectAnswer(currIdx, key);
         } else if (['1', '2', '3', '4'].includes(key)) {
@@ -246,6 +248,7 @@ export const PracticeView = () => {
             <button
               type="button"
               className="btn-exit-minimal"
+              disabled={submitting}
               onClick={exitPractice}
               title={isEvaluated ? 'Kembali ke Repository' : 'Batalkan Sesi Latihan'}
             >
@@ -332,9 +335,10 @@ export const PracticeView = () => {
                   type="button"
                   id="btn-open-submit-modal"
                   className="btn-latveria-primary btn-submit-exam font-mono"
+                  disabled={submitting}
                   onClick={() => setShowSubmitModal(true)}
                 >
-                  <span>SUBMIT QUIZ</span>
+                  <span>{submitting ? 'MEMPROSES...' : activeSession.attemptId ? 'MUAT HASIL' : 'SUBMIT QUIZ'}</span>
                 </button>
               </>
             ) : (
@@ -368,6 +372,12 @@ export const PracticeView = () => {
             </button>
           </div>
         </header>
+        {submissionError && (
+          <div className="submit-error-banner">
+            <p role="alert">{submissionError}</p>
+            {activeSession.attemptId && <button type="button" className="btn-latveria-secondary" disabled={submitting} onClick={finishSession}>Muat hasil lagi</button>}
+          </div>
+        )}
 
         {/* ========================================================
             SUB-HEADER STRIP: PROGRESS BAR & COUNTER
@@ -529,7 +539,7 @@ export const PracticeView = () => {
                       type="button"
                       role="radio"
                       aria-checked={isSelected}
-                      disabled={isEvaluated}
+                      disabled={isEvaluated || submitting || !!activeSession.attemptId}
                       className={`option-choice-card ${stateClass}`}
                       onClick={() => !isEvaluated && selectAnswer(currIdx, option.key)}
                     >
@@ -676,6 +686,7 @@ export const PracticeView = () => {
                 <button
                   type="button"
                   className="btn-latveria-primary btn-gold-solid"
+                  disabled={submitting}
                   onClick={() => setShowSubmitModal(true)}
                 >
                   <span>SELESAIKAN TES</span>
@@ -806,6 +817,7 @@ export const PracticeView = () => {
                   <button
                     type="button"
                     className="btn-latveria-primary btn-gold-solid font-mono w-full"
+                    disabled={submitting}
                     onClick={() => setShowSubmitModal(true)}
                   >
                     <FileCheck size={15} />
@@ -957,12 +969,13 @@ export const PracticeView = () => {
                 <button
                   type="button"
                   className="btn-latveria-primary btn-gold-solid font-mono"
+                  disabled={submitting}
                   onClick={() => {
                     setShowSubmitModal(false);
                     finishSession();
                   }}
                 >
-                  <span>SUBMIT QUIZ & EVALUASI</span>
+                  <span>{submitting ? 'MEMPROSES...' : activeSession.attemptId ? 'MUAT HASIL' : 'SUBMIT QUIZ & EVALUASI'}</span>
                   <FileCheck size={16} />
                 </button>
               </div>

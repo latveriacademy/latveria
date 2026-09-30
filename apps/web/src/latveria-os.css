@@ -114,6 +114,16 @@ body::before { display: none; }
 .site-shell .main-link:hover { background: var(--emerald-hover); box-shadow: none; }
 .site-shell .hero-logo { filter: none; }
 
+.latveria-app-shell .submit-error-banner {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--accent-crimson);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  background: var(--accent-crimson-dim);
+}
+.latveria-app-shell .submit-error-banner button { margin-top: 12px; }
+
 /* ==========================================================================
    IMPERIAL PARCHMENT THEME (LIGHT EDITORIAL MODE)
    ========================================================================== */

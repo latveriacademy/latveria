@@ -35,6 +35,16 @@ try {
   assert.ok(practice.items.length > 0);
   for (const item of practice.items) { assert.ok(!("correctAnswer" in item)); assert.ok(!("explanation" in item)); }
   assert.equal((await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: {} })).status, 400);
+  const selected = practice.items.slice(0, 1);
+  const partial = await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: Object.fromEntries(selected.map((item: { id: string }) => [item.id, 0])) });
+  assert.equal(partial.status, 201, "A selected subset must be submittable without answering the entire question bank");
+  const selectedAttempt = await partial.json();
+  const selectedResult = await (await request(`/learner/results/${selectedAttempt.id}`, learner.cookie)).json();
+  assert.equal(selectedResult.attempt.total, selected.length);
+  assert.equal(selectedResult.answers.length, selected.length);
+  assert.equal(selectedResult.answers[0].id, selected[0].id);
+  const foreignPractice = await (await request(`/learner/practice/${topics[1].slug}`, learner.cookie)).json();
+  assert.equal((await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: { [selected[0].id]: 0, [foreignPractice.items[0].id]: 0 } })).status, 400);
   const submission = await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: Object.fromEntries(practice.items.map((item: { id: string }) => [item.id, 0])) });
   assert.equal(submission.status, 201);
   const attempt = await submission.json();

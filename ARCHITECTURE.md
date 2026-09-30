@@ -33,7 +33,7 @@ Development menggunakan proxy Vite dari port 3000 ke API 3001. Produksi mengguna
 - Better Auth handler di `/api/auth/*`; signup hanya saat backend development, role client tidak diterima. Tidak ada akun admin default.
 - `/api/me` mengembalikan identitas minimum; semua endpoint learner/admin memvalidasi sesi dan role server-side. Admin tidak mengakses API peserta. Role frontend hanya untuk navigasi.
 - Operasi tulis mewajibkan Origin sama dengan `BETTER_AUTH_URL`. Tidak ada CORS wildcard; proxy dan deployment memakai satu origin.
-- Endpoint latihan hanya memilih ID, prompt, dan opsi. Backend memeriksa semua questionId dan opsi saat submit, menilai dari kunci database, lalu menyimpan attempt/answers dalam transaksi.
+- Endpoint latihan hanya memilih ID, prompt, dan opsi. Sesi dapat memakai sebagian soal dari bank subtes. Backend memeriksa setiap questionId termasuk dalam subtes dan memvalidasi opsi saat submit, menilai dari kunci database, lalu menyimpan attempt/answers dalam transaksi. Frontend mewajibkan semua soal yang dipilih dijawab; kegagalan submit mempertahankan draft, sedangkan kegagalan pemuatan review dapat dicoba ulang memakai attempt ID yang sudah tersimpan.
 - Endpoint hasil mencari attempt dengan ID **dan** userId sebelum membaca kunci/pembahasan. Client tidak dapat melihat hasil peserta lain.
 - Admin membuat soal melalui Zod shared. Penghapusan soal terpakai ditolak foreign key PostgreSQL, termasuk saat bersamaan dengan submit.
 - Migrasi Drizzle dipindah bersama metadata tanpa mengganti SQL/ID lama. RLS tanpa kebijakan publik tetap aktif; otorisasi API tetap wajib karena koneksi server dapat melewati RLS.

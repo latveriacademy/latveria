@@ -69,8 +69,10 @@ app.post("/api/learner/practice/:slug", async (c) => {
   const id = await getDb().transaction(async (tx) => {
     const [topic] = await tx.select().from(topics).where(eq(topics.slug, c.req.param("slug")));
     if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
-    const rows = await tx.select({ id: questions.id, answer: questions.correctAnswer }).from(questions).where(eq(questions.topicId, topic.id));
-    if (!rows.length || rows.length !== Object.keys(parsed.data.answers).length || rows.some((row) => parsed.data.answers[row.id] === undefined)) throw new HTTPException(400, { message: "Jawab semua soal sebelum dikumpulkan." });
+    const ids = Object.keys(parsed.data.answers);
+    if (!ids.length) throw new HTTPException(400, { message: "Jawab soal sebelum dikumpulkan." });
+    const rows = await tx.select({ id: questions.id, answer: questions.correctAnswer }).from(questions).where(and(eq(questions.topicId, topic.id), inArray(questions.id, ids)));
+    if (rows.length !== ids.length) throw new HTTPException(400, { message: "Soal tidak valid untuk subtes ini. Muat ulang latihan." });
     const [attempt] = await tx.insert(practiceAttempts).values({ userId: c.get("user").id, topicId: topic.id, totalCount: rows.length, correctCount: rows.filter((row) => row.answer === parsed.data.answers[row.id]).length }).returning({ id: practiceAttempts.id });
     await tx.insert(practiceAnswers).values(rows.map((row) => ({ attemptId: attempt.id, questionId: row.id, selectedAnswer: parsed.data.answers[row.id], isCorrect: row.answer === parsed.data.answers[row.id] ? 1 : 0 })));
     return attempt.id;

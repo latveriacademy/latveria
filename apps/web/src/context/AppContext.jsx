@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { api } from '../lib/api';
 import { DEFAULT_USER } from '../data/userData';
 import { LEXICON_DATABASE } from '../data/lexiconData';
 import { sound } from '../utils/audioFeedback';
@@ -122,6 +123,9 @@ export const AppProvider = ({ children }) => {
   const [sessionResults, setSessionResults] = useState(null);
   // Loading state for async operations
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
+  const submitLock = useRef(false);
 
   // Synchronize sound engine
   useEffect(() => {
@@ -278,6 +282,8 @@ export const AppProvider = ({ children }) => {
 
   // Start a Practice Session — fetches real questions from API
   const startPractice = useCallback(async (subjectId, mode = 'Practice', count = 10, difficulty = 'Latverian Elite') => {
+    if (submitLock.current) return;
+    setSubmissionError('');
     sound.playClick();
 
     const subject = topics.find((s) => s.id === subjectId) || topics[0];
@@ -344,9 +350,11 @@ export const AppProvider = ({ children }) => {
 
   // Select Answer
   const selectAnswer = (questionIndex, optionKey) => {
+    if (submitLock.current) return;
     sound.playSelect();
     setActiveSession((prev) => {
       if (!prev) return null;
+      if (prev.attemptId || prev.isEvaluated) return prev;
       return {
         ...prev,
         answers: {
@@ -378,11 +386,9 @@ export const AppProvider = ({ children }) => {
 
   // Finish and Evaluate Session — submits to API
   const finishSession = useCallback(async () => {
-    if (!activeSession) return;
-    sound.playSuccess();
+    if (!activeSession || activeSession.isEvaluated || submitLock.current) return;
 
     // Build API submission: { answers: Record<uuid, 0-3> }
-    // Must include ALL questions (unanswered ones need a value too — but API requires all)
     const apiAnswers = {};
     let allAnswered = true;
     activeSession.questions.forEach((q, idx) => {
@@ -394,34 +400,27 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    // API requires ALL questions answered. If some are unanswered, default them to 0.
-    // ponytail: API enforces "must answer ALL questions", so fill unanswered with index 0
-    // to avoid 400. The user sees them as unanswered in the review.
-    activeSession.questions.forEach((q, idx) => {
-      if (apiAnswers[q.id] === undefined) {
-        apiAnswers[q.id] = 0;
-      }
-    });
+    if (!allAnswered) {
+      setSubmissionError('Jawab semua soal dalam sesi sebelum dikumpulkan. Jawabanmu tetap tersimpan selama sesi ini terbuka.');
+      return;
+    }
+    submitLock.current = true;
+    setSubmitting(true);
+    setSubmissionError('');
+    let attemptId = activeSession.attemptId;
 
     try {
-      const slug = activeSession.subjectSlug;
-      const submitRes = await fetch(`/api/learner/practice/${slug}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: apiAnswers }),
-      });
-
-      if (!submitRes.ok) {
-        const err = await submitRes.json().catch(() => ({}));
-        throw new Error(err.error || `Submit failed: HTTP ${submitRes.status}`);
+      if (!attemptId) {
+        const saved = await api(`/learner/practice/${activeSession.subjectSlug}`, {
+          method: 'POST', body: JSON.stringify({ answers: apiAnswers }),
+        });
+        attemptId = saved.id;
+        setActiveSession((prev) => ({ ...prev, attemptId }));
       }
-
-      const { id: attemptId } = await submitRes.json();
-
-      // Fetch review data with correct answers and explanations
-      const reviewRes = await fetch(`/api/learner/results/${attemptId}`);
-      if (!reviewRes.ok) throw new Error('Failed to fetch results');
-      const reviewData = await reviewRes.json();
+      const reviewData = await api(`/learner/results/${attemptId}`);
+      if (reviewData.answers.length !== activeSession.questions.length || activeSession.questions.some((q) => !reviewData.answers.some((answer) => answer.id === q.id && Number.isInteger(answer.correctAnswer) && answer.correctAnswer >= 0 && answer.correctAnswer <= 3 && typeof answer.explanation === 'string'))) {
+        throw new Error('Hasil belum lengkap. Coba muat hasil lagi.');
+      }
 
       // Merge correct answers + explanations into session questions
       const enrichedQuestions = mergeReviewData(activeSession.questions, reviewData.answers);
@@ -467,6 +466,7 @@ export const AppProvider = ({ children }) => {
       };
 
       // Update local XP (client-only until backend XP exists)
+      sound.playSuccess();
       addXP(earnedXP, `Sesi ${activeSession.subjectName} Selesai`);
 
       setSessionResults(results);
@@ -512,47 +512,20 @@ export const AppProvider = ({ children }) => {
       }).catch(() => {});
 
     } catch (err) {
-      // Fallback: evaluate locally if API fails
-      showToast('PERINGATAN', 'Gagal menyimpan ke server. Evaluasi lokal.', 'error');
-
-      let correctCount = 0;
-      let incorrectCount = 0;
-      let unansweredCount = activeSession.totalQuestions;
-
-      // Can't evaluate correctness without API data; mark all as unanswered
-      const results = {
-        subjectId: activeSession.subjectId,
-        subjectName: activeSession.subjectName,
-        subjectCode: activeSession.subjectCode,
-        mode: activeSession.mode,
-        difficulty: activeSession.difficulty,
-        totalQuestions: activeSession.totalQuestions,
-        correctCount,
-        incorrectCount,
-        unansweredCount,
-        accuracy: 0,
-        score: 0,
-        earnedXP: 30,
-        answers: activeSession.answers,
-        questions: activeSession.questions,
-        completedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setSessionResults(results);
-      setActiveSession((prev) => ({
-        ...prev,
-        isEvaluated: true,
-        currentIndex: 0,
-        results
-      }));
+      setSubmissionError(`${attemptId ? 'Jawaban sudah tersimpan, tetapi hasil belum dapat dimuat.' : 'Jawaban belum berhasil dikumpulkan.'} ${err.message} Coba lagi.`);
+    } finally {
+      submitLock.current = false;
+      setSubmitting(false);
     }
   }, [activeSession]);
 
   // Exit Session
   const exitPractice = () => {
+    if (submitLock.current) return;
     sound.playClick();
     setActiveSession(null);
     setSessionResults(null);
+    setSubmissionError('');
   };
 
   // Mark Daily Training task as completed directly
@@ -583,6 +556,8 @@ export const AppProvider = ({ children }) => {
         summary,
         history,
         loading,
+        submitting,
+        submissionError,
         toasts,
         showToast,
         addXP,
