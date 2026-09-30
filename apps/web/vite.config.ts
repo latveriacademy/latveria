@@ -5,7 +5,10 @@ import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  server: { proxy: { "/api": "http://127.0.0.1:3001" } },
+  server: {
+    allowedHosts: ["latveria.dorrit.dev"],
+    proxy: { "/api": "http://127.0.0.1:3001" },
+  },
   build: {
     rolldownOptions: {
       output: {
