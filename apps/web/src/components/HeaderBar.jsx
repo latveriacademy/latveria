@@ -120,16 +120,6 @@ export const HeaderBar = () => {
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-        {/* Quick Profile Avatar */}
-        <button
-          type="button"
-          id="header-profile-btn"
-          className="header-avatar-btn"
-          onClick={() => setCurrentTab('profile')}
-          title="Dossier Akademik"
-        >
-          <span className="avatar-initials font-serif">{user.name?.slice(0, 1)}</span>
-        </button>
       </div>
     </header>
   );
