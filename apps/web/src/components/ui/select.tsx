@@ -14,7 +14,7 @@ export function SelectTrigger({ className, children, ...props }: React.Component
 }
 
 export function SelectContent({ className, children, position = "popper", ...props }: React.ComponentProps<typeof SelectPrimitive.Content>) {
-  return <SelectPrimitive.Portal><SelectPrimitive.Content data-slot="select-content" position={position} className={cn("relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-y-auto rounded-md border border-[var(--edge)] bg-[var(--surface)] text-[var(--ink)] shadow-md", className)} {...props}><SelectScrollUpButton /><SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport><SelectScrollDownButton /></SelectPrimitive.Content></SelectPrimitive.Portal>;
+  return <SelectPrimitive.Portal><SelectPrimitive.Content data-slot="select-content" position={position} className={cn("relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-y-auto rounded-md border border-[var(--edge,#d1c3a4)] bg-[var(--surface,#faf4e6)] text-[var(--ink)] shadow-md", className)} {...props}><SelectScrollUpButton /><SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport><SelectScrollDownButton /></SelectPrimitive.Content></SelectPrimitive.Portal>;
 }
 
 export function SelectLabel({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Label>) {

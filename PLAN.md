@@ -1,6 +1,6 @@
 # Latveria — Rencana situs belajar UTBK
 
-Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, serta halaman admin penyisipan soal telah dibuat. Supabase sebagai database produksi belum diverifikasi.
+Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, serta bank soal admin telah dibuat. Stack sudah dimigrasikan ke React/Vite + Hono dengan kontrak Zod shared; Supabase sebagai database produksi belum diverifikasi.
 
 Rekomendasi stack TypeScript, arsitektur MVP, model data, dan urutan penyiapan tersedia di `ARCHITECTURE.md`.
 
@@ -14,7 +14,7 @@ Usulan bahasa utama: Bahasa Indonesia untuk navigasi dan penjelasan, dengan Baha
 
 ### P0. Fondasi proyek
 
-- [x] Monorepo pnpm dengan Next.js di `apps/web`, TypeScript strict, Tailwind CSS, dan lockfile bersama.
+- [x] Monorepo pnpm: React/Vite di `apps/web`, Hono di `apps/api`, Zod/tipe API di `packages/shared`, TypeScript strict, Tailwind CSS, dan lockfile bersama.
 - [x] Landing page berbahasa Indonesia yang menjelaskan tujuan produk, alur belajar yang direncanakan, dan status pengembangan.
 - [x] Koneksi database khusus server, validasi konfigurasi, dan migrasi awal tabel topik dengan RLS.
 - [x] Perintah lint, pemeriksaan tipe, pengujian, dan build; seluruh pemeriksaan lokal lolos.

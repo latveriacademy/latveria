@@ -7,17 +7,21 @@
     "node": ">=22.12.0 <23"
   },
   "scripts": {
-    "dev": "pnpm --filter @latveria/web dev",
-    "build": "pnpm --filter @latveria/web build",
-    "start": "pnpm --filter @latveria/web start",
-    "lint": "pnpm --filter @latveria/web lint",
-    "typecheck": "pnpm --filter @latveria/web typecheck",
-    "test": "pnpm --filter @latveria/web test",
+    "dev": "pnpm --parallel --filter @latveria/web --filter @latveria/api dev",
+    "build": "pnpm -r --if-present build",
+    "start": "pnpm --filter @latveria/api start",
+    "lint": "eslint apps/*/src apps/api/scripts packages/shared/src",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "db:generate": "pnpm --filter @latveria/web db:generate",
-    "db:migrate": "pnpm --filter @latveria/web db:migrate",
-    "db:check": "pnpm --filter @latveria/web db:check",
-    "db:seed": "pnpm --filter @latveria/web db:seed",
-    "db:admin": "pnpm --filter @latveria/web db:admin"
+    "db:generate": "pnpm --filter @latveria/api db:generate",
+    "db:migrate": "pnpm --filter @latveria/api db:migrate",
+    "db:check": "pnpm --filter @latveria/api db:check",
+    "db:seed": "pnpm --filter @latveria/api db:seed",
+    "db:admin": "pnpm --filter @latveria/api db:admin"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "typescript-eslint": "^8.71.0"
   }
 }

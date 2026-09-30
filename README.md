@@ -1,86 +1,71 @@
 # Latveria
 
-Situs belajar dan latihan untuk persiapan UTBK, dengan pembahasan soal dan perkembangan berbasis EXP. Bahasa antarmuka utama: Bahasa Indonesia.
+Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwind + shadcn/ui**, backend **Hono**, kontrak **Zod** yang dibagikan di monorepo pnpm. PostgreSQL, Drizzle, Better Auth, KaTeX, Lucide, dan animasi GSAP tetap digunakan.
 
-## Status pengembangan
+## Struktur
 
-Tersedia: monorepo pnpm dengan aplikasi Next.js di `apps/web`, landing page, dashboard peserta, akun lokal, latsol per topik dengan hasil/pembahasan dan riwayat, halaman admin untuk memasukkan soal, serta PostgreSQL lewat Docker Compose. EXP belum diimplementasikan.
+- `apps/web`: SPA React, React Router, komponen UI, dan renderer LaTeX. Tidak mengimpor database atau secret server.
+- `apps/api`: server Hono Node.js, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
+- `packages/shared`: skema Zod request, tipe response API, serta nama tujuh subtes SNPMB. Tidak mengimpor backend.
 
-PostgreSQL melalui Supabase disetujui untuk tahap lanjutan, tetapi saat ini pengembangan menggunakan PostgreSQL lokal. Koneksi Supabase belum diverifikasi. Build serta landing page tidak memerlukan database; halaman login, dashboard, dan admin memerlukannya.
+Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau. EXP belum dibuat.
 
-## Menjalankan aplikasi
+## Pengembangan lokal
 
-Gunakan Node.js 22 (minimal 22.12) dan pnpm 11.24.0 sesuai `package.json`. Jika memakai nvm, jalankan `nvm use`.
+Node.js 22 (minimal 22.12), pnpm 11.24.0, Docker Compose.
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm dev
-```
-
-Buka `http://localhost:3000`. Landing page dapat dibuka tanpa `.env.local`. Jalankan perintah dari akar repositori; untuk aplikasi web saja gunakan `pnpm --filter @latveria/web <perintah>`.
-
-## PostgreSQL dan Adminer lokal
-
-```sh
 docker compose up -d --wait
-cp apps/web/.env.example apps/web/.env.local
-# Isi BETTER_AUTH_SECRET di apps/web/.env.local dengan hasil: openssl rand -base64 32
+cp apps/api/.env.example apps/api/.env.local
+# Isi BETTER_AUTH_SECRET dengan secret acak: openssl rand -base64 32
 pnpm db:migrate
 pnpm db:seed
 pnpm dev
 ```
 
-`pnpm db:seed` menambah tujuh subtes UTBK-SNBT dan empat belas soal dummy (dua per subtes); aman dijalankan ulang tanpa menggandakan data. Empat topik dummy lama diperbarui namanya **tanpa mengubah ID**, sehingga riwayat dan soal admin tetap terhubung. Nama dan kelompok subtes mengikuti bagian [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal tetap contoh buatan lokal, bukan soal atau simulasi resmi. Tinjau lagi struktur ujian saat berganti tahun. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
+`pnpm dev` menjalankan frontend `http://localhost:3000` dan API `http://localhost:3001` bersamaan. Vite meneruskan `/api` ke Hono; browser memakai cookie pada origin yang sama. `BETTER_AUTH_URL` adalah URL frontend (`http://localhost:3000`), bukan URL API internal.
 
-Konten soal mendukung LaTeX melalui KaTeX. Gunakan `$x^2$` untuk rumus inline dan `$$\frac{1}{2}$$` untuk rumus blok pada pertanyaan, opsi, atau pembahasan. Source disimpan sebagai teks; HTML tidak dieksekusi dan sintaks LaTeX yang salah ditampilkan sebagai teks bertanda.
+Pada migrasi dari versi Next.js, pindahkan **berkas lokal yang sudah ada** dari `apps/web/.env.local` ke `apps/api/.env.local`. Riwayat migrasi Drizzle kini berada di `apps/api/drizzle`, dengan ID dan SQL lama dipertahankan; database tidak perlu di-reset. Jangan menimpa secret lama jika ingin sesi lama tetap valid.
 
-Adminer tersedia di `http://127.0.0.1:8080`. Pilih **PostgreSQL**, server **postgres**, pengguna **latveria**, kata sandi **latveria**, database **latveria**. Kredensial ini hanya untuk pengembangan lokal; Compose tidak digunakan di produksi.
-
-### Akun dan otorisasi
-
-Daftarkan akun di `http://localhost:3000/login` saat `pnpm dev` berjalan. Pendaftaran melalui email/kata sandi hanya aktif di lingkungan pengembangan; server menetapkan role `user` sendiri. Setelah akun dibuat, promosikan akun lokal yang dipilih menjadi admin:
+Landing page dapat dibuka tanpa server/database; route login/peserta/admin memerlukan API dan PostgreSQL. Akun bisa didaftarkan pada `/login` ketika backend development berjalan. Backend produksi menutup pendaftaran. Promosi admin lokal:
 
 ```sh
 pnpm db:admin email@contoh.test
 ```
 
-Lalu masuk kembali jika perlu dan buka `/admin`; hanya admin yang dapat membaca halaman dan menjalankan aksi penyimpanannya. Ringkasan, daftar soal, dan formulir tambah soal memakai route terpisah. `/dashboard` memerlukan sesi masuk; pengguna memilih topik di `/dashboard/topik`, mengerjakan latsol, lalu membuka hasil/pembahasan dan riwayat. Tombol keluar mencabut sesi. Tidak ada akun admin atau kata sandi default yang di-seed.
+Admin hanya memakai `/admin`; peserta memakai `/dashboard`. API memeriksa role, bukan hanya router frontend. Input role klien tidak boleh membuat admin. Hasil attempt hanya dapat dibaca pemilik, dan kunci/pembahasan tidak dikirim pada endpoint soal aktif. Request perubahan data harus memiliki Origin yang cocok dengan `BETTER_AUTH_URL`.
 
-Autentikasi memakai Better Auth dengan sesi di PostgreSQL lokal. `BETTER_AUTH_SECRET` minimal 32 karakter dan `BETTER_AUTH_URL` wajib diatur. Untuk deployment, gunakan secret dan URL baru; pendaftaran produksi tetap tertutup sampai verifikasi email/onboarding ditentukan. Kredensial database dan secret tidak boleh disimpan di Git.
+## Database
 
-## Menghubungkan Supabase
+PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
 
-1. Buat proyek Supabase untuk pengembangan, terpisah dari produksi.
-2. Ganti URL dalam `apps/web/.env.local` dengan nilai dari menu **Connect** proyek Supabase:
-   - `DATABASE_URL`: URL PostgreSQL **Transaction pooler** untuk aplikasi.
-   - `DATABASE_MIGRATION_URL`: URL **Direct connection** atau **Session pooler** untuk migrasi. Gunakan Session pooler bila koneksi langsung terkendala IPv6.
-3. Gunakan string koneksi dan pengaturan SSL dari Supabase. Isi kata sandi database dengan pengodean URL jika mengandung karakter khusus. Jangan menempelkan rahasia ke percakapan atau Git.
-4. Jalankan `pnpm db:check` untuk menguji koneksi aplikasi tanpa mengubah data.
-5. Tinjau SQL dalam `apps/web/drizzle/`, lalu jalankan `pnpm db:migrate` untuk menerapkannya ke database pengembangan.
+Seed idempoten menyediakan tujuh subtes SNPMB 2026 dan 14 soal dummy. Empat slug topik lama dipindahkan tanpa mengganti ID sehingga riwayat dan soal admin tetap terhubung. Nama subtes mengikuti [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal bukan konten resmi. Supabase PostgreSQL tetap bisa dipakai dengan mengganti URL koneksi, tetapi belum diverifikasi.
 
-Autentikasi saat ini menggunakan Better Auth dengan tabel di PostgreSQL, bukan Supabase Auth. Penggunaan Supabase sebagai database produksi memerlukan migrasi dan pengaturan auth/hosting lebih lanjut.
+KaTeX mendukung `$x^2$` inline dan `$$\frac{1}{2}$$` blok. Simpan source teks, bukan HTML. Renderer `trust: false` dan formula tidak valid fallback ke source. Rendering kini berlangsung di React, bukan Server Components.
 
-Tabel topik, soal, pengguna, akun, dan sesi mengaktifkan RLS tanpa kebijakan akses publik. Akses dilakukan oleh server melalui koneksi PostgreSQL; pemeriksaan sesi dan role tetap wajib di server karena koneksi ini dapat melewati RLS.
-
-## Perintah pemeriksaan
+## Pemeriksaan
 
 ```sh
-pnpm check                       # lint → tipe → pengujian → build
-pnpm test src/lib/env.test.ts     # pengujian validasi konfigurasi di apps/web
-pnpm db:generate                 # buat SQL dari perubahan skema, tanpa koneksi DB
-pnpm db:check                    # uji koneksi DB; memerlukan DATABASE_URL
-pnpm db:migrate                  # terapkan SQL; memerlukan DATABASE_MIGRATION_URL
-pnpm db:seed                     # sisipkan tujuh subtes dan empat belas soal dummy secara idempoten
-pnpm db:admin email@contoh.test  # promosikan akun yang sudah terdaftar di database lokal
-pnpm start                      # jalankan hasil pnpm build
+pnpm check                       # lint → semua tipe → semua tes → build
+pnpm --filter @latveria/web test src/components/math-text.test.tsx
+pnpm --filter @latveria/api test src/lib/env.test.ts
+pnpm --filter @latveria/api exec env NODE_ENV=development tsx scripts/verify-api.ts
+pnpm db:generate                 # SQL luring
+pnpm db:migrate                  # memakai DATABASE_MIGRATION_URL
+pnpm db:check                    # koneksi tanpa mengubah data
+pnpm db:seed
 ```
 
-Pengujian otomatis mencakup URL PostgreSQL dan penolakan akses tanpa sesi/role admin. Migrasi, seed, autentikasi, dan halaman admin telah diuji pada PostgreSQL lokal; ini tidak membuktikan koneksi Supabase berhasil.
+Tes integrasi terakhir memerlukan DB lokal yang sudah di-migrate/seed. Ia membuat akun, attempt, dan soal sementara lalu membersihkannya. Uji mencakup autentikasi, pemisahan role, kerahasiaan kunci, ownership, submit, filter kategori, pratinjau, proteksi penghapusan soal terpakai, dan pencabutan sesi.
 
-`pnpm-workspace.yaml` mendefinisikan paket di `apps/*` dan menyimpan izin skrip dependensi native serta pengecualian usia rilis yang dibuat pnpm. ESLint memakai versi 9 karena plugin React, import, dan aksesibilitas yang digunakan belum mendeklarasikan dukungan versi 10; tinjau pembaruan bersama kompatibilitas plugin.
+## Build dan produksi
 
-## Dokumen produk
+```sh
+pnpm build
+pnpm start
+```
 
-- `PLAN.md`: cakupan dan tahapan pengembangan.
-- `ARCHITECTURE.md`: pilihan teknologi, rancangan data, dan alur sistem.
-- `AGENTS.md`: panduan singkat bagi sesi pengembangan berikutnya.
+Frontend dibangun ke `apps/web/dist`. Hono produksi melayani API **dan** file SPA tersebut pada port 3000 (override `PORT` jika diperlukan), termasuk fallback untuk deep link React Router. Backend TypeScript dijalankan dengan `tsx`; skrip build backend memeriksa tipe, bukan menghasilkan bundle tambahan. Atur `BETTER_AUTH_URL` ke origin publik dan secret produksi berbeda. Tidak ada migrasi otomatis saat build/start.
+
+Model hosting sekarang membutuhkan proses Node untuk Hono dan origin yang sama untuk cookie/API. Gunakan reverse proxy HTTPS pada deployment; bukan lagi deployment Next.js/Vercel otomatis. Database dev dan produksi tetap dipisah.

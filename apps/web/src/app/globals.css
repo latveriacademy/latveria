@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-sans: "Alegreya Sans";
+  --font-handwriting: "Caveat";
   color-scheme: light;
   --paper: #e9dfc5;
   --paper-light: #f4ecd7;

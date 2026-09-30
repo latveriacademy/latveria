@@ -1,9 +1,8 @@
-import Link from "next/link";
+import { Link } from "react-router";
 import { BookOpenText, Brain, Calculator, Languages, PenLine, Sigma, SpellCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { Topic } from "@latveria/shared";
 import styles from "./dashboard.module.css";
-
-type Topic = { slug: string; name: string; short: string; section: "tps" | "literasi"; questionCount: number };
 
 const icons: Record<string, LucideIcon> = {
   "penalaran-umum": Brain,
@@ -25,7 +24,7 @@ export function TopicList({ items }: { items: Topic[] }) {
       <ul className={styles.topicList}>{topics.map((topic) => {
         const Icon = icons[topic.slug] ?? BookOpenText;
         return <li key={topic.slug}>
-        {topic.questionCount ? <Link href={`/dashboard/topik/${topic.slug}`}>
+        {topic.questionCount ? <Link to={`/dashboard/topik/${topic.slug}`}>
           <span className={styles.topicMark} aria-hidden="true"><Icon /></span>
           <span className={styles.topicName}>{topic.name}</span>
           <span className={styles.topicCount}>{topic.questionCount} soal contoh</span>

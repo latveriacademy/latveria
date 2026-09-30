@@ -1,14 +1,25 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
+import { Link, useNavigate } from "react-router";
+import { questionSchema } from "@latveria/shared";
+import { api } from "../../lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { createQuestion } from "./actions";
 import styles from "./admin.module.css";
 
 export function QuestionForm({ topics, initialTopicId }: { topics: { id: string; name: string; section: "tps" | "literasi" }[]; initialTopicId?: string }) {
+  const navigate = useNavigate();
+  const createQuestion = async (_previous: string, form: FormData) => {
+    const parsed = questionSchema.safeParse({ topicId: form.get("topicId"), prompt: form.get("prompt"), options: [0, 1, 2, 3].map((index) => form.get(`option-${index}`)), correctAnswer: Number(form.get("correctAnswer")), explanation: form.get("explanation"), source: form.get("source"), category: String(form.get("category") ?? "").trim() || undefined });
+    if (!parsed.success) return parsed.error.issues[0].message;
+    try {
+      const result = await api<{ id: string; slug: string }>("/admin/questions", { method: "POST", body: JSON.stringify(parsed.data) });
+      navigate(`/admin/soal?subtes=${result.slug}&created=${result.id}`);
+      return "";
+    } catch (error) { return error instanceof Error ? error.message : "Gagal menyimpan soal."; }
+  };
   const [message, action, pending] = useActionState(createQuestion, "");
   if (!topics.length) return <div className={styles.empty}><p>Belum ada subtes. Jalankan <code>pnpm db:seed</code> untuk memuat katalog UTBK.</p></div>;
   return (
@@ -28,7 +39,7 @@ export function QuestionForm({ topics, initialTopicId }: { topics: { id: string;
         <div className={styles.field}><label htmlFor="source">Sumber soal</label><input id="source" name="source" maxLength={300} required /></div>
       </fieldset>
       {message && <p className={styles.formError} role="alert">{message}</p>}
-      <div className={styles.formActions}><Button type="submit" disabled={pending}>{pending ? "Menyimpan..." : <><Save />Simpan soal</>}</Button><Button asChild variant="ghost"><Link href="/admin/soal"><ArrowLeft />Batal</Link></Button></div>
+      <div className={styles.formActions}><Button type="submit" disabled={pending}>{pending ? "Menyimpan..." : <><Save />Simpan soal</>}</Button><Button asChild variant="ghost"><Link to="/admin/soal"><ArrowLeft />Batal</Link></Button></div>
     </form>
   );
 }
