@@ -1,0 +1,33 @@
+{
+  "name": "@latveria/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development bun --watch src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun scripts/seed-db.ts",
+    "db:check": "bun scripts/check-db.ts",
+    "db:admin": "bun scripts/promote-admin.ts"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.7.6",
+    "@latveria/shared": "workspace:*",
+    "better-auth": "1.7.6",
+    "drizzle-orm": "0.45.3",
+    "hono": "^4.13.11",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "drizzle-kit": "0.31.11",
+    "typescript": "~5.9.3",
+    "vitest": "5.0.2"
+  }
+}

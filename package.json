@@ -1,0 +1,26 @@
+{
+  "name": "latveria",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.2.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "trustedDependencies": ["esbuild", "unrs-resolver"],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "start": "bun run --filter @latveria/api start",
+    "lint": "eslint apps/*/src apps/api/scripts packages/shared/src",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "db:generate": "bun run --filter @latveria/api db:generate",
+    "db:migrate": "bun run --filter @latveria/api db:migrate",
+    "db:check": "bun run --filter @latveria/api db:check",
+    "db:seed": "bun run --filter @latveria/api db:seed",
+    "db:admin": "bun run --filter @latveria/api db:admin"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "typescript-eslint": "^8.71.0"
+  }
+}
