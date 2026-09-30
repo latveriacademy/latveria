@@ -11,6 +11,7 @@ import { Button } from "./components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { ThemeToggle } from "./components/theme-toggle";
+import { LogoutButton as Logout } from "./components/logout-button";
 import as from "./app/admin/admin.module.css";
 import logo from "./assets/latveria.webp";
 
@@ -25,11 +26,6 @@ async function guard(role: "user" | "admin") {
   if (role === "user" && user.role === "admin") throw redirect("/admin");
   if (role === "admin" && user.role !== "admin") throw new Response(null, { status: 404 });
   return user;
-}
-function Logout() {
-  const navigate = useNavigate();
-  const [error, setError] = useState("");
-  return <><button type="button" onClick={async () => { try { const result = await authClient.signOut(); if (result.error) throw Error(); navigate("/login"); } catch { setError("Gagal keluar. Coba lagi."); } }}>Keluar</button>{error && <p role="alert">{error}</p>}</>;
 }
 function AdminLayout() {
   const user = useRouteLoaderData<User>("admin")!;

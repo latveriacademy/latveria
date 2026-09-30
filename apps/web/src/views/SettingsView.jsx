@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LogoutButton } from '../components/logout-button';
 import { useApp } from '../context/AppContext';
 import { LatveriaWatermark } from '../components/LatveriaSeal';
 import {
@@ -52,6 +53,14 @@ export const SettingsView = () => {
       </section>
 
       <div className="settings-sections-wrapper">
+        <section className="settings-group-panel">
+          <h2 className="group-title font-serif">Akun</h2>
+          <div className="settings-items-list">
+            <div className="setting-row">
+              <LogoutButton className="btn-latveria-secondary" />
+            </div>
+          </div>
+        </section>
         {/* Appearance Group */}
         <section className="settings-group-panel">
           <div className="group-header">

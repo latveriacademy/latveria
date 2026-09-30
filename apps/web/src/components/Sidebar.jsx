@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { LatveriaSeal } from './LatveriaSeal';
+import { LogoutButton } from './logout-button';
 import {
   LayoutDashboard,
   BookOpen,
@@ -139,6 +140,9 @@ export const Sidebar = () => {
           )}
         </ul>
       </nav>
+      <div className="sidebar-footer">
+        <LogoutButton className="nav-button" />
+      </div>
 
     </aside>
   );
