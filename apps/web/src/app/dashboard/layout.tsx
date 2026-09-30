@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return <div className={styles.shell} data-dashboard>
     <a className="skip-link" href="#konten">Lewati navigasi</a>
     <aside className={styles.sidebar}>
-      <Link href="/dashboard" className={styles.brand}><Image src={logo} width={34} height={34} alt="" />latveria</Link>
+      <Link href="/dashboard" className={styles.brand}><Image src={logo} width={34} height={34} alt="" />latveriacademy</Link>
       <DashboardNav />
       <div className={styles.sidebarBottom}>
         <div className={styles.identity}><span className={styles.avatar} aria-hidden="true">{user.name.slice(0, 1).toUpperCase()}</span><div><strong>{user.name}</strong><small>{user.email}</small></div></div>

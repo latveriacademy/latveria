@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdmin } from "../../lib/access";
 import { getDb } from "../../lib/db";
-import { questions } from "../../lib/db/schema";
+import { questions, topics } from "../../lib/db/schema";
 
 const input = z.object({
   topicId: z.uuid(),
@@ -26,11 +28,16 @@ export async function createQuestion(_previous: string, form: FormData) {
     source: form.get("source"),
   });
   if (!result.success) return "Periksa kembali semua kolom. Empat opsi dan pembahasan wajib diisi.";
+  const [topic] = await getDb().select({ slug: topics.slug }).from(topics).where(eq(topics.id, result.data.topicId));
+  if (!topic) return "Subtes tidak ditemukan. Pilih subtes lain lalu coba lagi.";
+  let createdId: string;
   try {
-    await getDb().insert(questions).values(result.data);
+    const [created] = await getDb().insert(questions).values(result.data).returning({ id: questions.id });
+    createdId = created.id;
   } catch {
-    return "Gagal menyimpan soal. Pastikan topik masih tersedia lalu coba lagi.";
+    return "Soal gagal disimpan. Periksa data lalu coba lagi.";
   }
   revalidatePath("/admin");
-  return "Soal tersimpan.";
+  revalidatePath("/admin/soal");
+  redirect(`/admin/soal?subtes=${topic.slug}&created=${createdId}`);
 }

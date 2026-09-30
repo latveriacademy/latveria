@@ -1,9 +1,24 @@
+import Image from "next/image";
 import Link from "next/link";
+import logo from "../../../../../latveria.webp";
 import { requireAdmin } from "../../lib/access";
 import { SignOut } from "../sign-out";
 import { AdminNav } from "./nav";
+import styles from "./admin.module.css";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
-  return <div className="mx-auto min-h-dvh max-w-6xl px-6 py-7"><header className="mb-10 flex flex-wrap items-center justify-between gap-5 border-b border-[var(--rule)] pb-5"><div><Link href="/dashboard" className="text-xl font-bold no-underline">latveria admin</Link><p>{admin.name}</p></div><AdminNav /><SignOut /></header><main>{children}</main></div>;
+  return <div className={styles.shell} data-admin>
+    <a className="skip-link" href="#konten-admin">Lewati navigasi</a>
+    <aside className={styles.sidebar}>
+      <Link href="/admin" className={styles.brand}><Image src={logo} width={34} height={34} alt="" />latveria <span>admin</span></Link>
+      <AdminNav />
+      <div className={styles.sidebarBottom}>
+        <Link href="/dashboard">Ruang peserta</Link>
+        <span className={styles.identity}>{admin.name}</span>
+        <SignOut />
+      </div>
+    </aside>
+    <main className={styles.main} id="konten-admin">{children}</main>
+  </div>;
 }
