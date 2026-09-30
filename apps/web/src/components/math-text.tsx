@@ -2,8 +2,9 @@ import katex from "katex";
 
 const mathPattern = /(\$\$[\s\S]+?\$\$|\$(?!\s)[^$\n]+?\$)/g;
 
-export function MathText({ children }: { children: string }) {
-  const parts = children.split(mathPattern);
+export function MathText({ children }: { children?: string | null }) {
+  if (!children) return null;
+  const parts = String(children).split(mathPattern);
   return <>{parts.map((part, index) => {
     const displayMode = part.startsWith("$$") && part.endsWith("$$");
     const inline = part.startsWith("$") && part.endsWith("$");

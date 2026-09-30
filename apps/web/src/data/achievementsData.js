@@ -1,0 +1,83 @@
+// LATVERIA SCHOLASTIC ACHIEVEMENTS & PROTOCOLS
+
+export const ACHIEVEMENTS_LIST = [
+  {
+    id: 'first-blood',
+    code: 'ACH-01',
+    title: 'FIRST BLOOD',
+    description: 'Selesaikan sesi latihan pertamamu di sistem akademik Latveria.',
+    unlocked: true,
+    unlockedAt: '12 Sep 2025',
+    icon: 'Crosshair',
+    xpReward: 50,
+    category: 'Protocol'
+  },
+  {
+    id: 'consistency',
+    code: 'ACH-02',
+    title: 'CONSISTENCY',
+    description: 'Pertahankan 7 hari streak belajar berturut-turut tanpa jeda.',
+    unlocked: true,
+    unlockedAt: '19 Sep 2025',
+    icon: 'Flame',
+    xpReward: 100,
+    category: 'Endurance'
+  },
+  {
+    id: 'scholar',
+    code: 'ACH-03',
+    title: 'SCHOLAR',
+    description: 'Tuntaskan akumulasi 500 butir soal latihan terstandar.',
+    unlocked: false,
+    currentProgress: 420,
+    target: 500,
+    icon: 'Award',
+    xpReward: 250,
+    category: 'Mastery'
+  },
+  {
+    id: 'night-watch',
+    code: 'ACH-04',
+    title: 'NIGHT WATCH',
+    description: 'Selesaikan sesi latihan akademik setelah pukul 22:00 waktu setempat.',
+    unlocked: true,
+    unlockedAt: '25 Sep 2025',
+    icon: 'Moon',
+    xpReward: 75,
+    category: 'Diligence'
+  },
+  {
+    id: 'the-archivist',
+    code: 'ACH-05',
+    title: 'THE ARCHIVIST',
+    description: 'Tinjau dan telaah kembali 100 pembahasan soal yang telah dijawab.',
+    unlocked: false,
+    currentProgress: 68,
+    target: 100,
+    icon: 'Archive',
+    xpReward: 150,
+    category: 'Research'
+  },
+  {
+    id: 'imperial-standard',
+    code: 'ACH-06',
+    title: 'IMPERIAL STANDARD',
+    description: 'Raih akurasi di atas 90% pada sesi tes bertaraf Latverian Elite.',
+    unlocked: true,
+    unlockedAt: '28 Sep 2025',
+    icon: 'ShieldCheck',
+    xpReward: 200,
+    category: 'Distinction'
+  },
+  {
+    id: 'polymath',
+    code: 'ACH-07',
+    title: 'POLYMATH',
+    description: 'Tuntaskan minimal 1 set latihan pada seluruh 7 domain subtes UTBK.',
+    unlocked: true,
+    unlockedAt: '29 Sep 2025',
+    icon: 'Layers',
+    xpReward: 180,
+    category: 'Curriculum'
+  }
+];
