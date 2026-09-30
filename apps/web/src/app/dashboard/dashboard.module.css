@@ -89,7 +89,8 @@
 .topicList a, .topicUnavailable { display: flex; min-height: 72px; align-items: center; gap: 13px; padding: 12px 15px; border: 1px solid var(--edge); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 3px rgb(31 63 40 / 3%); color: var(--ink); text-decoration: none; transition: border-color .18s, transform .18s; }
 .topicList a:hover { transform: translateY(-2px); border-color: #9db9a3; }
 .topicList a:focus-visible { outline: 3px solid var(--forest); outline-offset: 2px; }
-.topicMark { display: grid; width: 42px; height: 42px; flex: none; place-items: center; border-radius: 50%; background: var(--paper-green); color: var(--forest-dark); font-size: 15px; font-weight: 800; }
+.topicMark { display: grid; width: 42px; height: 42px; flex: none; place-items: center; border: 1px solid var(--edge); border-radius: 50%; background: var(--paper-green); color: var(--forest-dark); }
+.topicMark svg { width: 20px; height: 20px; stroke-width: 1.8; }
 .topicList li:nth-child(2n) .topicMark { background: #e5dbbc; color: #564f32; }
 .topicList li:nth-child(3n) .topicMark { background: #e3e5c9; color: var(--forest-dark); }
 .topicName { flex: 1; font-size: 17px; font-weight: 800; line-height: 1.2; }
