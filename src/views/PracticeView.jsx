@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { UTBK_SUBJECTS, MOCK_QUESTIONS } from '../data/questionsData';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
+import { LatveriaCalculator } from '../components/LatveriaCalculator';
 import { sound } from '../utils/audioFeedback';
 import {
   BookOpen,
@@ -25,7 +26,13 @@ import {
   Brain,
   Hash,
   PenTool,
-  Globe
+  Globe,
+  Calculator,
+  Check,
+  X,
+  FileCheck,
+  BarChart2,
+  Maximize2
 } from 'lucide-react';
 
 export const PracticeView = () => {
@@ -33,6 +40,7 @@ export const PracticeView = () => {
     activeSession,
     setActiveSession,
     sessionResults,
+    setSessionResults,
     startPractice,
     selectAnswer,
     toggleFlag,
@@ -44,19 +52,25 @@ export const PracticeView = () => {
   // Selection Screen State
   const [selectedSubject, setSelectedSubject] = useState('PU');
   const [selectedDifficulty, setSelectedDifficulty] = useState('Latverian Elite');
-  const [selectedMode, setSelectedMode] = useState('Practice'); // 'Practice' | 'Timed Practice' | 'Review'
+  const [selectedMode, setSelectedMode] = useState('Practice');
   const [questionCount, setQuestionCount] = useState(10);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
-  // In-Session Palette Drawer State
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  // In-Session Navigator (Mobile Sheet / Drawer)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Calculator State
+  const [showCalculator, setShowCalculator] = useState(false);
+
+  // Submission Confirmation Modal State
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   // In-Session Timer Countdown
   const [timeLeft, setTimeLeft] = useState(null);
   const [timerPaused, setTimerPaused] = useState(false);
 
-  // Review Filter State
-  const [reviewFilter, setReviewFilter] = useState('all'); // 'all' | 'correct' | 'incorrect' | 'flagged'
+  // Evaluation Mode: Show Full Summary Modal
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   // Subject Icon Map
   const getSubjectIcon = (id) => {
@@ -74,10 +88,10 @@ export const PracticeView = () => {
 
   // Timer Effect when Timed Practice is active
   useEffect(() => {
-    if (!activeSession || activeSession.mode !== 'Timed Practice' || timerPaused) return;
+    if (!activeSession || activeSession.isEvaluated || activeSession.mode !== 'Timed Practice' || timerPaused) return;
 
     if (timeLeft === null) {
-      setTimeLeft(activeSession.totalQuestions * 90); // 90s per question
+      setTimeLeft(activeSession.totalQuestions * 90);
     }
 
     const timer = setInterval(() => {
@@ -99,25 +113,29 @@ export const PracticeView = () => {
     if (!activeSession) return;
 
     const handleKeyDown = (e) => {
-      // Ignore if typing in input
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
       const currIdx = activeSession.currentIndex;
       const key = e.key.toUpperCase();
 
-      if (['A', 'B', 'C', 'D', 'E'].includes(key)) {
-        selectAnswer(currIdx, key);
-      } else if (['1', '2', '3', '4', '5'].includes(key)) {
-        const keyMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' };
-        selectAnswer(currIdx, keyMap[key]);
-      } else if (e.key === 'ArrowRight' && currIdx < activeSession.totalQuestions - 1) {
+      // Only allow answer selection if not yet evaluated
+      if (!activeSession.isEvaluated) {
+        if (['A', 'B', 'C', 'D', 'E'].includes(key)) {
+          selectAnswer(currIdx, key);
+        } else if (['1', '2', '3', '4', '5'].includes(key)) {
+          const keyMap = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' };
+          selectAnswer(currIdx, keyMap[key]);
+        } else if (key === 'F') {
+          toggleFlag(currIdx);
+        }
+      }
+
+      if (e.key === 'ArrowRight' && currIdx < activeSession.totalQuestions - 1) {
         sound.playClick();
         setActiveSession((prev) => ({ ...prev, currentIndex: prev.currentIndex + 1 }));
       } else if (e.key === 'ArrowLeft' && currIdx > 0) {
         sound.playClick();
         setActiveSession((prev) => ({ ...prev, currentIndex: prev.currentIndex - 1 }));
-      } else if (e.key === 'f' || e.key === 'F') {
-        toggleFlag(currIdx);
       }
     };
 
@@ -139,7 +157,6 @@ export const PracticeView = () => {
       return <div className="passage-body font-serif">{passage}</div>;
     }
 
-    // Split passage by words while preserving punctuation
     const words = passage.split(/(\s+)/);
 
     return (
@@ -168,264 +185,27 @@ export const PracticeView = () => {
   };
 
   // ========================================================
-  // SCENARIO 1: PRACTICE RESULTS SUMMARY & REVIEW
-  // ========================================================
-  if (sessionResults) {
-    const isPassing = sessionResults.accuracy >= 75;
-
-    return (
-      <div className="latveria-view-container practice-results-view">
-        <LatveriaWatermark size={360} opacity={0.03} />
-
-        <div className="results-header-banner">
-          <div className="results-eyebrow font-mono">
-            <span className="dot-stamp" />
-            <span>SESSION SUMMARY // IMPERIAL ACADEMIC RECORD</span>
-          </div>
-          <h1 className="results-headline font-serif">PRACTICE COMPLETE</h1>
-          <p className="results-sub">
-            Data evaluasi sesi {sessionResults.subjectName} telah terenkripsi dan dicatat ke dalam dossier akademik Latveria Anda.
-          </p>
-        </div>
-
-        {/* Score & Evaluation Quad Cards */}
-        <div className="results-metrics-grid">
-          <div className="result-metric-card highlight-card">
-            <span className="card-label-mono font-mono">STANDARDIZED SCORE</span>
-            <div className="card-val-row font-serif">
-              <span className="big-score">{sessionResults.score}</span>
-              <span className="score-denom">/ 100</span>
-            </div>
-            <span className={`status-badge-mono font-mono ${isPassing ? 'text-sage' : 'text-crimson'}`}>
-              {isPassing ? 'DISTINCTION MERIT' : 'REMEDIAL RECOMMENDED'}
-            </span>
-          </div>
-
-          <div className="result-metric-card">
-            <span className="card-label-mono font-mono">ACCURACY RATE</span>
-            <div className="card-val-row font-serif">
-              <span className="big-score text-sage">{sessionResults.accuracy}%</span>
-            </div>
-            <span className="status-badge-mono font-mono">
-              {sessionResults.correctCount} DARI {sessionResults.totalQuestions} BENAR
-            </span>
-          </div>
-
-          <div className="result-metric-card">
-            <span className="card-label-mono font-mono">IMPERIAL XP REWARD</span>
-            <div className="card-val-row font-serif">
-              <span className="big-score text-gold">+{sessionResults.earnedXP}</span>
-              <span className="score-denom">XP</span>
-            </div>
-            <span className="status-badge-mono font-mono text-gold">COMMITTED TO DOSSIER</span>
-          </div>
-
-          <div className="result-metric-card">
-            <span className="card-label-mono font-mono">BREAKDOWN HASIL</span>
-            <div className="breakdown-stat-list font-mono">
-              <div className="b-row text-sage">
-                <span>BENAR:</span>
-                <span>{sessionResults.correctCount} SOAL</span>
-              </div>
-              <div className="b-row text-crimson">
-                <span>SALAH:</span>
-                <span>{sessionResults.incorrectCount} SOAL</span>
-              </div>
-              <div className="b-row text-muted">
-                <span>LEWAT:</span>
-                <span>{sessionResults.unansweredCount} SOAL</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="results-cta-bar">
-          <button
-            type="button"
-            className="btn-latveria-secondary"
-            onClick={exitPractice}
-          >
-            <ChevronLeft size={16} />
-            <span>KEMBALI KE DASHBOARD</span>
-          </button>
-
-          <button
-            type="button"
-            className="btn-latveria-primary"
-            onClick={() => {
-              sound.playClick();
-              startPractice(sessionResults.subjectId, sessionResults.mode, sessionResults.totalQuestions, sessionResults.difficulty);
-            }}
-          >
-            <RotateCcw size={16} />
-            <span>ULANGI SESI LATIHAN</span>
-          </button>
-        </div>
-
-        {/* Academic Annotation Review Section */}
-        <section className="results-review-section">
-          <div className="review-section-header">
-            <div className="review-header-left">
-              <span className="panel-eyebrow font-mono">EXPLANATORY ANNOTATIONS</span>
-              <h2 className="panel-title font-serif">PEMBAHASAN AKADEMIK MENDALAM</h2>
-            </div>
-
-            {/* Filter buttons */}
-            <div className="review-filter-group font-mono">
-              <button
-                type="button"
-                className={`filter-btn ${reviewFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setReviewFilter('all')}
-              >
-                SEMUA ({sessionResults.totalQuestions})
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${reviewFilter === 'correct' ? 'active' : ''}`}
-                onClick={() => setReviewFilter('correct')}
-              >
-                BENAR ({sessionResults.correctCount})
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${reviewFilter === 'incorrect' ? 'active' : ''}`}
-                onClick={() => setReviewFilter('incorrect')}
-              >
-                SALAH ({sessionResults.incorrectCount})
-              </button>
-            </div>
-          </div>
-
-          <div className="review-questions-list">
-            {sessionResults.questions.map((q, idx) => {
-              const userAns = sessionResults.answers[idx];
-              const isCorrect = userAns === q.correctAnswer;
-              const isUnanswered = !userAns;
-
-              if (reviewFilter === 'correct' && !isCorrect) return null;
-              if (reviewFilter === 'incorrect' && (isCorrect || isUnanswered)) return null;
-
-              return (
-                <article key={idx} className="review-question-card">
-                  <div className="review-q-header">
-                    <div className="q-number-box font-mono">
-                      <span>SOAL {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}</span>
-                      <span className="meta-dot">•</span>
-                      <span className="text-muted">{q.subject}</span>
-                    </div>
-
-                    <div className="q-status-badge font-mono">
-                      {isCorrect && (
-                        <span className="badge-correct">
-                          <CheckCircle2 size={15} />
-                          CORRECT
-                        </span>
-                      )}
-                      {!isCorrect && !isUnanswered && (
-                        <span className="badge-incorrect">
-                          <XCircle size={15} />
-                          INCORRECT
-                        </span>
-                      )}
-                      {isUnanswered && (
-                        <span className="badge-unanswered">
-                          <AlertTriangle size={15} />
-                          UNANSWERED
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Passage */}
-                  {q.passage && (
-                    <div className="review-passage-box">
-                      <div className="passage-label font-mono">ACADEMIC EXCERPT // TEKS BACAAN</div>
-                      <div className="font-serif passage-text">{q.passage}</div>
-                    </div>
-                  )}
-
-                  {/* Question Prompt */}
-                  <h3 className="review-q-prompt font-serif">{q.question}</h3>
-
-                  {/* Options Comparison */}
-                  <div className="review-options-grid">
-                    {q.options.map((opt) => {
-                      const isSelected = userAns === opt.key;
-                      const isExpected = q.correctAnswer === opt.key;
-
-                      let stateClass = '';
-                      if (isExpected) stateClass = 'is-expected';
-                      if (isSelected && !isExpected) stateClass = 'is-wrong-selection';
-
-                      return (
-                        <div key={opt.key} className={`review-option-tile ${stateClass}`}>
-                          <div className="opt-key-cell font-mono">{opt.key}</div>
-                          <div className="opt-text-cell font-sans">{opt.text}</div>
-                          <div className="opt-status-cell font-mono">
-                            {isExpected && <span className="tag-expected">EXPECTED ANSWER</span>}
-                            {isSelected && !isExpected && <span className="tag-user-ans">YOUR ANSWER</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Academic Explanation Box */}
-                  <div className="academic-explanation-dossier">
-                    <div className="explanation-title font-mono">
-                      <BookMarked size={16} className="text-gold" />
-                      <span>LATVERIA ACADEMIC ANNOTATION // PEMBAHASAN RESMI</span>
-                    </div>
-
-                    <div className="explanation-section">
-                      <div className="sec-label font-mono">KONSEP UTAMA</div>
-                      <p className="sec-body font-serif">{q.explanation.concept}</p>
-                    </div>
-
-                    <div className="explanation-section">
-                      <div className="sec-label font-mono">LANGKAH PENYELESAIAN TERSTRUKTUR</div>
-                      <ul className="step-list font-sans">
-                        {q.explanation.stepByStep.map((step, sIdx) => (
-                          <li key={sIdx}>
-                            <span className="step-num font-mono">{sIdx + 1}.</span>
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div className="explanation-section">
-                      <div className="sec-label font-mono text-sage">MENGAPA JAWABAN INI TEPAT</div>
-                      <p className="sec-body font-serif text-sage-dim">{q.explanation.whyCorrect}</p>
-                    </div>
-
-                    {q.explanation.pitfall && (
-                      <div className="explanation-section pitfall-sec">
-                        <div className="sec-label font-mono text-crimson">ANALISIS DISTRAKTOR & JEBAKAN UMUM</div>
-                        <p className="sec-body font-serif text-crimson-dim">{q.explanation.pitfall}</p>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  // ========================================================
-  // SCENARIO 2: ACTIVE QUESTION INTERFACE (IN SESSION)
+  // SCENARIO 1 & 2: ACTIVE SESSION (PRACTICE OR EVALUATION MODE)
   // ========================================================
   if (activeSession) {
+    const isEvaluated = !!activeSession.isEvaluated;
     const currIdx = activeSession.currentIndex;
     const currentQ = activeSession.questions[currIdx];
     const totalQ = activeSession.totalQuestions;
-    const selectedAns = activeSession.answers[currIdx];
-    const isFlagged = !!activeSession.flagged[currIdx];
+    const userSelectedKey = activeSession.answers[currIdx];
+    const isFlagged = !isEvaluated && !!activeSession.flagged[currIdx];
     const isEnglishLiteracy = activeSession.subjectId === 'LBE';
+
+    // Calculation for progress indicators
+    const answeredCount = Object.keys(activeSession.answers).filter(
+      (k) => activeSession.answers[k]
+    ).length;
+    const unansweredCount = totalQ - answeredCount;
+    const progressPercent = Math.round(((currIdx + 1) / totalQ) * 100);
+
+    // Evaluation specific status for current question
+    const isCurrentCorrect = userSelectedKey === currentQ.correctAnswer;
+    const isCurrentUnanswered = !userSelectedKey;
 
     const handleNext = () => {
       sound.playClick();
@@ -441,32 +221,67 @@ export const PracticeView = () => {
       }
     };
 
+    const handleJumpToQuestion = (targetIdx) => {
+      sound.playClick();
+      setActiveSession((prev) => ({ ...prev, currentIndex: targetIdx }));
+      setMobileNavOpen(false);
+    };
+
     return (
-      <div className="latveria-view-container question-view-active">
-        {/* Distraction-Free Header Bar */}
+      <div className={`latveria-view-container question-view-active ${isEvaluated ? 'mode-evaluation' : 'mode-practice'}`}>
+        {/* Floating Interactive Calculator */}
+        <LatveriaCalculator
+          isOpen={showCalculator}
+          onClose={() => setShowCalculator(false)}
+          isAllowed={['PK', 'PM', 'PU'].includes(activeSession.subjectId)}
+        />
+
+        {/* ========================================================
+            HEADER BAR: METADATA, PROGRESS, TIMER & TOOL ACTIONS
+            ======================================================== */}
         <header className="question-header-bar">
           <div className="header-subtest-info">
             <button
               type="button"
               className="btn-exit-minimal"
               onClick={exitPractice}
-              title="Keluar dari sesi"
+              title={isEvaluated ? 'Kembali ke Repository' : 'Batalkan Sesi Latihan'}
             >
-              <ChevronLeft size={18} />
-              <span className="font-mono">ABORT</span>
+              <ChevronLeft size={16} />
+              <span className="font-mono">{isEvaluated ? 'KELUAR' : 'ABORT'}</span>
             </button>
             <div className="subtest-badge-box">
               <span className="subtest-code font-mono">{activeSession.subjectCode}</span>
               <span className="subtest-name font-serif">{activeSession.subjectName}</span>
-              <span className="difficulty-pill font-mono">{activeSession.difficulty}</span>
+              <span className={`status-mode-pill font-mono ${isEvaluated ? 'pill-evaluated' : 'pill-active'}`}>
+                {isEvaluated ? 'EVALUATION RECORD' : activeSession.difficulty}
+              </span>
             </div>
           </div>
 
-          {/* Center: Timer & Mode */}
-          <div className="header-timer-box">
-            {activeSession.mode === 'Timed Practice' ? (
+          {/* Center: Timer or Evaluation Score Summary */}
+          <div className="header-center-info">
+            {isEvaluated ? (
+              <div className="eval-quick-score font-mono">
+                <span className="eval-score-label">SKOR HASIL:</span>
+                <span className="eval-score-val text-gold">{activeSession.results?.score || 0}/100</span>
+                <span className="eval-score-divider">•</span>
+                <span className="text-sage">{activeSession.results?.correctCount || 0} BENAR</span>
+                <span className="eval-score-divider">•</span>
+                <span className="text-crimson">{activeSession.results?.incorrectCount || 0} SALAH</span>
+                <button
+                  type="button"
+                  className="btn-open-dossier-pill font-mono"
+                  onClick={() => setShowSummaryModal(true)}
+                >
+                  <BarChart2 size={13} />
+                  <span>DOSSIER</span>
+                </button>
+              </div>
+            ) : activeSession.mode === 'Timed Practice' ? (
               <div className={`timer-display font-mono ${timeLeft < 120 ? 'timer-warning' : ''}`}>
-                <Clock size={16} />
+                <Clock size={15} />
+                <span className="time-label">SISA WAKTU:</span>
                 <span className="time-digits">{formatTime(timeLeft)}</span>
                 <button
                   type="button"
@@ -485,188 +300,726 @@ export const PracticeView = () => {
             )}
           </div>
 
-          {/* Right: Question Palette Drawer & Flag */}
+          {/* Right: Tools (Calculator, Flag, Submit / Repeat) */}
           <div className="header-tools-group">
             <button
               type="button"
-              id="btn-flag-question"
-              className={`tool-action-btn ${isFlagged ? 'flagged' : ''}`}
-              onClick={() => toggleFlag(currIdx)}
-              title="Tandai Soal untuk Ditinjau"
+              id="btn-toggle-calc"
+              className={`tool-action-btn ${showCalculator ? 'active' : ''}`}
+              onClick={() => setShowCalculator(!showCalculator)}
+              title="Kalkulator Akademik Latveria"
             >
-              <Flag size={16} />
-              <span className="font-mono">{isFlagged ? 'FLAGGED' : 'FLAG'}</span>
+              <Calculator size={15} />
+              <span className="font-mono">CALC</span>
             </button>
 
-            <button
-              type="button"
-              id="btn-open-palette"
-              className="tool-action-btn palette-toggle"
-              onClick={() => setPaletteOpen(!paletteOpen)}
-              title="Navigasi Butir Soal"
-            >
-              <Layers size={16} />
-              <span className="font-mono">PALETTE</span>
-            </button>
+            {!isEvaluated ? (
+              <>
+                <button
+                  type="button"
+                  id="btn-flag-question"
+                  className={`tool-action-btn ${isFlagged ? 'flagged' : ''}`}
+                  onClick={() => toggleFlag(currIdx)}
+                  title="Tandai Soal untuk Ditinjau"
+                >
+                  <Flag size={15} />
+                  <span className="font-mono">{isFlagged ? 'FLAGGED' : 'FLAG'}</span>
+                </button>
 
+                <button
+                  type="button"
+                  id="btn-open-submit-modal"
+                  className="btn-latveria-primary btn-submit-exam font-mono"
+                  onClick={() => setShowSubmitModal(true)}
+                >
+                  <span>SUBMIT QUIZ</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="btn-latveria-primary btn-submit-exam font-mono"
+                onClick={() => {
+                  sound.playClick();
+                  startPractice(
+                    activeSession.subjectId,
+                    activeSession.mode,
+                    activeSession.totalQuestions,
+                    activeSession.difficulty
+                  );
+                }}
+              >
+                <RotateCcw size={14} />
+                <span>ULANGI SESI</span>
+              </button>
+            )}
+
+            {/* Mobile Sheet Trigger */}
             <button
               type="button"
-              id="btn-submit-session"
-              className="btn-latveria-primary btn-submit-exam font-mono"
-              onClick={finishSession}
+              className="btn-mobile-nav-toggle font-mono"
+              onClick={() => setMobileNavOpen(true)}
+              title="Buka Question Navigator"
             >
-              <span>SUBMIT SESSION</span>
+              <Layers size={15} />
+              <span>MAP</span>
             </button>
           </div>
         </header>
 
-        {/* Question Palette Drawer Modal */}
-        {paletteOpen && (
-          <div className="palette-drawer-overlay" onClick={() => setPaletteOpen(false)}>
+        {/* ========================================================
+            SUB-HEADER STRIP: PROGRESS BAR & COUNTER
+            ======================================================== */}
+        <div className="quiz-progress-strip">
+          <div className="progress-info-left font-mono">
+            <span className="prog-step text-gold">
+              QUESTION {currIdx + 1 < 10 ? `0${currIdx + 1}` : currIdx + 1}
+            </span>
+            <span className="prog-total text-muted"> / {totalQ < 10 ? `0${totalQ}` : totalQ}</span>
+            <span className="prog-sep">•</span>
+            <span className="prog-answered text-secondary">
+              {isEvaluated
+                ? `EVALUASI PERTANYAAN KE-${currIdx + 1}`
+                : `ANSWERED: ${answeredCount < 10 ? `0${answeredCount}` : answeredCount} / ${totalQ}`}
+            </span>
+          </div>
+
+          <div className="progress-bar-track">
+            <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+
+          {isEnglishLiteracy && (
+            <div
+              className="lexicon-helper-pill font-mono"
+              onClick={() => openLexicon('sovereignty')}
+              title="Klik untuk membuka glosarium interaktif"
+            >
+              <Globe size={13} className="text-gold" />
+              <span>LEXICON ACTIVE</span>
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================
+            MAIN QUIZ WORKSPACE: AREA SOAL (LEFT) + NAVIGATOR (RIGHT)
+            ======================================================== */}
+        <div className="quiz-split-workspace">
+          {/* ----------------------------------------------------
+              1. AREA SOAL (QUESTION WORKSPACE)
+              ---------------------------------------------------- */}
+          <main className="quiz-question-pane">
+            <div className="question-layout-card">
+              {/* Question Header & Evaluation Badge */}
+              <div className="q-card-top-meta">
+                <div className="q-index-stamp font-mono">
+                  <span className="q-title-bold">
+                    SOAL {currIdx + 1 < 10 ? `0${currIdx + 1}` : currIdx + 1}
+                  </span>
+                  <span className="meta-sep">//</span>
+                  <span className="text-muted">{activeSession.subjectName}</span>
+                </div>
+
+                {/* Status Badge in Evaluation Mode */}
+                {isEvaluated ? (
+                  <div className="q-eval-verdict font-mono">
+                    {isCurrentCorrect && (
+                      <span className="verdict-pill verdict-correct">
+                        <CheckCircle2 size={15} />
+                        <span>✓ JAWABAN BENAR</span>
+                      </span>
+                    )}
+                    {!isCurrentCorrect && !isCurrentUnanswered && (
+                      <span className="verdict-pill verdict-incorrect">
+                        <XCircle size={15} />
+                        <span>× JAWABAN SALAH</span>
+                      </span>
+                    )}
+                    {isCurrentUnanswered && (
+                      <span className="verdict-pill verdict-unanswered">
+                        <AlertTriangle size={15} />
+                        <span>○ BELUM DIJAWAB</span>
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="q-practice-status font-mono">
+                    {userSelectedKey ? (
+                      <span className="status-indicator-answered">
+                        <span className="status-dot answered" />
+                        TERJAWAB ({userSelectedKey})
+                      </span>
+                    ) : (
+                      <span className="status-indicator-unanswered">
+                        <span className="status-dot unanswered" />
+                        BELUM DIJAWAB
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* In Evaluation Mode: Answer Comparison Banner */}
+              {isEvaluated && (
+                <div className="eval-answer-comparison-banner font-mono">
+                  <div className="ans-compare-col">
+                    <span className="ans-col-label">YOUR ANSWER</span>
+                    <span className={`ans-col-value ${isCurrentCorrect ? 'text-sage' : isCurrentUnanswered ? 'text-muted' : 'text-crimson'}`}>
+                      {userSelectedKey ? `${userSelectedKey}. ${currentQ.options.find(o => o.key === userSelectedKey)?.text}` : '(Tidak Dijawab)'}
+                    </span>
+                  </div>
+                  <div className="ans-compare-divider" />
+                  <div className="ans-compare-col">
+                    <span className="ans-col-label">CORRECT ANSWER</span>
+                    <span className="ans-col-value text-sage">
+                      {currentQ.correctAnswer}. {currentQ.options.find(o => o.key === currentQ.correctAnswer)?.text}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Passage Excerpt (if present) */}
+              {currentQ.passage && (
+                <section className="passage-section">
+                  <div className="passage-label font-mono">
+                    <span>ACADEMIC EXCERPT // TEKS RUJUKAN</span>
+                    {isEnglishLiteracy && (
+                      <span className="text-gold">✦ Interaktif: Klik kata bergaris bawah</span>
+                    )}
+                  </div>
+                  {renderInteractivePassage(currentQ.passage, currentQ.interactiveWords)}
+                </section>
+              )}
+
+              {/* Question Prompt */}
+              <div className="question-prompt-box">
+                <h2 className="question-prompt font-serif">{currentQ.question}</h2>
+              </div>
+
+              {/* Options A - E */}
+              <div className="options-container" role="radiogroup" aria-label="Pilihan Jawaban">
+                {currentQ.options.map((option) => {
+                  const isSelected = userSelectedKey === option.key;
+                  const isCorrectAnswer = currentQ.correctAnswer === option.key;
+
+                  // Determine classes based on mode
+                  let stateClass = '';
+                  if (!isEvaluated) {
+                    if (isSelected) stateClass = 'selected';
+                  } else {
+                    if (isCorrectAnswer) {
+                      stateClass = 'eval-correct-opt';
+                    } else if (isSelected && !isCorrectAnswer) {
+                      stateClass = 'eval-incorrect-opt';
+                    } else {
+                      stateClass = 'eval-neutral-opt';
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      disabled={isEvaluated}
+                      className={`option-choice-card ${stateClass}`}
+                      onClick={() => !isEvaluated && selectAnswer(currIdx, option.key)}
+                    >
+                      <div className="option-key-badge font-mono">{option.key}</div>
+                      <div className="option-text-body font-sans">{option.text}</div>
+
+                      {/* Right Tag / Indicator */}
+                      {!isEvaluated ? (
+                        <div className="option-radio-indicator">
+                          {isSelected && <span className="radio-inner-pip" />}
+                        </div>
+                      ) : (
+                        <div className="eval-opt-badge font-mono">
+                          {isCorrectAnswer && (
+                            <span className="badge-tag-correct">
+                              <Check size={13} />
+                              {isSelected ? 'JAWABAN ANDA (BENAR)' : 'KUNCI JAWABAN BENAR'}
+                            </span>
+                          )}
+                          {isSelected && !isCorrectAnswer && (
+                            <span className="badge-tag-incorrect">
+                              <X size={13} />
+                              JAWABAN ANDA (SALAH)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ------------------------------------------------
+                  9. PEMBAHASAN AKADEMIK (HANYA MUNCUL DI EVALUATION MODE)
+                  ------------------------------------------------ */}
+              {isEvaluated && (
+                <section className="academic-explanation-dossier" aria-label="Pembahasan Soal">
+                  <div className="explanation-title font-mono">
+                    <BookMarked size={17} className="text-gold" />
+                    <span>LATVERIA ACADEMIC ANNOTATION // PEMBAHASAN RESMI</span>
+                  </div>
+
+                  {/* Konsep Utama */}
+                  <div className="explanation-section">
+                    <div className="sec-label font-mono">KONSEP UTAMA YANG DIGUNAKAN</div>
+                    <p className="sec-body font-serif">{currentQ.explanation.concept}</p>
+                  </div>
+
+                  {/* Langkah Penyelesaian Terstruktur */}
+                  <div className="explanation-section">
+                    <div className="sec-label font-mono">LANGKAH PENYELESAIAN TERSTRUKTUR</div>
+                    <ul className="step-list font-sans">
+                      {currentQ.explanation.stepByStep.map((step, sIdx) => (
+                        <li key={sIdx}>
+                          <span className="step-num font-mono">{sIdx + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Mengapa Jawaban Ini Tepat */}
+                  <div className="explanation-section">
+                    <div className="sec-label font-mono text-sage">MENGAPA JAWABAN INI TEPAT</div>
+                    <p className="sec-body font-serif text-sage-dim">{currentQ.explanation.whyCorrect}</p>
+                  </div>
+
+                  {/* Distraktor & Jebakan */}
+                  {currentQ.explanation.pitfall && (
+                    <div className="explanation-section pitfall-sec">
+                      <div className="sec-label font-mono text-crimson">ANALISIS DISTRAKTOR & JEBAKAN UMUM</div>
+                      <p className="sec-body font-serif text-crimson-dim">{currentQ.explanation.pitfall}</p>
+                    </div>
+                  )}
+
+                  {/* Catatan Akademik Tambahan */}
+                  <div className="explanation-section notes-sec">
+                    <div className="sec-label font-mono text-gold">CATATAN AKADEMIK // LATVERIA EXAMINATION TIP</div>
+                    <p className="sec-body font-sans text-secondary">
+                      Pemahaman menyeluruh atas pola distractor dan identifikasi premis utama merupakan kunci efisiensi waktu pada subtes {activeSession.subjectName}.
+                    </p>
+                  </div>
+                </section>
+              )}
+            </div>
+
+            {/* Bottom Navigasi Soal */}
+            <footer className="question-footer-nav">
+              <button
+                type="button"
+                className="btn-latveria-secondary"
+                onClick={handlePrev}
+                disabled={currIdx === 0}
+              >
+                <ChevronLeft size={16} />
+                <span>SEBELUMNYA</span>
+              </button>
+
+              <div className="answered-status-mono font-mono">
+                {isEvaluated ? (
+                  <span>
+                    STATUS: {isCurrentCorrect ? 'BENAR ✓' : isCurrentUnanswered ? 'TIDAK DIJAWAB ○' : 'SALAH ×'}
+                  </span>
+                ) : (
+                  <span>STATUS: {userSelectedKey ? `TERJAWAB (${userSelectedKey})` : 'BELUM DIJAWAB'}</span>
+                )}
+              </div>
+
+              {currIdx < totalQ - 1 ? (
+                <button
+                  type="button"
+                  className="btn-latveria-primary"
+                  onClick={handleNext}
+                >
+                  <span>BERIKUTNYA</span>
+                  <ChevronRight size={16} />
+                </button>
+              ) : !isEvaluated ? (
+                <button
+                  type="button"
+                  className="btn-latveria-primary btn-gold-solid"
+                  onClick={() => setShowSubmitModal(true)}
+                >
+                  <span>SELESAIKAN TES</span>
+                  <Award size={16} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-latveria-primary btn-gold-solid"
+                  onClick={() => setShowSummaryModal(true)}
+                >
+                  <span>LIHAT DOSSIER HASIL</span>
+                  <BarChart2 size={16} />
+                </button>
+              )}
+            </footer>
+          </main>
+
+          {/* ----------------------------------------------------
+              2. QUESTION NAVIGATOR (DESKTOP PERSISTENT PANEL)
+              ---------------------------------------------------- */}
+          <aside className="quiz-navigator-pane" aria-label="Question Navigator">
+            <div className="navigator-card">
+              <div className="navigator-head">
+                <div className="nav-title-group font-mono">
+                  <span className="dot-stamp" />
+                  <span className="nav-title">
+                    {isEvaluated ? 'EVALUATION MAP' : 'QUESTION NAVIGATOR'}
+                  </span>
+                </div>
+                <span className="nav-stats-count font-mono">
+                  {isEvaluated
+                    ? `${activeSession.results?.correctCount || 0}/${totalQ} BENAR`
+                    : `${answeredCount}/${totalQ} TERJAWAB`}
+                </span>
+              </div>
+
+              {/* Grid Nomor Soal */}
+              <div className="navigator-grid-container">
+                <div className="navigator-grid">
+                  {activeSession.questions.map((q, pIdx) => {
+                    const ans = activeSession.answers[pIdx];
+                    const hasFlag = !isEvaluated && !!activeSession.flagged[pIdx];
+                    const isActive = pIdx === currIdx;
+
+                    let tileClass = '';
+                    let tileIcon = null;
+
+                    if (!isEvaluated) {
+                      // Practice Mode
+                      if (isActive) tileClass += ' is-active';
+                      if (ans) tileClass += ' is-answered';
+                      else tileClass += ' is-unanswered';
+                      if (hasFlag) tileClass += ' is-flagged';
+                    } else {
+                      // Evaluation Mode
+                      if (isActive) tileClass += ' is-active';
+                      if (!ans) {
+                        tileClass += ' eval-unanswered';
+                        tileIcon = '○';
+                      } else if (ans === q.correctAnswer) {
+                        tileClass += ' eval-correct';
+                        tileIcon = '✓';
+                      } else {
+                        tileClass += ' eval-incorrect';
+                        tileIcon = '×';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={pIdx}
+                        type="button"
+                        className={`nav-number-tile font-mono ${tileClass}`}
+                        onClick={() => handleJumpToQuestion(pIdx)}
+                        title={`Buka Soal ${pIdx + 1}`}
+                      >
+                        <span className="tile-num-text">{pIdx + 1 < 10 ? `0${pIdx + 1}` : pIdx + 1}</span>
+                        {tileIcon && <span className="tile-eval-symbol">{tileIcon}</span>}
+                        {hasFlag && <span className="tile-flag-pip" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legend Visual Strip */}
+              <div className="navigator-legend font-mono">
+                {!isEvaluated ? (
+                  <>
+                    <span className="legend-item">
+                      <span className="legend-indicator unans" /> Belum dijawab
+                    </span>
+                    <span className="legend-item">
+                      <span className="legend-indicator ans" /> Terjawab
+                    </span>
+                    <span className="legend-item">
+                      <span className="legend-indicator flag" /> Ditandai
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="legend-item text-sage">
+                      <span className="legend-indicator eval-c" /> Benar (✓)
+                    </span>
+                    <span className="legend-item text-crimson">
+                      <span className="legend-indicator eval-i" /> Salah (×)
+                    </span>
+                    <span className="legend-item text-muted">
+                      <span className="legend-indicator eval-u" /> Kosong (○)
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Bottom Quick Tools inside Navigator */}
+              <div className="navigator-tools-panel">
+                <button
+                  type="button"
+                  className="btn-tool-outline font-mono w-full"
+                  onClick={() => setShowCalculator(!showCalculator)}
+                >
+                  <Calculator size={14} />
+                  <span>{showCalculator ? 'TUTUP KALKULATOR' : 'BUKA KALKULATOR'}</span>
+                </button>
+
+                {!isEvaluated ? (
+                  <button
+                    type="button"
+                    className="btn-latveria-primary btn-gold-solid font-mono w-full"
+                    onClick={() => setShowSubmitModal(true)}
+                  >
+                    <FileCheck size={15} />
+                    <span>SUBMIT QUIZ</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-latveria-secondary font-mono w-full"
+                    onClick={exitPractice}
+                  >
+                    <span>KEMBALI KE REPOSITORY</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {/* ========================================================
+            MOBILE / TABLET DRAWER OVERLAY
+            ======================================================== */}
+        {mobileNavOpen && (
+          <div className="palette-drawer-overlay" onClick={() => setMobileNavOpen(false)}>
             <div className="palette-drawer" onClick={(e) => e.stopPropagation()}>
               <div className="palette-head">
-                <span className="font-mono">QUESTION NAVIGATOR // PALET SOAL</span>
+                <span className="font-mono">
+                  {isEvaluated ? 'EVALUATION MAP // DAFTAR HASIL' : 'QUESTION NAVIGATOR // PALET SOAL'}
+                </span>
                 <button
                   type="button"
                   className="close-palette-btn font-mono"
-                  onClick={() => setPaletteOpen(false)}
+                  onClick={() => setMobileNavOpen(false)}
                 >
-                  TUTUP [ESC]
+                  TUTUP [✕]
                 </button>
               </div>
-              <div className="palette-grid">
-                {activeSession.questions.map((_, pIdx) => {
-                  const hasAnswer = !!activeSession.answers[pIdx];
-                  const hasFlag = !!activeSession.flagged[pIdx];
-                  const isCurrent = pIdx === currIdx;
+
+              <div className="navigator-grid">
+                {activeSession.questions.map((q, pIdx) => {
+                  const ans = activeSession.answers[pIdx];
+                  const hasFlag = !isEvaluated && !!activeSession.flagged[pIdx];
+                  const isActive = pIdx === currIdx;
+
+                  let tileClass = '';
+                  let tileIcon = null;
+
+                  if (!isEvaluated) {
+                    if (isActive) tileClass += ' is-active';
+                    if (ans) tileClass += ' is-answered';
+                    else tileClass += ' is-unanswered';
+                    if (hasFlag) tileClass += ' is-flagged';
+                  } else {
+                    if (isActive) tileClass += ' is-active';
+                    if (!ans) {
+                      tileClass += ' eval-unanswered';
+                      tileIcon = '○';
+                    } else if (ans === q.correctAnswer) {
+                      tileClass += ' eval-correct';
+                      tileIcon = '✓';
+                    } else {
+                      tileClass += ' eval-incorrect';
+                      tileIcon = '×';
+                    }
+                  }
 
                   return (
                     <button
                       key={pIdx}
                       type="button"
-                      className={`palette-tile font-mono ${isCurrent ? 'current' : ''} ${hasAnswer ? 'answered' : ''} ${hasFlag ? 'flagged' : ''}`}
-                      onClick={() => {
-                        sound.playClick();
-                        setActiveSession((prev) => ({ ...prev, currentIndex: pIdx }));
-                        setPaletteOpen(false);
-                      }}
+                      className={`nav-number-tile font-mono ${tileClass}`}
+                      onClick={() => handleJumpToQuestion(pIdx)}
                     >
-                      <span>{pIdx + 1 < 10 ? `0${pIdx + 1}` : pIdx + 1}</span>
+                      <span className="tile-num-text">{pIdx + 1 < 10 ? `0${pIdx + 1}` : pIdx + 1}</span>
+                      {tileIcon && <span className="tile-eval-symbol">{tileIcon}</span>}
                       {hasFlag && <span className="tile-flag-pip" />}
                     </button>
                   );
                 })}
               </div>
-              <div className="palette-legend font-mono">
-                <span className="legend-item"><span className="legend-dot answered" /> Terjawab</span>
-                <span className="legend-item"><span className="legend-dot flagged" /> Ditandai</span>
-                <span className="legend-item"><span className="legend-dot current" /> Aktif</span>
+
+              <div className="navigator-legend font-mono" style={{ marginTop: '16px' }}>
+                {!isEvaluated ? (
+                  <>
+                    <span className="legend-item"><span className="legend-indicator unans" /> Belum</span>
+                    <span className="legend-item"><span className="legend-indicator ans" /> Terjawab</span>
+                    <span className="legend-item"><span className="legend-indicator flag" /> Ditandai</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="legend-item text-sage"><span className="legend-indicator eval-c" /> Benar</span>
+                    <span className="legend-item text-crimson"><span className="legend-indicator eval-i" /> Salah</span>
+                    <span className="legend-item text-muted"><span className="legend-indicator eval-u" /> Kosong</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Main Question Arena */}
-        <main className="question-arena-container">
-          <div className="question-meta-strip">
-            <div className="q-progress-indicator font-mono">
-              <span className="text-gold font-bold">SOAL {currIdx + 1 < 10 ? `0${currIdx + 1}` : currIdx + 1}</span>
-              <span className="text-muted"> / {totalQ < 10 ? `0${totalQ}` : totalQ}</span>
-            </div>
-
-            {isEnglishLiteracy && (
-              <div className="lexicon-helper-pill font-mono" onClick={() => openLexicon('sovereignty')}>
-                <Globe size={13} className="text-gold" />
-                <span>LATVERIAN LEXICON ACTIVE (KLIK KATA DALAM TEKS UNTUK DEFINISI)</span>
-              </div>
-            )}
-
-            <div className="q-shortcuts-helper font-mono">
-              PILIHAN: [A - E] ATAU [1 - 5]
-            </div>
-          </div>
-
-          <div className="question-layout-card">
-            {/* Passage Excerpt (if present) */}
-            {currentQ.passage && (
-              <section className="passage-section">
-                <div className="passage-label font-mono">
-                  <span>TEKS RUJUKAN ACADEMIC EXCERPT</span>
-                  {isEnglishLiteracy && (
-                    <span className="text-gold">✦ Interaktif: Klik kata bergaris bawah</span>
-                  )}
-                </div>
-                {renderInteractivePassage(currentQ.passage, currentQ.interactiveWords)}
-              </section>
-            )}
-
-            {/* Prompt */}
-            <div className="question-prompt-box">
-              <h2 className="question-prompt font-serif">{currentQ.question}</h2>
-            </div>
-
-            {/* Options */}
-            <div className="options-container" role="radiogroup" aria-label="Pilihan Jawaban">
-              {currentQ.options.map((option) => {
-                const isSelected = selectedAns === option.key;
-
-                return (
-                  <button
-                    key={option.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    className={`option-choice-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => selectAnswer(currIdx, option.key)}
-                  >
-                    <div className="option-key-badge font-mono">{option.key}</div>
-                    <div className="option-text-body font-sans">{option.text}</div>
-                    <div className="option-radio-indicator">
-                      {isSelected && <span className="radio-inner-pip" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Bottom Navigation Controls */}
-          <footer className="question-footer-nav">
-            <button
-              type="button"
-              className="btn-latveria-secondary"
-              onClick={handlePrev}
-              disabled={currIdx === 0}
+        {/* ========================================================
+            6. SUBMIT CONFIRMATION MODAL
+            ======================================================== */}
+        {showSubmitModal && (
+          <div className="modal-backdrop" onClick={() => setShowSubmitModal(false)}>
+            <div
+              className="config-modal-card submit-dialog-card"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-labelledby="modal-submit-title"
             >
-              <ChevronLeft size={16} />
-              <span>PREVIOUS QUESTION</span>
-            </button>
+              <div className="modal-header">
+                <div className="modal-stamp-mono font-mono">
+                  <span className="dot-stamp" />
+                  <span>LATVERIA ACADEMIC EXAMINATION PROTOCOL</span>
+                </div>
+                <h2 id="modal-submit-title" className="modal-title font-serif">
+                  Apakah kamu yakin ingin mengakhiri sesi?
+                </h2>
+                <p className="modal-desc">
+                  Seluruh lembar pengerjaan akan dikunci dan dievaluasi secara otomatis ke dalam rekam jejak akademik.
+                </p>
+              </div>
 
-            <div className="answered-status-mono font-mono">
-              STATUS: {selectedAns ? `TERJAWAB (${selectedAns})` : 'BELUM DIJAWAB'}
+              {/* Statistics Strip */}
+              <div className="submit-summary-quad font-mono">
+                <div className="sum-quad-tile">
+                  <span className="s-label">TOTAL SOAL</span>
+                  <span className="s-val text-primary">{totalQ} Questions</span>
+                </div>
+                <div className="sum-quad-tile">
+                  <span className="s-label">TERJAWAB</span>
+                  <span className="s-val text-sage">{answeredCount} Answered</span>
+                </div>
+                <div className="sum-quad-tile">
+                  <span className="s-label">BELUM DIJAWAB</span>
+                  <span className="s-val text-crimson">{unansweredCount} Unanswered</span>
+                </div>
+              </div>
+
+              <div className="modal-actions-footer">
+                <button
+                  type="button"
+                  className="btn-latveria-secondary font-mono"
+                  onClick={() => setShowSubmitModal(false)}
+                >
+                  LANJUTKAN PENGERJAAN
+                </button>
+                <button
+                  type="button"
+                  className="btn-latveria-primary btn-gold-solid font-mono"
+                  onClick={() => {
+                    setShowSubmitModal(false);
+                    finishSession();
+                  }}
+                >
+                  <span>SUBMIT QUIZ & EVALUASI</span>
+                  <FileCheck size={16} />
+                </button>
+              </div>
             </div>
+          </div>
+        )}
 
-            {currIdx < totalQ - 1 ? (
-              <button
-                type="button"
-                className="btn-latveria-primary"
-                onClick={handleNext}
-              >
-                <span>NEXT QUESTION</span>
-                <ChevronRight size={16} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn-latveria-primary btn-gold-solid"
-                onClick={finishSession}
-              >
-                <span>SELESAIKAN TES</span>
-                <Award size={16} />
-              </button>
-            )}
-          </footer>
-        </main>
+        {/* ========================================================
+            EVALUATION SUMMARY DOSSIER MODAL (OPSIONAL VIEW)
+            ======================================================== */}
+        {showSummaryModal && activeSession.results && (
+          <div className="modal-backdrop" onClick={() => setShowSummaryModal(false)}>
+            <div
+              className="config-modal-card eval-summary-modal-card"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div className="modal-stamp-mono font-mono">
+                  <span className="dot-stamp" />
+                  <span>OFFICIAL DOSSIER RECORD // LATVERIA ACADEMY</span>
+                </div>
+                <h2 className="modal-title font-serif">
+                  Ringkasan Evaluasi: {activeSession.subjectName}
+                </h2>
+              </div>
+
+              <div className="results-metrics-grid">
+                <div className="result-metric-card highlight-card">
+                  <span className="card-label-mono font-mono">STANDARDIZED SCORE</span>
+                  <div className="card-val-row font-serif">
+                    <span className="big-score">{activeSession.results.score}</span>
+                    <span className="score-denom">/ 100</span>
+                  </div>
+                  <span className="status-badge-mono font-mono text-sage">
+                    AKURASI {activeSession.results.accuracy}%
+                  </span>
+                </div>
+
+                <div className="result-metric-card">
+                  <span className="card-label-mono font-mono">BENAR</span>
+                  <div className="card-val-row font-serif">
+                    <span className="big-score text-sage">{activeSession.results.correctCount}</span>
+                    <span className="score-denom">SOAL</span>
+                  </div>
+                  <span className="status-badge-mono font-mono">TERVERIFIKASI</span>
+                </div>
+
+                <div className="result-metric-card">
+                  <span className="card-label-mono font-mono">SALAH & LEWAT</span>
+                  <div className="card-val-row font-serif">
+                    <span className="big-score text-crimson">{activeSession.results.incorrectCount}</span>
+                    <span className="score-denom">SALAH</span>
+                  </div>
+                  <span className="status-badge-mono font-mono text-muted">
+                    {activeSession.results.unansweredCount} TIDAK DIJAWAB
+                  </span>
+                </div>
+
+                <div className="result-metric-card">
+                  <span className="card-label-mono font-mono">IMPERIAL XP GAINED</span>
+                  <div className="card-val-row font-serif">
+                    <span className="big-score text-gold">+{activeSession.results.earnedXP}</span>
+                    <span className="score-denom">XP</span>
+                  </div>
+                  <span className="status-badge-mono font-mono text-gold">RECORD COMMITTED</span>
+                </div>
+              </div>
+
+              <div className="modal-actions-footer">
+                <button
+                  type="button"
+                  className="btn-latveria-secondary font-mono"
+                  onClick={() => setShowSummaryModal(false)}
+                >
+                  TUTUP & BACA PEMBAHASAN
+                </button>
+                <button
+                  type="button"
+                  className="btn-latveria-primary font-mono"
+                  onClick={() => {
+                    setShowSummaryModal(false);
+                    exitPractice();
+                  }}
+                >
+                  SELESAI KE DASHBOARD
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -686,7 +1039,7 @@ export const PracticeView = () => {
         </div>
         <h1 className="catalog-title font-serif">PRACTICE REPOSITORY</h1>
         <p className="catalog-subtitle">
-          Pusat pelatihan terstandar dengan 7 domain subtes resmi. Dilengkapi sistem anotasi glosarium akademik, pemodelan matematis, dan analitik kesalahan sistematis.
+          Pusat pelatihan terstandar dengan 7 domain subtes resmi. Dilengkapi Question Navigator terpadu, kalkulator analitik, serta evaluasi komprehensif per nomor soal.
         </p>
       </section>
 

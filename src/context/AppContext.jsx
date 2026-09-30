@@ -226,6 +226,7 @@ export const AppProvider = ({ children }) => {
     const results = {
       subjectId: activeSession.subjectId,
       subjectName: activeSession.subjectName,
+      subjectCode: activeSession.subjectCode,
       mode: activeSession.mode,
       difficulty: activeSession.difficulty,
       totalQuestions: activeSession.totalQuestions,
@@ -258,7 +259,13 @@ export const AppProvider = ({ children }) => {
     });
 
     setSessionResults(results);
-    setActiveSession(null);
+    // Retain activeSession in evaluation mode for per-question navigation
+    setActiveSession((prev) => ({
+      ...prev,
+      isEvaluated: true,
+      currentIndex: 0,
+      results
+    }));
   };
 
   // Exit Session
