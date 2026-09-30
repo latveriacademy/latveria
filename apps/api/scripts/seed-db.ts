@@ -1,4 +1,3 @@
-import { loadEnvFile } from "node:process";
 import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -14,7 +13,6 @@ const legacySlugs = [
 ] as const;
 
 async function main() {
-  loadEnvFile(".env.local");
   const client = postgres(getDatabaseUrl("DATABASE_URL"), { max: 1, prepare: false, connect_timeout: 10 });
   const db = drizzle(client);
   try {

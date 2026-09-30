@@ -1,9 +1,7 @@
-import { loadEnvFile } from "node:process";
 import postgres from "postgres";
 import { getDatabaseUrl } from "../src/lib/env";
 
 async function main() {
-  loadEnvFile(".env.local");
   const sql = postgres(getDatabaseUrl("DATABASE_URL"), {
     prepare: false,
     max: 1,

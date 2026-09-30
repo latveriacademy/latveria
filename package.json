@@ -7,7 +7,7 @@
     "apps/*",
     "packages/*"
   ],
-  "trustedDependencies": ["esbuild"],
+  "trustedDependencies": ["esbuild", "unrs-resolver"],
   "engines": {
     "node": ">=22.12.0 <23",
     "bun": ">=1.3.14"

@@ -5,7 +5,7 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 ## Struktur
 
 - `apps/web`: SPA React, React Router, komponen UI, dan renderer LaTeX. Tidak mengimpor database atau secret server.
-- `apps/api`: server Hono Node.js, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
+- `apps/api`: server Hono Bun, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
 - `packages/shared`: skema Zod request, tipe response API, serta nama tujuh subtes SNPMB. Tidak mengimpor backend.
 
 Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau. EXP belum dibuat.
@@ -94,6 +94,6 @@ bun run build
 bun run start
 ```
 
-Frontend dibangun ke `apps/web/dist`. Hono produksi melayani API **dan** file SPA tersebut pada port 3000 (override `PORT` jika diperlukan), termasuk fallback untuk deep link React Router. Backend TypeScript dijalankan dengan `tsx`; skrip build backend memeriksa tipe, bukan menghasilkan bundle tambahan. Atur `BETTER_AUTH_URL` ke origin publik dan secret produksi berbeda. Tidak ada migrasi otomatis saat build/start.
+Frontend dibangun ke `apps/web/dist`. Hono produksi melayani API **dan** file SPA tersebut pada port 3000 (override `PORT` jika diperlukan), termasuk fallback untuk deep link React Router. Backend TypeScript dijalankan langsung oleh Bun; tidak memerlukan bundler atau kompilasi tambahan. Atur `BETTER_AUTH_URL` ke origin publik dan secret produksi berbeda. Tidak ada migrasi otomatis saat build/start.
 
-Model hosting sekarang membutuhkan proses Node untuk Hono dan origin yang sama untuk cookie/API. Gunakan reverse proxy HTTPS pada deployment; bukan lagi deployment Next.js/Vercel otomatis. Database dev dan produksi tetap dipisah.
+Model hosting sekarang membutuhkan proses Bun untuk Hono dan origin yang sama untuk cookie/API. Gunakan reverse proxy HTTPS pada deployment; bukan lagi deployment Next.js/Vercel otomatis. Database dev dan produksi tetap dipisah.

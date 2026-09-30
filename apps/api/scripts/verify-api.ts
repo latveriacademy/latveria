@@ -1,4 +1,3 @@
-import { loadEnvFile } from "node:process";
 import assert from "node:assert/strict";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
@@ -6,7 +5,6 @@ import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
 import { questions } from "../src/lib/db/schema";
 
-loadEnvFile(".env.local");
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname)) throw new Error("Verifikasi integrasi hanya untuk DB lokal.");
 const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const users: string[] = [];
