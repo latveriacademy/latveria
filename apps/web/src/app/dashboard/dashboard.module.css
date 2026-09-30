@@ -118,7 +118,7 @@
 .rows small { color: var(--muted); }
 .empty { padding: 30px; border: 1px solid var(--edge); border-radius: 16px; background: var(--surface); }
 .empty p { margin: 0 0 12px; }
-.practice, .result { max-width: 870px; padding: 40px 0; }
+.practice, .result { width: 100%; padding: 40px 0; }
 .practice > h1, .result > h1 { margin-top: 26px; }
 .resultHeading { margin-top: 20px; }
 .score { margin: 5px 0 24px; color: var(--forest); font-size: 26px; font-weight: 800; }

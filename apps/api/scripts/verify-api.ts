@@ -52,11 +52,29 @@ try {
   assert.equal(filtered.total, 1);
   assert.equal((await request(`/admin/questions/${question.id}`, learner.cookie)).status, 403);
   assert.equal((await request(`/admin/questions/${question.id}`, other.cookie)).status, 200);
+  const change = { topicId: topics[0].id, prompt: "Soal uji API versi edit", options: ["5", "6", "7", "8"], correctAnswer: 0, explanation: "Penjelasan soal sesudah diedit.", source: "Dummy integrasi", category: "Materi baru" };
+  assert.equal((await request(`/admin/questions/${question.id}`, other.cookie, change, "PUT")).status, 200);
+  const edited = await (await request(`/admin/questions/${question.id}`, other.cookie)).json();
+  assert.equal(edited.prompt, change.prompt);
+  assert.equal(edited.category, change.category);
+  assert.equal((await request(`/admin/questions/${practice.items[0].id}`, other.cookie, change, "PUT")).status, 409);
   assert.equal((await request(`/admin/questions/${practice.items[0].id}`, other.cookie, undefined, "DELETE")).status, 409);
+  const batch = { groups: [{ subtes: topics[0].slug, category: "Materi batch", questions: [
+    { prompt: "Contoh soal batch pertama", options: ["A", "B", "C", "D"], correctAnswer: 1, explanation: "Pembahasan soal pertama.", source: "Dummy integrasi" },
+    { prompt: "Contoh soal batch kedua", options: ["E", "F", "G", "H"], correctAnswer: 2, explanation: "Pembahasan soal kedua.", source: "Dummy integrasi" },
+  ] }] };
+  const imported = await request("/admin/questions/import", other.cookie, batch);
+  assert.equal(imported.status, 201);
+  assert.equal((await imported.json()).count, 2);
+  const batchRows = await getDb().select({ id: questions.id }).from(questions).where(eq(questions.category, "Materi batch"));
+  questionIds.push(...batchRows.map((row) => row.id));
+  const invalidBatch = { groups: [{ ...batch.groups[0], questions: [batch.groups[0].questions[0], { ...batch.groups[0].questions[1], options: ["X", "X", "Y", "Z"] }] }] };
+  assert.equal((await request("/admin/questions/import", other.cookie, invalidBatch)).status, 400);
+  assert.equal((await getDb().select({ id: questions.id }).from(questions).where(eq(questions.category, "Materi batch"))).length, 2);
   assert.equal((await request(`/admin/questions/${question.id}`, other.cookie, undefined, "DELETE")).status, 200);
   assert.equal((await request("/auth/sign-out", learner.cookie, {})).status, 200);
   assert.equal((await request("/learner/topics", learner.cookie)).status, 401);
-  console.info("API integration: auth, roles, key secrecy, ownership, submission, admin category/preview/delete, logout PASSED.");
+  console.info("API integration: auth, roles, key secrecy, ownership, submission, admin edit/delete, atomic import, logout PASSED.");
 } finally {
   if (users.length) await getDb().delete(user).where(inArray(user.id, users));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));

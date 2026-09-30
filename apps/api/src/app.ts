@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { and, count, countDistinct, desc, eq, sum } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, inArray, sum } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { bankQuerySchema, credentialsSchema, signupSchema, idSchema, questionSchema, submissionSchema, utbkSubtests, type Bank, type HistoryItem, type QuestionDetail, type Result, type Topic, type User } from "@latveria/shared";
+import { bankQuerySchema, credentialsSchema, signupSchema, idSchema, questionSchema, questionImportSchema, submissionSchema, utbkSubtests, type Bank, type HistoryItem, type QuestionDetail, type Result, type Topic, type User } from "@latveria/shared";
 import { getAuth } from "./lib/auth";
 import { getDb } from "./lib/db";
 import { allowedOrigins } from "./lib/origins";
@@ -111,6 +111,32 @@ app.post("/api/admin/questions", async (c) => {
   const [created] = await getDb().insert(questions).values(parsed.data).returning({ id: questions.id });
   return c.json({ id: created.id, slug: topic.slug }, 201);
 });
+app.post("/api/admin/questions/import", async (c) => {
+  const text = await c.req.text();
+  if (text.length > 200_000) throw new HTTPException(413, { message: "File JSON terlalu besar (maksimal 200 KB)." });
+  let body: unknown;
+  try { body = JSON.parse(text); } catch { throw new HTTPException(400, { message: "Format JSON tidak valid." }); }
+  const parsed = questionImportSchema.safeParse(body);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const group = issue.path[1];
+    const number = issue.path[3];
+    throw new HTTPException(400, { message: `Data impor tidak valid${typeof group === "number" ? ` pada grup ${group + 1}` : ""}${typeof number === "number" ? ` soal ${number + 1}` : ""}: ${issue.message}` });
+  }
+  const validSlugs = new Set(utbkSubtests.map((subtest) => subtest.slug));
+  const invalid = parsed.data.groups.findIndex((group) => !validSlugs.has(group.subtes as typeof utbkSubtests[number]["slug"]));
+  if (invalid >= 0) throw new HTTPException(400, { message: `Subtes grup ${invalid + 1} tidak dikenal.` });
+  const total = await getDb().transaction(async (tx) => {
+    const slugs = [...new Set(parsed.data.groups.map((group) => group.subtes))];
+    const existing = await tx.select({ id: topics.id, slug: topics.slug }).from(topics).where(inArray(topics.slug, slugs));
+    if (existing.length !== slugs.length) throw new HTTPException(400, { message: "Subtes belum tersedia di database." });
+    const ids = new Map(existing.map((topic) => [topic.slug, topic.id]));
+    const values = parsed.data.groups.flatMap((group) => group.questions.map((question) => ({ ...question, category: group.category, topicId: ids.get(group.subtes)! })));
+    await tx.insert(questions).values(values);
+    return values.length;
+  });
+  return c.json({ count: total }, 201);
+});
 app.get("/api/admin/questions/:id", async (c) => {
   const id = idSchema.safeParse(c.req.param("id"));
   if (!id.success) throw new HTTPException(404);
@@ -118,6 +144,24 @@ app.get("/api/admin/questions/:id", async (c) => {
   if (!item) throw new HTTPException(404);
   const [usage] = await getDb().select({ value: count() }).from(practiceAnswers).where(eq(practiceAnswers.questionId, id.data));
   return c.json({ ...item, category: item.category ?? undefined, usage: usage.value } satisfies QuestionDetail);
+});
+app.put("/api/admin/questions/:id", async (c) => {
+  const id = idSchema.safeParse(c.req.param("id"));
+  const parsed = questionSchema.safeParse(await c.req.json().catch(() => null));
+  if (!id.success || !parsed.success) throw new HTTPException(400, { message: "Data soal tidak valid." });
+  const db = getDb();
+  const result = await db.transaction(async (tx) => {
+    // Lock baris sebelum memeriksa referensi, termasuk submit yang sedang berjalan.
+    const [existing] = await tx.select({ id: questions.id }).from(questions).where(eq(questions.id, id.data)).for("update");
+    if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
+    const [usage] = await tx.select({ value: count() }).from(practiceAnswers).where(eq(practiceAnswers.questionId, id.data));
+    if (usage.value) throw new HTTPException(409, { message: "Soal sudah digunakan dalam latihan dan tidak dapat diedit." });
+    const [topic] = await tx.select({ slug: topics.slug }).from(topics).where(eq(topics.id, parsed.data.topicId));
+    if (!topic) throw new HTTPException(400, { message: "Subtes tidak ditemukan." });
+    await tx.update(questions).set({ ...parsed.data, category: parsed.data.category ?? null }).where(eq(questions.id, id.data));
+    return topic.slug;
+  });
+  return c.json({ id: id.data, slug: result });
 });
 app.delete("/api/admin/questions/:id", async (c) => {
   const id = idSchema.safeParse(c.req.param("id"));

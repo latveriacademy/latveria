@@ -34,7 +34,35 @@ Landing page dapat dibuka tanpa server/database; route login/peserta/admin memer
 bun run db:admin email@contoh.test
 ```
 
-Admin hanya memakai `/admin`; peserta memakai `/dashboard`. API memeriksa role, bukan hanya router frontend. Input role klien tidak boleh membuat admin. Hasil attempt hanya dapat dibaca pemilik, dan kunci/pembahasan tidak dikirim pada endpoint soal aktif. Request perubahan data harus memiliki Origin yang cocok dengan `BETTER_AUTH_URL`.
+Admin hanya memakai `/admin`; peserta memakai `/dashboard`. API memeriksa role, bukan hanya router frontend. Input role klien tidak boleh membuat admin. Hasil attempt hanya dapat dibaca pemilik, dan kunci/pembahasan tidak dikirim pada endpoint soal aktif. Request perubahan data harus memiliki Origin yang cocok dengan `BETTER_AUTH_URL` (atau `DEV_TUNNEL_ORIGIN` HTTPS yang ditetapkan eksplisit saat development).
+
+### Mengelola soal
+
+`/admin/soal` memiliki tab subtes, filter materi, paginasi, dan pratinjau soal. Soal yang belum dipakai dapat diedit atau dihapus dari halaman pratinjau; hapus meminta konfirmasi. Soal yang sudah memiliki jawaban peserta tidak boleh diedit/dihapus agar hasil lama tidak berubah.
+
+Untuk banyak soal, buka **Impor JSON** di panel admin dan unggah `.json` (maksimal 200 KB / 100 soal). Contoh:
+
+```json
+{
+  "groups": [
+    {
+      "subtes": "pengetahuan-kuantitatif",
+      "category": "Perbandingan dan persentase",
+      "questions": [
+        {
+          "prompt": "Berapakah $25\\%$ dari $80$?",
+          "options": ["$10$", "$15$", "$20$", "$25$"],
+          "correctAnswer": 2,
+          "explanation": "$25\\% \\times 80 = 20$.",
+          "source": "Soal buatan tim"
+        }
+      ]
+    }
+  ]
+}
+```
+
+`correctAnswer` memakai indeks nol (`0` untuk opsi pertama). `subtes` memakai slug dari `packages/shared/src/utbk-subtests.ts`. Kategori bebas per grup. Seluruh batch divalidasi dengan Zod dan ditulis dalam satu transaksi; jika satu soal salah, tidak ada soal yang disimpan.
 
 ## Database
 
