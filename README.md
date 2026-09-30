@@ -30,7 +30,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-`pnpm db:seed` menambah empat topik dan delapan soal dummy (dua soal per topik); aman dijalankan ulang tanpa menggandakan data. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
+`pnpm db:seed` menambah tujuh subtes UTBK-SNBT dan empat belas soal dummy (dua per subtes); aman dijalankan ulang tanpa menggandakan data. Empat topik dummy lama diperbarui namanya **tanpa mengubah ID**, sehingga riwayat dan soal admin tetap terhubung. Nama dan kelompok subtes mengikuti bagian [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal tetap contoh buatan lokal, bukan soal atau simulasi resmi. Tinjau lagi struktur ujian saat berganti tahun. PostgreSQL tersedia di `127.0.0.1:5433` dengan volume persisten. Jalankan `docker compose down` untuk menghentikan container tanpa menghapus data. Jangan gunakan `down -v` kecuali memang ingin menghapus database lokal.
 
 Konten soal mendukung LaTeX melalui KaTeX. Gunakan `$x^2$` untuk rumus inline dan `$$\frac{1}{2}$$` untuk rumus blok pada pertanyaan, opsi, atau pembahasan. Source disimpan sebagai teks; HTML tidak dieksekusi dan sintaks LaTeX yang salah ditampilkan sebagai teks bertanda.
 
@@ -70,7 +70,7 @@ pnpm test src/lib/env.test.ts     # pengujian validasi konfigurasi di apps/web
 pnpm db:generate                 # buat SQL dari perubahan skema, tanpa koneksi DB
 pnpm db:check                    # uji koneksi DB; memerlukan DATABASE_URL
 pnpm db:migrate                  # terapkan SQL; memerlukan DATABASE_MIGRATION_URL
-pnpm db:seed                     # sisipkan empat topik dan delapan soal dummy secara idempoten
+pnpm db:seed                     # sisipkan tujuh subtes dan empat belas soal dummy secara idempoten
 pnpm db:admin email@contoh.test  # promosikan akun yang sudah terdaftar di database lokal
 pnpm start                      # jalankan hasil pnpm build
 ```

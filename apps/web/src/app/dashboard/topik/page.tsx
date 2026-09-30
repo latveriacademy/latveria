@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Latihan | Latveria" };
 
 export default async function TopicsPage() {
   const items = await getPracticeTopics();
-  return <section className={styles.page}><div className={styles.pageHeading}><h1>Latihan</h1><p>Pilih topik untuk mulai mengerjakan soal contoh.</p></div>
+  return <section className={styles.page}><div className={styles.pageHeading}><h1>Subtes UTBK-SNBT</h1><p>Pilih subtes untuk mulai mengerjakan soal contoh.</p></div>
     <div className={styles.topicPageList}><TopicList items={items} /></div>
   </section>;
 }
