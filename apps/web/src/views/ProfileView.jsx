@@ -66,12 +66,10 @@ export const ProfileView = () => {
 
   return (
     <div className="latveria-view-container profile-view">
-      <LatveriaWatermark size={380} opacity={0.03} />
+      <h1 className="profile-page-title font-serif">Profil</h1>
 
       {/* Official Academic ID Card / Dossier Record */}
       <section className="academic-id-card">
-        {/* Background Decorative Guilloche / Border Pattern */}
-        <h1 className="font-serif">Profil</h1>
 
         <div className="id-card-body">
           {/* Left: Avatar with Institutional Crest Frame */}
@@ -88,39 +86,27 @@ export const ProfileView = () => {
               onClick={() => setIsEditing(true)}
             >
               <Edit3 size={13} />
-              <span>EDIT DOSSIER</span>
+              <span>Edit profil</span>
             </button>
           </div>
 
           {/* Right: Academic Credentials & Metadata */}
           <div className="id-details-column">
             <div className="id-heading-group">
-              <div className="id-meta-line font-mono">
-                <span className="text-gold font-bold">ID: {user.id}</span>
-                <span className="meta-dot">•</span>
-                <span className="text-sage font-bold">STATUS: {user.status}</span>
-                <span className="meta-dot">•</span>
-                <span>SINCE: {user.joinedDate}</span>
-              </div>
-              <h1 className="id-candidate-name font-serif">{user.name}</h1>
-              <p className="id-motto font-serif italic">"{user.motto}"</p>
+              <h2 className="id-candidate-name font-serif">{user.name}</h2>
             </div>
 
             <div className="id-info-grid font-mono">
               <div className="info-cell">
-                <span className="info-lbl">INSTITUSI:</span>
-                <span className="info-val font-sans">{user.institution}</span>
-              </div>
-              <div className="info-cell">
-                <span className="info-lbl">TARGET PTN (P1):</span>
+                <span className="info-lbl">Target PTN</span>
                 <span className="info-val font-sans text-gold">{user.targetUniversity}</span>
               </div>
               <div className="info-cell">
-                <span className="info-lbl">CODENAME:</span>
+                <span className="info-lbl">Nama panggilan</span>
                 <span className="info-val font-sans">{user.codename}</span>
               </div>
               <div className="info-cell">
-                <span className="info-lbl">CATATAN EVALUASI:</span>
+                <span className="info-lbl">Bio</span>
                 <span className="info-val font-sans">{user.bio}</span>
               </div>
             </div>
@@ -145,10 +131,8 @@ export const ProfileView = () => {
         <section className="profile-panel mastery-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">DIAGNOSTIC MATRIX</span>
-              <h2 className="panel-title font-serif">PENGUASAAN SUBTES UTBK</h2>
+              <h2 className="panel-title font-serif">Penguasaan subtes UTBK</h2>
             </div>
-            <span className="badge-record-archive font-mono">7 DOMAIN</span>
           </div>
 
           <div className="mastery-bars-list">
@@ -179,10 +163,8 @@ export const ProfileView = () => {
         <section className="profile-panel achievements-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">HONORARY PROTOCOLS</span>
-              <h2 className="panel-title font-serif">CATATAN PRESTASI & PENGHARGAAN</h2>
+              <h2 className="panel-title font-serif">Prestasi</h2>
             </div>
-            <span className="badge-record-archive font-mono">ARCHIVED</span>
           </div>
 
           <div className="achievements-card-list">

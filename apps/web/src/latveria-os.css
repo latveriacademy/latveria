@@ -1380,26 +1380,53 @@ body::after {
 /* Subjects Grid */
 .subjects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  list-style: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .subject-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
   padding: 20px 22px;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.2s ease;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 72px 160px;
+  align-items: center;
+  gap: 24px;
+  transition: background-color 0.2s ease;
   position: relative;
-  cursor: pointer;
+}
+
+.subject-card:last-child { border-bottom: 0; }
+.subject-card .subject-code-tag { display: none; }
+.subject-card .subject-description { margin-bottom: 0; }
+.subject-card .subject-metrics-strip {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+.subject-card .s-label { color: var(--text-secondary); font-size: 11px; }
+
+@media (max-width: 900px) {
+  .subject-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px 16px;
+    padding: 20px;
+  }
+  .subject-card .subject-metrics-strip { grid-column: 2; }
+  .subject-card-action { grid-column: 2; }
+  .subject-card .s-metric { flex-direction: row; gap: 8px; align-items: baseline; }
 }
 
 .subject-card:hover {
-  border-color: var(--border-medium);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-elevated);
+  background: var(--bg-card-hover);
 }
 
 .subject-card.active-subject {
@@ -1410,7 +1437,7 @@ body::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .subject-icon-box {
@@ -2919,11 +2946,18 @@ body::after {
    ========================================================================== */
 .academic-id-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-bright);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   margin-bottom: 24px;
   overflow: hidden;
   box-shadow: var(--shadow-subtle);
+}
+
+.profile-page-title {
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.15;
+  font-weight: 600;
+  margin-bottom: 24px;
 }
 
 .id-card-top-strip {
@@ -2945,7 +2979,7 @@ body::after {
 
 .id-card-body {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 180px minmax(0, 1fr);
   gap: 28px;
   padding: 28px;
 }
@@ -3022,6 +3056,8 @@ body::after {
 }
 
 .id-details-column {
+  min-width: 0;
+  gap: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -3036,6 +3072,7 @@ body::after {
 }
 
 .id-candidate-name {
+  overflow-wrap: anywhere;
   font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
@@ -4205,7 +4242,7 @@ body::after {
 
 /* Hover glow on subject card when selected */
 .subject-card.active-subject {
-  box-shadow: 0 0 0 1px var(--accent-gold), 0 6px 24px var(--accent-gold-glow);
+  background: var(--bg-card-hover);
 }
 
 /* Consistent td border on last row — remove bottom border */

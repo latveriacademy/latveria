@@ -1070,16 +1070,15 @@ export const PracticeView = () => {
       </section>
 
       {/* Subject Cards Grid */}
-      <div className="subjects-grid">
+      <ul className="subjects-grid" aria-label="Subtes latihan">
         {topics.map((subject) => {
           const Icon = getSubjectIcon(subject.id);
           const isSelected = selectedSubject === subject.id;
 
           return (
-            <div
+            <li
               key={subject.id}
               className={`subject-card ${isSelected ? 'active-subject' : ''}`}
-              onClick={() => setSelectedSubject(subject.id)}
             >
               <div className="subject-card-top">
                 <div className="subject-icon-box">
@@ -1122,10 +1121,10 @@ export const PracticeView = () => {
                   <span>Mulai latihan</span>
                 </button>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {/* Configuration Modal */}
       {showConfigModal && (
