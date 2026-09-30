@@ -57,17 +57,12 @@ export const HeaderBar = () => {
       <div className="mobile-brand-slot">
         <LatveriaSeal size={32} />
         <div className="mobile-brand-text">
-          <span className="mobile-title">LATVERIA</span>
-          <span className="mobile-sub">SNBT OPERATING SYSTEM</span>
+          <span className="mobile-title">latveriacademy</span>
         </div>
       </div>
 
       {/* Institutional Metadata & Clocks */}
       <div className="header-meta-group">
-        <div className="institutional-stamp-tag">
-          <span className="stamp-indicator" />
-          <span className="stamp-text">IMPERIAL ACADEMIC ARCHIVE</span>
-        </div>
 
         <div className="live-clock-panel font-mono">
           <Clock size={13} className="text-gold" />
@@ -133,8 +128,7 @@ export const HeaderBar = () => {
           onClick={() => setCurrentTab('profile')}
           title="Dossier Akademik"
         >
-          <span className="avatar-initials font-serif">N</span>
-          <span className="avatar-level-badge font-mono">08</span>
+          <span className="avatar-initials font-serif">{user.name?.slice(0, 1)}</span>
         </button>
       </div>
     </header>

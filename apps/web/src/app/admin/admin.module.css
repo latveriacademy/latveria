@@ -2,7 +2,7 @@
   width: 100%;
   overflow-x: clip;
   display: grid;
-  grid-template-columns: 246px minmax(0, 1fr);
+  grid-template-columns: 290px minmax(0, 1fr);
   min-height: 100dvh;
   background: var(--bg);
   color: var(--ink);
@@ -27,8 +27,8 @@
   gap: 10px;
   min-height: 48px;
   padding: 0 8px;
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 600;
   letter-spacing: -0.04em;
   text-decoration: none;
   color: var(--ink);
@@ -460,7 +460,7 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   padding: 14px 22px;
   border-bottom: 1px solid var(--edge);
   background: var(--bg-subtle);

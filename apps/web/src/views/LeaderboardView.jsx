@@ -38,14 +38,7 @@ export const LeaderboardView = () => {
 
       {/* Header Banner */}
       <section className="leaderboard-header-card">
-        <div className="leaderboard-eyebrow font-mono">
-          <span className="dot-stamp" />
-          <span>INSTITUTIONAL MERIT ARCHIVE // ACADEMIC ROSTER</span>
-        </div>
-        <h1 className="leaderboard-title font-serif">COHORT RANKING</h1>
-        <p className="leaderboard-subtitle">
-          Peringkat evaluasi terpusat kadet akademi Latveria. Penilaian didasarkan pada akumulasi XP, akurasi penalaran terverifikasi, dan konsistensi penyelesaian kurikulum UTBK.
-        </p>
+        <h1 className="leaderboard-title font-serif">Papan peringkat</h1>
       </section>
 
       {/* Controls & Filter Bar */}

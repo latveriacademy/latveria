@@ -43,22 +43,11 @@ export const DashboardView = () => {
 
       {/* Hero: Personal Academic Command Center */}
       <section className="command-hero-card">
-        <div className="hero-top-meta">
-          <div className="meta-pill">
-            <span className="meta-indicator" />
-            <span className="font-mono">STATE ACADEMIC SYSTEM // COMMAND CENTER</span>
-          </div>
-          <div className="meta-tag-id font-mono">CADET DOSSIER #{user.id}</div>
-        </div>
 
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
-              <span className="hero-sub font-mono">AUTHENTICATED USER</span>
-              <h1 className="hero-headline font-serif">Welcome back, {user.codename || user.name}.</h1>
-              <p className="hero-description">
-                Sistem akademik privat Latveria aktif. Catatan kurikulum SNBT/UTBK Anda terpantau berada pada tingkat ketuntasan optimal.
-              </p>
+              <h1 className="hero-headline font-serif">Selamat datang, {user.name}.</h1>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -113,10 +102,7 @@ export const DashboardView = () => {
               <div className="cta-crest-center">
                 <LatveriaSeal size={48} />
               </div>
-              <h2 className="cta-heading font-serif">Imperial UTBK Readiness</h2>
-              <p className="cta-text">
-                Pertajam penalaran deduktif dan literasi kritis Anda melalui simulasi terstandar institusi.
-              </p>
+              <h2 className="cta-heading font-serif">Latihan UTBK</h2>
               <button
                 type="button"
                 id="btn-quick-training"
@@ -124,7 +110,7 @@ export const DashboardView = () => {
                 onClick={() => handleLaunchTraining('PU')}
               >
                 <Play size={16} fill="currentColor" />
-                <span>BEGIN TRAINING NOW</span>
+                <span>Mulai latihan</span>
               </button>
               <button
                 type="button"
@@ -146,8 +132,7 @@ export const DashboardView = () => {
         <section className="dashboard-panel training-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">DAILY ACADEMIC PROTOCOL</span>
-              <h2 className="panel-title font-serif">TODAY'S TRAINING</h2>
+              <h2 className="panel-title font-serif">Latihan hari ini</h2>
             </div>
             <div className="training-counter-badge font-mono">
               <span className="counter-curr">{completedTrainingCount}</span>
@@ -221,8 +206,7 @@ export const DashboardView = () => {
         <section className="dashboard-panel analytics-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">COGNITIVE RECORD</span>
-              <h2 className="panel-title font-serif">WEEKLY PROGRESS</h2>
+              <h2 className="panel-title font-serif">Perkembangan mingguan</h2>
             </div>
 
             {/* Metric Switcher Toggles */}
@@ -300,10 +284,8 @@ export const DashboardView = () => {
         <section className="dashboard-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">CUMULATIVE PERFORMANCE</span>
-              <h2 className="panel-title font-serif">STATISTIK BELAJAR</h2>
+              <h2 className="panel-title font-serif">Statistik belajar</h2>
             </div>
-            <span className="badge-record-archive font-mono">ARCHIVED</span>
           </div>
 
           <div className="stat-tiles-quad">
@@ -337,8 +319,7 @@ export const DashboardView = () => {
         <section className="dashboard-panel">
           <div className="panel-header">
             <div className="panel-title-group">
-              <span className="panel-eyebrow font-mono">AUDIT TRAIL</span>
-              <h2 className="panel-title font-serif">RECENT ACTIVITY</h2>
+              <h2 className="panel-title font-serif">Riwayat latihan</h2>
             </div>
             <span className="meta-tag-id font-mono">LOG.HIST-0824</span>
           </div>

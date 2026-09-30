@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { ThemeToggle } from "./components/theme-toggle";
 import as from "./app/admin/admin.module.css";
-import logo from "../../../latveria.webp";
+import logo from "./assets/latveria.webp";
 
 const Home = lazy(() => import("./app/landing"));
 const LatveriaOSApp = lazy(() => import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })));
@@ -33,12 +33,12 @@ function Logout() {
 function AdminLayout() {
   const user = useRouteLoaderData<User>("admin")!;
   const location = useLocation();
-  return <div className={as.shell} data-admin><a className="skip-link" href="#admin-content">Lewati navigasi</a><aside className={as.sidebar}><Link to="/admin" className={as.brand}><img src={logo} width={34} height={34} alt="" />latveria <span>admin</span></Link><nav aria-label="Navigasi admin">{[["/admin", "Ringkasan"], ["/admin/soal", "Bank soal"], ["/admin/soal/baru", "Tambah soal"], ["/admin/soal/impor", "Impor JSON"]].map(([to, label]) => <Link key={to} to={to} className={location.pathname === to ? as.active : undefined} aria-current={location.pathname === to ? "page" : undefined}>{label}</Link>)}</nav><div className={as.sidebarBottom}><span className={as.identity}>{user.name}</span><div className="flex items-center justify-between"><Logout /><ThemeToggle /></div></div></aside><main id="admin-content" className={as.main}><Outlet /></main></div>;
+  return <div className={as.shell} data-admin><a className="skip-link" href="#admin-content">Lewati navigasi</a><aside className={as.sidebar}><Link to="/admin" className={as.brand}><img src={logo} width={34} height={34} alt="" />latveriacademy <span>admin</span></Link><nav aria-label="Navigasi admin">{[["/admin", "Ringkasan"], ["/admin/soal", "Bank soal"], ["/admin/soal/baru", "Tambah soal"], ["/admin/soal/impor", "Impor JSON"]].map(([to, label]) => <Link key={to} to={to} className={location.pathname === to ? as.active : undefined} aria-current={location.pathname === to ? "page" : undefined}>{label}</Link>)}</nav><div className={as.sidebarBottom}><span className={as.identity}>{user.name}</span><div className="flex items-center justify-between"><Logout /><ThemeToggle /></div></div></aside><main id="admin-content" className={as.main}><Outlet /></main></div>;
 }
 function Login() {
   const navigate = useNavigate();
   const [register, setRegister] = useState(false), [error, setError] = useState(""), [pending, setPending] = useState(false);
-  return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-6 py-12"><div className="flex items-center justify-between"><Link to="/" className="text-xl font-bold tracking-tight text-[var(--ink)]">Latveria</Link><ThemeToggle /></div><h1 className="!mb-0 !text-5xl text-[var(--ink)]">Masuk ruang belajar</h1><form className="grid gap-4 border border-[var(--edge)] bg-[var(--surface)] p-6 rounded-xl shadow-sm" onSubmit={async (event) => {
+  return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-6 py-12"><div className="flex items-center justify-between"><Link to="/" className="flex items-center gap-3 text-xl font-semibold tracking-tight text-[var(--ink)]"><img src={logo} alt="" width={40} height={40} />latveriacademy</Link><ThemeToggle /></div><h1 className="!mb-0 !text-5xl text-[var(--ink)]" style={{ fontFamily: "var(--font-serif)" }}>Masuk ruang belajar</h1><form className="grid gap-4 border border-[var(--edge)] bg-[var(--surface)] p-6 rounded-md" onSubmit={async (event) => {
     event.preventDefault(); setError(""); const form = new FormData(event.currentTarget); const body = { email: String(form.get("email")), password: String(form.get("password")), name: String(form.get("name") ?? "") };
     const parsed = (register ? signupSchema : credentialsSchema).safeParse(body); if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
     setPending(true); try { const result = register ? await authClient.signUp.email(body) : await authClient.signIn.email(body); if (result.error) throw new Error(register ? "Pendaftaran gagal." : "Email atau kata sandi tidak cocok."); const user = await api<User>("/me"); navigate(user.role === "admin" ? "/admin" : "/dashboard"); } catch (error) { setError(error instanceof Error ? error.message : "Gagal masuk."); } finally { setPending(false); }

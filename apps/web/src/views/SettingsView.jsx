@@ -48,14 +48,7 @@ export const SettingsView = () => {
 
       {/* Header */}
       <section className="settings-header-card">
-        <div className="settings-eyebrow font-mono">
-          <span className="dot-stamp" />
-          <span>SYSTEM CALIBRATION // OPERATIONAL PREFERENCES</span>
-        </div>
-        <h1 className="settings-title font-serif">SYSTEM SETTINGS</h1>
-        <p className="settings-subtitle">
-          Konfigurasi antarmuka, protokol simulasi waktu, parameter notifikasi akademik, dan kalibrasi sistem Latveria.
-        </p>
+        <h1 className="settings-title font-serif">Pengaturan</h1>
       </section>
 
       <div className="settings-sections-wrapper">

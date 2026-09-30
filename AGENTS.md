@@ -1,5 +1,7 @@
 # Latveria
 
+- Identitas UI: gunakan nama **latveriacademy** dan logo `apps/web/src/assets/latveria.webp`. Semua halaman memakai tema dashboard (hijau gelap/emas dan perkamen), termasuk landing, login, dan admin. Hindari copy dekoratif, pseudo-telemetry, jargon institusional, eyebrow, watermark, dan pola visual generik; pertahankan label tindakan, bantuan form, dan pesan validasi yang berguna.
+
 - Produk: latihan UTBK Indonesia. Baca `PLAN.md` dan `ARCHITECTURE.md`; EXP dan skor resmi UTBK tetap konsep terpisah. PvP, peringkat kompetitif, musim, jenjang, dan lencana belum masuk MVP.
 - Monorepo Bun: `apps/web` adalah React/Vite SPA (React Router, Tailwind, shadcn/ui); `apps/api` adalah Hono/Node + Better Auth + Drizzle; `packages/shared` memuat Zod request, tipe API, dan subtes. Jangan impor database/secret ke frontend atau shared.
 - Gunakan Bun 1.3.14 dan Node 22 ≥22.12. `bun install --frozen-lockfile`, `bun run dev` menjalankan web:3000/API:3001, `bun run check` = lint → tipe semua paket → tes → build. Uji terarah via `bun run --filter @latveria/web test src/components/math-text.test.tsx` atau `bun run --filter @latveria/api test src/lib/env.test.ts`. Gunakan `bun run test` (Vitest), bukan runner `bun test`.

@@ -71,15 +71,7 @@ export const ProfileView = () => {
       {/* Official Academic ID Card / Dossier Record */}
       <section className="academic-id-card">
         {/* Background Decorative Guilloche / Border Pattern */}
-        <div className="id-card-top-strip font-mono">
-          <div className="id-strip-left">
-            <span className="dot-stamp" />
-            <span>LATVERIA ACADEMIC ARCHIVES // STUDENT DOSSIER RECORD</span>
-          </div>
-          <div className="id-strip-right">
-            <span>CLEARANCE: {user.securityClearance}</span>
-          </div>
-        </div>
+        <h1 className="font-serif">Profil</h1>
 
         <div className="id-card-body">
           {/* Left: Avatar with Institutional Crest Frame */}
@@ -87,11 +79,7 @@ export const ProfileView = () => {
             <div className="id-photo-frame">
               <div className="id-photo-inner">
                 <span className="id-photo-initial font-serif">{user.name.charAt(0)}</span>
-                <div className="official-stamp-watermark font-mono">
-                  VERIFIED<br />LATVERIA
-                </div>
               </div>
-              <div className="id-badge-tier font-mono">CADET-0824</div>
             </div>
 
             <button

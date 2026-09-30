@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 
-export type Theme = "dark" | "light";
+export type Theme = "dark" | "parchment";
 
 const THEME_KEY = "latveria_theme";
 
 export function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "dark";
   const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  if (stored === "parchment" || stored === "dark") return stored;
+  if (stored === "light") return "parchment";
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "parchment" : "dark";
 }
 
 export function applyTheme(theme: Theme) {
@@ -31,7 +32,7 @@ export function useTheme() {
   }, [theme]);
 
   const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
+    const next = theme === "dark" ? "parchment" : "dark";
     setTheme(next);
     try {
       localStorage.setItem(THEME_KEY, next);

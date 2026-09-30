@@ -1,9 +1,10 @@
 /* ==========================================================================
-   LATVERIA ACADEMIC OPERATING SYSTEM — DESIGN SYSTEM STYLESHEET
+   latveriacademy — shared design system
    Aesthetics: Modern Semi-Vintage • Editorial Academic • Institutional Archive
    ========================================================================== */
 
 :root {
+  color-scheme: dark;
   /* Obsidian Dark (Default Forest Green Theme) */
   --bg-app: #08150E;
   --bg-sidebar: #06110B;
@@ -53,10 +54,52 @@
   --bottom-nav-height: 64px;
 }
 
+/* Shared tokens for landing, authentication, admin, and learner pages. */
+:root[data-theme] {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --bg: var(--bg-app);
+  --bg-subtle: var(--bg-input);
+  --surface: var(--bg-card);
+  --surface-elevated: var(--bg-surface-elevated);
+  --surface-hover: var(--bg-card-hover);
+  --edge: var(--border-subtle);
+  --edge-strong: var(--border-medium);
+  --ink: var(--text-primary);
+  --soft-ink: var(--text-secondary);
+  --muted-ink: var(--text-muted);
+  --emerald: var(--accent-gold);
+  --emerald-hover: var(--accent-gold-hover);
+  --emerald-dark: var(--accent-gold);
+  --emerald-tint: var(--accent-gold-dim);
+  --bronze: var(--accent-gold);
+  --forest-dark: var(--accent-gold);
+  --paper: var(--bg-app);
+  --paper-light: var(--bg-card);
+  --rule: var(--border-subtle);
+}
+
+body::before { display: none; }
+.latveria-seal { object-fit: contain; flex-shrink: 0; }
+.latveria-sidebar .brand-name { font: 600 21px var(--font-sans); letter-spacing: -0.03em; }
+.mobile-brand-slot .mobile-title { font: 600 16px var(--font-sans); letter-spacing: -0.03em; }
+.hero-top-meta, .panel-eyebrow, .catalog-eyebrow, .modal-stamp-mono,
+.hero-sub, .hero-description, .metric-sub-note, .quad-bottom,
+.meta-tag-id, .explanation-section.notes-sec,
+.profile-eyebrow, .settings-eyebrow, .leaderboard-eyebrow {
+  display: none;
+}
+.group-sub, .badge-record-archive, .id-status-pill, .id-clearance-tag { display: none; }
+.site-shell h1, .site-shell h2, [data-admin] h1, [data-admin] h2 {
+  font-family: var(--font-serif);
+}
+.site-shell .wordmark img { display: block; }
+
 /* ==========================================================================
    IMPERIAL PARCHMENT THEME (LIGHT EDITORIAL MODE)
    ========================================================================== */
-[data-theme='parchment'] {
+[data-theme='parchment'], [data-theme='light'] {
+  color-scheme: light;
   --bg-app: #F5F2EB;
   --bg-sidebar: #EBE6DA;
   --bg-header: #F5F2EB;
@@ -97,6 +140,9 @@
    ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+.latveria-app-shell, .latveria-app-shell * {
   margin: 0;
   padding: 0;
 }
@@ -111,12 +157,12 @@ html, body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 /* Fine vintage paper grain texture overlay */
 body::after {
-  content: '';
+  content: none;
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -2815,7 +2861,7 @@ body::after {
 
 .roster-row.user-highlight-row {
   background: var(--accent-gold-dim);
-  border-left: 3px solid var(--accent-gold);
+  border-left: 1px solid var(--border-medium);
 }
 
 .candidate-cell {
@@ -3498,7 +3544,7 @@ body::after {
 .lexicon-quote-card,
 .lexicon-example-card {
   background: var(--bg-app);
-  border-left: 3px solid var(--accent-gold);
+  border-left: 1px solid var(--border-medium);
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
   padding: 12px 16px;
   font-size: 13.5px;

@@ -80,7 +80,8 @@ export const AppProvider = ({ children }) => {
 
   // Theme State
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('latveria_theme') || 'dark';
+    const saved = localStorage.getItem('latveria_theme');
+    return saved === 'light' ? 'parchment' : saved || 'dark';
   });
 
   // Sound feedback toggle
@@ -199,6 +200,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('latveria_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
   // Synchronize User to LocalStorage

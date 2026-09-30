@@ -19,35 +19,35 @@ export const Sidebar = () => {
   const navItems = [
     {
       id: 'dashboard',
-      label: 'Home',
+      label: 'Beranda',
       sublabel: 'Command Center',
       index: '01',
       icon: LayoutDashboard
     },
     {
       id: 'practice',
-      label: 'Practice',
+      label: 'Latihan',
       sublabel: 'Modul Pelatihan',
       index: '02',
       icon: BookOpen
     },
     {
       id: 'leaderboard',
-      label: 'Leaderboard',
+      label: 'Peringkat',
       sublabel: 'Peringkat Kohort',
       index: '03',
       icon: Trophy
     },
     {
       id: 'profile',
-      label: 'Profile',
+      label: 'Profil',
       sublabel: 'Dossier Akademik',
       index: '04',
       icon: User
     },
     {
       id: 'settings',
-      label: 'Settings',
+      label: 'Pengaturan',
       sublabel: 'Preferensi Sistem',
       index: '05',
       icon: Settings
@@ -64,9 +64,7 @@ export const Sidebar = () => {
           <LatveriaSeal size={40} />
         </div>
         <div className="brand-text-block">
-          <div className="brand-super-label">STATE ACADEMIC SYSTEM</div>
-          <h1 className="brand-name">LATVERIA</h1>
-          <div className="brand-motto-tag">IMPERIAL RECORD</div>
+          <h1 className="brand-name">latveriacademy</h1>
         </div>
       </div>
 
@@ -98,7 +96,6 @@ export const Sidebar = () => {
 
       {/* Nav Menu */}
       <nav className="sidebar-nav">
-        <div className="nav-section-title">NAVIGATION PROTOCOL</div>
         <ul className="nav-list">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -111,13 +108,11 @@ export const Sidebar = () => {
                   className={`nav-button ${isActive ? 'active' : ''}`}
                   onClick={() => setCurrentTab(item.id)}
                 >
-                  <span className="nav-index-mono">{item.index}</span>
                   <span className="nav-icon-wrap">
                     <Icon size={18} strokeWidth={isActive ? 2.2 : 1.7} />
                   </span>
                   <div className="nav-label-box">
                     <span className="nav-main-label">{item.label}</span>
-                    <span className="nav-sub-label">{item.sublabel}</span>
                   </div>
                   {isActive && <span className="nav-active-pip" />}
                 </button>
@@ -145,26 +140,6 @@ export const Sidebar = () => {
         </ul>
       </nav>
 
-      {/* Institutional Microcopy & Telemetry */}
-      <div className="sidebar-footer">
-        <div className="telemetry-box">
-          <div className="telemetry-row">
-            <span className="telemetry-label">SYS.TELEMETRY</span>
-            <span className="telemetry-val text-sage">OPTIMAL</span>
-          </div>
-          <div className="telemetry-row">
-            <span className="telemetry-label">SECURITY PROTOCOL</span>
-            <span className="telemetry-val text-gold">TIER-3 RESTRICTED</span>
-          </div>
-          <div className="telemetry-row">
-            <span className="telemetry-label">ENCRYPTION</span>
-            <span className="telemetry-val font-mono">LAT-SHA256</span>
-          </div>
-        </div>
-        <p className="institutional-quote">
-          “Knowledge is power. Latveria demands both.”
-        </p>
-      </div>
     </aside>
   );
 };

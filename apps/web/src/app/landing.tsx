@@ -1,4 +1,4 @@
-import logo from "../../../../latveria.webp";
+import logo from "../assets/latveria.webp";
 import { LandingMotion } from "./landing-motion";
 import { ThemeToggle } from "../components/theme-toggle";
 
@@ -41,7 +41,7 @@ export default function Home() {
         </section>
         <section id="tentang" className="closing" aria-labelledby="tentang-judul">
           <img className="closing-logo" src={logo} alt="" width={220} height={220} />
-          <div><p className="hand-note">Untuk para pembelajar,</p><h2 id="tentang-judul">Belajar terasa <em>lebih ringan bersama.</em></h2><p>Latveria masih dalam tahap awal. Kami menyiapkan ruang belajar UTBK yang mengutamakan latihan dan pemahaman, bukan janji nilai instan.</p><p className="closing-note">Latihan pertama sedang disiapkan.</p></div>
+          <div><h2 id="tentang-judul">Belajar terasa <em>lebih ringan bersama.</em></h2><p>latveriacademy adalah ruang belajar UTBK untuk berlatih dan memahami pembahasan soal.</p></div>
         </section>
       </main>
       <footer className="site-footer">

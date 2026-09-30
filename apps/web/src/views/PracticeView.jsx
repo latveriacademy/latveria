@@ -571,7 +571,7 @@ export const PracticeView = () => {
                 <section className="academic-explanation-dossier" aria-label="Pembahasan Soal">
                   <div className="explanation-title font-mono">
                     <BookMarked size={17} className="text-gold" />
-                    <span>LATVERIA ACADEMIC ANNOTATION // PEMBAHASAN RESMI</span>
+                    <span>Pembahasan</span>
                   </div>
 
                   {typeof currentQ.explanation === 'string' ? (
@@ -1066,14 +1066,7 @@ export const PracticeView = () => {
 
       {/* Catalog Header */}
       <section className="catalog-header-card">
-        <div className="catalog-eyebrow font-mono">
-          <span className="dot-stamp" />
-          <span>CURRICULUM ARCHIVE // SNBT-UTBK BLUEPRINT</span>
-        </div>
-        <h1 className="catalog-title font-serif">PRACTICE REPOSITORY</h1>
-        <p className="catalog-subtitle">
-          Pusat pelatihan terstandar dengan 7 domain subtes resmi. Dilengkapi Question Navigator terpadu, kalkulator analitik, serta evaluasi komprehensif per nomor soal.
-        </p>
+        <h1 className="catalog-title font-serif">Latihan</h1>
       </section>
 
       {/* Subject Cards Grid */}
@@ -1126,7 +1119,7 @@ export const PracticeView = () => {
                   }}
                 >
                   <Play size={14} fill="currentColor" />
-                  <span>START PRACTICE</span>
+                  <span>Mulai latihan</span>
                 </button>
               </div>
             </div>
