@@ -19,6 +19,7 @@ export const questionImportSchema = z.object({
 export const submissionSchema = z.object({ answers: z.record(z.uuid(), z.number().int().min(0).max(3)) });
 export const bankQuerySchema = z.object({ subtes: z.string().max(100).optional(), kategori: z.string().max(120).optional(), halaman: z.coerce.number().int().min(1).max(10000).default(1) });
 export const idSchema = z.uuid();
+export const bulkDeleteSchema = z.object({ ids: z.array(idSchema).min(1).max(100).refine((ids) => new Set(ids).size === ids.length, "ID soal tidak boleh berulang.") });
 export type NewQuestion = z.infer<typeof questionSchema>;
 export type QuestionImport = z.infer<typeof questionImportSchema>;
 export type Submission = z.infer<typeof submissionSchema>;

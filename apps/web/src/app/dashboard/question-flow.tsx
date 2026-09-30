@@ -70,7 +70,7 @@ export function QuestionFlow(props: Props) {
     {reviewMode && <section className={styles.explanation}><h3>Pembahasan</h3><dl>
       <div><dt>Jawaban yang benar</dt><dd><MathText>{reviewItems![current].options[reviewItems![current].correctAnswer]}</MathText></dd></div>
       <div><dt>Konsep dan penerapan</dt><dd><MathText>{reviewItems![current].explanation}</MathText></dd></div>
-    </dl><p className={styles.conclusion}>Kesimpulan: {reviewItems![current].isCorrect ? "Jawabanmu benar." : `Jawaban yang tepat adalah ${reviewItems![current].options[reviewItems![current].correctAnswer]}.`}</p></section>}
+    </dl><p className={styles.conclusion}><strong>Kesimpulan:</strong> {reviewItems![current].isCorrect ? "Jawabanmu benar." : <>Jawaban yang tepat adalah <MathText>{reviewItems![current].options[reviewItems![current].correctAnswer]}</MathText>.</>}</p></section>}
   </article>;
 
   if (reviewMode) {

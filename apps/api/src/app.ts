@@ -5,6 +5,7 @@ import { bankQuerySchema, credentialsSchema, signupSchema, idSchema, questionSch
 import { getAuth } from "./lib/auth";
 import { getDb } from "./lib/db";
 import { allowedOrigins } from "./lib/origins";
+import { bulkDeleteSchema } from "@latveria/shared";
 import { practiceAnswers, practiceAttempts, questions, topics } from "./lib/db/schema";
 
 export const app = new Hono<{ Variables: { user: User } }>();
@@ -162,6 +163,19 @@ app.put("/api/admin/questions/:id", async (c) => {
     return topic.slug;
   });
   return c.json({ id: id.data, slug: result });
+});
+app.post("/api/admin/questions/bulk-delete", async (c) => {
+  const parsed = bulkDeleteSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) throw new HTTPException(400, { message: "Pilih 1–100 soal dengan ID valid." });
+  const ids = parsed.data.ids;
+  const deleted = await getDb().transaction(async (tx) => {
+    const rows = await tx.select({ id: questions.id }).from(questions).where(inArray(questions.id, ids)).orderBy(questions.id).for("update");
+    if (rows.length !== ids.length) throw new HTTPException(404, { message: "Sebagian soal tidak ditemukan. Muat ulang bank soal." });
+    const [usage] = await tx.select({ value: count() }).from(practiceAnswers).where(inArray(practiceAnswers.questionId, ids));
+    if (usage.value) throw new HTTPException(409, { message: "Penghapusan dibatalkan: ada soal terpilih yang sudah dipakai peserta. Tidak ada soal dihapus." });
+    return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
+  });
+  return c.json({ count: deleted.length });
 });
 app.delete("/api/admin/questions/:id", async (c) => {
   const id = idSchema.safeParse(c.req.param("id"));

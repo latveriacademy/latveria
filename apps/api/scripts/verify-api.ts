@@ -68,9 +68,16 @@ try {
   assert.equal((await imported.json()).count, 2);
   const batchRows = await getDb().select({ id: questions.id }).from(questions).where(eq(questions.category, "Materi batch"));
   questionIds.push(...batchRows.map((row) => row.id));
+  assert.equal((await request("/admin/questions/bulk-delete", learner.cookie, { ids: batchRows.map((row) => row.id) })).status, 403);
+  assert.equal((await request("/admin/questions/bulk-delete", other.cookie, { ids: [practice.items[0].id, batchRows[0].id] })).status, 409);
+  assert.equal((await request(`/admin/questions/${batchRows[0].id}`, other.cookie)).status, 200);
   const invalidBatch = { groups: [{ ...batch.groups[0], questions: [batch.groups[0].questions[0], { ...batch.groups[0].questions[1], options: ["X", "X", "Y", "Z"] }] }] };
   assert.equal((await request("/admin/questions/import", other.cookie, invalidBatch)).status, 400);
   assert.equal((await getDb().select({ id: questions.id }).from(questions).where(eq(questions.category, "Materi batch"))).length, 2);
+  const bulk = await request("/admin/questions/bulk-delete", other.cookie, { ids: batchRows.map((row) => row.id) });
+  assert.equal(bulk.status, 200);
+  assert.equal((await bulk.json()).count, 2);
+  assert.equal((await request(`/admin/questions/${batchRows[0].id}`, other.cookie)).status, 404);
   assert.equal((await request(`/admin/questions/${question.id}`, other.cookie, undefined, "DELETE")).status, 200);
   assert.equal((await request("/auth/sign-out", learner.cookie, {})).status, 200);
   assert.equal((await request("/learner/topics", learner.cookie)).status, 401);

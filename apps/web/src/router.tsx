@@ -1,6 +1,6 @@
 import { lazy, useState } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useRouteLoaderData, useSearchParams, useLocation } from "react-router";
-import { ArrowLeft, Eye, Plus, Upload, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { credentialsSchema, signupSchema, submissionSchema, type Bank, type HistoryItem, type PracticeQuestion, type QuestionDetail, type Result, type Topic, type User } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { authClient } from "./lib/auth-client";
@@ -10,7 +10,6 @@ import { ImportQuestions } from "./app/admin/import-questions";
 import { Button } from "./components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./components/ui/table";
 import ds from "./app/dashboard/dashboard.module.css";
 import as from "./app/admin/admin.module.css";
 import logo from "../../../latveria.webp";
@@ -18,6 +17,7 @@ import logo from "../../../latveria.webp";
 const Home = lazy(() => import("./app/landing"));
 const QuestionFlow = lazy(() => import("./app/dashboard/question-flow").then((module) => ({ default: module.QuestionFlow })));
 const MathText = lazy(() => import("./components/math-text").then((module) => ({ default: module.MathText })));
+const QuestionBankTable = lazy(() => import("./app/admin/question-bank-table").then((module) => ({ default: module.QuestionBankTable })));
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -72,7 +72,14 @@ function AdminSummary() { const topics = useLoaderData<Topic[]>(); return <><hea
 function BankPage() {
   const bank = useLoaderData<Bank>(); const [params, setParams] = useSearchParams();
   const update = (key: string, value: string) => { const next = new URLSearchParams(params); if (value === "semua") next.delete(key); else next.set(key, value); if (key !== "halaman") next.delete("halaman"); if (key === "subtes") next.delete("kategori"); setParams(next); };
-  return <><header className={as.pageHeader}><div><h1>Bank soal</h1><p>{bank.total} soal</p></div><div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/admin/soal/impor"><Upload />Impor JSON</Link></Button><Button asChild><Link to={`/admin/soal/baru?subtes=${params.get("subtes") ?? ""}`}><Plus />Tambah soal</Link></Button></div></header>{(params.has("created") || params.has("imported") || params.has("updated")) && <p role="status" className={as.success}>{params.has("imported") ? `${params.get("imported")} soal berhasil diimpor.` : "Soal tersimpan."}</p>}<Tabs value={params.get("subtes") ?? "semua"} onValueChange={(value) => update("subtes", value)}><TabsList aria-label="Subtes bank soal" className="flex h-auto max-w-full flex-wrap justify-start">{bank.tabs.map((tab) => <TabsTrigger key={tab.slug} value={tab.slug}>{tab.name}<span>{tab.value}</span></TabsTrigger>)}</TabsList></Tabs><div className={as.filter}><span id="category-label">Kategori materi</span><Select value={params.get("kategori") ?? "semua"} onValueChange={(value) => update("kategori", value)}><SelectTrigger aria-labelledby="category-label" className="max-w-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="semua">Semua kategori</SelectItem>{bank.categories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select></div><Table className={as.questionTable}><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Pertanyaan</TableHead><TableHead>Kategori</TableHead><TableHead>Sumber</TableHead><TableHead>Aksi</TableHead></TableRow></TableHeader><TableBody>{bank.rows.map((row, index) => <TableRow key={row.id}><TableCell>{(bank.page - 1) * 15 + index + 1}</TableCell><TableCell className={as.promptCell}><MathText>{row.prompt}</MathText></TableCell><TableCell>{row.category ?? "Belum diatur"}</TableCell><TableCell>{row.source}</TableCell><TableCell><Button asChild size="sm" variant="outline"><Link to={`/admin/soal/${row.id}`}><Eye />Pratinjau</Link></Button></TableCell></TableRow>)}{!bank.rows.length && <TableRow><TableCell colSpan={5}>Belum ada soal.</TableCell></TableRow>}</TableBody></Table><nav className={as.pagination} aria-label="Paginasi bank soal"><span>{bank.total ? `${(bank.page - 1) * 15 + 1}-${Math.min(bank.page * 15, bank.total)} dari ${bank.total}` : "0 soal"}</span><Button variant="outline" disabled={bank.page <= 1} onClick={() => update("halaman", String(bank.page - 1))}>Sebelumnya</Button><span>Halaman {bank.page} dari {bank.pageCount}</span><Button variant="outline" disabled={bank.page >= bank.pageCount} onClick={() => update("halaman", String(bank.page + 1))}>Berikutnya</Button></nav></>;
+  return <>
+    <header className={as.pageHeader}><div><h1>Bank soal</h1><p>{bank.total} soal</p></div><div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/admin/soal/impor"><Upload />Impor JSON</Link></Button><Button asChild><Link to={`/admin/soal/baru?subtes=${params.get("subtes") ?? ""}`}><Plus />Tambah soal</Link></Button></div></header>
+    {(params.has("created") || params.has("imported") || params.has("updated") || params.has("deleted")) && <p role="status" className={as.success}>{params.has("deleted") ? `${params.get("deleted")} soal berhasil dihapus.` : params.has("imported") ? `${params.get("imported")} soal berhasil diimpor.` : "Soal tersimpan."}</p>}
+    <Tabs value={params.get("subtes") ?? "semua"} onValueChange={(value) => update("subtes", value)}><TabsList aria-label="Subtes bank soal" className="flex h-auto max-w-full flex-wrap justify-start">{bank.tabs.map((tab) => <TabsTrigger key={tab.slug} value={tab.slug}>{tab.name}<span>{tab.value}</span></TabsTrigger>)}</TabsList></Tabs>
+    <div className={as.filter}><span id="category-label">Kategori materi</span><Select value={params.get("kategori") ?? "semua"} onValueChange={(value) => update("kategori", value)}><SelectTrigger aria-labelledby="category-label" className="max-w-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="semua">Semua kategori</SelectItem>{bank.categories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select></div>
+    <QuestionBankTable key={`${params.get("subtes") ?? ""}:${params.get("kategori") ?? ""}:${bank.page}:${bank.rows.map((row) => row.id).join(",")}`} bank={bank} />
+    <nav className={as.pagination} aria-label="Paginasi bank soal"><span>{bank.total ? `${(bank.page - 1) * 15 + 1}-${Math.min(bank.page * 15, bank.total)} dari ${bank.total}` : "0 soal"}</span><Button variant="outline" disabled={bank.page <= 1} onClick={() => update("halaman", String(bank.page - 1))}>Sebelumnya</Button><span>Halaman {bank.page} dari {bank.pageCount}</span><Button variant="outline" disabled={bank.page >= bank.pageCount} onClick={() => update("halaman", String(bank.page + 1))}>Berikutnya</Button></nav>
+  </>;
 }
 function NewQuestion() { const topics = useLoaderData<Topic[]>(); const [params] = useSearchParams(); return <><header className={as.pageHeader}><div><h1>Tambah soal</h1><p>Soal langsung tersedia setelah disimpan.</p></div></header><QuestionForm topics={topics} initialTopicId={topics.find((topic) => topic.slug === params.get("subtes"))?.id} /></>; }
 function ImportPage() { return <><header className={as.pageHeader}><div><h1>Impor soal dari JSON</h1><p>Unggah soal per subtes dan kategori sekaligus.</p></div></header><ImportQuestions /></>; }

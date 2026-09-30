@@ -38,7 +38,7 @@ Admin hanya memakai `/admin`; peserta memakai `/dashboard`. API memeriksa role, 
 
 ### Mengelola soal
 
-`/admin/soal` memiliki tab subtes, filter materi, paginasi, dan pratinjau soal. Soal yang belum dipakai dapat diedit atau dihapus dari halaman pratinjau; hapus meminta konfirmasi. Soal yang sudah memiliki jawaban peserta tidak boleh diedit/dihapus agar hasil lama tidak berubah.
+`/admin/soal` memiliki tab subtes, filter materi, paginasi, dan pratinjau soal. Checkbox dapat memilih baris atau seluruh halaman untuk hapus massal dengan konfirmasi; pilihan dibersihkan saat berpindah halaman/filter. Jika satu soal terpilih sudah dipakai peserta, seluruh penghapusan dibatalkan. Soal yang belum dipakai dapat diedit atau dihapus dari halaman pratinjau. Soal yang sudah memiliki jawaban peserta tidak boleh diedit/dihapus agar hasil lama tidak berubah.
 
 Untuk banyak soal, buka **Impor JSON** di panel admin dan unggah `.json` (maksimal 200 KB / 100 soal). Contoh:
 
