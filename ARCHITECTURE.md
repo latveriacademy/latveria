@@ -42,4 +42,4 @@ Development menggunakan proxy Vite dari port 3000 ke API 3001. Produksi mengguna
 
 Bank soal lokal: 7 subtes dan 14 soal dummy, empat opsi single-answer. Bukan simulasi resmi UTBK atau konversi skor. Draft jawaban viewer hanya tersimpan selama komponen terbuka; autosave database, versi soal immutable, submit idempoten, EXP, verifikasi email produksi, dan deployment Supabase masih pekerjaan lanjut. Lihat `PLAN.md` untuk urutan produk.
 
-Jalankan `pnpm check` dan tes integrasi lokal yang didokumentasikan di `README.md` setelah perubahan API/auth. Endpoint tidak memigrasikan database saat menerima request; build/start juga tidak menjalankan migrasi.
+Workspace menggunakan Bun 1.3.14 untuk instalasi dan task runner (`package.json` + `bun.lock`); runtime backend tetap Node.js. Jalankan `bun run check` dan `bun run test:integration` setelah perubahan API/auth. Endpoint tidak memigrasikan database saat menerima request; build/start juga tidak menjalankan migrasi.

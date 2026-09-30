@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "test": "vitest run",
+    "test:integration": "NODE_ENV=development tsx scripts/verify-api.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed-db.ts",

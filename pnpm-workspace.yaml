@@ -1,9 +1,0 @@
-packages:
-  - 'apps/*'
-  - 'packages/*'
-
-allowBuilds:
-  esbuild: true
-  unrs-resolver: true
-# Framework peers (misalnya Next milik Better Auth) tidak dipasang otomatis.
-autoInstallPeers: false

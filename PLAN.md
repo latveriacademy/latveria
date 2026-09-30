@@ -14,7 +14,7 @@ Usulan bahasa utama: Bahasa Indonesia untuk navigasi dan penjelasan, dengan Baha
 
 ### P0. Fondasi proyek
 
-- [x] Monorepo pnpm: React/Vite di `apps/web`, Hono di `apps/api`, Zod/tipe API di `packages/shared`, TypeScript strict, Tailwind CSS, dan lockfile bersama.
+- [x] Monorepo Bun: React/Vite di `apps/web`, Hono di `apps/api`, Zod/tipe API di `packages/shared`, TypeScript strict, Tailwind CSS, dan lockfile bersama.
 - [x] Landing page berbahasa Indonesia yang menjelaskan tujuan produk, alur belajar yang direncanakan, dan status pengembangan.
 - [x] Koneksi database khusus server, validasi konfigurasi, dan migrasi awal tabel topik dengan RLS.
 - [x] Perintah lint, pemeriksaan tipe, pengujian, dan build; seluruh pemeriksaan lokal lolos.

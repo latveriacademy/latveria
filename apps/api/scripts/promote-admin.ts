@@ -8,7 +8,7 @@ import { user } from "../src/lib/db/auth-schema";
 async function main() {
   loadEnvFile(".env.local");
   const email = process.argv[2]?.toLowerCase();
-  if (!email) throw new Error("Gunakan: pnpm db:admin email@contoh.test");
+  if (!email) throw new Error("Gunakan: bun run db:admin email@contoh.test");
   const url = getDatabaseUrl("DATABASE_URL");
   if (!["localhost", "127.0.0.1"].includes(new URL(url).hostname)) throw new Error("Promosi hanya tersedia untuk database lokal.");
   const client = postgres(url, { max: 1, prepare: false });

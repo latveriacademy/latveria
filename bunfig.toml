@@ -1,0 +1,4 @@
+[install]
+# Sama seperti konfigurasi sebelumnya: peer framework opsional tidak dipasang otomatis.
+peer = false
+linker = "isolated"

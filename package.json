@@ -2,23 +2,30 @@
   "name": "latveria",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "trustedDependencies": ["esbuild"],
   "engines": {
-    "node": ">=22.12.0 <23"
+    "node": ">=22.12.0 <23",
+    "bun": ">=1.3.14"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @latveria/web --filter @latveria/api dev",
-    "build": "pnpm -r --if-present build",
-    "start": "pnpm --filter @latveria/api start",
+    "dev": "bun run --parallel --filter '@latveria/web' --filter '@latveria/api' dev",
+    "build": "bun run --filter '@latveria/*' --if-present build",
+    "start": "bun run --filter @latveria/api start",
     "lint": "eslint apps/*/src apps/api/scripts packages/shared/src",
-    "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "db:generate": "pnpm --filter @latveria/api db:generate",
-    "db:migrate": "pnpm --filter @latveria/api db:migrate",
-    "db:check": "pnpm --filter @latveria/api db:check",
-    "db:seed": "pnpm --filter @latveria/api db:seed",
-    "db:admin": "pnpm --filter @latveria/api db:admin"
+    "typecheck": "bun run --filter '@latveria/*' typecheck",
+    "test": "bun run --filter '@latveria/*' test",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "test:integration": "bun run --filter @latveria/api test:integration",
+    "db:generate": "bun run --filter @latveria/api db:generate",
+    "db:migrate": "bun run --filter @latveria/api db:migrate",
+    "db:check": "bun run --filter @latveria/api db:check",
+    "db:seed": "bun run --filter @latveria/api db:seed",
+    "db:admin": "bun run --filter @latveria/api db:admin"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

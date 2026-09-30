@@ -21,7 +21,7 @@ export function QuestionForm({ topics, initialTopicId }: { topics: { id: string;
     } catch (error) { return error instanceof Error ? error.message : "Gagal menyimpan soal."; }
   };
   const [message, action, pending] = useActionState(createQuestion, "");
-  if (!topics.length) return <div className={styles.empty}><p>Belum ada subtes. Jalankan <code>pnpm db:seed</code> untuk memuat katalog UTBK.</p></div>;
+  if (!topics.length) return <div className={styles.empty}><p>Belum ada subtes. Jalankan <code>bun run db:seed</code> untuk memuat katalog UTBK.</p></div>;
   return (
     <form action={action} className={styles.questionForm}>
       <fieldset className={styles.formSection}><legend>Soal</legend>
