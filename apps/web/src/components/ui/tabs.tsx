@@ -9,13 +9,31 @@ export function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPr
 }
 
 export function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  return <TabsPrimitive.List data-slot="tabs-list" className={cn("inline-flex w-fit items-center gap-1 overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-1", className)} {...props} />;
+  return (
+    <TabsPrimitive.List
+      data-slot="tabs-list"
+      className={cn(
+        "inline-flex w-fit items-center gap-1 overflow-x-auto rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-1",
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
 export function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
-  return <TabsPrimitive.Trigger data-slot="tabs-trigger" className={cn("inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium text-[var(--soft-ink)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--forest)] disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-[var(--paper-green)] data-[state=active]:text-[var(--forest-dark)]", className)} {...props} />;
+  return (
+    <TabsPrimitive.Trigger
+      data-slot="tabs-trigger"
+      className={cn(
+        "inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium text-[var(--soft-ink)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--emerald)] disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-[var(--emerald-tint)] data-[state=active]:text-[var(--emerald)] data-[state=active]:border data-[state=active]:border-[var(--emerald)]/20 font-sans",
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
 export function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content data-slot="tabs-content" className={cn("outline-none focus-visible:ring-2 focus-visible:ring-[var(--forest)]", className)} {...props} />;
+  return <TabsPrimitive.Content data-slot="tabs-content" className={cn("outline-none focus-visible:ring-2 focus-visible:ring-[var(--emerald)]", className)} {...props} />;
 }

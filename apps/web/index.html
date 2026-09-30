@@ -1,2 +1,21 @@
 <!doctype html>
-<html lang="id"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="description" content="Latveria, ruang latihan UTBK." /><title>Latveria | Belajar, pahami, berkembang</title><link rel="icon" href="../../latveria.webp" /></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Latveria — Platform latihan UTBK SNBT bergaya modern." />
+    <title>Latveria | Belajar, pahami, berkembang</title>
+    <link rel="icon" href="/latveria.webp" />
+    <script>
+      try {
+        const t = localStorage.getItem('latveria_theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.classList.add(t);
+      } catch (_) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

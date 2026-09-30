@@ -1,5 +1,6 @@
 import logo from "../../../../latveria.webp";
 import { LandingMotion } from "./landing-motion";
+import { ThemeToggle } from "../components/theme-toggle";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         <nav aria-label="Navigasi utama" className="nav-links">
           <a href="#cara-belajar">Cara belajar</a>
           <a href="#tentang">Tentang kami</a>
+          <ThemeToggle />
         </nav>
       </header>
       <main id="atas">
@@ -43,7 +45,7 @@ export default function Home() {
         </section>
       </main>
       <footer className="site-footer">
-        <span className="wordmark"><img src={logo} alt="" width={34} height={34} /><span>latveria</span></span>
+        <span className="wordmark"><img src={logo} alt="" width={34} height={34} /><span>latveriacademy</span></span>
         <span>Platform belajar independen, bukan layanan resmi UTBK.</span>
       </footer>
     </div>
