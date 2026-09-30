@@ -20,6 +20,7 @@ import {
   FileBadge
 } from 'lucide-react';
 import { sound } from '../utils/audioFeedback';
+import { PageHeading, ProgressBar } from '../components/ui/dashboard';
 
 export const ProfileView = () => {
   const { user, setUser, showToast } = useApp();
@@ -66,7 +67,7 @@ export const ProfileView = () => {
 
   return (
     <div className="latveria-view-container profile-view">
-      <h1 className="profile-page-title font-serif">Profil</h1>
+      <PageHeading title="Profil" />
 
       {/* Official Academic ID Card / Dossier Record */}
       <section className="academic-id-card">
@@ -117,9 +118,7 @@ export const ProfileView = () => {
                 <span className="text-gold font-bold">LEVEL {user.level < 10 ? `0${user.level}` : user.level}</span>
                 <span>{user.currentXP.toLocaleString()} / {user.nextLevelXP.toLocaleString()} XP ({xpPercentage}%)</span>
               </div>
-              <div className="id-xp-track">
-                <div className="id-xp-fill" style={{ width: `${xpPercentage}%` }} />
-              </div>
+              <ProgressBar value={xpPercentage} label="EXP" className="id-xp-track" fillClassName="id-xp-fill" />
             </div>
           </div>
         </div>

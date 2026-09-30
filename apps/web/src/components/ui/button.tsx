@@ -4,14 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--emerald)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--emerald)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--emerald)] text-[#0a1410] hover:bg-[var(--emerald-hover)] shadow-sm shadow-[var(--emerald-glow)] active:scale-[0.98]",
+          "btn-latveria-primary",
         outline:
-          "border border-[var(--edge)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--surface-hover)] hover:border-[var(--edge-strong)] active:scale-[0.98]",
+          "btn-latveria-secondary",
         ghost:
           "text-[var(--soft-ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]",
         link:

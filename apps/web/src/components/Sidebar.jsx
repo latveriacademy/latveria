@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { LatveriaSeal } from './LatveriaSeal';
+import { Brand, ProgressBar } from './ui/dashboard';
 import { LogoutButton } from './logout-button';
 import {
   LayoutDashboard,
@@ -61,12 +61,7 @@ export const Sidebar = () => {
     <aside className="latveria-sidebar" aria-label="Navigasi Utama Latveria">
       {/* Institutional Header & Crest */}
       <div className="sidebar-brand-wrapper">
-        <div className="brand-crest-box">
-          <LatveriaSeal size={40} />
-        </div>
-        <div className="brand-text-block">
-          <h1 className="brand-name">latveriacademy</h1>
-        </div>
+        <Brand to="/dashboard" />
       </div>
 
       {/* Security & Cadet Dossier Badge */}
@@ -89,9 +84,7 @@ export const Sidebar = () => {
             <span className="xp-metric-text">{user.currentXP.toLocaleString()} / {user.nextLevelXP.toLocaleString()} XP</span>
             <span className="xp-percentage-text">{xpPercentage}%</span>
           </div>
-          <div className="progress-track" role="progressbar" aria-valuenow={xpPercentage} aria-valuemin="0" aria-valuemax="100">
-            <div className="progress-fill gold-gradient" style={{ width: `${xpPercentage}%` }} />
-          </div>
+          <ProgressBar value={xpPercentage} label="EXP" fillClassName="progress-fill gold-gradient" />
         </div>
       </div>
 

@@ -114,6 +114,15 @@ body::before { display: none; }
 .site-shell .main-link:hover { background: var(--emerald-hover); box-shadow: none; }
 .site-shell .hero-logo { filter: none; }
 
+.app-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--text-primary); text-decoration: none; font-size: 21px; font-weight: 600; letter-spacing: -0.03em; }
+.app-brand img { object-fit: contain; flex-shrink: 0; }
+.app-page-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; }
+.app-page-heading h1 { font: 600 clamp(32px, 4vw, 44px)/1.15 var(--font-serif); margin: 0; }
+.app-page-heading p { margin-top: 8px; color: var(--text-secondary); }
+.app-page-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.admin-stats { margin-bottom: 24px; }
+.latveria-app-shell .app-page-heading { margin-bottom: 24px; }
+
 .latveria-app-shell .submit-error-banner {
   margin-bottom: 16px;
   padding: 16px;
@@ -2980,13 +2989,6 @@ body::after {
   margin-bottom: 24px;
   overflow: hidden;
   box-shadow: var(--shadow-subtle);
-}
-
-.profile-page-title {
-  font-size: clamp(32px, 4vw, 44px);
-  line-height: 1.15;
-  font-weight: 600;
-  margin-bottom: 24px;
 }
 
 .id-card-top-strip {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LatveriaSeal } from './LatveriaSeal';
+import { Brand } from './ui/dashboard';
 import {
   Volume2,
   VolumeX,
@@ -55,10 +55,7 @@ export const HeaderBar = () => {
     <header className="latveria-header-bar" role="banner">
       {/* Mobile Branding (Visible only on small screens) */}
       <div className="mobile-brand-slot">
-        <LatveriaSeal size={32} />
-        <div className="mobile-brand-text">
-          <span className="mobile-title">latveriacademy</span>
-        </div>
+        <Brand to="/dashboard" className="mobile-title" />
       </div>
 
       {/* Institutional Metadata & Clocks */}

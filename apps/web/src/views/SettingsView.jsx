@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LogoutButton } from '../components/logout-button';
+import { PageHeading } from '../components/ui/dashboard';
 import { useApp } from '../context/AppContext';
 import { LatveriaWatermark } from '../components/LatveriaSeal';
 import {
@@ -48,9 +49,7 @@ export const SettingsView = () => {
       <LatveriaWatermark size={360} opacity={0.03} />
 
       {/* Header */}
-      <section className="settings-header-card">
-        <h1 className="settings-title font-serif">Pengaturan</h1>
-      </section>
+      <PageHeading title="Pengaturan" />
 
       <div className="settings-sections-wrapper">
         <section className="settings-group-panel">

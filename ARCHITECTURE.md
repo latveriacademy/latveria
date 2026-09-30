@@ -16,6 +16,18 @@ Next.js dan Server Actions sudah diganti sepenuhnya. Komponen tampilan kini Reac
 
 ## Batas paket
 
+### UI bersama
+
+`apps/web/src/components/ui/dashboard.tsx` menampung elemen dashboard yang digunakan ulang di admin dan halaman peserta:
+
+- `Brand`: logo dan nama latveriacademy dengan tujuan link.
+- `PageHeading`: judul halaman, deskripsi opsional, dan area tindakan.
+- `Panel` / `PanelHeader`: permukaan dan heading bagian; isi tetap milik halaman.
+- `StatTile`: label, nilai, dan ikon opsional, tanpa menghitung data domain.
+- `ProgressBar`: persentase terjepit 0–100 dengan label aksesibel; class track/fill dapat mengikuti tampilan yang sudah ada.
+
+Gunakan `components/ui/button.tsx` untuk aksi utama/sekunder; varian default dan outline memakai gaya tombol dashboard. Komponen UI tidak bergantung pada AppContext, sesi pengguna, atau API. Warna dan tipografi tetap menggunakan token bersama di `latveria-os.css`.
+
 ```text
 apps/web ──imports──> packages/shared <──imports── apps/api
    │                                              │

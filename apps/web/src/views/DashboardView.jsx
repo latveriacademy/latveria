@@ -18,6 +18,8 @@ import {
   Compass
 } from 'lucide-react';
 import { sound } from '../utils/audioFeedback';
+import { Panel, PanelHeader, ProgressBar, StatTile } from '../components/ui/dashboard';
+import { Button } from '../components/ui/button';
 
 export const DashboardView = () => {
   const { user, topics, setCurrentTab, startPractice, completeDailyTraining } = useApp();
@@ -52,31 +54,17 @@ export const DashboardView = () => {
 
             {/* Quick Metrics Bar */}
             <div className="hero-metrics-grid">
-              <div className="hero-metric-tile">
-                <span className="metric-label-mono font-mono">STATUS LEVEL</span>
-                <div className="metric-val-row">
-                  <span className="metric-num font-serif">LEVEL {user.level < 10 ? `0${user.level}` : user.level}</span>
-                </div>
+              <StatTile label="STATUS LEVEL" value={`LEVEL ${user.level < 10 ? `0${user.level}` : user.level}`}>
                 <span className="metric-sub-note">{user.title}</span>
-              </div>
+              </StatTile>
 
-              <div className="hero-metric-tile">
-                <span className="metric-label-mono font-mono">ACTIVE STREAK</span>
-                <div className="metric-val-row">
-                  <Flame size={20} className="text-orange" />
-                  <span className="metric-num font-serif">{user.streakDays} DAYS</span>
-                </div>
+              <StatTile label="ACTIVE STREAK" value={`${user.streakDays} DAYS`} icon={<Flame size={20} className="text-orange" />}>
                 <span className="metric-sub-note">Konsistensi protokol terjaga</span>
-              </div>
+              </StatTile>
 
-              <div className="hero-metric-tile">
-                <span className="metric-label-mono font-mono">GLOBAL ACCURACY</span>
-                <div className="metric-val-row">
-                  <Target size={20} className="text-sage" />
-                  <span className="metric-num font-serif">{user.accuracy}%</span>
-                </div>
+              <StatTile label="GLOBAL ACCURACY" value={`${user.accuracy}%`} icon={<Target size={20} className="text-sage" />}>
                 <span className="metric-sub-note">Berdasarkan {user.questionsCompleted} butir soal</span>
-              </div>
+              </StatTile>
             </div>
 
             {/* XP Level Progress Bar */}
@@ -90,9 +78,7 @@ export const DashboardView = () => {
                   <span>{(user.nextLevelXP - user.currentXP).toLocaleString()} XP MENUJU LEVEL {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}</span>
                 </div>
               </div>
-              <div className="hero-progress-track">
-                <div className="hero-progress-fill" style={{ width: `${xpPercentage}%` }} />
-              </div>
+              <ProgressBar value={xpPercentage} label="EXP" className="hero-progress-track" fillClassName="hero-progress-fill" />
             </div>
           </div>
 
@@ -103,7 +89,7 @@ export const DashboardView = () => {
                 <LatveriaSeal size={48} />
               </div>
               <h2 className="cta-heading font-serif">Latihan UTBK</h2>
-              <button
+              <Button
                 type="button"
                 id="btn-quick-training"
                 className="btn-latveria-primary w-full"
@@ -111,8 +97,9 @@ export const DashboardView = () => {
               >
                 <Play size={16} fill="currentColor" />
                 <span>Mulai latihan</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 type="button"
                 id="btn-goto-practice"
                 className="btn-latveria-secondary w-full"
@@ -120,7 +107,7 @@ export const DashboardView = () => {
               >
                 <span>BUKA SEMUA SUBTES (7)</span>
                 <ArrowUpRight size={15} />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -129,17 +116,14 @@ export const DashboardView = () => {
       {/* Main Grid: Today's Training & Weekly Analytics */}
       <div className="dashboard-grid-dual">
         {/* Left Column: Today's Training */}
-        <section className="dashboard-panel training-panel">
-          <div className="panel-header">
-            <div className="panel-title-group">
-              <h2 className="panel-title font-serif">Latihan hari ini</h2>
-            </div>
+        <Panel className="training-panel">
+          <PanelHeader title="Latihan hari ini">
             <div className="training-counter-badge font-mono">
               <span className="counter-curr">{completedTrainingCount}</span>
               <span className="counter-slash">/</span>
               <span className="counter-total">{totalTrainingCount} COMPLETED</span>
             </div>
-          </div>
+          </PanelHeader>
 
           <div className="training-tasks-list">
             {user.todayTraining.map((task) => (
@@ -200,14 +184,11 @@ export const DashboardView = () => {
               <ArrowUpRight size={16} />
             </button>
           </div>
-        </section>
+        </Panel>
 
         {/* Right Column: Weekly Academic Progress */}
-        <section className="dashboard-panel analytics-panel">
-          <div className="panel-header">
-            <div className="panel-title-group">
-              <h2 className="panel-title font-serif">Perkembangan mingguan</h2>
-            </div>
+        <Panel className="analytics-panel">
+          <PanelHeader title="Perkembangan mingguan">
 
             {/* Metric Switcher Toggles */}
             <div className="chart-metric-switch font-mono">
@@ -233,7 +214,7 @@ export const DashboardView = () => {
                 AKURASI %
               </button>
             </div>
-          </div>
+          </PanelHeader>
 
           {/* Minimalist Academic Bar Chart */}
           <div className="weekly-chart-wrapper">
@@ -275,18 +256,14 @@ export const DashboardView = () => {
               <span className="stat-val font-serif text-gold">+2,690 XP</span>
             </div>
           </div>
-        </section>
+        </Panel>
       </div>
 
       {/* Bottom Grid: Statistics & Recent Activities */}
       <div className="dashboard-grid-dual secondary-grid">
         {/* Academic Statistical Records */}
-        <section className="dashboard-panel">
-          <div className="panel-header">
-            <div className="panel-title-group">
-              <h2 className="panel-title font-serif">Statistik belajar</h2>
-            </div>
-          </div>
+        <Panel>
+          <PanelHeader title="Statistik belajar" />
 
           <div className="stat-tiles-quad">
             <div className="quad-tile">
@@ -313,16 +290,13 @@ export const DashboardView = () => {
               <div className="quad-bottom font-mono text-gold">TIER-1 EXCELLENCE</div>
             </div>
           </div>
-        </section>
+        </Panel>
 
         {/* Recent Activity Stream */}
-        <section className="dashboard-panel">
-          <div className="panel-header">
-            <div className="panel-title-group">
-              <h2 className="panel-title font-serif">Riwayat latihan</h2>
-            </div>
+        <Panel>
+          <PanelHeader title="Riwayat latihan">
             <span className="meta-tag-id font-mono">LOG.HIST-0824</span>
-          </div>
+          </PanelHeader>
 
           <div className="activity-stream-list">
             {user.recentActivities.map((act) => (
@@ -340,7 +314,7 @@ export const DashboardView = () => {
               </div>
             ))}
           </div>
-        </section>
+        </Panel>
       </div>
     </div>
   );

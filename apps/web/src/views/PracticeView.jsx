@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { LatveriaCalculator } from '../components/LatveriaCalculator';
 import { MathText } from '../components/math-text';
+import { PageHeading } from '../components/ui/dashboard';
+import { Button } from '../components/ui/button';
 import { sound } from '../utils/audioFeedback';
 import {
   BookOpen,
@@ -1078,9 +1080,7 @@ export const PracticeView = () => {
       <LatveriaWatermark size={380} opacity={0.03} />
 
       {/* Catalog Header */}
-      <section className="catalog-header-card">
-        <h1 className="catalog-title font-serif">Latihan</h1>
-      </section>
+      <PageHeading title="Latihan" />
 
       {/* Subject Cards Grid */}
       <ul className="subjects-grid" aria-label="Subtes latihan">
@@ -1121,7 +1121,7 @@ export const PracticeView = () => {
               </div>
 
               <div className="subject-card-action">
-                <button
+                <Button
                   type="button"
                   className="btn-latveria-primary w-full"
                   onClick={(e) => {
@@ -1132,7 +1132,7 @@ export const PracticeView = () => {
                 >
                   <Play size={14} fill="currentColor" />
                   <span>Mulai latihan</span>
-                </button>
+                </Button>
               </div>
             </li>
           );
