@@ -11,6 +11,7 @@ import { LeaderboardView } from './views/LeaderboardView';
 import { ProfileView } from './views/ProfileView';
 import { SettingsView } from './views/SettingsView';
 import { useSearchParams } from 'react-router';
+import { DashboardShell } from './components/ui/dashboard-shell';
 
 function AppShell() {
   const { currentTab, setCurrentTab, activeSession } = useApp();
@@ -41,30 +42,13 @@ function AppShell() {
   };
 
   return (
-    <div className="latveria-app-shell">
-      {/* Institutional Left Sidebar (Desktop) */}
-      {!activeSession && <Sidebar />}
-
-      {/* Main View Area */}
-      <div className={`latveria-main-viewport ${activeSession ? 'in-exam-mode' : ''}`}>
-        {/* Top Header Bar */}
-        {!activeSession && <HeaderBar />}
-
-        {/* Dynamic View Container */}
-        <main className="latveria-content-scroll" id="main-content-scroll">
-          {renderActiveView()}
-        </main>
-
-        {/* Compact Bottom Navigation (Mobile) */}
-        {!activeSession && <BottomNav />}
-      </div>
-
-      {/* Interactive Lexicon Modal (English Literacy Annotation) */}
-      <LexiconDrawer />
-
-      {/* Floating Institutional Toasts */}
-      <ToastNotification />
-    </div>
+      <DashboardShell
+        immersive={!!activeSession}
+        sidebar={!activeSession && <Sidebar />}
+        header={!activeSession && <HeaderBar />}
+        bottomNav={!activeSession && <BottomNav />}
+        overlays={<><LexiconDrawer /><ToastNotification /></>}
+      >{renderActiveView()}</DashboardShell>
   );
 }
 

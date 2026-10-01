@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Brand } from './ui/dashboard';
+import { DashboardHeader } from './ui/dashboard-shell';
 import {
   Volume2,
   VolumeX,
@@ -8,40 +7,10 @@ import {
   Moon,
   Flame,
   Award,
-  Clock,
-  ShieldCheck,
-  Sparkles
 } from 'lucide-react';
 
 export const HeaderBar = () => {
   const { user, theme, setTheme, soundEnabled, setSoundEnabled, setCurrentTab } = useApp();
-  const [timeStr, setTimeStr] = useState('');
-  const [dateStr, setDateStr] = useState('');
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setTimeStr(
-        now.toLocaleTimeString('id-ID', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false
-        })
-      );
-      setDateStr(
-        now.toLocaleDateString('id-ID', {
-          weekday: 'short',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        }).toUpperCase()
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'parchment' : 'dark');
@@ -52,26 +21,7 @@ export const HeaderBar = () => {
   };
 
   return (
-    <header className="latveria-header-bar" role="banner">
-      {/* Mobile Branding (Visible only on small screens) */}
-      <div className="mobile-brand-slot">
-        <Brand to="/dashboard" className="mobile-title" />
-      </div>
-
-      {/* Institutional Metadata & Clocks */}
-      <div className="header-meta-group">
-
-        <div className="live-clock-panel font-mono">
-          <Clock size={13} className="text-gold" />
-          <span>{dateStr}</span>
-          <span className="divider-slash">/</span>
-          <span className="clock-digits">{timeStr}</span>
-          <span className="timezone-tag">WIB</span>
-        </div>
-      </div>
-
-      {/* Header Quick Controls */}
-      <div className="header-actions-group">
+    <DashboardHeader home="/dashboard">
         {/* Streak Pill */}
         <div
           className="header-stat-pill"
@@ -117,7 +67,6 @@ export const HeaderBar = () => {
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
-      </div>
-    </header>
+    </DashboardHeader>
   );
 };

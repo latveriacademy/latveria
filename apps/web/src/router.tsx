@@ -1,17 +1,17 @@
 import { lazy, useState } from "react";
 import { isRouteErrorResponse } from "react-router";
-import { createBrowserRouter, Link, Navigate, Outlet, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useRouteLoaderData, useSearchParams, useLocation } from "react-router";
+import { createBrowserRouter, Link, Navigate, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useSearchParams } from "react-router";
 import { ArrowLeft, Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { credentialsSchema, signupSchema, type Bank, type QuestionDetail, type Topic, type User } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { authClient } from "./lib/auth-client";
 import { QuestionForm } from "./app/admin/question-form";
+import { AdminLayout } from "./app/admin/admin-layout";
 import { ImportQuestions } from "./app/admin/import-questions";
 import { Button } from "./components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { ThemeToggle } from "./components/theme-toggle";
-import { LogoutButton as Logout } from "./components/logout-button";
 import { Brand, PageHeading, Panel, PanelHeader, StatTile } from "./components/ui/dashboard";
 import as from "./app/admin/admin.module.css";
 
@@ -26,11 +26,6 @@ async function guard(role: "user" | "admin") {
   if (role === "user" && user.role === "admin") throw redirect("/admin");
   if (role === "admin" && user.role !== "admin") throw new Response(null, { status: 404 });
   return user;
-}
-function AdminLayout() {
-  const user = useRouteLoaderData<User>("admin")!;
-  const location = useLocation();
-  return <div className={as.shell} data-admin><a className="skip-link" href="#admin-content">Lewati navigasi</a><aside className={as.sidebar}><Brand to="/admin" /><nav aria-label="Navigasi admin">{[["/admin", "Ringkasan"], ["/admin/soal", "Bank soal"], ["/admin/soal/baru", "Tambah soal"], ["/admin/soal/impor", "Impor JSON"]].map(([to, label]) => <Link key={to} to={to} className={location.pathname === to ? as.active : undefined} aria-current={location.pathname === to ? "page" : undefined}>{label}</Link>)}</nav><div className={as.sidebarBottom}><span className={as.identity}>{user.name}</span><div className="flex items-center justify-between"><Logout /><ThemeToggle /></div></div></aside><main id="admin-content" className={as.main}><Outlet /></main></div>;
 }
 function Login() {
   const navigate = useNavigate();
@@ -50,7 +45,7 @@ function AdminSummary() {
       <StatTile label="Soal" value={topics.reduce((sum, topic) => sum + topic.questionCount, 0)} />
       <StatTile label="Subtes berisi soal" value={topics.filter((topic) => topic.questionCount > 0).length} />
     </div>
-    <Panel><PanelHeader title="Soal per subtes" /><ul>{topics.map((topic) => <li key={topic.id} className="border-b border-[var(--edge)]"><Link className="flex min-h-12 items-center justify-between" to={`/admin/soal?subtes=${topic.slug}`}><span>{topic.name}</span><strong>{topic.questionCount} soal</strong></Link></li>)}</ul></Panel>
+    <Panel><PanelHeader title="Soal per subtes" /><ul>{topics.map((topic) => <li key={topic.id} className="border-b border-[var(--edge)]"><Link className="flex min-h-12 items-center justify-between gap-4" to={`/admin/soal?subtes=${topic.slug}`}><span>{topic.name}</span><strong className="shrink-0 whitespace-nowrap">{topic.questionCount} soal</strong></Link></li>)}</ul></Panel>
   </>;
 }
 function BankPage() {

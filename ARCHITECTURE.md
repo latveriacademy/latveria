@@ -28,6 +28,8 @@ Next.js dan Server Actions sudah diganti sepenuhnya. Komponen tampilan kini Reac
 
 Gunakan `components/ui/button.tsx` untuk aksi utama/sekunder; varian default dan outline memakai gaya tombol dashboard. Komponen UI tidak bergantung pada AppContext, sesi pengguna, atau API. Warna dan tipografi tetap menggunakan token bersama di `latveria-os.css`.
 
+`components/ui/dashboard-shell.tsx` menyamakan kerangka peserta dan admin melalui `DashboardShell`, `DashboardSidebar`, `DashboardHeader`, dan `DashboardNavigation`. Header, sidebar, area scroll, dan navigasi bawah memakai CSS yang sama. Controller peserta tetap di `LatveriaOSApp.tsx`; controller admin di `app/admin/admin-layout.tsx` dengan menu berbasis route. Identitas/statistik diberikan lewat slot agar admin tidak memuat data latihan peserta.
+
 ```text
 apps/web ──imports──> packages/shared <──imports── apps/api
    │                                              │

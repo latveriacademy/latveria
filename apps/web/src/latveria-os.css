@@ -121,6 +121,13 @@ body::before { display: none; }
 .app-page-heading p { margin-top: 8px; color: var(--text-secondary); }
 .app-page-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .admin-stats { margin-bottom: 24px; }
+.admin-identity-email { margin-top: 8px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.admin-mobile-logout { display: none; }
+.header-tool-btn.admin-header-logout { width: auto; padding-inline: 10px; gap: 6px; font-size: 12px; }
+.admin-header-logout svg { flex-shrink: 0; }
+@media (max-width: 1024px) {
+  .admin-mobile-logout { display: block; }
+}
 .latveria-app-shell .app-page-heading { margin-bottom: 24px; }
 
 .latveria-app-shell .submit-error-banner {
@@ -180,7 +187,7 @@ body::before { display: none; }
   box-sizing: border-box;
 }
 
-.latveria-app-shell, .latveria-app-shell * {
+.latveria-app-shell:where(:not([data-admin])), .latveria-app-shell:where(:not([data-admin])) * {
   margin: 0;
   padding: 0;
 }
@@ -450,6 +457,7 @@ body::after {
 }
 
 .nav-button {
+  text-decoration: none;
   width: 100%;
   display: flex;
   align-items: center;
@@ -3942,6 +3950,7 @@ body::after {
 }
 
 .bottom-nav-btn {
+  text-decoration: none;
   flex: 1;
   display: flex;
   flex-direction: column;
