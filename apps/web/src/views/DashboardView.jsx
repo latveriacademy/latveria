@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { useApp } from "../context/AppContext";
-import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import {
   Flame,
   Award,
@@ -15,35 +15,27 @@ import {
   Calendar,
   Sparkles,
   BarChart3,
-  Compass,
-} from "lucide-react";
-import { sound } from "../utils/audioFeedback";
-import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
-import { Button } from "../components/ui/button";
+  Compass
+} from 'lucide-react';
+import { sound } from '../utils/audioFeedback';
+import { Panel, PanelHeader, ProgressBar, StatTile } from '../components/ui/dashboard';
+import { Button } from '../components/ui/button';
 
 export const DashboardView = () => {
-  const { user, topics, setCurrentTab, startPractice, completeDailyTraining } =
-    useApp();
-  const [chartMetric, setChartMetric] = useState("questions"); // 'questions' | 'xp' | 'accuracy'
+  const { user, topics, setCurrentTab, startPractice, completeDailyTraining } = useApp();
+  const [chartMetric, setChartMetric] = useState('questions'); // 'questions' | 'xp' | 'accuracy'
 
-  const completedTrainingCount = user.todayTraining.filter(
-    (t) => t.completed,
-  ).length;
+  const completedTrainingCount = user.todayTraining.filter((t) => t.completed).length;
   const totalTrainingCount = user.todayTraining.length;
-  const xpPercentage = Math.min(
-    100,
-    Math.round((user.currentXP / user.nextLevelXP) * 100),
-  );
+  const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
 
   // Determine max values for weekly chart scaling
-  const maxMetricVal = Math.max(
-    ...user.weeklyChartData.map((d) => d[chartMetric]),
-  );
+  const maxMetricVal = Math.max(...user.weeklyChartData.map((d) => d[chartMetric]));
 
   const handleLaunchTraining = (subjectId) => {
     sound.playClick();
-    const targetId = subjectId || (topics[0]?.id ?? "PU");
-    startPractice(targetId, "Practice", 10, "Latverian Elite");
+    const targetId = subjectId || (topics[0]?.id ?? 'PU');
+    startPractice(targetId, 'Practice', 10, 'Latverian Elite');
   };
 
   return (
@@ -53,12 +45,11 @@ export const DashboardView = () => {
 
       {/* Hero: Personal Academic Command Center */}
       <section className="command-hero-card">
+
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
-              <h1 className="hero-headline font-serif">
-                Selamat datang, Warrior {user.name}.
-              </h1>
+              <h1 className="hero-headline font-serif">Selamat datang, {user.name}.</h1>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -68,15 +59,11 @@ export const DashboardView = () => {
               </StatTile>
 
               <StatTile label="ACTIVE STREAK" value={`${user.streakDays} DAYS`} icon={<Flame size={20} className="text-orange" />}>
-                <span className="metric-sub-note">
-                  Konsistensi protokol terjaga
-                </span>
+                <span className="metric-sub-note">Konsistensi protokol terjaga</span>
               </StatTile>
 
               <StatTile label="GLOBAL ACCURACY" value={`${user.accuracy}%`} icon={<Target size={20} className="text-sage" />}>
-                <span className="metric-sub-note">
-                  Berdasarkan {user.questionsCompleted} butir soal
-                </span>
+                <span className="metric-sub-note">Berdasarkan {user.questionsCompleted} butir soal</span>
               </StatTile>
             </div>
 
@@ -84,22 +71,11 @@ export const DashboardView = () => {
             <div className="hero-xp-wrapper">
               <div className="xp-metric-header">
                 <div className="xp-left font-mono">
-                  <span className="text-gold font-bold">
-                    {user.currentXP.toLocaleString()}
-                  </span>
-                  <span className="text-muted">
-                    {" "}
-                    / {user.nextLevelXP.toLocaleString()} XP
-                  </span>
+                  <span className="text-gold font-bold">{user.currentXP.toLocaleString()}</span>
+                  <span className="text-muted"> / {user.nextLevelXP.toLocaleString()} XP</span>
                 </div>
                 <div className="xp-right font-mono">
-                  <span>
-                    {(user.nextLevelXP - user.currentXP).toLocaleString()} XP
-                    MENUJU LEVEL{" "}
-                    {user.level + 1 < 10
-                      ? `0${user.level + 1}`
-                      : user.level + 1}
-                  </span>
+                  <span>{(user.nextLevelXP - user.currentXP).toLocaleString()} XP MENUJU LEVEL {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}</span>
                 </div>
               </div>
               <ProgressBar value={xpPercentage} label="EXP" className="hero-progress-track" fillClassName="hero-progress-fill" />
@@ -117,7 +93,7 @@ export const DashboardView = () => {
                 type="button"
                 id="btn-quick-training"
                 className="btn-latveria-primary w-full"
-                onClick={() => handleLaunchTraining("PU")}
+                onClick={() => handleLaunchTraining('PU')}
               >
                 <Play size={16} fill="currentColor" />
                 <span>Mulai latihan</span>
@@ -127,7 +103,7 @@ export const DashboardView = () => {
                 type="button"
                 id="btn-goto-practice"
                 className="btn-latveria-secondary w-full"
-                onClick={() => setCurrentTab("practice")}
+                onClick={() => setCurrentTab('practice')}
               >
                 <span>BUKA SEMUA SUBTES (7)</span>
                 <ArrowUpRight size={15} />
@@ -145,9 +121,7 @@ export const DashboardView = () => {
             <div className="training-counter-badge font-mono">
               <span className="counter-curr">{completedTrainingCount}</span>
               <span className="counter-slash">/</span>
-              <span className="counter-total">
-                {totalTrainingCount} COMPLETED
-              </span>
+              <span className="counter-total">{totalTrainingCount} COMPLETED</span>
             </div>
           </PanelHeader>
 
@@ -155,16 +129,14 @@ export const DashboardView = () => {
             {user.todayTraining.map((task) => (
               <div
                 key={task.id}
-                className={`task-row-card ${task.completed ? "task-done" : ""}`}
+                className={`task-row-card ${task.completed ? 'task-done' : ''}`}
               >
                 <div className="task-status-btn-wrap">
                   <button
                     type="button"
                     className="task-check-button"
                     onClick={() => completeDailyTraining(task.id)}
-                    title={
-                      task.completed ? "Selesai diverifikasi" : "Tandai selesai"
-                    }
+                    title={task.completed ? 'Selesai diverifikasi' : 'Tandai selesai'}
                   >
                     {task.completed ? (
                       <CheckCircle2 size={20} className="text-sage" />
@@ -175,9 +147,7 @@ export const DashboardView = () => {
                 </div>
 
                 <div className="task-info">
-                  <div className="task-subject-name font-sans">
-                    {task.subject}
-                  </div>
+                  <div className="task-subject-name font-sans">{task.subject}</div>
                   <div className="task-metadata font-mono">
                     <span>{task.count} QUESTIONS</span>
                     <span className="meta-dot">•</span>
@@ -208,7 +178,7 @@ export const DashboardView = () => {
               type="button"
               id="btn-start-daily-full"
               className="btn-latveria-primary w-full"
-              onClick={() => handleLaunchTraining("PU")}
+              onClick={() => handleLaunchTraining('PU')}
             >
               <span>LANJUTKAN TRAINING HARIAN</span>
               <ArrowUpRight size={16} />
@@ -224,22 +194,22 @@ export const DashboardView = () => {
             <div className="chart-metric-switch font-mono">
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === "questions" ? "active" : ""}`}
-                onClick={() => setChartMetric("questions")}
+                className={`metric-btn ${chartMetric === 'questions' ? 'active' : ''}`}
+                onClick={() => setChartMetric('questions')}
               >
                 SOAL
               </button>
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === "xp" ? "active" : ""}`}
-                onClick={() => setChartMetric("xp")}
+                className={`metric-btn ${chartMetric === 'xp' ? 'active' : ''}`}
+                onClick={() => setChartMetric('xp')}
               >
                 XP
               </button>
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === "accuracy" ? "active" : ""}`}
-                onClick={() => setChartMetric("accuracy")}
+                className={`metric-btn ${chartMetric === 'accuracy' ? 'active' : ''}`}
+                onClick={() => setChartMetric('accuracy')}
               >
                 AKURASI %
               </button>
@@ -251,17 +221,10 @@ export const DashboardView = () => {
             <div className="chart-bars-row">
               {user.weeklyChartData.map((item, idx) => {
                 const val = item[chartMetric];
-                const heightPercent = Math.max(
-                  12,
-                  Math.round((val / maxMetricVal) * 100),
-                );
+                const heightPercent = Math.max(12, Math.round((val / maxMetricVal) * 100));
 
                 return (
-                  <div
-                    key={idx}
-                    className="chart-day-column"
-                    title={`${item.fullDay}: ${val} ${chartMetric}`}
-                  >
+                  <div key={idx} className="chart-day-column" title={`${item.fullDay}: ${val} ${chartMetric}`}>
                     <div className="bar-track">
                       <div
                         className="bar-fill"
@@ -281,8 +244,7 @@ export const DashboardView = () => {
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">TOTAL MINGGU INI</span>
               <span className="stat-val font-serif">
-                {user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)}{" "}
-                Soal
+                {user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)} Soal
               </span>
             </div>
             <div className="chart-stat-tile">
@@ -306,38 +268,26 @@ export const DashboardView = () => {
           <div className="stat-tiles-quad">
             <div className="quad-tile">
               <div className="quad-top font-mono">QUESTIONS COMPLETED</div>
-              <div className="quad-number font-serif">
-                {user.questionsCompleted}
-              </div>
-              <div className="quad-bottom font-mono text-sage">
-                TARGET: 1,000 SOAL
-              </div>
+              <div className="quad-number font-serif">{user.questionsCompleted}</div>
+              <div className="quad-bottom font-mono text-sage">TARGET: 1,000 SOAL</div>
             </div>
 
             <div className="quad-tile">
               <div className="quad-top font-mono">PRACTICE HOURS</div>
-              <div className="quad-number font-serif">
-                {user.practiceHours}h
-              </div>
-              <div className="quad-bottom font-mono text-gold">
-                DEDIKASI TERVERIFIKASI
-              </div>
+              <div className="quad-number font-serif">{user.practiceHours}h</div>
+              <div className="quad-bottom font-mono text-gold">DEDIKASI TERVERIFIKASI</div>
             </div>
 
             <div className="quad-tile">
               <div className="quad-top font-mono">GLOBAL RANK</div>
               <div className="quad-number font-serif">#{user.currentRank}</div>
-              <div className="quad-bottom font-mono text-sage">
-                TOP 2% OF COHORT
-              </div>
+              <div className="quad-bottom font-mono text-sage">TOP 2% OF COHORT</div>
             </div>
 
             <div className="quad-tile">
               <div className="quad-top font-mono">ACCURACY BENCHMARK</div>
               <div className="quad-number font-serif">{user.accuracy}%</div>
-              <div className="quad-bottom font-mono text-gold">
-                TIER-1 EXCELLENCE
-              </div>
+              <div className="quad-bottom font-mono text-gold">TIER-1 EXCELLENCE</div>
             </div>
           </div>
         </Panel>
@@ -353,9 +303,7 @@ export const DashboardView = () => {
               <div key={act.id} className="activity-stream-item">
                 <div className="activity-sub-badge font-mono">{act.code}</div>
                 <div className="activity-body">
-                  <div className="activity-title-text font-sans">
-                    {act.title}
-                  </div>
+                  <div className="activity-title-text font-sans">{act.title}</div>
                   <div className="activity-meta font-mono">
                     <span className="text-muted">{act.time}</span>
                     <span className="meta-dot">•</span>

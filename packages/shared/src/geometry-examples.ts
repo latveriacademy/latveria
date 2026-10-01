@@ -50,7 +50,7 @@ export const cylinderTankQuestion = {
 \draw[dashed] (0,0)--(2,0);
 \node[above] at (1,0) {$7\text{ m}$};
 \node[right] at (2.6,2.5) {$10\text{ m}$};
-\node[left] at (-2,3) {$\frac{3}{5}\text{ penuh}$};
+\node[left] at (-2,3) {$\frac{3}{5}$ penuh};
 \end{tikzpicture}`,
   options: ["4 jam", "5 jam", "6 jam", "10 jam"],
   correctAnswer: 2,
