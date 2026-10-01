@@ -81,7 +81,6 @@
 
 body::before { display: none; }
 .latveria-seal { object-fit: contain; flex-shrink: 0; }
-.header-brand-slot .app-brand { font: 600 16px var(--font-sans); letter-spacing: -0.03em; }
 .hero-top-meta, .panel-eyebrow, .catalog-eyebrow, .modal-stamp-mono,
 .hero-sub, .hero-description, .metric-sub-note, .quad-bottom,
 .meta-tag-id, .explanation-section.notes-sec,
@@ -349,9 +348,10 @@ body::after {
 }
 .header-brand-visible {
   opacity: 1;
-  max-width: 200px;
+  max-width: 240px;
   margin-right: 12px;
 }
+.header-brand-static { display: none; }
 
 
 
@@ -2400,13 +2400,12 @@ body::after {
   font-weight: 600;
   cursor: pointer;
   position: relative;
-  transition: all 0.18s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
   user-select: none;
 }
 
 .nav-number-tile:hover {
   border-color: var(--accent-gold);
-  transform: translateY(-1px);
 }
 
 .tile-num-text {
@@ -4094,23 +4093,11 @@ body::after {
     gap: 6px;
   }
 
-  /* Logo header di mobile: selalu tampil di samping burger, teks brand disembunyikan agar hemat tempat */
+  /* One shared brand; it is rendered only when the sidebar is closed. */
   .header-brand-slot {
-    display: flex !important;
-    opacity: 1 !important;
-    max-width: none !important;
-    pointer-events: auto !important;
-    margin-right: 4px !important;
-  }
-  .header-brand-slot .app-brand span {
-    display: none;
-  }
-  .header-brand-slot .app-brand {
-    gap: 0;
-  }
-  .header-brand-slot .app-brand img {
-    width: 32px;
-    height: 32px;
+    display: flex;
+    max-width: none;
+    margin-right: 4px;
   }
 
   /* Waktu di header mobile: tampilkan icon + angka jam saja */
@@ -4148,14 +4135,10 @@ body::after {
   }
 }
 
-/* Saat layar narrow (≤860px) di desktop dengan sidebar ditutup: hilangkan teks brand, sisakan icon logo saja */
+/* Keep the brand readable; secondary header metrics remain in the dashboard. */
 @media (max-width: 860px) {
-  .header-brand-slot .app-brand span {
-    display: none;
-  }
-  .header-brand-slot .app-brand {
-    gap: 0;
-  }
+  .header-brand-present .header-meta-group,
+  .header-brand-present .header-stat-pill { display: none; }
 }
 
 /* Layar sangat sempit (≤480px) */

@@ -45,11 +45,11 @@ export function DashboardNavigation({ items, active, onSelect, mobile = false }:
 export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen = true }: { home: string; children: ReactNode; onToggleSidebar?: () => void; sidebarOpen?: boolean }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
-  return <header className="latveria-header-bar">
+  const showBrand = !sidebarOpen || !onToggleSidebar;
+  return <header className={`latveria-header-bar${showBrand ? " header-brand-present" : ""}`}>
     <div className="header-left-group">
       {onToggleSidebar && <button type="button" id="header-sidebar-toggle-btn" className="header-tool-btn sidebar-toggle-in-header" onClick={onToggleSidebar} aria-label={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"} title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}><Menu size={17} /></button>}
-      <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}><Brand to={home} className="header-brand" /></div>
-      <div className="mobile-brand-slot"><Brand to={home} /></div>
+      {showBrand && <div className={`header-brand-slot header-brand-visible${!onToggleSidebar ? " header-brand-static" : ""}`}><Brand to={home} /></div>}
     </div>
     <div className="header-meta-group"><div className="live-clock-panel font-mono">
       <Clock size={13} className="text-gold" />

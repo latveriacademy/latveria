@@ -690,7 +690,15 @@ export const PracticeView = () => {
               </div>
 
               <div className="navigator-legend font-mono">
-                {isEvaluated ? "✓ benar · × salah · ○ kosong" : "Kosong · dijawab · ditandai"}
+                {isEvaluated ? <>
+                  <span className="legend-item text-sage"><span className="legend-indicator eval-c" aria-hidden="true" />Benar</span>
+                  <span className="legend-item text-crimson"><span className="legend-indicator eval-i" aria-hidden="true" />Salah</span>
+                  <span className="legend-item text-muted"><span className="legend-indicator eval-u" aria-hidden="true" />Kosong</span>
+                </> : <>
+                  <span className="legend-item"><span className="legend-indicator unans" aria-hidden="true" />Belum dijawab</span>
+                  <span className="legend-item"><span className="legend-indicator ans" aria-hidden="true" />Terjawab</span>
+                  <span className="legend-item"><span className="legend-indicator flag" aria-hidden="true" />Ditandai</span>
+                </>}
               </div>
 
             </div>
