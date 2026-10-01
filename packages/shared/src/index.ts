@@ -4,6 +4,14 @@ export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geo
 
 export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
 export const signupSchema = credentialsSchema.extend({ name: z.string().trim().min(1).max(100) });
+export const profileSchema = z.object({
+  name: z.string().trim().min(1, "Nama tidak boleh kosong.").max(100, "Nama maksimal 100 karakter."),
+  codename: z.string().trim().max(100, "Nama panggilan maksimal 100 karakter."),
+  targetUniversity: z.string().trim().max(200, "Target PTN maksimal 200 karakter."),
+  bio: z.string().trim().max(500, "Bio maksimal 500 karakter."),
+  motto: z.string().trim().max(200, "Motto maksimal 200 karakter."),
+}).strict();
+export type Profile = z.infer<typeof profileSchema>;
 export const questionSchema = z.object({
   topicId: z.uuid(), prompt: z.string().trim().min(5).max(1000),
   options: z.array(z.string().trim().min(1).max(300)).length(4).refine((items) => new Set(items).size === 4, "Opsi harus berbeda."),

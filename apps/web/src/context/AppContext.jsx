@@ -138,9 +138,28 @@ export const AppProvider = ({ children }) => {
   const [sessionResults, setSessionResults] = useState(null);
   // Loading state for async operations
   const [loading, setLoading] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
   const submitLock = useRef(false);
+
+  const loadProfile = useCallback(async () => {
+    setProfileError('');
+    try {
+      const [apiUser, profile] = await Promise.all([api('/me'), api('/learner/profile')]);
+      setUser((prev) => ({
+        ...prev,
+        ...profile,
+        email: apiUser.email,
+        role: apiUser.role,
+        id: `LTV-${apiUser.id.slice(0, 4).toUpperCase()}`,
+      }));
+      setProfileLoaded(true);
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Gagal memuat profil. Coba lagi.');
+    }
+  }, []);
 
   // Synchronize sound engine
   useEffect(() => {
@@ -150,21 +169,7 @@ export const AppProvider = ({ children }) => {
 
   // Synchronize with backend authenticated user + fetch topics/summary/history
   useEffect(() => {
-    fetch('/api/me')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((apiUser) => {
-        if (apiUser && apiUser.name) {
-          setUser((prev) => ({
-            ...prev,
-            name: apiUser.name,
-            email: apiUser.email,
-            role: apiUser.role,
-            codename: apiUser.name,
-            id: apiUser.id ? `LTV-${apiUser.id.slice(0, 4).toUpperCase()}` : prev.id,
-          }));
-        }
-      })
-      .catch(() => {});
+    loadProfile();
 
     // Fetch topics catalog
     fetch('/api/learner/topics')
@@ -213,7 +218,7 @@ export const AppProvider = ({ children }) => {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [loadProfile]);
 
   // Synchronize Theme & Body Class
   useEffect(() => {
@@ -567,6 +572,9 @@ export const AppProvider = ({ children }) => {
         setSoundEnabled,
         user,
         setUser,
+        profileLoaded,
+        profileError,
+        loadProfile,
         topics,
         summary,
         history,

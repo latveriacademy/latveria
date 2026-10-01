@@ -38,7 +38,13 @@ export const SettingsView = () => {
 
   const handleResetData = () => {
     sound.playSelect();
-    setUser(DEFAULT_USER);
+    setUser((prev) => ({
+      ...DEFAULT_USER,
+      id: prev.id, email: prev.email, role: prev.role,
+      name: prev.name, codename: prev.codename,
+      targetUniversity: prev.targetUniversity,
+      bio: prev.bio, motto: prev.motto,
+    }));
     localStorage.removeItem('latveria_user');
     setShowConfirmReset(false);
     showToast('DATA TERESET', 'Sistem Latveria telah dikembalikan ke kalibrasi awal.', 'info');

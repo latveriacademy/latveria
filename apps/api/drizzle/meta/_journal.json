@@ -36,6 +36,13 @@
       "when": 1790754124422,
       "tag": "0004_abandoned_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790857172509,
+      "tag": "0005_wooden_lord_hawal",
+      "breakpoints": true
     }
   ]
 }

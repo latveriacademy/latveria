@@ -4,6 +4,10 @@ import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  codename: text("codename").default("").notNull(),
+  targetUniversity: text("target_university").default("").notNull(),
+  bio: text("bio").default("").notNull(),
+  motto: text("motto").default("").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
