@@ -41,15 +41,17 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
     </section>}
     {error && <p className={styles.formError} role="alert">{error}</p>}
     <Table className={styles.questionTable}>
+      <caption className="sr-only">Daftar soal sesuai filter, {bank.total} soal.</caption>
       <TableHeader><TableRow>
-        <TableHead><input type="checkbox" className={styles.rowCheckbox} aria-label="Pilih semua soal di halaman ini" checked={all} disabled={pending || !bank.rows.length} ref={(node) => { if (node) node.indeterminate = selected.length > 0 && !all; }} onChange={(event) => choose(event.target.checked ? bank.rows.map((row) => row.id) : [])} /></TableHead>
-        <TableHead>#</TableHead><TableHead>Pertanyaan</TableHead><TableHead>Kategori</TableHead><TableHead>Sumber</TableHead><TableHead>Aksi</TableHead>
+        <TableHead className={styles.selectColumn}><input type="checkbox" className={styles.rowCheckbox} aria-label="Pilih semua soal di halaman ini" checked={all} disabled={pending || !bank.rows.length} ref={(node) => { if (node) node.indeterminate = selected.length > 0 && !all; }} onChange={(event) => choose(event.target.checked ? bank.rows.map((row) => row.id) : [])} /></TableHead>
+        <TableHead className={styles.numberColumn}>No.</TableHead><TableHead>Pertanyaan</TableHead><TableHead className={styles.actionColumn}><span className="sr-only">Aksi</span></TableHead>
       </TableRow></TableHeader>
       <TableBody>{bank.rows.map((row, index) => <TableRow key={row.id} data-state={selected.includes(row.id) ? "selected" : undefined} className={selected.includes(row.id) ? styles.selectedRow : undefined}>
         <TableCell><input type="checkbox" className={styles.rowCheckbox} aria-label={`Pilih soal ${index + 1}: ${row.prompt}`} checked={selected.includes(row.id)} disabled={pending} onChange={(event) => choose(event.target.checked ? [...selected, row.id] : selected.filter((id) => id !== row.id))} /></TableCell>
-        <TableCell>{(bank.page - 1) * 15 + index + 1}</TableCell><TableCell className={styles.promptCell}><MathText>{row.prompt}</MathText></TableCell><TableCell>{row.category ?? "Belum diatur"}</TableCell><TableCell>{row.source}</TableCell>
-        <TableCell><Button asChild size="sm" variant="outline"><Link to={`/admin/soal/${row.id}`}><Eye aria-hidden="true" />Pratinjau</Link></Button></TableCell>
-      </TableRow>)}{!bank.rows.length && <TableRow><TableCell colSpan={6}>Belum ada soal untuk filter ini.</TableCell></TableRow>}</TableBody>
+        <TableCell className={styles.numberColumn}>{(bank.page - 1) * 15 + index + 1}</TableCell>
+        <TableCell className={styles.promptCell}><div className={styles.promptText}><MathText>{row.prompt}</MathText></div><div className={styles.questionMeta}><span>{row.topic}</span>{row.category && <><span aria-hidden="true">·</span><span>{row.category}</span></>}</div></TableCell>
+        <TableCell><Button asChild size="sm" variant="ghost"><Link to={`/admin/soal/${row.id}`} aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}><Eye aria-hidden="true" /><span className={styles.previewLabel}>Pratinjau</span></Link></Button></TableCell>
+      </TableRow>)}{!bank.rows.length && <TableRow><TableCell colSpan={4} className={styles.emptyCell}>Tidak ada soal pada filter ini. Coba ubah subtes atau kategori.</TableCell></TableRow>}</TableBody>
     </Table>
   </>;
 }

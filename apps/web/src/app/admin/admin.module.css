@@ -120,24 +120,53 @@
   background: var(--surface);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
-.questionTable { min-width: 760px; }
+.bankPage :global(.app-page-heading) h1 { font-size: 32px; }
+.bankFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+  max-width: 860px;
+  margin-bottom: 24px;
+}
+.bankFilterField { display: grid; gap: 8px; min-width: 0; font-size: 13px; color: var(--text-secondary); }
+.bankFilterField :global([data-slot="select-trigger"]) { width: 100%; }
+.questionTable { min-width: 0; width: 100%; table-layout: fixed; }
 .questionTable th {
   background: var(--bg-subtle);
   color: var(--soft-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .numberColumn { width: 52px; font-family: var(--font-mono); }
-.promptCell { min-width: 270px; max-width: 440px; line-height: 1.45; }
+.selectColumn { width: 48px; }
+.actionColumn { width: 136px; }
+.questionTable td { padding-block: 18px; }
+.questionTable td:last-child { text-align: right; }
+.promptCell { min-width: 0; line-height: 1.6; }
+.promptText { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.questionMeta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px; color: var(--text-muted); font-size: 12px; }
+.paginationActions { display: flex; align-items: center; gap: 12px; }
+@media (max-width: 700px) {
+  .bankFilters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .bankFilters > button { justify-self: start; }
+  .questionTable th, .questionTable td { padding-inline: 8px; }
+  .questionTable .numberColumn { display: none; }
+  .questionTable .selectColumn { width: 40px; }
+  .questionTable .actionColumn { width: 56px; }
+  .previewLabel { display: none; }
+  .questionMeta { font-size: 11px; }
+  .paginationActions { width: 100%; justify-content: space-between; gap: 8px; }
+}
 .noCategory {
   color: var(--muted-ink);
   font-style: italic;
   font-size: 13px;
 }
-.emptyCell {
+.questionTable td.emptyCell {
   height: 110px;
   text-align: center;
   color: var(--soft-ink);
