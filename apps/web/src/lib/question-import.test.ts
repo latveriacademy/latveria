@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import { parseQuestionImport } from "./question-import";
+
+const group = {
+  subtes: "pengetahuan-kuantitatif",
+  category: "Persentase",
+  questions: [{ prompt: "Berapakah seperempat dari 80?", options: ["10", "15", "20", "25"], correctAnswer: 2, explanation: "Seperempat dari 80 adalah 20.", source: "Contoh buatan tim" }],
+};
+
+describe("parseQuestionImport", () => {
+  it("accepts the same JSON text whether pasted or read from a file", () => {
+    const data = { groups: [group] };
+    expect(parseQuestionImport(JSON.stringify(data))).toEqual(data);
+  });
+  it.each(["", "{oops}"])("rejects empty or malformed input: %s", (text) => {
+    expect(() => parseQuestionImport(text)).toThrow();
+  });
+  it("measures the UTF-8 byte limit rather than character count", () => {
+    const text = JSON.stringify({ padding: "é".repeat(100_000) });
+    expect(text.length).toBeLessThan(200_000);
+    expect(() => parseQuestionImport(text)).toThrow("200 KB");
+  });
+  it("identifies the group for an unknown subtest", () => {
+    expect(() => parseQuestionImport(JSON.stringify({ groups: [group, { ...group, subtes: "unknown" }] }))).toThrow("grup 2");
+  });
+  it("identifies the question containing invalid options", () => {
+    const invalid = { ...group, questions: [group.questions[0], { ...group.questions[0], options: ["A", "A", "B", "C"] }] };
+    expect(() => parseQuestionImport(JSON.stringify({ groups: [invalid] }))).toThrow("grup 1, soal 2");
+  });
+});

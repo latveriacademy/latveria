@@ -61,7 +61,7 @@ function BankPage() {
   </>;
 }
 function NewQuestion() { const topics = useLoaderData<Topic[]>(); const [params] = useSearchParams(); return <><PageHeading title="Tambah soal" description="Soal langsung tersedia setelah disimpan." /><QuestionForm topics={topics} initialTopicId={topics.find((topic) => topic.slug === params.get("subtes"))?.id} /></>; }
-function ImportPage() { return <><PageHeading title="Impor soal dari JSON" description="Unggah soal per subtes dan kategori sekaligus." /><ImportQuestions /></>; }
+function ImportPage() { return <><PageHeading title="Impor soal dari JSON" description="Tempel JSON atau unggah file, lalu periksa sebelum mengimpor." /><ImportQuestions /></>; }
 function EditQuestion() {
   const { item, topics } = useLoaderData<{ item: QuestionDetail; topics: Topic[] }>();
   return <><PageHeading title="Edit soal" description={`${item.topic} · ${item.category ?? "Tanpa kategori"}`} /><QuestionForm key={item.id} topics={topics} question={item} /></>;

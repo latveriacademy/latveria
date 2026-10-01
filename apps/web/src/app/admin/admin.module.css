@@ -232,6 +232,46 @@
   max-width: 860px;
   gap: 20px;
 }
+
+.importLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.importLayout > section { min-width: 0; }
+.importEditor { display: grid; gap: 20px; }
+.field .jsonEditor {
+  min-height: 340px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  tab-size: 2;
+  background: var(--bg-input);
+}
+.importHelp { color: var(--text-secondary); font-size: 13px; font-weight: 400; line-height: 1.6; }
+.importSummary { position: sticky; top: 0; }
+.importSummary > .importHelp { margin-top: 20px; }
+.importCount { font-size: 18px; font-weight: 600; }
+.importGroups { list-style: none; padding: 0; margin: 16px 0; }
+.importGroups li { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+.importGroups strong { font-size: 14px; }
+.importGroups span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+.importActions { display: grid; gap: 12px; margin-top: 24px; }
+.importEditor input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 1000px) {
+  .importLayout { grid-template-columns: minmax(0, 1fr); }
+  .importSummary { position: static; }
+}
 .formSection {
   display: grid;
   gap: 18px;
