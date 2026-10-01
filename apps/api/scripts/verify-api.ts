@@ -100,6 +100,12 @@ try {
   const result = await (await request(`/learner/results/${attempt.id}`, learner.cookie)).json();
   assert.equal(result.answers.length, practice.items.length);
   assert.ok("correctAnswer" in result.answers[0]);
+  const history = await (await request("/learner/history", learner.cookie)).json();
+  assert.ok(history.some((item: { id: string; total: number }) => item.id === attempt.id && item.total === result.answers.length));
+  assert.deepEqual(await (await request("/learner/history", other.cookie)).json(), []);
+  const summaryBeforeReview = await (await request("/learner/summary", learner.cookie)).json();
+  assert.equal((await request(`/learner/results/${attempt.id}`, learner.cookie)).status, 200);
+  assert.deepEqual(await (await request("/learner/summary", learner.cookie)).json(), summaryBeforeReview);
   await getDb().update(user).set({ role: "admin" }).where(eq(user.id, other.id));
   assert.equal((await request("/learner/topics", other.cookie)).status, 403);
   assert.equal((await request("/learner/profile", other.cookie)).status, 403);

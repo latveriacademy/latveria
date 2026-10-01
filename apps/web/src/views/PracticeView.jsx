@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import { History } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { LatveriaCalculator } from '../components/LatveriaCalculator';
@@ -37,23 +39,27 @@ import {
   Maximize2
 } from 'lucide-react';
 
-export const PracticeView = () => {
+export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}) => {
   const {
-    activeSession,
-    setActiveSession,
+    activeSession: liveSession,
+    setActiveSession: setLiveSession,
     sessionResults,
     setSessionResults,
     startPractice,
     selectAnswer,
     toggleFlag,
     finishSession,
-    exitPractice,
+    exitPractice: exitLivePractice,
     openLexicon,
     topics,
     loading,
     submitting,
     submissionError
   } = useApp();
+  const [reviewState, setReviewState] = useState(reviewSession ?? null);
+  const activeSession = reviewSession ? reviewState : liveSession;
+  const setActiveSession = reviewSession ? setReviewState : setLiveSession;
+  const exitPractice = reviewSession ? onReviewExit : exitLivePractice;
 
   // Selection Screen State
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -341,6 +347,7 @@ export const PracticeView = () => {
                 type="button"
                 className="btn-latveria-primary btn-submit-exam font-mono"
                 onClick={() => {
+                  if (onReviewStart) { onReviewStart(); return; }
                   sound.playClick();
                   startPractice(
                     activeSession.subjectId,
@@ -351,7 +358,7 @@ export const PracticeView = () => {
                 }}
               >
                 <RotateCcw size={14} />
-                <span>Ulangi latihan</span>
+                <span>{onReviewStart ? 'Latihan lagi' : 'Ulangi latihan'}</span>
               </button>
             )}
 
@@ -886,13 +893,13 @@ export const PracticeView = () => {
                   </span>
                 </div>
 
-                <div className="result-metric-card">
+                {activeSession.results.earnedXP != null && <div className="result-metric-card">
                   <span className="card-label-mono font-mono">EXP diperoleh</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score text-gold">+{activeSession.results.earnedXP}</span>
                     <span className="score-denom">XP</span>
                   </div>
-                </div>
+                </div>}
               </div>
 
               <div className="modal-actions-footer">
@@ -929,7 +936,7 @@ export const PracticeView = () => {
       <LatveriaWatermark size={380} opacity={0.03} />
 
       {/* Catalog Header */}
-      <PageHeading title="Latihan" />
+      <PageHeading title="Latihan" actions={<Button asChild variant="outline"><Link to="/dashboard/riwayat"><History />Riwayat</Link></Button>} />
 
       {/* Subject Cards Grid */}
       <ul className="subjects-grid" aria-label="Subtes latihan">

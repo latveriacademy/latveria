@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { DEFAULT_USER } from '../data/userData';
 import { LEXICON_DATABASE } from '../data/lexiconData';
 import { sound } from '../utils/audioFeedback';
@@ -77,7 +78,12 @@ function mergeReviewData(sessionQuestions, reviewAnswers) {
 
 export const AppProvider = ({ children }) => {
   // Navigation State
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  const tab = params.get('tab') || 'dashboard';
+  const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
+  const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}`), [navigate]);
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
   const [sidebarOpen, setSidebarOpen] = useState(() => {

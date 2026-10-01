@@ -52,6 +52,7 @@ Development menggunakan proxy Vite dari port 3000 ke API 3001. Produksi mengguna
 - Operasi tulis mewajibkan Origin sama dengan `BETTER_AUTH_URL`. Tidak ada CORS wildcard; proxy dan deployment memakai satu origin.
 - Endpoint latihan hanya memilih ID, prompt, dan opsi. Sesi dapat memakai sebagian soal dari bank subtes. Backend memeriksa setiap questionId termasuk dalam subtes dan memvalidasi opsi saat submit, menilai dari kunci database, lalu menyimpan attempt/answers dalam transaksi. Frontend mewajibkan semua soal yang dipilih dijawab; kegagalan submit mempertahankan draft, sedangkan kegagalan pemuatan review dapat dicoba ulang memakai attempt ID yang sudah tersimpan.
 - Endpoint hasil mencari attempt dengan ID **dan** userId sebelum membaca kunci/pembahasan. Client tidak dapat melihat hasil peserta lain.
+- Tombol Riwayat pada header Latihan membuka `/dashboard/riwayat`; daftar dan hasil memakai loader React Router untuk `/api/learner/history` serta `/api/learner/results/:id`. Hasil di `/dashboard/riwayat/:id` menggunakan renderer soal yang sama dengan state review lokal baca-saja. Membuka hasil tidak mengirim submission atau memberi EXP; refresh dan tombol kembali mengikuti URL halaman.
 - Admin membuat soal melalui Zod shared. Penghapusan soal terpakai ditolak foreign key PostgreSQL, termasuk saat bersamaan dengan submit.
 - Migrasi Drizzle dipindah bersama metadata tanpa mengganti SQL/ID lama. RLS tanpa kebijakan publik tetap aktif; otorisasi API tetap wajib karena koneksi server dapat melewati RLS.
 
