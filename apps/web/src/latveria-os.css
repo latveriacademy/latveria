@@ -81,8 +81,7 @@
 
 body::before { display: none; }
 .latveria-seal { object-fit: contain; flex-shrink: 0; }
-.latveria-sidebar .brand-name { font: 600 21px var(--font-sans); letter-spacing: -0.03em; }
-.mobile-brand-slot .mobile-title { font: 600 16px var(--font-sans); letter-spacing: -0.03em; }
+.header-brand-slot .app-brand { font: 600 16px var(--font-sans); letter-spacing: -0.03em; }
 .hero-top-meta, .panel-eyebrow, .catalog-eyebrow, .modal-stamp-mono,
 .hero-sub, .hero-description, .metric-sub-note, .quad-bottom,
 .meta-tag-id, .explanation-section.notes-sec,
@@ -635,17 +634,6 @@ body::after {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.mobile-brand-slot {
-  display: none;
-  align-items: center;
-  gap: 10px;
-}
-
-.mobile-brand-text {
-  display: flex;
-  flex-direction: column;
 }
 
 .mobile-title {
@@ -4099,15 +4087,77 @@ body::after {
   .latveria-bottom-nav {
     display: block;
   }
-  .mobile-brand-slot {
-    display: flex;
+  .latveria-header-bar {
+    padding: 0 10px;
+    gap: 6px;
   }
-  .header-meta-group {
+
+  /* Logo header di mobile: selalu tampil di samping burger, teks brand disembunyikan agar hemat tempat */
+  .header-brand-slot {
+    display: flex !important;
+    opacity: 1 !important;
+    max-width: none !important;
+    pointer-events: auto !important;
+    margin-right: 4px !important;
+  }
+  .header-brand-slot .app-brand span {
     display: none;
   }
-  .latveria-header-bar {
-    padding: 0 12px;
+  .header-brand-slot .app-brand {
+    gap: 0;
   }
+  .header-brand-slot .app-brand img {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Waktu di header mobile: tampilkan icon + angka jam saja */
+  .header-meta-group {
+    display: flex;
+  }
+  .live-clock-panel {
+    padding: 4px 7px;
+    gap: 5px;
+    font-size: 11px;
+  }
+  .live-clock-panel .clock-date,
+  .live-clock-panel .divider-slash,
+  .live-clock-panel .timezone-tag {
+    display: none;
+  }
+
+  /* Stats di header: sembunyikan label, hanya icon + angka */
+  .stat-pill-label {
+    display: none;
+  }
+  .header-stat-pill {
+    padding: 4px 8px;
+    gap: 4px;
+    font-size: 11.5px;
+  }
+
+  /* Tool buttons lebih ringkas di mobile */
+  .header-tool-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .header-actions-group {
+    gap: 6px;
+  }
+}
+
+/* Saat layar narrow (≤860px) di desktop dengan sidebar ditutup: hilangkan teks brand, sisakan icon logo saja */
+@media (max-width: 860px) {
+  .header-brand-slot .app-brand span {
+    display: none;
+  }
+  .header-brand-slot .app-brand {
+    gap: 0;
+  }
+}
+
+/* Layar sangat sempit (≤480px) */
+@media (max-width: 480px) {
   .latveria-content-scroll {
     padding: 18px 16px 84px;
   }
@@ -4119,15 +4169,6 @@ body::after {
   }
   .id-card-body {
     grid-template-columns: 1fr;
-  }
-
-  /* Stats di header: sembunyikan label, hanya icon + angka */
-  .stat-pill-label {
-    display: none;
-  }
-  .header-stat-pill {
-    padding: 5px 8px;
-    gap: 4px;
   }
 
   .id-avatar-column {

@@ -69,17 +69,15 @@ export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen =
           <Menu size={17} />
         </button>
       )}
-      {/* Logo desktop: fade+slide saat sidebar tertutup, navigasi ke landing page */}
+      {/* Logo header: navigasi ke landing page */}
       <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}>
-        <Brand to="/" className="mobile-title" />
+        <Brand to="/" className="header-brand" />
       </div>
-      {/* Logo mobile: selalu tampil pada layar kecil */}
-      <div className="mobile-brand-slot"><Brand to={home} className="mobile-title" /></div>
     </div>
 
     <div className="header-meta-group"><div className="live-clock-panel font-mono">
       <Clock size={13} className="text-gold" />
-      <span>{now.toLocaleDateString("id-ID", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).toUpperCase()}</span>
+      <span className="clock-date">{now.toLocaleDateString("id-ID", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).toUpperCase()}</span>
       <span className="divider-slash">/</span>
       <span className="clock-digits">{now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Jakarta" })}</span>
       <span className="timezone-tag">WIB</span>
