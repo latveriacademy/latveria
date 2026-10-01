@@ -5,6 +5,7 @@ import postgres from "postgres";
 import { getDatabaseUrl } from "../src/lib/env";
 import { questions, topics } from "../src/lib/db/schema";
 import { utbkSubtests } from "@latveria/shared";
+import { isLegacyRoofQuestion, roofQuestionCorrectAnswer, roofQuestionExplanation, roofQuestionOptions, roofQuestionPrompt } from "../src/lib/roof-question";
 
 const legacySlugs = [
   ["dummy-logika", "penalaran-umum"],
@@ -57,8 +58,15 @@ async function main() {
           source: sql`excluded.source`,
         },
       });
+      const mathQuestions = await tx.select({ id: questions.id, prompt: questions.prompt }).from(questions).where(eq(questions.topicId, topicId["penalaran-matematika"]));
+      const oldRoof = mathQuestions.find(({ prompt }) => isLegacyRoofQuestion(prompt));
+      if (oldRoof) {
+        await tx.update(questions).set({ prompt: roofQuestionPrompt(), options: [...roofQuestionOptions], correctAnswer: roofQuestionCorrectAnswer, explanation: roofQuestionExplanation }).where(eq(questions.id, oldRoof.id));
+      } else if (!mathQuestions.some(({ id }) => id === questionId(15))) {
+        await tx.insert(questions).values(question(15, topicId["penalaran-matematika"], roofQuestionPrompt(), [...roofQuestionOptions], roofQuestionCorrectAnswer, roofQuestionExplanation));
+      }
     });
-    console.info("Seed selesai: 7 subtes dan 14 soal dummy tersedia. ID topik lama dan soal admin tetap dipertahankan.");
+    console.info("Seed selesai: 7 subtes dan 15 soal dummy tersedia. ID topik lama dan soal admin tetap dipertahankan.");
   } finally {
     await client.end({ timeout: 5 });
   }

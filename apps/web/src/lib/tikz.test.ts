@@ -5,9 +5,14 @@ import { tikzExamples } from "./tikz-examples";
 describe("parseTikz", () => {
   it("parses the bundled triangle, cube, and sphere examples", () => {
     expect(tikzExamples.every((example) => example.source.length <= 1000)).toBe(true);
-    const [triangle, cube, sphere] = tikzExamples.map((example) => parseTikz(example.source));
+    const triangle = parseTikz(tikzExamples.find((example) => example.name === "Segitiga")!.source);
+    const pyramid = parseTikz(tikzExamples.find((example) => example.name === "Limas segiempat")!.source);
+    const cube = parseTikz(tikzExamples.find((example) => example.name === "Kubus")!.source);
+    const sphere = parseTikz(tikzExamples.find((example) => example.name === "Bola")!.source);
     expect(triangle.shapes[0]).toMatchObject({ kind: "path", closed: true, points: [[0, 0, 0], [4, 0, 0], [0, 3, 0]] });
     expect(triangle.labels).toHaveLength(5);
+    expect(pyramid.shapes).toHaveLength(4);
+    expect(tikzExamples.find((example) => example.name === "Limas segiempat")!.source.length).toBeLessThan(1000);
     expect(cube.shapes).toHaveLength(5);
     expect(cube.shapes.filter((shape) => shape.kind === "path").some((shape) => shape.style.dash)).toBe(true);
     expect(projectPoint([0, 0, 3])).toEqual([1.7999999999999998, -1.0499999999999998]);

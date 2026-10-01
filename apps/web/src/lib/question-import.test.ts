@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseQuestionImport } from "./question-import";
+import { parseTikz } from "./tikz";
+import { tikzPyramidImportExample } from "./tikz-examples";
 
 const group = {
   subtes: "pengetahuan-kuantitatif",
@@ -11,6 +13,16 @@ describe("parseQuestionImport", () => {
   it("accepts the same JSON text whether pasted or read from a file", () => {
     const data = { groups: [group] };
     expect(parseQuestionImport(JSON.stringify(data))).toEqual(data);
+  });
+  it("ships a valid importable pyramid question with renderer-compatible TikZ under the prompt limit", () => {
+    const batch = parseQuestionImport(JSON.stringify(tikzPyramidImportExample));
+    const question = batch.groups[0].questions[0];
+    const diagram = question.prompt.match(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/)?.[0];
+    expect(question.prompt.length).toBeLessThanOrEqual(1000);
+    expect(diagram).toBeTruthy();
+    expect(parseTikz(diagram!).shapes.length).toBeGreaterThan(0);
+    expect(question.options[question.correctAnswer]).toBe("1.200 genteng");
+    expect(question.prompt).toContain("tinggi limas $3$ m");
   });
   it.each(["", "{oops}"])("rejects empty or malformed input: %s", (text) => {
     expect(() => parseQuestionImport(text)).toThrow();

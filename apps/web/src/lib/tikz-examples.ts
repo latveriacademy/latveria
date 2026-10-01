@@ -1,3 +1,6 @@
+import type { QuestionImport } from "@latveria/shared";
+import { roofQuestionCorrectAnswer, roofQuestionExplanation, roofQuestionOptions, roofQuestionPrompt } from "../../../api/src/lib/roof-question";
+
 export const tikzExamples = [
   {
     name: "Segitiga",
@@ -9,6 +12,19 @@ export const tikzExamples = [
 \node[above] at (0,3) {$C$};
 \node[below] at (2,0) {$4\text{ cm}$};
 \node[left] at (0,1.5) {$3\text{ cm}$};
+\end{tikzpicture}`,
+  },
+  {
+    name: "Limas segiempat",
+    source: String.raw`\begin{tikzpicture}
+% alt: Limas persegi sisi alas 8 m, tinggi 3 m, apotema 5 m.
+\draw (0,0)--(4,-2)--(8,0)--(4,2)--cycle;
+\draw (0,0)--(4,5)--(8,0);
+\draw[dashed] (4,-2)--(4,5)--(4,2);
+\draw[dashed] (4,0)--(4,5);
+\node[below] at (4,-2) {$8\text{ m}$};
+\node[right] at (4,2.5) {$5\text{ m}$};
+\node[left] at (4,0) {$3\text{ m}$};
 \end{tikzpicture}`,
   },
   {
@@ -38,3 +54,17 @@ export const tikzExamples = [
 \end{tikzpicture}`,
   },
 ];
+
+export const tikzPyramidImportExample: QuestionImport = {
+  groups: [{
+    subtes: "pengetahuan-kuantitatif",
+    category: "Bangun ruang",
+    questions: [{
+      prompt: roofQuestionPrompt(),
+      options: [...roofQuestionOptions],
+      correctAnswer: roofQuestionCorrectAnswer,
+      explanation: roofQuestionExplanation,
+      source: "Contoh buatan tim",
+    }],
+  }],
+};
