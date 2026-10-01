@@ -272,14 +272,14 @@ export const PracticeView = () => {
                 <span className="text-sage">{activeSession.results?.correctCount || 0} benar</span>
                 <span className="eval-score-divider">•</span>
                 <span className="text-crimson">{activeSession.results?.incorrectCount || 0} salah</span>
-                <button
+                {currIdx < totalQ - 1 && <button
                   type="button"
                   className="btn-open-dossier-pill font-mono"
                   onClick={() => setShowSummaryModal(true)}
                 >
                   <BarChart2 size={13} />
                   <span>Ringkasan</span>
-                </button>
+                </button>}
               </div>
             ) : activeSession.mode === 'Timed Practice' ? (
               <div className={`timer-display font-mono ${timeLeft < 120 ? 'timer-warning' : ''}`}>
@@ -326,7 +326,7 @@ export const PracticeView = () => {
                   <span className="font-mono">{isFlagged ? 'Ditandai' : 'Tandai'}</span>
                 </button>
 
-                <button
+                {currIdx < totalQ - 1 && <button
                   type="button"
                   id="btn-open-submit-modal"
                   className="btn-latveria-primary btn-submit-exam font-mono"
@@ -334,7 +334,7 @@ export const PracticeView = () => {
                   onClick={() => setShowSubmitModal(true)}
                 >
                   <span>{submitting ? 'Memproses…' : activeSession.attemptId ? 'Muat hasil' : 'Kumpulkan'}</span>
-                </button>
+                </button>}
               </>
             ) : (
               <button
@@ -693,37 +693,6 @@ export const PracticeView = () => {
                 {isEvaluated ? "✓ benar · × salah · ○ kosong" : "Kosong · dijawab · ditandai"}
               </div>
 
-              {/* Bottom Quick Tools inside Navigator */}
-              <div className="navigator-tools-panel">
-                <button
-                  type="button"
-                  className="btn-tool-outline font-mono w-full"
-                  onClick={() => setShowCalculator(!showCalculator)}
-                >
-                  <Calculator size={14} />
-                  <span>{showCalculator ? 'Tutup kalkulator' : 'Kalkulator'}</span>
-                </button>
-
-                {!isEvaluated ? (
-                  <button
-                    type="button"
-                    className="btn-latveria-primary btn-gold-solid font-mono w-full"
-                    disabled={submitting}
-                    onClick={() => setShowSubmitModal(true)}
-                  >
-                    <FileCheck size={15} />
-                    <span>Kumpulkan</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-latveria-secondary font-mono w-full"
-                    onClick={exitPractice}
-                  >
-                    <span>Kembali</span>
-                  </button>
-                )}
-              </div>
             </div>
           </aside>
         </div>
