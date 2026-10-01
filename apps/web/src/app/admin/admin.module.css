@@ -360,6 +360,21 @@
   font-size: 13px;
   font-family: var(--font-mono);
 }
+.diagramHelp {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  color: var(--soft-ink);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.diagramHelp summary { color: var(--ink); font-weight: 600; cursor: pointer; }
+.diagramHelp .formActions { margin: 0; }
+.promptPreview { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--edge); border-radius: 10px; background: var(--surface-elevated); }
+.promptPreview h2 { margin: 0; color: var(--soft-ink); font-size: 12px; font-family: var(--font-sans); font-weight: 600; }
 .hint code {
   padding: 2px 5px;
   border-radius: 4px;

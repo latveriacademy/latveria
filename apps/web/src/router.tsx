@@ -12,11 +12,11 @@ import { Button } from "./components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { ThemeToggle } from "./components/theme-toggle";
 import { Brand, PageHeading, Panel, PanelHeader, StatTile } from "./components/ui/dashboard";
+import { MathText } from "./components/math-text";
 import as from "./app/admin/admin.module.css";
 
 const Home = lazy(() => import("./app/landing"));
 const LatveriaOSApp = lazy(() => import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })));
-const MathText = lazy(() => import("./components/math-text").then((module) => ({ default: module.MathText })));
 const QuestionBankTable = lazy(() => import("./app/admin/question-bank-table").then((module) => ({ default: module.QuestionBankTable })));
 
 async function guard(role: "user" | "admin") {

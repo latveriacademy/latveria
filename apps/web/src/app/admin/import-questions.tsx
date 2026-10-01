@@ -1,31 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { utbkSubtests, type QuestionImport } from "@latveria/shared";
+import { utbkSubtests } from "@latveria/shared";
 import { FileCheck, Upload } from "lucide-react";
 import { api } from "../../lib/api";
 import { parseQuestionImport } from "../../lib/question-import";
+import { geometryImportExample } from "../../lib/tikz-examples";
 import { Button } from "../../components/ui/button";
 import { Panel, PanelHeader } from "../../components/ui/dashboard";
 import styles from "./admin.module.css";
 
-const example: QuestionImport = {
-  groups: [{
-    subtes: "pengetahuan-kuantitatif",
-    category: "Perbandingan dan persentase",
-    questions: [{
-      prompt: "Berapakah $25\\%$ dari $80$?",
-      options: ["$10$", "$15$", "$20$", "$25$"],
-      correctAnswer: 2,
-      explanation: "$25\\% \\times 80 = 20$.",
-      source: "Contoh buatan tim",
-    }],
-  }],
-};
-
 export function ImportQuestions() {
   const navigate = useNavigate();
   const [text, setText] = useState("");
-  const [batch, setBatch] = useState<QuestionImport | null>(null);
+  const [batch, setBatch] = useState<typeof geometryImportExample | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
@@ -42,8 +29,8 @@ export function ImportQuestions() {
   return <div className={styles.importLayout}>
     <Panel>
       <PanelHeader title="Data soal"><Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => {
-        setText(JSON.stringify(example, null, 2)); setBatch(null); setError(""); setFileName("");
-      }}>Gunakan contoh</Button></PanelHeader>
+        setText(JSON.stringify(geometryImportExample, null, 2)); setBatch(null); setError(""); setFileName("");
+      }}>Gunakan contoh bangun ruang</Button></PanelHeader>
       <div className={styles.importEditor}>
         <div className={styles.field}>
           <label htmlFor="json-input">JSON</label>
@@ -67,7 +54,7 @@ export function ImportQuestions() {
           }} />
           <p className={styles.importHelp}>{reading ? "Membaca file…" : fileName ? `${fileName} sudah dimuat ke editor. Kamu bisa memperbaikinya sebelum impor.` : "Isi file akan masuk ke editor dan bisa diperbaiki sebelum diimpor."}</p>
         </div>
-        <Button type="button" variant="outline" disabled={!text.trim() || busy} onClick={() => check(text)}><FileCheck />{reading ? "Membaca file…" : "Periksa JSON"}</Button>
+        <Button type="button" variant="outline" disabled={!text.trim() || busy} onClick={() => check(text)}><FileCheck />Periksa JSON</Button>
         {error && <p id="json-error" className={styles.formError} role="alert">{error}</p>}
       </div>
     </Panel>
