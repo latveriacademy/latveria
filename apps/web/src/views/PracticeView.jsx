@@ -57,7 +57,7 @@ export const PracticeView = () => {
 
   // Selection Screen State
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('Latverian Elite');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('Sulit');
   const [selectedMode, setSelectedMode] = useState('Practice');
   const [questionCount, setQuestionCount] = useState(10);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -252,17 +252,14 @@ export const PracticeView = () => {
               className="btn-exit-minimal"
               disabled={submitting}
               onClick={exitPractice}
-              title={isEvaluated ? 'Kembali ke Repository' : 'Batalkan Sesi Latihan'}
+              title={isEvaluated ? 'Kembali ke daftar latihan' : 'Keluar dari sesi'}
             >
               <ChevronLeft size={16} />
-              <span className="font-mono">{isEvaluated ? 'KELUAR' : 'ABORT'}</span>
+              <span className="font-mono">{isEvaluated ? 'KEMBALI' : 'KELUAR'}</span>
             </button>
             <div className="subtest-badge-box">
               <span className="subtest-code font-mono">{activeSession.subjectCode}</span>
               <span className="subtest-name font-serif">{activeSession.subjectName}</span>
-              <span className={`status-mode-pill font-mono ${isEvaluated ? 'pill-evaluated' : 'pill-active'}`}>
-                {isEvaluated ? 'EVALUATION RECORD' : activeSession.difficulty}
-              </span>
             </div>
           </div>
 
@@ -270,25 +267,24 @@ export const PracticeView = () => {
           <div className="header-center-info">
             {isEvaluated ? (
               <div className="eval-quick-score font-mono">
-                <span className="eval-score-label">SKOR HASIL:</span>
                 <span className="eval-score-val text-gold">{activeSession.results?.score || 0}/100</span>
                 <span className="eval-score-divider">•</span>
-                <span className="text-sage">{activeSession.results?.correctCount || 0} BENAR</span>
+                <span className="text-sage">{activeSession.results?.correctCount || 0} benar</span>
                 <span className="eval-score-divider">•</span>
-                <span className="text-crimson">{activeSession.results?.incorrectCount || 0} SALAH</span>
+                <span className="text-crimson">{activeSession.results?.incorrectCount || 0} salah</span>
                 <button
                   type="button"
                   className="btn-open-dossier-pill font-mono"
                   onClick={() => setShowSummaryModal(true)}
                 >
                   <BarChart2 size={13} />
-                  <span>DOSSIER</span>
+                  <span>Ringkasan</span>
                 </button>
               </div>
             ) : activeSession.mode === 'Timed Practice' ? (
               <div className={`timer-display font-mono ${timeLeft < 120 ? 'timer-warning' : ''}`}>
                 <Clock size={15} />
-                <span className="time-label">SISA WAKTU:</span>
+                <span className="time-label">Sisa waktu</span>
                 <span className="time-digits">{formatTime(timeLeft)}</span>
                 <button
                   type="button"
@@ -296,14 +292,11 @@ export const PracticeView = () => {
                   onClick={() => setTimerPaused(!timerPaused)}
                   title={timerPaused ? 'Lanjutkan Waktu' : 'Jeda Waktu'}
                 >
-                  {timerPaused ? 'RESUME' : 'PAUSE'}
+                  {timerPaused ? 'Lanjutkan' : 'Jeda'}
                 </button>
               </div>
             ) : (
-              <div className="mode-display font-mono">
-                <span className="mode-dot" />
-                <span>PRACTICE MODE (UNTIMED)</span>
-              </div>
+              <span className="mode-display font-mono">{activeSession.mode === 'Practice' ? 'Tanpa batas waktu' : activeSession.mode === 'Review' ? 'Ulasan' : activeSession.mode}</span>
             )}
           </div>
 
@@ -314,10 +307,10 @@ export const PracticeView = () => {
               id="btn-toggle-calc"
               className={`tool-action-btn ${showCalculator ? 'active' : ''}`}
               onClick={() => setShowCalculator(!showCalculator)}
-              title="Kalkulator Akademik Latveria"
+              title="Kalkulator"
             >
               <Calculator size={15} />
-              <span className="font-mono">CALC</span>
+              <span className="font-mono">Kalkulator</span>
             </button>
 
             {!isEvaluated ? (
@@ -327,10 +320,10 @@ export const PracticeView = () => {
                   id="btn-flag-question"
                   className={`tool-action-btn ${isFlagged ? 'flagged' : ''}`}
                   onClick={() => toggleFlag(currIdx)}
-                  title="Tandai Soal untuk Ditinjau"
+                  title="Tandai soal"
                 >
                   <Flag size={15} />
-                  <span className="font-mono">{isFlagged ? 'FLAGGED' : 'FLAG'}</span>
+                  <span className="font-mono">{isFlagged ? 'Ditandai' : 'Tandai'}</span>
                 </button>
 
                 <button
@@ -340,7 +333,7 @@ export const PracticeView = () => {
                   disabled={submitting}
                   onClick={() => setShowSubmitModal(true)}
                 >
-                  <span>{submitting ? 'MEMPROSES...' : activeSession.attemptId ? 'MUAT HASIL' : 'SUBMIT QUIZ'}</span>
+                  <span>{submitting ? 'Memproses…' : activeSession.attemptId ? 'Muat hasil' : 'Kumpulkan'}</span>
                 </button>
               </>
             ) : (
@@ -358,7 +351,7 @@ export const PracticeView = () => {
                 }}
               >
                 <RotateCcw size={14} />
-                <span>ULANGI SESI</span>
+                <span>Ulangi latihan</span>
               </button>
             )}
 
@@ -367,10 +360,10 @@ export const PracticeView = () => {
               type="button"
               className="btn-mobile-nav-toggle font-mono"
               onClick={() => setMobileNavOpen(true)}
-              title="Buka Question Navigator"
+              title="Buka navigasi soal"
             >
               <Layers size={15} />
-              <span>MAP</span>
+              <span>Navigasi</span>
             </button>
           </div>
         </header>
@@ -386,32 +379,14 @@ export const PracticeView = () => {
             ======================================================== */}
         <div className="quiz-progress-strip">
           <div className="progress-info-left font-mono">
-            <span className="prog-step text-gold">
-              QUESTION {currIdx + 1 < 10 ? `0${currIdx + 1}` : currIdx + 1}
-            </span>
-            <span className="prog-total text-muted"> / {totalQ < 10 ? `0${totalQ}` : totalQ}</span>
-            <span className="prog-sep">•</span>
-            <span className="prog-answered text-secondary">
-              {isEvaluated
-                ? `EVALUASI PERTANYAAN KE-${currIdx + 1}`
-                : `ANSWERED: ${answeredCount < 10 ? `0${answeredCount}` : answeredCount} / ${totalQ}`}
-            </span>
+            <span className="prog-step text-gold">Soal {currIdx + 1}</span>
+            <span className="prog-total text-muted"> / {totalQ}</span>
           </div>
 
           <div className="progress-bar-track">
             <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
           </div>
 
-          {isEnglishLiteracy && (
-            <div
-              className="lexicon-helper-pill font-mono"
-              onClick={() => openLexicon('sovereignty')}
-              title="Klik untuk membuka glosarium interaktif"
-            >
-              <Globe size={13} className="text-gold" />
-              <span>LEXICON ACTIVE</span>
-            </div>
-          )}
         </div>
 
         {/* ========================================================
@@ -425,13 +400,6 @@ export const PracticeView = () => {
             <div className="question-layout-card">
               {/* Question Header & Evaluation Badge */}
               <div className="q-card-top-meta">
-                <div className="q-index-stamp font-mono">
-                  <span className="q-title-bold">
-                    SOAL {currIdx + 1 < 10 ? `0${currIdx + 1}` : currIdx + 1}
-                  </span>
-                  <span className="meta-sep">//</span>
-                  <span className="text-muted">{activeSession.subjectName}</span>
-                </div>
 
                 {/* Status Badge in Evaluation Mode */}
                 {isEvaluated ? (
@@ -472,36 +440,13 @@ export const PracticeView = () => {
                 )}
               </div>
 
-              {/* In Evaluation Mode: Answer Comparison Banner */}
-              {isEvaluated && (
-                <div className="eval-answer-comparison-banner font-mono">
-                  <div className="ans-compare-col">
-                    <span className="ans-col-label">YOUR ANSWER</span>
-                    <span className={`ans-col-value ${isCurrentCorrect ? 'text-sage' : isCurrentUnanswered ? 'text-muted' : 'text-crimson'}`}>
-                      {userSelectedKey ? (
-                        <>
-                          {userSelectedKey}. <MathText>{currentQ.options.find(o => o.key === userSelectedKey)?.text}</MathText>
-                        </>
-                      ) : '(Tidak Dijawab)'}
-                    </span>
-                  </div>
-                  <div className="ans-compare-divider" />
-                  <div className="ans-compare-col">
-                    <span className="ans-col-label">CORRECT ANSWER</span>
-                    <span className="ans-col-value text-sage">
-                      {currentQ.correctAnswer}. <MathText>{currentQ.options.find(o => o.key === currentQ.correctAnswer)?.text}</MathText>
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {/* Passage Excerpt (if present) */}
               {currentQ.passage && (
                 <section className="passage-section">
                   <div className="passage-label font-mono">
-                    <span>ACADEMIC EXCERPT // TEKS RUJUKAN</span>
+                    <span>Teks soal</span>
                     {isEnglishLiteracy && (
-                      <span className="text-gold">✦ Interaktif: Klik kata bergaris bawah</span>
+                      <span className="text-gold">Klik kata bergaris bawah untuk melihat arti.</span>
                     )}
                   </div>
                   {renderInteractivePassage(currentQ.passage, currentQ.interactiveWords)}
@@ -588,27 +533,22 @@ export const PracticeView = () => {
 
                   {typeof currentQ.explanation === 'string' ? (
                     <div className="explanation-section">
-                      <div className="sec-label font-mono">PENJELASAN SOAL</div>
                       <p className="sec-body font-serif">
                         <MathText>{currentQ.explanation}</MathText>
                       </p>
                     </div>
                   ) : currentQ.explanation ? (
                     <>
-                      {/* Konsep Utama */}
                       {currentQ.explanation.concept && (
                         <div className="explanation-section">
-                          <div className="sec-label font-mono">KONSEP UTAMA YANG DIGUNAKAN</div>
                           <p className="sec-body font-serif">
                             <MathText>{currentQ.explanation.concept}</MathText>
                           </p>
                         </div>
                       )}
 
-                      {/* Langkah Penyelesaian Terstruktur */}
                       {Array.isArray(currentQ.explanation.stepByStep) && (
                         <div className="explanation-section">
-                          <div className="sec-label font-mono">LANGKAH PENYELESAIAN TERSTRUKTUR</div>
                           <ul className="step-list font-sans">
                             {currentQ.explanation.stepByStep.map((step, sIdx) => (
                               <li key={sIdx}>
@@ -620,20 +560,16 @@ export const PracticeView = () => {
                         </div>
                       )}
 
-                      {/* Mengapa Jawaban Ini Tepat */}
                       {currentQ.explanation.whyCorrect && (
                         <div className="explanation-section">
-                          <div className="sec-label font-mono text-sage">MENGAPA JAWABAN INI TEPAT</div>
                           <p className="sec-body font-serif text-sage-dim">
                             <MathText>{currentQ.explanation.whyCorrect}</MathText>
                           </p>
                         </div>
                       )}
 
-                      {/* Distraktor & Jebakan */}
                       {currentQ.explanation.pitfall && (
                         <div className="explanation-section pitfall-sec">
-                          <div className="sec-label font-mono text-crimson">ANALISIS DISTRAKTOR & JEBAKAN UMUM</div>
                           <p className="sec-body font-serif text-crimson-dim">
                             <MathText>{currentQ.explanation.pitfall}</MathText>
                           </p>
@@ -642,13 +578,6 @@ export const PracticeView = () => {
                     </>
                   ) : null}
 
-                  {/* Catatan Akademik Tambahan */}
-                  <div className="explanation-section notes-sec">
-                    <div className="sec-label font-mono text-gold">CATATAN AKADEMIK // LATVERIA EXAMINATION TIP</div>
-                    <p className="sec-body font-sans text-secondary">
-                      Pemahaman menyeluruh atas pola distractor dan identifikasi premis utama merupakan kunci efisiensi waktu pada subtes {activeSession.subjectName}.
-                    </p>
-                  </div>
                 </section>
               )}
             </div>
@@ -665,15 +594,7 @@ export const PracticeView = () => {
                 <span>SEBELUMNYA</span>
               </button>
 
-              <div className="answered-status-mono font-mono">
-                {isEvaluated ? (
-                  <span>
-                    STATUS: {isCurrentCorrect ? 'BENAR ✓' : isCurrentUnanswered ? 'TIDAK DIJAWAB ○' : 'SALAH ×'}
-                  </span>
-                ) : (
-                  <span>STATUS: {userSelectedKey ? `TERJAWAB (${userSelectedKey})` : 'BELUM DIJAWAB'}</span>
-                )}
-              </div>
+              <span className="sr-only" aria-live="polite">{isEvaluated ? (isCurrentCorrect ? 'Jawaban benar' : isCurrentUnanswered ? 'Belum dijawab' : 'Jawaban salah') : userSelectedKey ? `Jawaban ${userSelectedKey} dipilih` : 'Belum dijawab'}</span>
 
               {currIdx < totalQ - 1 ? (
                 <button
@@ -691,7 +612,7 @@ export const PracticeView = () => {
                   disabled={submitting}
                   onClick={() => setShowSubmitModal(true)}
                 >
-                  <span>SELESAIKAN TES</span>
+                  <span>Kumpulkan</span>
                   <Award size={16} />
                 </button>
               ) : (
@@ -700,7 +621,7 @@ export const PracticeView = () => {
                   className="btn-latveria-primary btn-gold-solid"
                   onClick={() => setShowSummaryModal(true)}
                 >
-                  <span>LIHAT DOSSIER HASIL</span>
+                  <span>Lihat hasil</span>
                   <BarChart2 size={16} />
                 </button>
               )}
@@ -715,15 +636,8 @@ export const PracticeView = () => {
               <div className="navigator-head">
                 <div className="nav-title-group font-mono">
                   <span className="dot-stamp" />
-                  <span className="nav-title">
-                    {isEvaluated ? 'EVALUATION MAP' : 'QUESTION NAVIGATOR'}
-                  </span>
+                  <span className="nav-title">Navigasi soal</span>
                 </div>
-                <span className="nav-stats-count font-mono">
-                  {isEvaluated
-                    ? `${activeSession.results?.correctCount || 0}/${totalQ} BENAR`
-                    : `${answeredCount}/${totalQ} TERJAWAB`}
-                </span>
               </div>
 
               {/* Grid Nomor Soal */}
@@ -775,33 +689,8 @@ export const PracticeView = () => {
                 </div>
               </div>
 
-              {/* Legend Visual Strip */}
               <div className="navigator-legend font-mono">
-                {!isEvaluated ? (
-                  <>
-                    <span className="legend-item">
-                      <span className="legend-indicator unans" /> Belum dijawab
-                    </span>
-                    <span className="legend-item">
-                      <span className="legend-indicator ans" /> Terjawab
-                    </span>
-                    <span className="legend-item">
-                      <span className="legend-indicator flag" /> Ditandai
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="legend-item text-sage">
-                      <span className="legend-indicator eval-c" /> Benar (✓)
-                    </span>
-                    <span className="legend-item text-crimson">
-                      <span className="legend-indicator eval-i" /> Salah (×)
-                    </span>
-                    <span className="legend-item text-muted">
-                      <span className="legend-indicator eval-u" /> Kosong (○)
-                    </span>
-                  </>
-                )}
+                {isEvaluated ? "✓ benar · × salah · ○ kosong" : "Kosong · dijawab · ditandai"}
               </div>
 
               {/* Bottom Quick Tools inside Navigator */}
@@ -812,7 +701,7 @@ export const PracticeView = () => {
                   onClick={() => setShowCalculator(!showCalculator)}
                 >
                   <Calculator size={14} />
-                  <span>{showCalculator ? 'TUTUP KALKULATOR' : 'BUKA KALKULATOR'}</span>
+                  <span>{showCalculator ? 'Tutup kalkulator' : 'Kalkulator'}</span>
                 </button>
 
                 {!isEvaluated ? (
@@ -823,7 +712,7 @@ export const PracticeView = () => {
                     onClick={() => setShowSubmitModal(true)}
                   >
                     <FileCheck size={15} />
-                    <span>SUBMIT QUIZ</span>
+                    <span>Kumpulkan</span>
                   </button>
                 ) : (
                   <button
@@ -831,7 +720,7 @@ export const PracticeView = () => {
                     className="btn-latveria-secondary font-mono w-full"
                     onClick={exitPractice}
                   >
-                    <span>KEMBALI KE REPOSITORY</span>
+                    <span>Kembali</span>
                   </button>
                 )}
               </div>
@@ -847,14 +736,14 @@ export const PracticeView = () => {
             <div className="palette-drawer" onClick={(e) => e.stopPropagation()}>
               <div className="palette-head">
                 <span className="font-mono">
-                  {isEvaluated ? 'EVALUATION MAP // DAFTAR HASIL' : 'QUESTION NAVIGATOR // PALET SOAL'}
+                  Navigasi soal
                 </span>
                 <button
                   type="button"
                   className="close-palette-btn font-mono"
                   onClick={() => setMobileNavOpen(false)}
                 >
-                  TUTUP [✕]
+                  Tutup
                 </button>
               </div>
 
@@ -932,31 +821,23 @@ export const PracticeView = () => {
               aria-labelledby="modal-submit-title"
             >
               <div className="modal-header">
-                <div className="modal-stamp-mono font-mono">
-                  <span className="dot-stamp" />
-                  <span>LATVERIA ACADEMIC EXAMINATION PROTOCOL</span>
-                </div>
-                <h2 id="modal-submit-title" className="modal-title font-serif">
-                  Apakah kamu yakin ingin mengakhiri sesi?
-                </h2>
-                <p className="modal-desc">
-                  Seluruh lembar pengerjaan akan dikunci dan dievaluasi secara otomatis ke dalam rekam jejak akademik.
-                </p>
+                <h2 id="modal-submit-title" className="modal-title font-serif">Kumpulkan latihan?</h2>
+                <p className="modal-desc">Jawaban tidak dapat diubah setelah dikumpulkan.</p>
               </div>
 
               {/* Statistics Strip */}
               <div className="submit-summary-quad font-mono">
                 <div className="sum-quad-tile">
                   <span className="s-label">TOTAL SOAL</span>
-                  <span className="s-val text-primary">{totalQ} Questions</span>
+                  <span className="s-val text-primary">{totalQ}</span>
                 </div>
                 <div className="sum-quad-tile">
                   <span className="s-label">TERJAWAB</span>
-                  <span className="s-val text-sage">{answeredCount} Answered</span>
+                  <span className="s-val text-sage">{answeredCount}</span>
                 </div>
                 <div className="sum-quad-tile">
                   <span className="s-label">BELUM DIJAWAB</span>
-                  <span className="s-val text-crimson">{unansweredCount} Unanswered</span>
+                  <span className="s-val text-crimson">{unansweredCount}</span>
                 </div>
               </div>
 
@@ -966,7 +847,7 @@ export const PracticeView = () => {
                   className="btn-latveria-secondary font-mono"
                   onClick={() => setShowSubmitModal(false)}
                 >
-                  LANJUTKAN PENGERJAAN
+                  Lanjutkan
                 </button>
                 <button
                   type="button"
@@ -977,7 +858,7 @@ export const PracticeView = () => {
                     finishSession();
                   }}
                 >
-                  <span>{submitting ? 'MEMPROSES...' : activeSession.attemptId ? 'MUAT HASIL' : 'SUBMIT QUIZ & EVALUASI'}</span>
+                  <span>{submitting ? 'Memproses…' : activeSession.attemptId ? 'Muat hasil' : 'Kumpulkan'}</span>
                   <FileCheck size={16} />
                 </button>
               </div>
@@ -995,54 +876,45 @@ export const PracticeView = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="modal-header">
-                <div className="modal-stamp-mono font-mono">
-                  <span className="dot-stamp" />
-                  <span>OFFICIAL DOSSIER RECORD // LATVERIA ACADEMY</span>
-                </div>
                 <h2 className="modal-title font-serif">
-                  Ringkasan Evaluasi: {activeSession.subjectName}
+                  Hasil latihan
                 </h2>
               </div>
 
               <div className="results-metrics-grid">
                 <div className="result-metric-card highlight-card">
-                  <span className="card-label-mono font-mono">STANDARDIZED SCORE</span>
+                  <span className="card-label-mono font-mono">Skor</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score">{activeSession.results.score}</span>
                     <span className="score-denom">/ 100</span>
                   </div>
-                  <span className="status-badge-mono font-mono text-sage">
-                    AKURASI {activeSession.results.accuracy}%
-                  </span>
                 </div>
 
                 <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">BENAR</span>
+                  <span className="card-label-mono font-mono">Benar</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score text-sage">{activeSession.results.correctCount}</span>
                     <span className="score-denom">SOAL</span>
                   </div>
-                  <span className="status-badge-mono font-mono">TERVERIFIKASI</span>
                 </div>
 
                 <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">SALAH & LEWAT</span>
+                  <span className="card-label-mono font-mono">Salah</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score text-crimson">{activeSession.results.incorrectCount}</span>
                     <span className="score-denom">SALAH</span>
                   </div>
                   <span className="status-badge-mono font-mono text-muted">
-                    {activeSession.results.unansweredCount} TIDAK DIJAWAB
+                    {activeSession.results.unansweredCount} belum dijawab
                   </span>
                 </div>
 
                 <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">IMPERIAL XP GAINED</span>
+                  <span className="card-label-mono font-mono">EXP diperoleh</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score text-gold">+{activeSession.results.earnedXP}</span>
                     <span className="score-denom">XP</span>
                   </div>
-                  <span className="status-badge-mono font-mono text-gold">RECORD COMMITTED</span>
                 </div>
               </div>
 
@@ -1052,7 +924,7 @@ export const PracticeView = () => {
                   className="btn-latveria-secondary font-mono"
                   onClick={() => setShowSummaryModal(false)}
                 >
-                  TUTUP & BACA PEMBAHASAN
+                  Tutup
                 </button>
                 <button
                   type="button"
@@ -1062,7 +934,7 @@ export const PracticeView = () => {
                     exitPractice();
                   }}
                 >
-                  SELESAI KE DASHBOARD
+                  Selesai
                 </button>
               </div>
             </div>
@@ -1149,24 +1021,20 @@ export const PracticeView = () => {
             aria-labelledby="modal-config-title"
           >
             <div className="modal-header">
-              <div className="modal-stamp-mono font-mono">
-                <span className="dot-stamp" />
-                <span>SESSION CONFIGURATION PROTOCOL</span>
-              </div>
               <h2 id="modal-config-title" className="modal-title font-serif">
-                Konfigurasi Latihan: {topics.find((s) => s.id === selectedSubject)?.name}
+                {topics.find((s) => s.id === selectedSubject)?.name}
               </h2>
             </div>
 
             <div className="modal-body-form">
               {/* Mode Selection */}
               <div className="form-group">
-                <label className="form-label-mono font-mono">PILIH MODE LATIHAN</label>
+                <label className="form-label-mono font-mono">Mode</label>
                 <div className="options-pill-grid">
                   {[
-                    { id: 'Practice', label: 'Practice Mode', note: 'Bebas waktu, reflektif' },
-                    { id: 'Timed Practice', label: 'Timed Practice', note: 'Simulasi waktu UTBK (90s/soal)' },
-                    { id: 'Review', label: 'Review Mode', note: 'Eksplorasi konsep dan pembahasan' }
+                    { id: 'Practice', label: 'Bebas waktu', note: 'Tanpa batas waktu' },
+                    { id: 'Timed Practice', label: 'Berwaktu', note: '90 detik per soal' },
+                    { id: 'Review', label: 'Ulasan', note: 'Lihat pembahasan' }
                   ].map((m) => (
                     <button
                       key={m.id}
@@ -1183,9 +1051,9 @@ export const PracticeView = () => {
 
               {/* Difficulty Selection */}
               <div className="form-group">
-                <label className="form-label-mono font-mono">TINGKAT KESULITAN</label>
+                <label className="form-label-mono font-mono">Kesulitan</label>
                 <div className="options-pill-grid cols-3">
-                  {['Standar', 'Menengah', 'Latverian Elite'].map((diff) => (
+                  {['Standar', 'Menengah', 'Sulit'].map((diff) => (
                     <button
                       key={diff}
                       type="button"
@@ -1200,7 +1068,7 @@ export const PracticeView = () => {
 
               {/* Question Count Selection */}
               <div className="form-group">
-                <label className="form-label-mono font-mono">JUMLAH SOAL DALAM SESI</label>
+                <label className="form-label-mono font-mono">Jumlah soal</label>
                 <div className="options-pill-grid cols-3">
                   {[5, 10, 20].map((count) => (
                     <button
@@ -1222,7 +1090,7 @@ export const PracticeView = () => {
                 className="btn-latveria-secondary"
                 onClick={() => setShowConfigModal(false)}
               >
-                BATALKAN
+                Batal
               </button>
               <button
                 type="button"
@@ -1232,7 +1100,7 @@ export const PracticeView = () => {
                   startPractice(selectedSubject, selectedMode, questionCount, selectedDifficulty);
                 }}
               >
-                <span>{loading ? 'MEMUAT...' : 'MULAI SESI LATIHAN'}</span>
+                <span>{loading ? 'Memuat…' : 'Mulai latihan'}</span>
                 <Play size={15} fill="currentColor" />
               </button>
             </div>
