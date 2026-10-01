@@ -5,7 +5,7 @@ import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
 import { questions } from "../src/lib/db/schema";
-import { roofQuestionCorrectAnswer, roofQuestionExplanation, roofQuestionOptions, roofQuestionPrompt } from "../src/lib/roof-question";
+import { pyramidQuestion } from "@latveria/shared";
 
 loadEnvFile(".env.local");
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname)) throw new Error("Verifikasi integrasi hanya untuk DB lokal.");
@@ -43,6 +43,12 @@ try {
   assert.match(roofQuestion.prompt, /\\begin\{tikzpicture\}/);
   assert.doesNotMatch(roofQuestion.prompt, /\$\$\\begin\{tikzpicture\}/);
   assert.ok(!("correctAnswer" in roofQuestion) && !("explanation" in roofQuestion));
+  const geometryQuestions = mathPractice.items.filter((item: { id: string }) => ["00000000-0000-4000-8000-000000000015", "00000000-0000-4000-8000-000000000016", "00000000-0000-4000-8000-000000000017"].includes(item.id));
+  assert.equal(geometryQuestions.length, 3, "All seeded geometry examples should be in the math topic");
+  for (const item of geometryQuestions) {
+    assert.match(item.prompt, /\\begin\{tikzpicture\}/);
+    assert.doesNotMatch(item.prompt, /\$\$\\begin\{tikzpicture\}/);
+  }
   const legacyRoof = await getDb().insert(questions).values({
     id: crypto.randomUUID(),
     topicId: mathTopic.id,
@@ -53,11 +59,11 @@ try {
     source: "Uji migrasi prompt seed",
   }).returning({ id: questions.id });
   questionIds.push(legacyRoof[0].id);
-  await getDb().update(questions).set({ prompt: roofQuestionPrompt(), options: [...roofQuestionOptions], correctAnswer: roofQuestionCorrectAnswer, explanation: roofQuestionExplanation }).where(eq(questions.id, legacyRoof[0].id));
+  await getDb().update(questions).set({ prompt: pyramidQuestion.prompt, options: [...pyramidQuestion.options], correctAnswer: pyramidQuestion.correctAnswer, explanation: pyramidQuestion.explanation }).where(eq(questions.id, legacyRoof[0].id));
   const repaired = await getDb().select().from(questions).where(eq(questions.id, legacyRoof[0].id));
-  assert.equal(repaired[0].prompt, roofQuestionPrompt());
-  assert.deepEqual(repaired[0].options, roofQuestionOptions);
-  assert.equal(repaired[0].correctAnswer, roofQuestionCorrectAnswer);
+  assert.equal(repaired[0].prompt, pyramidQuestion.prompt);
+  assert.deepEqual(repaired[0].options, pyramidQuestion.options);
+  assert.equal(repaired[0].correctAnswer, pyramidQuestion.correctAnswer);
   assert.equal((await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: {} })).status, 400);
   const selected = practice.items.slice(0, 1);
   const partial = await request(`/learner/practice/${topics[0].slug}`, learner.cookie, { answers: Object.fromEntries(selected.map((item: { id: string }) => [item.id, 0])) });

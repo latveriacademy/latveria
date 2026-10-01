@@ -3,9 +3,9 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getDatabaseUrl } from "../src/lib/env";
-import { questions, topics } from "../src/lib/db/schema";
-import { utbkSubtests } from "@latveria/shared";
-import { isLegacyRoofQuestion, roofQuestionCorrectAnswer, roofQuestionExplanation, roofQuestionOptions, roofQuestionPrompt } from "../src/lib/roof-question";
+import { practiceAnswers, questions, topics } from "../src/lib/db/schema";
+import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, utbkSubtests } from "@latveria/shared";
+import { geometryQuestionData } from "../src/lib/roof-question";
 
 const legacySlugs = [
   ["dummy-logika", "penalaran-umum"],
@@ -59,14 +59,29 @@ async function main() {
         },
       });
       const mathQuestions = await tx.select({ id: questions.id, prompt: questions.prompt }).from(questions).where(eq(questions.topicId, topicId["penalaran-matematika"]));
-      const oldRoof = mathQuestions.find(({ prompt }) => isLegacyRoofQuestion(prompt));
-      if (oldRoof) {
-        await tx.update(questions).set({ prompt: roofQuestionPrompt(), options: [...roofQuestionOptions], correctAnswer: roofQuestionCorrectAnswer, explanation: roofQuestionExplanation }).where(eq(questions.id, oldRoof.id));
-      } else if (!mathQuestions.some(({ id }) => id === questionId(15))) {
-        await tx.insert(questions).values(question(15, topicId["penalaran-matematika"], roofQuestionPrompt(), [...roofQuestionOptions], roofQuestionCorrectAnswer, roofQuestionExplanation));
+      const geometryQuestions = [pyramidQuestion, openCuboidQuestion, cylinderTankQuestion];
+      for (const [index, geometryQuestion] of geometryQuestions.entries()) {
+        const matches = mathQuestions.filter((item) => geometryQuestionData(item.prompt) === geometryQuestion);
+        const usages = matches.length ? await tx.select({ questionId: practiceAnswers.questionId }).from(practiceAnswers).where(inArray(practiceAnswers.questionId, matches.map((item) => item.id))) : [];
+        const usedIds = new Set(usages.map((usage) => usage.questionId));
+        if (usedIds.size) {
+          for (const existing of matches) {
+            await tx.update(questions).set({
+              topicId: topicId["penalaran-matematika"],
+              prompt: geometryQuestion.prompt,
+              options: [...geometryQuestion.options],
+              correctAnswer: geometryQuestion.correctAnswer,
+              explanation: geometryQuestion.explanation,
+              source: geometryQuestion.source,
+            }).where(eq(questions.id, existing.id));
+          }
+          continue;
+        }
+        if (matches.length) await tx.delete(questions).where(inArray(questions.id, matches.map((item) => item.id)));
+        await tx.insert(questions).values(question(15 + index, topicId["penalaran-matematika"], geometryQuestion.prompt, [...geometryQuestion.options], geometryQuestion.correctAnswer, geometryQuestion.explanation)).onConflictDoUpdate({ target: questions.id, set: { topicId: topicId["penalaran-matematika"], prompt: geometryQuestion.prompt, options: [...geometryQuestion.options], correctAnswer: geometryQuestion.correctAnswer, explanation: geometryQuestion.explanation, source: geometryQuestion.source } });
       }
     });
-    console.info("Seed selesai: 7 subtes dan 15 soal dummy tersedia. ID topik lama dan soal admin tetap dipertahankan.");
+    console.info("Seed selesai: 7 subtes dan 17 soal dummy tersedia. ID topik lama dan soal admin tetap dipertahankan.");
   } finally {
     await client.end({ timeout: 5 });
   }

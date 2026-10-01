@@ -4,7 +4,7 @@ import { utbkSubtests } from "@latveria/shared";
 import { FileCheck, Upload } from "lucide-react";
 import { api } from "../../lib/api";
 import { parseQuestionImport } from "../../lib/question-import";
-import { tikzPyramidImportExample } from "../../lib/tikz-examples";
+import { geometryImportExample } from "../../lib/tikz-examples";
 import { Button } from "../../components/ui/button";
 import { Panel, PanelHeader } from "../../components/ui/dashboard";
 import styles from "./admin.module.css";
@@ -12,7 +12,7 @@ import styles from "./admin.module.css";
 export function ImportQuestions() {
   const navigate = useNavigate();
   const [text, setText] = useState("");
-  const [batch, setBatch] = useState<typeof tikzPyramidImportExample | null>(null);
+  const [batch, setBatch] = useState<typeof geometryImportExample | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
@@ -29,8 +29,8 @@ export function ImportQuestions() {
   return <div className={styles.importLayout}>
     <Panel>
       <PanelHeader title="Data soal"><Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => {
-        setText(JSON.stringify(tikzPyramidImportExample, null, 2)); setBatch(null); setError(""); setFileName("");
-      }}>Gunakan contoh limas</Button></PanelHeader>
+        setText(JSON.stringify(geometryImportExample, null, 2)); setBatch(null); setError(""); setFileName("");
+      }}>Gunakan contoh bangun ruang</Button></PanelHeader>
       <div className={styles.importEditor}>
         <div className={styles.field}>
           <label htmlFor="json-input">JSON</label>

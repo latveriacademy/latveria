@@ -1,5 +1,6 @@
 import { z } from "zod";
 export { utbkSubtests } from "./utbk-subtests";
+export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
 
 export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
 export const signupSchema = credentialsSchema.extend({ name: z.string().trim().min(1).max(100) });

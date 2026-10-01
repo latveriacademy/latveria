@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseQuestionImport } from "./question-import";
 import { parseTikz } from "./tikz";
-import { tikzPyramidImportExample } from "./tikz-examples";
+import { geometryImportExample } from "./tikz-examples";
+import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "@latveria/shared";
 
 const group = {
   subtes: "pengetahuan-kuantitatif",
@@ -15,14 +16,16 @@ describe("parseQuestionImport", () => {
     expect(parseQuestionImport(JSON.stringify(data))).toEqual(data);
   });
   it("ships a valid importable pyramid question with renderer-compatible TikZ under the prompt limit", () => {
-    const batch = parseQuestionImport(JSON.stringify(tikzPyramidImportExample));
-    const question = batch.groups[0].questions[0];
-    const diagram = question.prompt.match(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/)?.[0];
-    expect(question.prompt.length).toBeLessThanOrEqual(1000);
-    expect(diagram).toBeTruthy();
-    expect(parseTikz(diagram!).shapes.length).toBeGreaterThan(0);
-    expect(question.options[question.correctAnswer]).toBe("1.200 genteng");
-    expect(question.prompt).toContain("tinggi limas $3$ m");
+    const batch = parseQuestionImport(JSON.stringify(geometryImportExample));
+    expect(batch.groups[0].questions).toHaveLength(3);
+    expect(batch.groups[0].questions.map((question) => question.prompt)).toEqual([pyramidQuestion.prompt, openCuboidQuestion.prompt, cylinderTankQuestion.prompt]);
+    for (const question of batch.groups[0].questions) {
+      const diagram = question.prompt.match(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/)?.[0];
+      expect(question.prompt.length).toBeLessThanOrEqual(1000);
+      expect(diagram).toBeTruthy();
+      expect(parseTikz(diagram!).shapes.length).toBeGreaterThan(0);
+    }
+    expect(batch.groups[0].questions[0].options[batch.groups[0].questions[0].correctAnswer]).toBe("1.200 genteng");
   });
   it.each(["", "{oops}"])("rejects empty or malformed input: %s", (text) => {
     expect(() => parseQuestionImport(text)).toThrow();

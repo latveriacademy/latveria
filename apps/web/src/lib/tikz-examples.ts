@@ -1,5 +1,4 @@
-import type { QuestionImport } from "@latveria/shared";
-import { roofQuestionCorrectAnswer, roofQuestionExplanation, roofQuestionOptions, roofQuestionPrompt } from "../../../api/src/lib/roof-question";
+import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, type QuestionImport } from "@latveria/shared";
 
 export const tikzExamples = [
   {
@@ -60,11 +59,13 @@ export const tikzPyramidImportExample: QuestionImport = {
     subtes: "pengetahuan-kuantitatif",
     category: "Bangun ruang",
     questions: [{
-      prompt: roofQuestionPrompt(),
-      options: [...roofQuestionOptions],
-      correctAnswer: roofQuestionCorrectAnswer,
-      explanation: roofQuestionExplanation,
-      source: "Contoh buatan tim",
+      ...pyramidQuestion, options: [...pyramidQuestion.options],
     }],
   }],
+};
+
+export const geometryImportExample: QuestionImport = {
+  groups: [
+    { subtes: "penalaran-matematika", category: "Bangun ruang", questions: [pyramidQuestion, openCuboidQuestion, cylinderTankQuestion].map((question) => ({ ...question, options: [...question.options] })) },
+  ],
 };
