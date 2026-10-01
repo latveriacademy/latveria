@@ -14,7 +14,7 @@ import { useSearchParams } from 'react-router';
 import { DashboardShell } from './components/ui/dashboard-shell';
 
 function AppShell() {
-  const { currentTab, setCurrentTab, activeSession } = useApp();
+  const { currentTab, setCurrentTab, activeSession, sidebarOpen, toggleSidebar } = useApp();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -44,6 +44,8 @@ function AppShell() {
   return (
       <DashboardShell
         immersive={!!activeSession}
+        sidebarOpen={sidebarOpen}
+        onCloseSidebar={toggleSidebar}
         sidebar={!activeSession && <Sidebar />}
         header={!activeSession && <HeaderBar />}
         bottomNav={!activeSession && <BottomNav />}

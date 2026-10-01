@@ -4,7 +4,7 @@ import { DashboardSidebar, DashboardNavigation } from './ui/dashboard-shell';
 import { learnerNavigation } from './learner-navigation';
 
 export const Sidebar = () => {
-  const { currentTab, setCurrentTab, user } = useApp();
+  const { currentTab, setCurrentTab, user, sidebarOpen } = useApp();
   const xpPercentage = Math.min(100, Math.round(user.currentXP / user.nextLevelXP * 100));
   const identity = <div className="sidebar-user-dossier">
     <div className="dossier-top"><span className="dossier-code">{user.id}</span><span className="dossier-status"><span className="status-blink-dot" />ONLINE</span></div>
@@ -14,5 +14,5 @@ export const Sidebar = () => {
       <ProgressBar value={xpPercentage} label="EXP" fillClassName="progress-fill gold-gradient" />
     </div>
   </div>;
-  return <DashboardSidebar home="/dashboard" identity={identity}><DashboardNavigation items={learnerNavigation} active={currentTab} onSelect={setCurrentTab} /></DashboardSidebar>;
+  return <DashboardSidebar home="/dashboard" identity={identity} collapsed={!sidebarOpen}><DashboardNavigation items={learnerNavigation} active={currentTab} onSelect={setCurrentTab} /></DashboardSidebar>;
 };

@@ -7,9 +7,9 @@ import * as authSchema from "./auth-schema";
 function createDatabase() {
   const client = postgres(getDatabaseUrl("DATABASE_URL"), {
     prepare: false,
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: 3,
+    idle_timeout: 30,
+    connect_timeout: 30,
   });
   return drizzle(client, { schema: { ...schema, ...authSchema } });
 }

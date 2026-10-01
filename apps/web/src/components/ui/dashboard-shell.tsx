@@ -1,15 +1,19 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Clock, type LucideIcon } from "lucide-react";
+import { Clock, Menu, type LucideIcon } from "lucide-react";
 import { Brand } from "./dashboard";
 import { LogoutButton } from "../logout-button";
 import { cn } from "../../lib/utils";
 
-export function DashboardShell({ sidebar, header, bottomNav, children, overlays, className, immersive = false, contentId = "main-content-scroll", ...props }: ComponentProps<"div"> & { sidebar?: ReactNode; header?: ReactNode; bottomNav?: ReactNode; overlays?: ReactNode; immersive?: boolean; contentId?: string }) {
+export function DashboardShell({ sidebar, header, bottomNav, children, overlays, className, immersive = false, sidebarOpen = true, onCloseSidebar, contentId = "main-content-scroll", ...props }: ComponentProps<"div"> & { sidebar?: ReactNode; header?: ReactNode; bottomNav?: ReactNode; overlays?: ReactNode; immersive?: boolean; sidebarOpen?: boolean; onCloseSidebar?: () => void; contentId?: string }) {
   return <div className={cn("latveria-app-shell", className)} {...props}>
     <a className="skip-link" href={`#${contentId}`}>Lewati navigasi</a>
     {sidebar}
-    <div className={`latveria-main-viewport ${immersive ? "in-exam-mode" : ""}`}>
+    {/* Backdrop untuk mobile — klik untuk tutup sidebar */}
+    {sidebarOpen && onCloseSidebar && (
+      <div className="sidebar-mobile-backdrop" onClick={onCloseSidebar} aria-hidden="true" />
+    )}
+    <div className={`latveria-main-viewport ${immersive ? "in-exam-mode" : ""} ${!sidebarOpen ? "sidebar-collapsed" : ""}`}>
       {header}
       <main className="latveria-content-scroll" id={contentId}>{children}</main>
       {bottomNav}
@@ -18,11 +22,15 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
   </div>;
 }
 
-export function DashboardSidebar({ home, identity, children }: { home: string; identity: ReactNode; children: ReactNode }) {
-  return <aside className="latveria-sidebar" aria-label="Navigasi utama">
-    <div className="sidebar-brand-wrapper"><Brand to={home} /></div>
-    {identity}
-    {children}
+export function DashboardSidebar({ home, identity, children, collapsed = false }: { home: string; identity: ReactNode; children: ReactNode; collapsed?: boolean }) {
+  return <aside className={`latveria-sidebar${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama">
+    <div className="sidebar-brand-wrapper">
+      <Brand to={home} />
+    </div>
+    <div className="sidebar-scrollable-content">
+      {identity}
+      {children}
+    </div>
     <div className="sidebar-footer"><LogoutButton className="nav-button" /></div>
   </aside>;
 }
@@ -42,11 +50,33 @@ export function DashboardNavigation({ items, active, onSelect, mobile = false }:
   return <nav className="sidebar-nav" aria-label="Navigasi utama"><ul className="nav-list">{items.map((item) => <li key={item.id} className="nav-item"><NavigationAction item={item} active={active === item.id} onSelect={onSelect} mobile={false} /></li>)}</ul></nav>;
 }
 
-export function DashboardHeader({ home, children }: { home: string; children: ReactNode }) {
+export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen = true }: { home: string; children: ReactNode; onToggleSidebar?: () => void; sidebarOpen?: boolean }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   return <header className="latveria-header-bar">
-    <div className="mobile-brand-slot"><Brand to={home} className="mobile-title" /></div>
+
+    {/* Kiri: burger + logo berdampingan dalam satu grup */}
+    <div className="header-left-group">
+      {onToggleSidebar && (
+        <button
+          type="button"
+          id="header-sidebar-toggle-btn"
+          className="header-tool-btn sidebar-toggle-in-header"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+          title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+        >
+          <Menu size={17} />
+        </button>
+      )}
+      {/* Logo desktop: fade+slide saat sidebar tertutup, navigasi ke landing page */}
+      <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}>
+        <Brand to="/" className="mobile-title" />
+      </div>
+      {/* Logo mobile: selalu tampil pada layar kecil */}
+      <div className="mobile-brand-slot"><Brand to={home} className="mobile-title" /></div>
+    </div>
+
     <div className="header-meta-group"><div className="live-clock-panel font-mono">
       <Clock size={13} className="text-gold" />
       <span>{now.toLocaleDateString("id-ID", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).toUpperCase()}</span>

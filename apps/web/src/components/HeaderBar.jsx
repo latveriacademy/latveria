@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export const HeaderBar = () => {
-  const { user, theme, setTheme, soundEnabled, setSoundEnabled, setCurrentTab } = useApp();
+  const { user, theme, setTheme, soundEnabled, setSoundEnabled, setCurrentTab, toggleSidebar, sidebarOpen } = useApp();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'parchment' : 'dark');
@@ -21,7 +21,7 @@ export const HeaderBar = () => {
   };
 
   return (
-    <DashboardHeader home="/dashboard">
+    <DashboardHeader home="/dashboard" onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen}>
         {/* Streak Pill */}
         <div
           className="header-stat-pill"

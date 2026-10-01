@@ -79,6 +79,21 @@ export const AppProvider = ({ children }) => {
   // Navigation State
   const [currentTab, setCurrentTab] = useState('dashboard');
 
+  // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('latveria_sidebar');
+    if (saved !== null) return saved === 'true';
+    // Default: tertutup di mobile (≤768px), terbuka di desktop
+    return window.innerWidth > 768;
+  });
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('latveria_sidebar', String(next));
+      return next;
+    });
+  }, []);
+
   // Theme State
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('latveria_theme');
@@ -573,7 +588,9 @@ export const AppProvider = ({ children }) => {
         toggleFlag,
         finishSession,
         exitPractice,
-        completeDailyTraining
+        completeDailyTraining,
+        sidebarOpen,
+        toggleSidebar,
       }}
     >
       {children}

@@ -305,7 +305,54 @@ body::after {
   flex-shrink: 0;
   z-index: 50;
   user-select: none;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
+
+/* Collapsed sidebar */
+.latveria-sidebar.sidebar-is-collapsed {
+  width: 0;
+  border-right-color: transparent;
+}
+
+/* Scrollable content area inside sidebar */
+.sidebar-scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Burger button di header — selalu tampil */
+.sidebar-toggle-in-header {
+  order: -1;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+/* Logo di header — muncul saat sidebar tertutup, hilang saat terbuka */
+.header-brand-slot {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  transition: opacity 0.25s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.header-brand-hidden {
+  opacity: 0;
+  max-width: 0;
+  margin-right: 0;
+  pointer-events: none;
+}
+.header-brand-visible {
+  opacity: 1;
+  max-width: 200px;
+  margin-right: 12px;
+}
+
+
 
 .sidebar-brand-wrapper {
   padding: 24px 22px 18px;
@@ -576,9 +623,18 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 36px;
+  padding: 0 24px 0 16px;
   flex-shrink: 0;
   z-index: 40;
+  gap: 12px;
+}
+
+/* Grup kiri: burger + logo berdampingan */
+.header-left-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .mobile-brand-slot {
@@ -4014,9 +4070,32 @@ body::after {
 }
 
 @media (max-width: 768px) {
+  /* Sidebar jadi overlay drawer di mobile */
   .latveria-sidebar {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    /* Mulai dari state closed (width 0) saat collapsed */
   }
+
+  /* Backdrop gelap saat drawer terbuka */
+  .sidebar-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 199;
+    animation: backdropFadeIn 0.2s ease;
+  }
+
+  @keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .latveria-bottom-nav {
     display: block;
   }
@@ -4027,7 +4106,7 @@ body::after {
     display: none;
   }
   .latveria-header-bar {
-    padding: 0 18px;
+    padding: 0 12px;
   }
   .latveria-content-scroll {
     padding: 18px 16px 84px;
@@ -4041,6 +4120,16 @@ body::after {
   .id-card-body {
     grid-template-columns: 1fr;
   }
+
+  /* Stats di header: sembunyikan label, hanya icon + angka */
+  .stat-pill-label {
+    display: none;
+  }
+  .header-stat-pill {
+    padding: 5px 8px;
+    gap: 4px;
+  }
+
   .id-avatar-column {
     margin-bottom: 12px;
   }
