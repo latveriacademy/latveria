@@ -31,8 +31,11 @@ export const ToastNotification = () => {
         }
 
         return (
-          <div key={toast.id} className={`toast-card toast-${badgeStyle}`}>
-            <div className="toast-icon-wrap">
+          <div
+            key={toast.id}
+            className={`toast-card toast-${badgeStyle} motion-slide-in-right transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] cursor-default`}
+          >
+            <div className="toast-icon-wrap transition-transform duration-150 group-hover:scale-110">
               <Icon size={18} />
             </div>
             <div className="toast-body">

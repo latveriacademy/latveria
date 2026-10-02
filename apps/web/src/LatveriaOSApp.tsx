@@ -38,15 +38,22 @@ function AppShell() {
   };
 
   return (
-      <DashboardShell
-        immersive={immersive}
-        sidebarOpen={sidebarOpen}
-        onCloseSidebar={toggleSidebar}
-        sidebar={!immersive && <Sidebar />}
-        header={!immersive && <HeaderBar />}
-        bottomNav={!immersive && <BottomNav />}
-        overlays={<><LexiconDrawer /><ToastNotification /></>}
-      >{navigation.state === 'loading' && <p role="status">Memuat…</p>}{outlet ?? renderActiveView()}</DashboardShell>
+    <DashboardShell
+      immersive={immersive}
+      sidebarOpen={sidebarOpen}
+      onCloseSidebar={toggleSidebar}
+      sidebar={!immersive && <Sidebar />}
+      header={!immersive && <HeaderBar />}
+      bottomNav={!immersive && <BottomNav />}
+      overlays={<><LexiconDrawer /><ToastNotification /></>}
+    >
+      {navigation.state === 'loading' && (
+        <div className="motion-skeleton h-2 w-full mb-4 rounded" role="status" aria-label="Memuat" />
+      )}
+      <div key={outlet ? 'outlet' : currentTab} className="motion-page-enter w-full">
+        {outlet ?? renderActiveView()}
+      </div>
+    </DashboardShell>
   );
 }
 

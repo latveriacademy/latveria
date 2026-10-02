@@ -277,7 +277,11 @@ export function AdminPackageDetail() {
         ) : (
           <ol className="divide-y divide-[var(--edge)]">
             {pkg.questions.map((q, idx) => (
-              <li key={q.id} className="p-4 space-y-3">
+              <li
+                key={q.id}
+                className="p-4 space-y-3 motion-fade-up transition-colors duration-150 hover:bg-[var(--surface-elevated)]"
+                style={{ animationDelay: `${idx * 25}ms` }}
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <span className="font-mono text-sm font-bold text-[var(--emerald)] shrink-0 pt-0.5">

@@ -6,13 +6,19 @@ import { LogoutButton } from "../logout-button";
 import { cn } from "../../lib/utils";
 
 export function DashboardShell({ sidebar, header, bottomNav, children, overlays, className, immersive = false, sidebarOpen = true, onCloseSidebar, contentId = "main-content-scroll", ...props }: ComponentProps<"div"> & { sidebar?: ReactNode; header?: ReactNode; bottomNav?: ReactNode; overlays?: ReactNode; immersive?: boolean; sidebarOpen?: boolean; onCloseSidebar?: () => void; contentId?: string }) {
-  return <div className={cn("latveria-app-shell", className)} {...props}>
+  return <div className={cn("latveria-app-shell motion-fade-in", className)} {...props}>
     <a className="skip-link" href={`#${contentId}`}>Lewati navigasi</a>
     {sidebar}
-    {sidebarOpen && onCloseSidebar && <div className="sidebar-mobile-backdrop" onClick={onCloseSidebar} aria-hidden="true" />}
+    {sidebarOpen && onCloseSidebar && (
+      <div
+        className="sidebar-mobile-backdrop transition-opacity duration-200 ease-out"
+        onClick={onCloseSidebar}
+        aria-hidden="true"
+      />
+    )}
     <div className={`latveria-main-viewport ${immersive ? "in-exam-mode" : ""} ${!sidebarOpen ? "sidebar-collapsed" : ""}`}>
       {header}
-      <main className="latveria-content-scroll" id={contentId}>{children}</main>
+      <main className="latveria-content-scroll motion-fade-up" id={contentId}>{children}</main>
       {bottomNav}
     </div>
     {overlays}
@@ -20,10 +26,10 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
 }
 
 export function DashboardSidebar({ home, identity, children, collapsed = false }: { home: string; identity: ReactNode; children: ReactNode; collapsed?: boolean }) {
-  return <aside className={`latveria-sidebar${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama">
+  return <aside className={`latveria-sidebar motion-slide-in-left${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama">
     <div className="sidebar-brand-wrapper"><Brand to={home} /></div>
     <div className="sidebar-scrollable-content">{identity}{children}</div>
-    <div className="sidebar-footer"><LogoutButton className="nav-button" /></div>
+    <div className="sidebar-footer"><LogoutButton className="nav-button transition-transform duration-150 hover:scale-[1.015] active:scale-[0.98]" /></div>
   </aside>;
 }
 
@@ -31,14 +37,32 @@ export type NavigationItem = { id: string; label: string; icon: LucideIcon; to?:
 
 function NavigationAction({ item, active, onSelect, mobile }: { item: NavigationItem; active: boolean; onSelect?: (id: string) => void; mobile: boolean }) {
   const Icon = item.icon;
-  const className = `${mobile ? "bottom-nav-btn" : "nav-button"} ${active ? "active" : ""}`;
-  const content = mobile ? <><div className="bottom-icon-wrapper"><Icon size={19} strokeWidth={active ? 2.3 : 1.7} />{active && <span className="bottom-active-dot" />}</div><span className="bottom-label">{item.label}</span></> : <><span className="nav-icon-wrap"><Icon size={18} strokeWidth={active ? 2.2 : 1.7} /></span><div className="nav-label-box"><span className="nav-main-label">{item.label}</span></div>{active && <span className="nav-active-pip" />}</>;
+  const className = `${mobile ? "bottom-nav-btn" : "nav-button"} ${active ? "active" : ""} transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015] active:scale-[0.98]`;
+  const content = mobile ? (
+    <>
+      <div className="bottom-icon-wrapper transition-transform duration-150">
+        <Icon size={19} strokeWidth={active ? 2.3 : 1.7} className={active ? "scale-110 transition-transform duration-150" : "transition-transform duration-150"} />
+        {active && <span className="bottom-active-dot motion-scale-in" />}
+      </div>
+      <span className="bottom-label">{item.label}</span>
+    </>
+  ) : (
+    <>
+      <span className="nav-icon-wrap transition-transform duration-150 group-hover:scale-110">
+        <Icon size={18} strokeWidth={active ? 2.2 : 1.7} />
+      </span>
+      <div className="nav-label-box">
+        <span className="nav-main-label">{item.label}</span>
+      </div>
+      {active && <span className="nav-active-pip motion-scale-in" />}
+    </>
+  );
   const props = { className, id: `${mobile ? "mobile-nav" : "nav-btn"}-${item.id}`, "aria-current": active ? "page" as const : undefined };
   return item.to ? <Link to={item.to} {...props}>{content}</Link> : <button type="button" {...props} onClick={() => onSelect?.(item.id)}>{content}</button>;
 }
 
 export function DashboardNavigation({ items, active, onSelect, mobile = false }: { items: NavigationItem[]; active: string; onSelect?: (id: string) => void; mobile?: boolean }) {
-  if (mobile) return <nav className="latveria-bottom-nav" aria-label="Navigasi utama"><div className="bottom-nav-inner">{items.map((item) => <NavigationAction key={item.id} item={item} active={active === item.id} onSelect={onSelect} mobile />)}</div></nav>;
+  if (mobile) return <nav className="latveria-bottom-nav motion-fade-down" aria-label="Navigasi utama"><div className="bottom-nav-inner">{items.map((item) => <NavigationAction key={item.id} item={item} active={active === item.id} onSelect={onSelect} mobile />)}</div></nav>;
   return <nav className="sidebar-nav" aria-label="Navigasi utama"><ul className="nav-list">{items.map((item) => <li key={item.id} className="nav-item"><NavigationAction item={item} active={active === item.id} onSelect={onSelect} mobile={false} /></li>)}</ul></nav>;
 }
 
@@ -46,13 +70,13 @@ export function DashboardHeader({ home = "/", children, onToggleSidebar, sidebar
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const showBrand = !sidebarOpen || !onToggleSidebar;
-  return <header className={`latveria-header-bar${showBrand ? " header-brand-present" : ""}`}>
+  return <header className={`latveria-header-bar motion-fade-down${showBrand ? " header-brand-present" : ""}`}>
     <div className="header-left-group">
       {onToggleSidebar && (
         <button
           type="button"
           id="header-sidebar-toggle-btn"
-          className="header-tool-btn sidebar-toggle-in-header"
+          className="header-tool-btn sidebar-toggle-in-header transition-transform duration-150 hover:scale-105 active:scale-95"
           onClick={onToggleSidebar}
           aria-label={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
           title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
@@ -75,3 +99,4 @@ export function DashboardHeader({ home = "/", children, onToggleSidebar, sidebar
     <div className="header-actions-group">{children}</div>
   </header>;
 }
+

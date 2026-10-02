@@ -85,7 +85,7 @@ export function AdminLayout() {
           </div>
         </>
       )}
-      <div className={`latveria-view-container admin-view ${isNavigating ? "opacity-60 transition-opacity duration-150" : ""}`}>
+      <div key={pathname} className={`latveria-view-container admin-view motion-page-enter ${isNavigating ? "opacity-60 transition-opacity duration-150" : ""}`}>
         {isNavigating && <p className="sr-only" role="status">Memuat…</p>}
         <Outlet />
       </div>

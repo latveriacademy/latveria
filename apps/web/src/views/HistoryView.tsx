@@ -8,19 +8,25 @@ import styles from "./history.module.css";
 
 export function HistoryView() {
   const history = useLoaderData<HistoryItem[]>();
-  return <div className="latveria-view-container">
+  return <div className="latveria-view-container motion-page-enter">
     <PageHeading title="Riwayat latihan" description={`${history.length} sesi`} actions={<Button asChild variant="outline"><Link to="/dashboard?tab=practice"><ArrowLeft />Latihan</Link></Button>} />
     <Panel>
       {history.length ? <ul className={styles.list} aria-label="Sesi latihan yang sudah dikumpulkan">
-        {history.map((attempt) => <li className={styles.row} key={attempt.id}>
-          <div className={styles.detail}>
-            <h2>{attempt.topic}{attempt.packageName ? ` · ${attempt.packageName}` : ""}</h2>
-            <time dateTime={attempt.submittedAt}>{new Date(attempt.submittedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" })} WIB</time>
-          </div>
-          <span className={styles.result}>{attempt.correct} / {attempt.total} benar</span>
-          <Button asChild variant="outline" size="sm"><Link to={`/dashboard/riwayat/${attempt.id}`} aria-label={`Lihat hasil ${attempt.topic} pada ${new Date(attempt.submittedAt).toLocaleDateString("id-ID")}`}>Lihat hasil<ChevronRight /></Link></Button>
-        </li>)}
-      </ul> : <div className={styles.empty}><p>Belum ada latihan yang dikumpulkan.</p><Button asChild><Link to="/dashboard?tab=practice">Mulai latihan</Link></Button></div>}
+        {history.map((attempt, idx) => (
+          <li
+            className={`${styles.row} motion-fade-up transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)]`}
+            key={attempt.id}
+            style={{ animationDelay: `${idx * 40}ms` }}
+          >
+            <div className={styles.detail}>
+              <h2>{attempt.topic}{attempt.packageName ? ` · ${attempt.packageName}` : ""}</h2>
+              <time dateTime={attempt.submittedAt}>{new Date(attempt.submittedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" })} WIB</time>
+            </div>
+            <span className={styles.result}>{attempt.correct} / {attempt.total} benar</span>
+            <Button asChild variant="outline" size="sm"><Link to={`/dashboard/riwayat/${attempt.id}`} aria-label={`Lihat hasil ${attempt.topic} pada ${new Date(attempt.submittedAt).toLocaleDateString("id-ID")}`}>Lihat hasil<ChevronRight /></Link></Button>
+          </li>
+        ))}
+      </ul> : <div className={`${styles.empty} motion-fade-up`}><p>Belum ada latihan yang dikumpulkan.</p><Button asChild><Link to="/dashboard?tab=practice">Mulai latihan</Link></Button></div>}
     </Panel>
   </div>;
 }

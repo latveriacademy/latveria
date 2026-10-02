@@ -137,8 +137,12 @@ export function AdminSubtestPackages() {
           </div>
         ) : (
           <ul className="divide-y divide-[var(--edge)]">
-            {packages.map((pkg) => (
-              <li key={pkg.id} className="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-[var(--surface-elevated)] transition-colors">
+            {packages.map((pkg, idx) => (
+              <li
+                key={pkg.id}
+                className="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-[var(--surface-elevated)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] motion-fade-up"
+                style={{ animationDelay: `${idx * 30}ms` }}
+              >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-lg text-[var(--ink)]">{pkg.name}</span>

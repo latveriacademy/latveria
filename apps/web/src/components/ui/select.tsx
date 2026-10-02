@@ -18,14 +18,14 @@ export function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--emerald)] hover:border-[var(--edge-strong)] disabled:cursor-not-allowed disabled:opacity-50",
+        "flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:ring-2 focus-visible:ring-[var(--emerald)] hover:border-[var(--edge-strong)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="size-4 opacity-60 text-[var(--soft-ink)]" />
+        <ChevronDown className="size-4 opacity-60 text-[var(--soft-ink)] transition-transform duration-200" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -43,7 +43,7 @@ export function SelectContent({
         data-slot="select-content"
         position={position}
         className={cn(
-          "relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-y-auto rounded-lg border border-[var(--edge-strong)] bg-[var(--surface)] text-[var(--ink)] shadow-xl shadow-black/25",
+          "relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[8rem] overflow-y-auto rounded-lg border border-[var(--edge-strong)] bg-[var(--surface)] text-[var(--ink)] shadow-xl shadow-black/25 motion-scale-in",
           className
         )}
         {...props}
@@ -81,14 +81,14 @@ export function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex min-h-9 w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-2 pr-8 text-sm outline-none transition-colors focus:bg-[var(--surface-hover)] focus:text-[var(--emerald)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex min-h-9 w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-2 pr-8 text-sm outline-none transition-colors duration-100 focus:bg-[var(--surface-hover)] focus:text-[var(--emerald)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
       {...props}
     >
       <span className="absolute right-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="size-4 text-[var(--emerald)]" />
+          <Check className="size-4 text-[var(--emerald)] motion-scale-in" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
