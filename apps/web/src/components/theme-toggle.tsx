@@ -16,9 +16,9 @@ export function ThemeToggle({ className }: { className?: string }) {
       title={theme === "dark" ? "Mode terang" : "Mode gelap"}
     >
       {theme === "dark" ? (
-        <Sun className="size-4 text-[var(--bronze)] hover:text-[var(--emerald)] transition-colors" />
+        <Sun className="size-4 text-[var(--bronze)] hover:text-[var(--emerald)] transition-all duration-200 hover:rotate-45" />
       ) : (
-        <Moon className="size-4 text-[var(--emerald-dark)] hover:text-[var(--emerald)] transition-colors" />
+        <Moon className="size-4 text-[var(--emerald-dark)] hover:text-[var(--emerald)] transition-all duration-200 hover:-rotate-12" />
       )}
     </Button>
   );

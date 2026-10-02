@@ -22,7 +22,7 @@ export function TableFooter({ className, ...props }: React.ComponentProps<"tfoot
 }
 
 export function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr data-slot="table-row" className={cn("transition-colors hover:bg-[var(--surface-hover)]", className)} {...props} />;
+  return <tr data-slot="table-row" className={cn("transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)]", className)} {...props} />;
 }
 
 export function TableHead({ className, ...props }: React.ComponentProps<"th">) {

@@ -57,8 +57,8 @@ export const SettingsView = () => {
       {/* Header */}
       <PageHeading title="Pengaturan" />
 
-      <div className="settings-sections-wrapper">
-        <section className="settings-group-panel">
+      <div className="settings-sections-wrapper motion-fade-up">
+        <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
           <h2 className="group-title font-serif">Akun</h2>
           <div className="settings-items-list">
             <div className="setting-row">
@@ -67,7 +67,7 @@ export const SettingsView = () => {
           </div>
         </section>
         {/* Appearance Group */}
-        <section className="settings-group-panel">
+        <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
           <div className="group-header">
             <span className="group-title font-serif">Tampilan & Estetika Antarmuka</span>
             <span className="group-sub font-mono">VISUAL ENVIRONMENT</span>

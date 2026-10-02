@@ -1,0 +1,239 @@
+/* ==========================================================================
+   LATVERIA FIGMA-LIKE MOTION SYSTEM
+   Physics: Snappy acceleration, natural spring deceleration, subtle scale.
+   ========================================================================== */
+
+:root {
+  --motion-duration-micro: 100ms;
+  --motion-duration-fast: 160ms;
+  --motion-duration-normal: 240ms;
+  --motion-duration-smooth: 340ms;
+  --motion-duration-page: 280ms;
+
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --motion-scale-hover: 1.015;
+  --motion-scale-press: 0.98;
+  --motion-scale-active: 0.97;
+}
+
+/* --------------------------------------------------------------------------
+   Keyframe Animations
+   -------------------------------------------------------------------------- */
+
+@keyframes motionFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motionFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motionFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motionScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes motionSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes motionSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes motionShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes motionPulseSubtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(0.99);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Animation Primitives
+   -------------------------------------------------------------------------- */
+
+.motion-fade-in {
+  animation: motionFadeIn var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+.motion-fade-up {
+  animation: motionFadeUp var(--motion-duration-smooth) var(--motion-ease-spring) both;
+}
+
+.motion-fade-down {
+  animation: motionFadeDown var(--motion-duration-smooth) var(--motion-ease-spring) both;
+}
+
+.motion-scale-in {
+  animation: motionScaleIn var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+.motion-slide-in-right {
+  animation: motionSlideInRight var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+.motion-slide-in-left {
+  animation: motionSlideInLeft var(--motion-duration-normal) var(--motion-ease-spring) both;
+}
+
+/* Stagger item supports custom index via style="--stagger-index: N" */
+.motion-stagger-item {
+  animation-delay: calc(var(--stagger-index, 0) * 45ms);
+}
+
+/* --------------------------------------------------------------------------
+   Tactile Interaction Classes (Hover / Press)
+   -------------------------------------------------------------------------- */
+
+.motion-interactive {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-spring),
+              box-shadow var(--motion-duration-fast) var(--motion-ease-spring),
+              border-color var(--motion-duration-fast) var(--motion-ease-standard),
+              background-color var(--motion-duration-fast) var(--motion-ease-standard);
+  will-change: transform;
+}
+
+.motion-interactive:hover {
+  transform: translateY(-2px) scale(var(--motion-scale-hover));
+}
+
+.motion-interactive:active {
+  transform: translateY(0px) scale(var(--motion-scale-press));
+  transition-duration: var(--motion-duration-micro);
+}
+
+.motion-press-only {
+  transition: transform var(--motion-duration-micro) var(--motion-ease-spring);
+  will-change: transform;
+}
+
+.motion-press-only:active {
+  transform: scale(var(--motion-scale-press));
+}
+
+/* --------------------------------------------------------------------------
+   Figma-Style Page Transitions
+   -------------------------------------------------------------------------- */
+
+.motion-page-enter {
+  animation: motionFadeUp var(--motion-duration-page) var(--motion-ease-spring) both;
+}
+
+/* --------------------------------------------------------------------------
+   Smooth Collapse / Expand (Zero Layout Jank via CSS Grid)
+   -------------------------------------------------------------------------- */
+
+.motion-collapse-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-smooth) var(--motion-ease-spring);
+}
+
+.motion-collapse-wrapper.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.motion-collapse-inner {
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Shimmer Skeleton
+   -------------------------------------------------------------------------- */
+
+.motion-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface, rgba(255, 255, 255, 0.04)) 0%,
+    var(--surface-hover, rgba(255, 255, 255, 0.09)) 50%,
+    var(--surface, rgba(255, 255, 255, 0.04)) 100%
+  );
+  background-size: 200% 100%;
+  animation: motionShimmer 1.8s infinite linear;
+  border-radius: var(--radius-sm, 6px);
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility: Reduced Motion
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .motion-interactive:hover,
+  .motion-interactive:active,
+  .motion-press-only:active {
+    transform: none !important;
+  }
+
+  .motion-skeleton {
+    animation: none !important;
+    background: var(--surface, rgba(255, 255, 255, 0.04)) !important;
+  }
+}

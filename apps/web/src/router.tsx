@@ -33,11 +33,11 @@ async function guard(role: "user" | "admin") {
 function Login() {
   const navigate = useNavigate();
   const [register, setRegister] = useState(false), [error, setError] = useState(""), [pending, setPending] = useState(false);
-  return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-6 py-12"><div className="flex items-center justify-between"><Brand /><ThemeToggle /></div><h1 className="!mb-0 !text-5xl text-[var(--ink)]" style={{ fontFamily: "var(--font-serif)" }}>Masuk ruang belajar</h1><form className="grid gap-4 border border-[var(--edge)] bg-[var(--surface)] p-6 rounded-md" onSubmit={async (event) => {
+  return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-6 py-12 motion-page-enter"><div className="flex items-center justify-between"><Brand /><ThemeToggle /></div><h1 className="!mb-0 !text-5xl text-[var(--ink)]" style={{ fontFamily: "var(--font-serif)" }}>Masuk ruang belajar</h1><form className="grid gap-4 border border-[var(--edge)] bg-[var(--surface)] p-6 rounded-md shadow-sm motion-fade-up" onSubmit={async (event) => {
     event.preventDefault(); setError(""); const form = new FormData(event.currentTarget); const body = { email: String(form.get("email")), password: String(form.get("password")), name: String(form.get("name") ?? "") };
     const parsed = (register ? signupSchema : credentialsSchema).safeParse(body); if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
     setPending(true); try { const result = register ? await authClient.signUp.email(body) : await authClient.signIn.email(body); if (result.error) throw new Error(register ? "Pendaftaran gagal." : "Email atau kata sandi tidak cocok."); const user = await api<User>("/me"); navigate(user.role === "admin" ? "/admin" : "/dashboard"); } catch (error) { setError(error instanceof Error ? error.message : "Gagal masuk."); } finally { setPending(false); }
-  }}>{register && <label className="grid gap-1 text-[var(--ink)] font-medium">Nama<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none" name="name" required autoComplete="name" /></label>}<label className="grid gap-1 text-[var(--ink)] font-medium">Email<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none" name="email" type="email" required autoComplete="email" /></label><label className="grid gap-1 text-[var(--ink)] font-medium">Kata sandi<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none" name="password" type="password" required autoComplete={register ? "new-password" : "current-password"} /></label>{error && <p role="alert" className="text-red-500 text-sm">{error}</p>}<Button disabled={pending}>{pending ? "Memproses..." : register ? "Daftar" : "Masuk"}</Button>{import.meta.env.DEV && <Button variant="ghost" type="button" onClick={() => setRegister(!register)}>{register ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar lokal"}</Button>}</form></main>;
+  }}>{register && <label className="grid gap-1 text-[var(--ink)] font-medium">Nama<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none transition-colors duration-150" name="name" required autoComplete="name" /></label>}<label className="grid gap-1 text-[var(--ink)] font-medium">Email<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none transition-colors duration-150" name="email" type="email" required autoComplete="email" /></label><label className="grid gap-1 text-[var(--ink)] font-medium">Kata sandi<input className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none transition-colors duration-150" name="password" type="password" required autoComplete={register ? "new-password" : "current-password"} /></label>{error && <p role="alert" className="text-red-500 text-sm motion-fade-in">{error}</p>}<Button disabled={pending} loading={pending}>{register ? "Daftar" : "Masuk"}</Button>{import.meta.env.DEV && <Button variant="ghost" type="button" onClick={() => setRegister(!register)}>{register ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar lokal"}</Button>}</form></main>;
 }
 function AdminSummary() {
   const loadedTopics = useLoaderData<Topic[]>();
@@ -51,7 +51,7 @@ function AdminSummary() {
   const totalPackages = topics.reduce((sum, topic) => sum + (topic.packageCount ?? 0), 0);
   const totalQuestions = topics.reduce((sum, topic) => sum + topic.questionCount, 0);
 
-  return <>
+  return <div className="motion-page-enter">
     <PageHeading title="Konten latihan" actions={<Button asChild><Link to="/admin/soal/baru"><Plus />Tambah soal</Link></Button>} />
     <div className="hero-metrics-grid admin-stats">
       <StatTile label="Subtes" value={topics.length} />
@@ -61,8 +61,12 @@ function AdminSummary() {
     <Panel>
       <PanelHeader title="Subtes & Paket Soal" />
       <ul>
-        {topics.map((topic) => (
-          <li key={topic.id} className="border-b border-[var(--edge)] last:border-b-0">
+        {topics.map((topic, idx) => (
+          <li
+            key={topic.id}
+            className="border-b border-[var(--edge)] last:border-b-0 motion-fade-up transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)]"
+            style={{ animationDelay: `${idx * 30}ms` }}
+          >
             <div className="flex min-h-14 items-center justify-between gap-4 py-2">
               <div className="grid gap-1">
                 <Link className="font-semibold text-[var(--ink)] hover:text-[var(--emerald)] transition-colors" to={`/admin/subtes/${topic.slug}`}>
@@ -87,7 +91,7 @@ function AdminSummary() {
         ))}
       </ul>
     </Panel>
-  </>;
+  </div>;
 }
 function BankPage() {
   const bank = useLoaderData<Bank>();

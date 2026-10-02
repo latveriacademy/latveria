@@ -79,13 +79,17 @@ export const LeaderboardView = () => {
           const podiumAccents = ['gold', 'silver', 'brass'];
 
           return (
-            <div key={candidate.id} className={`podium-card podium-${podiumAccents[idx]}`}>
+            <div
+              key={candidate.id}
+              className={`podium-card podium-${podiumAccents[idx]} motion-fade-up transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-y-[-2px] hover:shadow-md`}
+              style={{ animationDelay: `${idx * 50}ms` }}
+            >
               <div className="podium-top font-mono">
                 <span className="podium-rank-tag">{podiumRanks[idx]}</span>
                 <span className="podium-id">{candidate.id}</span>
               </div>
 
-              <div className="podium-crest">
+              <div className="podium-crest transition-transform duration-200 group-hover:scale-105">
                 <LatveriaSeal size={42} />
               </div>
 
@@ -118,7 +122,7 @@ export const LeaderboardView = () => {
       </div>
 
       {/* Institutional Table Roster */}
-      <div className="roster-table-container">
+      <div className="roster-table-container motion-fade-up">
         <table className="roster-table" aria-label="Tabel Peringkat Akademik">
           <thead>
             <tr className="font-mono">
@@ -137,7 +141,7 @@ export const LeaderboardView = () => {
               return (
                 <tr
                   key={cand.id}
-                  className={`roster-row ${isUser ? 'user-highlight-row' : ''}`}
+                  className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? 'user-highlight-row' : ''}`}
                 >
                   <td className="td-rank font-mono">
                     <div className="rank-cell-wrapper">

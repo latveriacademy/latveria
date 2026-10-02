@@ -421,7 +421,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           </div>
 
           <div className="progress-bar-track">
-            <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+            <div className="progress-bar-fill transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width]" style={{ width: `${progressPercent}%` }} />
           </div>
 
         </div>
@@ -434,7 +434,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
               1. AREA SOAL (QUESTION WORKSPACE)
               ---------------------------------------------------- */}
           <main className="quiz-question-pane">
-            <div className="question-layout-card">
+            <div className="question-layout-card motion-fade-up" key={currIdx}>
               {/* Question Header & Evaluation Badge */}
               <div className="q-card-top-meta">
 
@@ -442,19 +442,19 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                 {isEvaluated ? (
                   <div className="q-eval-verdict font-mono">
                     {isCurrentCorrect && (
-                      <span className="verdict-pill verdict-correct">
+                      <span className="verdict-pill verdict-correct motion-scale-in">
                         <CheckCircle2 size={15} />
                         <span>✓ JAWABAN BENAR</span>
                       </span>
                     )}
                     {!isCurrentCorrect && !isCurrentUnanswered && (
-                      <span className="verdict-pill verdict-incorrect">
+                      <span className="verdict-pill verdict-incorrect motion-scale-in">
                         <XCircle size={15} />
                         <span>× JAWABAN SALAH</span>
                       </span>
                     )}
                     {isCurrentUnanswered && (
-                      <span className="verdict-pill verdict-unanswered">
+                      <span className="verdict-pill verdict-unanswered motion-scale-in">
                         <AlertTriangle size={15} />
                         <span>○ BELUM DIJAWAB</span>
                       </span>
@@ -524,7 +524,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                       role="radio"
                       aria-checked={isSelected}
                       disabled={isEvaluated || submitting || !!activeSession.attemptId}
-                      className={`option-choice-card ${stateClass}`}
+                      className={`option-choice-card ${stateClass} transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01] active:scale-[0.985]`}
                       onClick={() => !isEvaluated && selectAnswer(currIdx, option.key)}
                     >
                       <div className="option-key-badge font-mono">{option.key}</div>
@@ -535,7 +535,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                       {/* Right Tag / Indicator */}
                       {!isEvaluated ? (
                         <div className="option-radio-indicator">
-                          {isSelected && <span className="radio-inner-pip" />}
+                          {isSelected && <span className="radio-inner-pip motion-scale-in" />}
                         </div>
                       ) : (
                         <div className="eval-opt-badge font-mono">
@@ -827,9 +827,9 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             6. SUBMIT CONFIRMATION MODAL
             ======================================================== */}
         {showSubmitModal && (
-          <div className="modal-backdrop" onClick={() => setShowSubmitModal(false)}>
+          <div className="modal-backdrop motion-fade-in" onClick={() => setShowSubmitModal(false)}>
             <div
-              className="config-modal-card submit-dialog-card"
+              className="config-modal-card submit-dialog-card motion-scale-in"
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-labelledby="modal-submit-title"
@@ -884,9 +884,9 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             EVALUATION SUMMARY DOSSIER MODAL (OPSIONAL VIEW)
             ======================================================== */}
         {showSummaryModal && activeSession.results && (
-          <div className="modal-backdrop" onClick={() => setShowSummaryModal(false)}>
+          <div className="modal-backdrop motion-fade-in" onClick={() => setShowSummaryModal(false)}>
             <div
-              className="config-modal-card eval-summary-modal-card"
+              className="config-modal-card eval-summary-modal-card motion-scale-in"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="modal-header">
@@ -1006,8 +1006,12 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             <Panel className={styles.packagePanel}>
               <PanelHeader title="Paket soal"><span className={styles.count}>{subtestPackages.length} paket tersedia</span></PanelHeader>
               <ul className={styles.packageList} aria-label={`Paket soal ${selectedSubtest.name}`}>
-              {subtestPackages.map((pkg) => (
-                <li key={pkg.id} className={styles.packageItem}>
+              {subtestPackages.map((pkg, idx) => (
+                <li
+                  key={pkg.id}
+                  className={`${styles.packageItem} motion-fade-up`}
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
                   <div className={styles.packageRow}>
                     <div className={styles.packageDetail}>
                       <h3>{pkg.name}</h3>
@@ -1089,11 +1093,15 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             {['Tes Skolastik', 'Tes Literasi'].map((category) => <Panel key={category} className={styles.subjectPanel}>
               <PanelHeader title={category === 'Tes Skolastik' ? 'Tes Potensi Skolastik' : category} />
               <ul className={styles.subjectList} aria-label={`Subtes ${category}`}>
-            {topics.filter((subject) => subject.category === category).map((subject) => {
+            {topics.filter((subject) => subject.category === category).map((subject, idx) => {
               const Icon = getSubjectIcon(subject.id);
 
               return (
-                <li key={subject.id}>
+                <li
+                  key={subject.id}
+                  className="motion-fade-up"
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
                   <Link className={styles.subject} to={`/dashboard?tab=practice&subtes=${encodeURIComponent(subject.slug)}`}>
                     <Icon size={22} aria-hidden="true" />
                     <span><span className={styles.subjectName}>{subject.name}</span><span className={styles.subjectMeta}>{subject.packageCount ?? 0} paket · {subject.questionsCount} soal</span></span>

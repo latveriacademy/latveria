@@ -82,7 +82,7 @@ export const ProfileView = () => {
       <PageHeading title="Profil" />
 
       {/* Official Academic ID Card / Dossier Record */}
-      <section className="academic-id-card">
+      <section className="academic-id-card motion-fade-up">
 
         <div className="id-card-body">
           {/* Left: Avatar with Institutional Crest Frame */}
@@ -95,7 +95,7 @@ export const ProfileView = () => {
 
             <button
               type="button"
-              className="btn-edit-dossier font-mono"
+              className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95"
               onClick={() => {
                 setFormData({ name: user.name, codename: user.codename, targetUniversity: user.targetUniversity, motto: user.motto, bio: user.bio });
                 setSaveError(''); setIsEditing(true);
@@ -143,7 +143,7 @@ export const ProfileView = () => {
       {/* Main Dual Grid: Subject Mastery & Institutional Achievements */}
       <div className="profile-grid-dual">
         {/* Left: UTBK 7-Subject Curriculum Mastery */}
-        <section className="profile-panel mastery-panel">
+        <section className="profile-panel mastery-panel motion-fade-up">
           <div className="panel-header">
             <div className="panel-title-group">
               <h2 className="panel-title font-serif">Penguasaan subtes UTBK</h2>
@@ -165,7 +165,7 @@ export const ProfileView = () => {
                 </div>
                 <div className="mastery-track">
                   <div
-                    className="mastery-fill"
+                    className="mastery-fill transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width]"
                     style={{ width: `${item.mastery}%` }}
                   />
                 </div>
@@ -175,7 +175,7 @@ export const ProfileView = () => {
         </section>
 
         {/* Right: Institutional Achievements / Records */}
-        <section className="profile-panel achievements-panel">
+        <section className="profile-panel achievements-panel motion-fade-up">
           <div className="panel-header">
             <div className="panel-title-group">
               <h2 className="panel-title font-serif">Prestasi</h2>

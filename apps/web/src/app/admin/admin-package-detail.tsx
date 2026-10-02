@@ -98,7 +98,7 @@ export function AdminPackageDetail() {
       </div>}
       {!pkg.questions.length ? <div className={styles.empty}><h3>Mulai isi paket ini</h3><p>Buat soal satu per satu, impor JSON, atau pilih soal yang sudah ada di bank soal.</p><div className={styles.toolbar}><Button asChild><Link to={createUrl}>Buat soal</Link></Button><Button asChild variant="outline"><Link to={importUrl}>Impor JSON</Link></Button></div></div> : <>
         <p className={styles.help}>Mengeluarkan soal hanya melepasnya dari paket. Soal tetap tersimpan di bank soal.</p>
-        <ol className={styles.questions}>{pkg.questions.map((question, index) => <li key={question.id}>
+        <ol className={styles.questions}>{pkg.questions.map((question, index) => <li key={question.id} className="motion-fade-up transition-colors duration-150 hover:bg-[var(--surface-elevated)]" style={{ animationDelay: `${index * 25}ms` }}>
           <div className={styles.question}><span className={styles.number}>{index + 1}.</span><div><MathText>{question.prompt}</MathText><p className={styles.help}>{question.category ?? "Tanpa kategori"} · {question.usage > 0 ? `${question.usage} jawaban peserta` : "Belum dikerjakan peserta"}</p></div></div>
           <div className={styles.toolbar}>
             <Button asChild variant="outline" size="sm"><Link to={`/admin/soal/${question.id}`}>Lihat soal</Link></Button>

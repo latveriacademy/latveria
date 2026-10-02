@@ -20,6 +20,7 @@ import {
 import { sound } from '../utils/audioFeedback';
 import { Panel, PanelHeader, ProgressBar, StatTile } from '../components/ui/dashboard';
 import { Button } from '../components/ui/button';
+import { AnimatedNumber, FadeUp, StaggerContainer } from '../lib/motion';
 
 export const DashboardView = () => {
   const { user, topics, setCurrentTab, startPractice, completeDailyTraining } = useApp();
@@ -44,7 +45,7 @@ export const DashboardView = () => {
       <LatveriaWatermark size={380} opacity={0.03} />
 
       {/* Hero: Personal Academic Command Center */}
-      <section className="command-hero-card">
+      <section className="command-hero-card motion-fade-up">
 
         <div className="hero-main-content">
           <div className="hero-left">
@@ -58,11 +59,11 @@ export const DashboardView = () => {
                 <span className="metric-sub-note">{user.title}</span>
               </StatTile>
 
-              <StatTile label="ACTIVE STREAK" value={`${user.streakDays} DAYS`} icon={<Flame size={20} className="text-orange" />}>
+              <StatTile label="ACTIVE STREAK" value={user.streakDays} icon={<Flame size={20} className="text-orange" />}>
                 <span className="metric-sub-note">Konsistensi protokol terjaga</span>
               </StatTile>
 
-              <StatTile label="GLOBAL ACCURACY" value={`${user.accuracy}%`} icon={<Target size={20} className="text-sage" />}>
+              <StatTile label="GLOBAL ACCURACY" value={user.accuracy} icon={<Target size={20} className="text-sage" />}>
                 <span className="metric-sub-note">Berdasarkan {user.questionsCompleted} butir soal</span>
               </StatTile>
             </div>
@@ -71,11 +72,15 @@ export const DashboardView = () => {
             <div className="hero-xp-wrapper">
               <div className="xp-metric-header">
                 <div className="xp-left font-mono">
-                  <span className="text-gold font-bold">{user.currentXP.toLocaleString()}</span>
-                  <span className="text-muted"> / {user.nextLevelXP.toLocaleString()} XP</span>
+                  <span className="text-gold font-bold">
+                    <AnimatedNumber value={user.currentXP} />
+                  </span>
+                  <span className="text-muted"> / <AnimatedNumber value={user.nextLevelXP} /> XP</span>
                 </div>
                 <div className="xp-right font-mono">
-                  <span>{(user.nextLevelXP - user.currentXP).toLocaleString()} XP MENUJU LEVEL {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}</span>
+                  <span>
+                    <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP MENUJU LEVEL {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}
+                  </span>
                 </div>
               </div>
               <ProgressBar value={xpPercentage} label="EXP" className="hero-progress-track" fillClassName="hero-progress-fill" />
@@ -129,7 +134,7 @@ export const DashboardView = () => {
             {user.todayTraining.map((task) => (
               <div
                 key={task.id}
-                className={`task-row-card ${task.completed ? 'task-done' : ''}`}
+                className={`task-row-card transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01] hover:border-[var(--edge-strong)] ${task.completed ? 'task-done' : ''}`}
               >
                 <div className="task-status-btn-wrap">
                   <button
@@ -227,7 +232,7 @@ export const DashboardView = () => {
                   <div key={idx} className="chart-day-column" title={`${item.fullDay}: ${val} ${chartMetric}`}>
                     <div className="bar-track">
                       <div
-                        className="bar-fill"
+                        className="bar-fill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                         style={{ height: `${heightPercent}%` }}
                       >
                         <span className="bar-val-tooltip font-mono">{val}</span>
@@ -244,7 +249,7 @@ export const DashboardView = () => {
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">TOTAL MINGGU INI</span>
               <span className="stat-val font-serif">
-                {user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)} Soal
+                <AnimatedNumber value={user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)} /> Soal
               </span>
             </div>
             <div className="chart-stat-tile">
@@ -266,27 +271,33 @@ export const DashboardView = () => {
           <PanelHeader title="Statistik belajar" />
 
           <div className="stat-tiles-quad">
-            <div className="quad-tile">
+            <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">QUESTIONS COMPLETED</div>
-              <div className="quad-number font-serif">{user.questionsCompleted}</div>
+              <div className="quad-number font-serif">
+                <AnimatedNumber value={user.questionsCompleted} />
+              </div>
               <div className="quad-bottom font-mono text-sage">TARGET: 1,000 SOAL</div>
             </div>
 
-            <div className="quad-tile">
+            <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">PRACTICE HOURS</div>
-              <div className="quad-number font-serif">{user.practiceHours}h</div>
+              <div className="quad-number font-serif">
+                <AnimatedNumber value={user.practiceHours} />h
+              </div>
               <div className="quad-bottom font-mono text-gold">DEDIKASI TERVERIFIKASI</div>
             </div>
 
-            <div className="quad-tile">
+            <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">GLOBAL RANK</div>
               <div className="quad-number font-serif">#{user.currentRank}</div>
               <div className="quad-bottom font-mono text-sage">TOP 2% OF COHORT</div>
             </div>
 
-            <div className="quad-tile">
+            <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">ACCURACY BENCHMARK</div>
-              <div className="quad-number font-serif">{user.accuracy}%</div>
+              <div className="quad-number font-serif">
+                <AnimatedNumber value={user.accuracy} formatter={(n) => `${n}%`} />
+              </div>
               <div className="quad-bottom font-mono text-gold">TIER-1 EXCELLENCE</div>
             </div>
           </div>
@@ -300,7 +311,7 @@ export const DashboardView = () => {
 
           <div className="activity-stream-list">
             {user.recentActivities.map((act) => (
-              <div key={act.id} className="activity-stream-item">
+              <div key={act.id} className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]">
                 <div className="activity-sub-badge font-mono">{act.code}</div>
                 <div className="activity-body">
                   <div className="activity-title-text font-sans">{act.title}</div>

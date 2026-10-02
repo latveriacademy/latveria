@@ -143,8 +143,8 @@ export function AdminSubtestPackages() {
           </div>
         ) : (
           <ul className={styles.packageList}>
-            {packages.map((pkg) => (
-              <li key={pkg.id}>
+            {packages.map((pkg, index) => (
+              <li key={pkg.id} className="motion-fade-up transition-colors duration-150 hover:bg-[var(--surface-elevated)]" style={{ animationDelay: `${index * 30}ms` }}>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h3>{pkg.name}</h3>
