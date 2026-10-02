@@ -1,7 +1,7 @@
 import { lazy, useEffect, useState } from "react";
 import { isRouteErrorResponse } from "react-router";
-import { createBrowserRouter, Link, Navigate, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useSearchParams } from "react-router";
-import { ArrowLeft, Plus, Upload, Trash2, Pencil } from "lucide-react";
+import { createBrowserRouter, Link, Navigate, redirect, useLoaderData, useNavigate, useNavigation, useRevalidator, useRouteError, useSearchParams } from "react-router";
+import { ArrowLeft, Plus, Upload, Trash2, Pencil, Loader2 } from "lucide-react";
 import { credentialsSchema, signupSchema, type Bank, type QuestionDetail, type Topic, type User, type HistoryItem, type Result, type QuestionPackage, type PackageDetail } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { authClient } from "./lib/auth-client";
@@ -18,7 +18,7 @@ import { HistoryView, HistoryErrorView } from "./views/HistoryView";
 
 const Home = lazy(() => import("./app/landing"));
 const LatveriaOSApp = lazy(() => import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })));
-const QuestionBankTable = lazy(() => import("./app/admin/question-bank-table").then((module) => ({ default: module.QuestionBankTable })));
+import { QuestionBankTable } from "./app/admin/question-bank-table";
 const HistoryResultView = lazy(() => import("./views/HistoryResultView").then((module) => ({ default: module.HistoryResultView })));
 const AdminSubtestPackages = lazy(() => import("./app/admin/admin-subtest-packages").then((module) => ({ default: module.AdminSubtestPackages })));
 const AdminPackageDetail = lazy(() => import("./app/admin/admin-package-detail").then((module) => ({ default: module.AdminPackageDetail })));
@@ -90,7 +90,10 @@ function AdminSummary() {
   </>;
 }
 function BankPage() {
-  const bank = useLoaderData<Bank>(); const [params, setParams] = useSearchParams();
+  const bank = useLoaderData<Bank>();
+  const [params, setParams] = useSearchParams();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(params);
     if (value === "semua") next.delete(key);
@@ -102,31 +105,125 @@ function BankPage() {
     }
     setParams(next);
   };
-  return <div className={as.bankPage}>
-    <PageHeading title="Bank soal" description={`${bank.total} soal`} actions={<><Button asChild variant="outline"><Link to="/admin/soal/impor"><Upload />Impor JSON</Link></Button><Button asChild><Link to={`/admin/soal/baru?subtes=${params.get("subtes") ?? ""}`}><Plus />Tambah soal</Link></Button></>} />
-    {(params.has("created") || params.has("imported") || params.has("updated") || params.has("deleted")) && <p role="status" className={as.success}>{params.has("deleted") ? `${params.get("deleted")} soal berhasil dihapus.` : params.has("imported") ? `${params.get("imported")} soal berhasil diimpor.` : "Soal tersimpan."}</p>}
-    <div className={as.bankFilters}>
-      <div className={as.bankFilterField}><span id="subtest-label">Subtes</span><Select value={params.get("subtes") ?? "semua"} onValueChange={(value) => update("subtes", value)}><SelectTrigger aria-labelledby="subtest-label"><SelectValue /></SelectTrigger><SelectContent>{bank.tabs.map((tab) => <SelectItem key={tab.slug} value={tab.slug}>{tab.slug === "semua" ? "Semua subtes" : tab.name} ({tab.value})</SelectItem>)}</SelectContent></Select></div>
-      <div className={as.bankFilterField}><span id="category-label">Kategori materi</span><Select value={params.get("kategori") ?? "semua"} onValueChange={(value) => update("kategori", value)}><SelectTrigger aria-labelledby="category-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="semua">Semua kategori</SelectItem>{bank.categories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select></div>
-      {bank.packages && bank.packages.length > 0 && (
+  return (
+    <div className={as.bankPage}>
+      <PageHeading
+        title="Bank soal"
+        description={
+          <span className="inline-flex items-center gap-2">
+            <span>{bank.total} soal</span>
+            {isNavigating && <Loader2 className="size-3.5 animate-spin text-[var(--gold)]" />}
+          </span>
+        }
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link to="/admin/soal/impor"><Upload />Impor JSON</Link>
+            </Button>
+            <Button asChild>
+              <Link to={`/admin/soal/baru?subtes=${params.get("subtes") ?? ""}`}><Plus />Tambah soal</Link>
+            </Button>
+          </>
+        }
+      />
+      {(params.has("created") || params.has("imported") || params.has("updated") || params.has("deleted")) && (
+        <p role="status" className={as.success}>
+          {params.has("deleted")
+            ? `${params.get("deleted")} soal berhasil dihapus.`
+            : params.has("imported")
+              ? `${params.get("imported")} soal berhasil diimpor.`
+              : "Soal tersimpan."}
+        </p>
+      )}
+      <div className={as.bankFilters}>
         <div className={as.bankFilterField}>
-          <span id="package-label">Paket soal</span>
-          <Select value={params.get("paket") ?? "semua"} onValueChange={(value) => update("paket", value)}>
-            <SelectTrigger aria-labelledby="package-label"><SelectValue /></SelectTrigger>
+          <span id="subtest-label">Subtes</span>
+          <Select value={params.get("subtes") ?? "semua"} onValueChange={(value) => update("subtes", value)}>
+            <SelectTrigger aria-labelledby="subtest-label"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="semua">Semua paket</SelectItem>
-              {bank.packages.map((pkg) => (
-                <SelectItem key={pkg.id} value={pkg.name}>{pkg.name} ({pkg.questionCount})</SelectItem>
+              {bank.tabs.map((tab) => (
+                <SelectItem key={tab.slug} value={tab.slug}>
+                  {tab.slug === "semua" ? "Semua subtes" : tab.name} ({tab.value})
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      )}
-      {(params.has("subtes") || params.has("kategori") || params.has("paket")) && <Button variant="ghost" size="sm" onClick={() => { const next = new URLSearchParams(params); next.delete("subtes"); next.delete("kategori"); next.delete("paket"); next.delete("halaman"); setParams(next); }}>Reset filter</Button>}
+        <div className={as.bankFilterField}>
+          <span id="category-label">Kategori materi</span>
+          <Select value={params.get("kategori") ?? "semua"} onValueChange={(value) => update("kategori", value)}>
+            <SelectTrigger aria-labelledby="category-label"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="semua">Semua kategori</SelectItem>
+              {bank.categories.map((category) => (
+                <SelectItem key={category} value={category}>{category}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {bank.packages && bank.packages.length > 0 && (
+          <div className={as.bankFilterField}>
+            <span id="package-label">Paket soal</span>
+            <Select value={params.get("paket") ?? "semua"} onValueChange={(value) => update("paket", value)}>
+              <SelectTrigger aria-labelledby="package-label"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua paket</SelectItem>
+                {bank.packages.map((pkg) => (
+                  <SelectItem key={pkg.id} value={pkg.name}>{pkg.name} ({pkg.questionCount})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {(params.has("subtes") || params.has("kategori") || params.has("paket")) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isNavigating}
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete("subtes");
+              next.delete("kategori");
+              next.delete("paket");
+              next.delete("halaman");
+              setParams(next);
+            }}
+          >
+            Reset filter
+          </Button>
+        )}
+      </div>
+      <QuestionBankTable
+        key={`${params.get("subtes") ?? ""}:${params.get("kategori") ?? ""}:${params.get("paket") ?? ""}:${bank.page}:${bank.rows.map((row) => row.id).join(",")}`}
+        bank={bank}
+      />
+      <nav className={as.pagination} aria-label="Paginasi bank soal">
+        <span className="inline-flex items-center gap-2">
+          <span>{bank.total ? `${(bank.page - 1) * 15 + 1}–${Math.min(bank.page * 15, bank.total)} dari ${bank.total} soal` : "0 soal"}</span>
+          {isNavigating && <Loader2 className="size-3.5 animate-spin text-[var(--gold)]" />}
+        </span>
+        <div className={as.paginationActions}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={bank.page <= 1 || isNavigating}
+            onClick={() => update("halaman", String(bank.page - 1))}
+          >
+            Sebelumnya
+          </Button>
+          <span>{bank.page} / {bank.pageCount}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={bank.page >= bank.pageCount || isNavigating}
+            onClick={() => update("halaman", String(bank.page + 1))}
+          >
+            Berikutnya
+          </Button>
+        </div>
+      </nav>
     </div>
-    <QuestionBankTable key={`${params.get("subtes") ?? ""}:${params.get("kategori") ?? ""}:${params.get("paket") ?? ""}:${bank.page}:${bank.rows.map((row) => row.id).join(",")}`} bank={bank} />
-    <nav className={as.pagination} aria-label="Paginasi bank soal"><span>{bank.total ? `${(bank.page - 1) * 15 + 1}–${Math.min(bank.page * 15, bank.total)} dari ${bank.total} soal` : "0 soal"}</span><div className={as.paginationActions}><Button variant="outline" size="sm" disabled={bank.page <= 1} onClick={() => update("halaman", String(bank.page - 1))}>Sebelumnya</Button><span>{bank.page} / {bank.pageCount}</span><Button variant="outline" size="sm" disabled={bank.page >= bank.pageCount} onClick={() => update("halaman", String(bank.page + 1))}>Berikutnya</Button></div></nav>
-  </div>;
+  );
 }
 function NewQuestion() { const topics = useLoaderData<Topic[]>(); const [params] = useSearchParams(); return <><PageHeading title="Tambah soal" description="Soal langsung tersedia setelah disimpan." /><QuestionForm topics={topics} initialTopicId={topics.find((topic) => topic.slug === params.get("subtes"))?.id} /></>; }
 function ImportPage() { return <><PageHeading title="Impor soal dari JSON" description="Tempel JSON atau unggah file, lalu periksa sebelum mengimpor." /><ImportQuestions /></>; }
@@ -135,9 +232,80 @@ function EditQuestion() {
   return <><PageHeading title="Edit soal" description={`${item.topic} · ${item.category ?? "Tanpa kategori"}`} /><QuestionForm key={item.id} topics={topics} question={item} /></>;
 }
 function Preview() {
-  const item = useLoaderData<QuestionDetail>(); const navigate = useNavigate(); const [error, setError] = useState("");
+  const item = useLoaderData<QuestionDetail>();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  return <><PageHeading title="Pratinjau soal" description={`${item.topic} / ${item.category ?? "Tanpa kategori"}`} actions={<Button asChild variant="outline"><Link to={`/admin/soal?subtes=${item.slug}`}><ArrowLeft />Bank soal</Link></Button>} /><Panel className={as.preview}><div className={as.previewHeader}>{item.source}</div><div className={as.previewPrompt}><MathText>{item.prompt}</MathText></div><ol className={as.previewOptions}>{item.options.map((option, index) => <li key={index} className={index === item.correctAnswer ? as.correctOption : undefined}><span className={as.optionLetter}>{String.fromCharCode(65 + index)}</span><span className={as.optionText}><MathText>{option}</MathText></span>{index === item.correctAnswer && <strong>Kunci jawaban</strong>}</li>)}</ol><section className={as.previewExplanation}><h2>Pembahasan</h2><MathText>{item.explanation}</MathText></section></Panel><div className={as.previewActions}>{item.usage ? <p>Soal sudah dipakai dalam {item.usage} jawaban peserta sehingga tidak dapat diedit atau dihapus.</p> : <><Button asChild variant="outline"><Link to={`/admin/soal/${item.id}/edit`}><Pencil />Edit soal</Link></Button>{confirmDelete ? <div className="flex flex-wrap items-center gap-2"><span>Hapus soal ini?</span><Button variant="outline" onClick={() => setConfirmDelete(false)}>Batal</Button><Button onClick={async () => { try { await api(`/admin/questions/${item.id}`, { method: "DELETE" }); navigate(`/admin/soal?subtes=${item.slug}`); } catch (error) { setError(error instanceof Error ? error.message : "Gagal hapus."); } }}><Trash2 />Ya, hapus</Button></div> : <Button variant="outline" onClick={() => setConfirmDelete(true)}><Trash2 />Hapus soal</Button>}</>}{error && <p role="alert">{error}</p>}</div></>;
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <>
+      <PageHeading
+        title="Pratinjau soal"
+        description={`${item.topic} / ${item.category ?? "Tanpa kategori"}`}
+        actions={
+          <Button asChild variant="outline">
+            <Link to={`/admin/soal?subtes=${item.slug}`}><ArrowLeft />Bank soal</Link>
+          </Button>
+        }
+      />
+      <Panel className={as.preview}>
+        <div className={as.previewHeader}>{item.source}</div>
+        <div className={as.previewPrompt}><MathText>{item.prompt}</MathText></div>
+        <ol className={as.previewOptions}>
+          {item.options.map((option, index) => (
+            <li key={index} className={index === item.correctAnswer ? as.correctOption : undefined}>
+              <span className={as.optionLetter}>{String.fromCharCode(65 + index)}</span>
+              <span className={as.optionText}><MathText>{option}</MathText></span>
+              {index === item.correctAnswer && <strong>Kunci jawaban</strong>}
+            </li>
+          ))}
+        </ol>
+        <section className={as.previewExplanation}>
+          <h2>Pembahasan</h2>
+          <MathText>{item.explanation}</MathText>
+        </section>
+      </Panel>
+      <div className={as.previewActions}>
+        {item.usage ? (
+          <p>Soal sudah dipakai dalam {item.usage} jawaban peserta sehingga tidak dapat diedit atau dihapus.</p>
+        ) : (
+          <>
+            <Button asChild variant="outline">
+              <Link to={`/admin/soal/${item.id}/edit`}><Pencil />Edit soal</Link>
+            </Button>
+            {confirmDelete ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Hapus soal ini?</span>
+                <Button variant="outline" disabled={deleting} onClick={() => setConfirmDelete(false)}>Batal</Button>
+                <Button
+                  disabled={deleting}
+                  onClick={async () => {
+                    setDeleting(true);
+                    setError("");
+                    try {
+                      await api(`/admin/questions/${item.id}`, { method: "DELETE" });
+                      navigate(`/admin/soal?subtes=${item.slug}&deleted=1`);
+                    } catch (error) {
+                      setError(error instanceof Error ? error.message : "Gagal hapus.");
+                      setDeleting(false);
+                    }
+                  }}
+                >
+                  {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                  {deleting ? "Menghapus..." : "Ya, hapus"}
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setConfirmDelete(true)}>
+                <Trash2 />Hapus soal
+              </Button>
+            )}
+          </>
+        )}
+        {error && <p role="alert">{error}</p>}
+      </div>
+    </>
+  );
 }
 function NotFound() { return <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-5 px-6 py-12"><h1 className="!mb-0 !text-4xl">Halaman tidak ditemukan</h1><Link to="/">Kembali ke beranda</Link></main>; }
 function ErrorPage() { const error = useRouteError(); const revalidator = useRevalidator(); if ((isRouteErrorResponse(error) && error.status === 404) || (error instanceof ApiError && [403, 404].includes(error.status))) return <NotFound />; return <main className="mx-auto grid max-w-xl gap-5 p-12"><h1 className="!text-4xl">Tidak dapat membuka halaman</h1><p role="alert">{error instanceof Error ? error.message : "Halaman tidak ditemukan."}</p><Button onClick={() => revalidator.revalidate()}>Coba lagi</Button><Link to="/">Beranda</Link></main>; }
@@ -162,7 +330,7 @@ export const router = createBrowserRouter([
   { id: "admin", path: "/admin", loader: () => guard("admin"), shouldRevalidate: ({ currentUrl, nextUrl, defaultShouldRevalidate }) => {
     if (currentUrl.pathname.startsWith("/admin") && nextUrl.pathname.startsWith("/admin")) return false;
     return defaultShouldRevalidate;
-  }, hydrateFallbackElement: <p className="p-6 text-[var(--soft-ink)]" role="status">Memuat panel admin...</p>, element: <AdminLayout />, errorElement: <ErrorPage />, children: [
+  }, hydrateFallbackElement: <main className="mx-auto grid min-h-dvh max-w-xl content-center justify-items-center gap-4 px-6 py-12 text-center"><div className="size-8 animate-spin rounded-full border-2 border-[var(--gold)] border-t-transparent" /><p className="text-[var(--soft-ink)] text-sm font-medium tracking-wide" role="status">Memuat panel admin…</p></main>, element: <AdminLayout />, errorElement: <ErrorPage />, children: [
     { index: true, loader: () => api<Topic[]>("/admin/topics"), element: <AdminSummary /> },
     { path: "subtes/:slug", loader: async ({ params }) => {
       const topics = await api<Topic[]>("/admin/topics");

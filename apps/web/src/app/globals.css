@@ -417,6 +417,12 @@ h2 em {
   .wordmark img { width: 28px; height: 28px; }
 }
 
+@keyframes progress {
+  0% { transform: scaleX(0); }
+  50% { transform: scaleX(0.7) translateX(30%); }
+  100% { transform: scaleX(1) translateX(100%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .main-link { transition: none; }
