@@ -46,12 +46,15 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
     sessionResults,
     setSessionResults,
     startPractice,
+    fetchSubtestPackages,
     selectAnswer,
     toggleFlag,
     finishSession,
     exitPractice: exitLivePractice,
     openLexicon,
     topics,
+    setTopics,
+    refreshTopics,
     loading,
     submitting,
     submissionError
@@ -67,6 +70,27 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   const [selectedMode, setSelectedMode] = useState('Practice');
   const [questionCount, setQuestionCount] = useState(10);
   const [showConfigModal, setShowConfigModal] = useState(false);
+
+  // Subtest Package Selection State
+  const [selectedSubtest, setSelectedSubtest] = useState(null);
+  const [subtestPackages, setSubtestPackages] = useState([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+
+  const handleSelectSubtest = async (subject) => {
+    setSelectedSubtest(subject);
+    setSelectedPackage(null);
+    setLoadingPackages(true);
+    try {
+      const pkgs = await fetchSubtestPackages(subject.slug || subject.id);
+      setSubtestPackages(pkgs);
+      setTopics((prev) => prev.map((t) => (t.id === subject.id || t.slug === subject.slug) ? { ...t, packageCount: pkgs.length } : t));
+    } catch {
+      setSubtestPackages([]);
+    } finally {
+      setLoadingPackages(false);
+    }
+  };
 
   // In-Session Navigator (Mobile Sheet / Drawer)
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -266,6 +290,11 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             <div className="subtest-badge-box">
               <span className="subtest-code font-mono">{activeSession.subjectCode}</span>
               <span className="subtest-name font-serif">{activeSession.subjectName}</span>
+              {activeSession.packageName && (
+                <span className="subtest-package-badge font-mono text-xs px-2 py-0.5 rounded border border-[var(--edge)] bg-[var(--surface-muted)] text-[var(--gold)]">
+                  {activeSession.packageName}
+                </span>
+              )}
             </div>
           </div>
 
@@ -863,6 +892,9 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                 <h2 className="modal-title font-serif">
                   Hasil latihan
                 </h2>
+                <p className="modal-desc text-sm text-[var(--soft-ink)]">
+                  {activeSession.subjectName}{activeSession.packageName ? ` · ${activeSession.packageName}` : ''}
+                </p>
               </div>
 
               <div className="results-metrics-grid">
@@ -929,71 +961,168 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   }
 
   // ========================================================
-  // SCENARIO 3: PRACTICE SELECTION SCREEN (CATALOG OF 7 SUBTESTS)
+  // SCENARIO 3: PRACTICE SELECTION SCREEN (SUBTEST CATALOG & PACKAGES)
   // ========================================================
   return (
     <div className="latveria-view-container practice-catalog-view">
       <LatveriaWatermark size={380} opacity={0.03} />
 
-      {/* Catalog Header */}
-      <PageHeading title="Latihan" actions={<Button asChild variant="outline"><Link to="/dashboard/riwayat"><History />Riwayat</Link></Button>} />
-
-      {/* Subject Cards Grid */}
-      <ul className="subjects-grid" aria-label="Subtes latihan">
-        {topics.map((subject) => {
-          const Icon = getSubjectIcon(subject.id);
-          const isSelected = selectedSubject === subject.id;
-
-          return (
-            <li
-              key={subject.id}
-              className={`subject-card ${isSelected ? 'active-subject' : ''}`}
+      {selectedSubtest ? (
+        /* Subtest Packages Selection View */
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedSubtest(null);
+                setSelectedPackage(null);
+                refreshTopics();
+              }}
             >
-              <div className="subject-card-top">
-                <div className="subject-icon-box">
-                  <Icon size={22} className="text-gold" />
-                </div>
-                <div className="subject-code-tag font-mono">{subject.code}</div>
-              </div>
+              <ChevronLeft className="size-4 mr-1" />
+              Semua subtes
+            </Button>
+          </div>
 
-              <div className="subject-card-body">
-                <span className="subject-category font-mono">{subject.category}</span>
-                <h3 className="subject-title font-serif">{subject.name}</h3>
-                <p className="subject-description">{subject.description}</p>
-              </div>
+          <PageHeading
+            title={selectedSubtest.name}
+            description={`Pilih paket soal untuk memulai latihan subtes ${selectedSubtest.name}.`}
+            actions={
+              <Button asChild variant="outline">
+                <Link to="/dashboard/riwayat">
+                  <History className="size-4" />
+                  Riwayat
+                </Link>
+              </Button>
+            }
+          />
 
-              {/* Progress and Accuracy Metrics */}
-              <div className="subject-metrics-strip">
-                <div className="s-metric">
-                  <span className="s-label font-mono">SOAL</span>
-                  <span className="s-val font-serif">{subject.questionsCount}</span>
-                </div>
-                {subject.accuracy != null && (
-                  <div className="s-metric">
-                    <span className="s-label font-mono">ACCURACY</span>
-                    <span className="s-val font-serif text-sage">{subject.accuracy}%</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="subject-card-action">
-                <Button
-                  type="button"
-                  className="btn-latveria-primary w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedSubject(subject.id);
-                    setShowConfigModal(true);
-                  }}
+          {loadingPackages ? (
+            <div className="flex flex-col items-center justify-center p-16 text-[var(--soft-ink)]">
+              <div className="size-8 animate-spin rounded-full border-2 border-[var(--emerald)] border-t-transparent mb-3" />
+              <p className="font-mono text-sm">Memuat paket soal…</p>
+            </div>
+          ) : subtestPackages.length === 0 ? (
+            <div className="border border-[var(--edge)] bg-[var(--surface)] p-12 text-center rounded-lg space-y-4">
+              <p className="text-[var(--soft-ink)]">Belum ada paket soal aktif untuk subtes ini.</p>
+              <Button variant="outline" onClick={() => setSelectedSubtest(null)}>
+                Kembali ke daftar subtes
+              </Button>
+            </div>
+          ) : (
+            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-label={`Paket soal ${selectedSubtest.name}`}>
+              {subtestPackages.map((pkg) => (
+                <li
+                  key={pkg.id}
+                  className="border border-[var(--edge)] bg-[var(--surface)] hover:border-[var(--emerald)] p-6 rounded-lg flex flex-col justify-between transition-all shadow-sm gap-4"
                 >
-                  <Play size={14} fill="currentColor" />
-                  <span>Mulai latihan</span>
-                </Button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-[var(--surface-muted)] text-[var(--gold)] font-medium border border-[var(--edge)]">
+                        {pkg.questionCount} Soal
+                      </span>
+                      <span className="text-xs font-mono text-[var(--soft-ink)]">Paket #{pkg.order}</span>
+                    </div>
+                    <h3 className="font-serif text-xl font-bold text-[var(--ink)]">{pkg.name}</h3>
+                    {pkg.description ? (
+                      <p className="text-sm text-[var(--soft-ink)] line-clamp-3">{pkg.description}</p>
+                    ) : (
+                      <p className="text-sm text-[var(--soft-ink)] italic">Paket latihan terarah subtes {selectedSubtest.name}.</p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-[var(--edge)]">
+                    <Button
+                      type="button"
+                      className="w-full flex items-center justify-center gap-2"
+                      disabled={pkg.questionCount === 0 || loading}
+                      onClick={() => {
+                        setSelectedPackage(pkg);
+                        setSelectedSubject(selectedSubtest.id);
+                        setQuestionCount(pkg.questionCount);
+                        setShowConfigModal(true);
+                      }}
+                    >
+                      <Play size={14} fill="currentColor" />
+                      <span>{pkg.questionCount === 0 ? 'Belum Ada Soal' : 'Mulai Latihan'}</span>
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : (
+        /* Subtests Catalog View */
+        <>
+          <PageHeading
+            title="Latihan"
+            description="Pilih subtes SNPMB 2026 untuk melihat paket soal yang tersedia."
+            actions={
+              <Button asChild variant="outline">
+                <Link to="/dashboard/riwayat">
+                  <History className="size-4" />
+                  Riwayat
+                </Link>
+              </Button>
+            }
+          />
+
+          <ul className="subjects-grid" aria-label="Subtes latihan">
+            {topics.map((subject) => {
+              const Icon = getSubjectIcon(subject.id);
+              const isSelected = selectedSubject === subject.id;
+
+              return (
+                <li
+                  key={subject.id}
+                  className={`subject-card ${isSelected ? 'active-subject' : ''}`}
+                >
+                  <div className="subject-card-top">
+                    <div className="subject-icon-box">
+                      <Icon size={22} className="text-gold" />
+                    </div>
+                    <div className="subject-code-tag font-mono">{subject.code}</div>
+                  </div>
+
+                  <div className="subject-card-body">
+                    <span className="subject-category font-mono">{subject.category}</span>
+                    <h3 className="subject-title font-serif">{subject.name}</h3>
+                    <p className="subject-description">{subject.description}</p>
+                  </div>
+
+                  {/* Progress and Package/Question Metrics */}
+                  <div className="subject-metrics-strip">
+                    <div className="s-metric">
+                      <span className="s-label font-mono">PAKET</span>
+                      <span className="s-val font-serif">{subject.packageCount ?? 0}</span>
+                    </div>
+                    <div className="s-metric">
+                      <span className="s-label font-mono">TOTAL SOAL</span>
+                      <span className="s-val font-serif">{subject.questionsCount}</span>
+                    </div>
+                  </div>
+
+                  <div className="subject-card-action">
+                    <Button
+                      type="button"
+                      className="btn-latveria-primary w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectSubtest(subject);
+                      }}
+                    >
+                      <span>Lihat Paket Soal</span>
+                      <ChevronRight size={14} />
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
 
       {/* Configuration Modal */}
       {showConfigModal && (
@@ -1006,8 +1135,13 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           >
             <div className="modal-header">
               <h2 id="modal-config-title" className="modal-title font-serif">
-                {topics.find((s) => s.id === selectedSubject)?.name}
+                {selectedSubtest?.name || topics.find((s) => s.id === selectedSubject)?.name}
               </h2>
+              {selectedPackage && (
+                <p className="text-sm font-mono text-[var(--gold)]">
+                  {selectedPackage.name} · {selectedPackage.questionCount} Soal
+                </p>
+              )}
             </div>
 
             <div className="modal-body-form">
@@ -1049,23 +1183,6 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                   ))}
                 </div>
               </div>
-
-              {/* Question Count Selection */}
-              <div className="form-group">
-                <label className="form-label-mono font-mono">Jumlah soal</label>
-                <div className="options-pill-grid cols-3">
-                  {[5, 10, 20].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      className={`pill-option-btn ${questionCount === count ? 'active' : ''}`}
-                      onClick={() => setQuestionCount(count)}
-                    >
-                      <span className="btn-main font-mono">{count} SOAL</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="modal-actions-footer">
@@ -1079,9 +1196,16 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
               <button
                 type="button"
                 className="btn-latveria-primary btn-gold-solid"
+                disabled={loading}
                 onClick={() => {
                   setShowConfigModal(false);
-                  startPractice(selectedSubject, selectedMode, questionCount, selectedDifficulty);
+                  startPractice(
+                    selectedSubtest?.id || selectedSubject,
+                    selectedMode,
+                    selectedPackage ? selectedPackage.questionCount : questionCount,
+                    selectedDifficulty,
+                    selectedPackage?.id
+                  );
                 }}
               >
                 <span>{loading ? 'Memuat…' : 'Mulai latihan'}</span>

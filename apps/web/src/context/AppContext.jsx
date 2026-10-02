@@ -41,6 +41,7 @@ function topicToSubject(topic) {
     code: `SNBT-${short}`,
     category: SECTION_MAP[short] || 'Tes Skolastik',
     questionsCount: topic.questionCount,
+    packageCount: Number(topic.packageCount ?? 0),
     // ponytail: no per-user progress/accuracy from API yet, show question count only
     progress: null,
     accuracy: null,
@@ -173,15 +174,22 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('latveria_sound', soundEnabled);
   }, [soundEnabled]);
 
+  const refreshTopics = useCallback(async () => {
+    try {
+      const res = await fetch('/api/learner/topics');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setTopics(data.map(topicToSubject));
+        }
+      }
+    } catch {}
+  }, []);
+
   // Synchronize with backend authenticated user + fetch topics/summary/history
   useEffect(() => {
     loadProfile();
-
-    // Fetch topics catalog
-    fetch('/api/learner/topics')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setTopics(Array.isArray(data) ? data.map(topicToSubject) : []))
-      .catch(() => {});
+    refreshTopics();
 
     // Fetch learner summary
     fetch('/api/learner/summary')
@@ -306,13 +314,21 @@ export const AppProvider = ({ children }) => {
     setLexiconState({ isOpen: false, wordData: null });
   };
 
+  const fetchSubtestPackages = useCallback(async (slugOrId) => {
+    try {
+      return await api(`/learner/topics/${slugOrId}/packages`);
+    } catch {
+      return [];
+    }
+  }, []);
+
   // Start a Practice Session — fetches real questions from API
-  const startPractice = useCallback(async (subjectId, mode = 'Practice', count = 10, difficulty = 'Latverian Elite') => {
+  const startPractice = useCallback(async (subjectId, mode = 'Practice', count = 10, difficulty = 'Latverian Elite', packageId = null) => {
     if (submitLock.current) return;
     setSubmissionError('');
     sound.playClick();
 
-    const subject = topics.find((s) => s.id === subjectId) || topics[0];
+    const subject = topics.find((s) => s.id === subjectId || s.slug === subjectId) || topics[0];
     if (!subject) {
       showToast('SYSTEM ERROR', 'Subtes tidak ditemukan. Muat ulang halaman.', 'error');
       return;
@@ -321,7 +337,10 @@ export const AppProvider = ({ children }) => {
     setLoading(true);
     try {
       const slug = subject.slug || SHORT_TO_SLUG[subjectId];
-      const res = await fetch(`/api/learner/practice/${slug}`);
+      const url = packageId
+        ? `/api/learner/practice/${slug}/${packageId}`
+        : `/api/learner/practice/${slug}`;
+      const res = await fetch(url);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `HTTP ${res.status}`);
@@ -329,7 +348,7 @@ export const AppProvider = ({ children }) => {
       const data = await res.json();
 
       if (!data.items || data.items.length === 0) {
-        showToast('TIDAK ADA SOAL', `Subtes ${subject.name} belum memiliki soal.`, 'error');
+        showToast('TIDAK ADA SOAL', `Subtes ${subject.name} belum memiliki soal pada paket ini.`, 'error');
         setLoading(false);
         return;
       }
@@ -337,8 +356,8 @@ export const AppProvider = ({ children }) => {
       // Normalize API questions to view shape
       let sessionQuestions = data.items.map(apiQuestionToView);
 
-      // Slice to requested count (API returns all questions for the topic)
-      if (sessionQuestions.length > count) {
+      // Slice to requested count if specified and smaller than package
+      if (count && sessionQuestions.length > count) {
         // Shuffle then slice
         for (let i = sessionQuestions.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -348,10 +367,12 @@ export const AppProvider = ({ children }) => {
       }
 
       const session = {
-        subjectId,
+        subjectId: subject.id,
         subjectSlug: slug,
         subjectName: subject.name,
         subjectCode: subject.code,
+        packageId: data.packageId ?? packageId ?? null,
+        packageName: data.packageName ?? null,
         mode,
         difficulty,
         totalQuestions: sessionQuestions.length,
@@ -437,8 +458,11 @@ export const AppProvider = ({ children }) => {
 
     try {
       if (!attemptId) {
-        const saved = await api(`/learner/practice/${activeSession.subjectSlug}`, {
-          method: 'POST', body: JSON.stringify({ answers: apiAnswers }),
+        const endpoint = activeSession.packageId
+          ? `/learner/practice/${activeSession.subjectSlug}/${activeSession.packageId}`
+          : `/learner/practice/${activeSession.subjectSlug}`;
+        const saved = await api(endpoint, {
+          method: 'POST', body: JSON.stringify({ answers: apiAnswers, packageId: activeSession.packageId || undefined }),
         });
         attemptId = saved.id;
         setActiveSession((prev) => ({ ...prev, attemptId }));
@@ -477,6 +501,8 @@ export const AppProvider = ({ children }) => {
         subjectId: activeSession.subjectId,
         subjectName: activeSession.subjectName,
         subjectCode: activeSession.subjectCode,
+        packageId: activeSession.packageId,
+        packageName: activeSession.packageName,
         mode: activeSession.mode,
         difficulty: activeSession.difficulty,
         totalQuestions: activeSession.totalQuestions,
@@ -582,6 +608,8 @@ export const AppProvider = ({ children }) => {
         profileError,
         loadProfile,
         topics,
+        setTopics,
+        refreshTopics,
         summary,
         history,
         loading,
@@ -598,6 +626,7 @@ export const AppProvider = ({ children }) => {
         sessionResults,
         setSessionResults,
         startPractice,
+        fetchSubtestPackages,
         selectAnswer,
         toggleFlag,
         finishSession,

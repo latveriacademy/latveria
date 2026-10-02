@@ -49,9 +49,9 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
       <TableBody>{bank.rows.map((row, index) => <TableRow key={row.id} data-state={selected.includes(row.id) ? "selected" : undefined} className={selected.includes(row.id) ? styles.selectedRow : undefined}>
         <TableCell><input type="checkbox" className={styles.rowCheckbox} aria-label={`Pilih soal ${index + 1}: ${row.prompt}`} checked={selected.includes(row.id)} disabled={pending} onChange={(event) => choose(event.target.checked ? [...selected, row.id] : selected.filter((id) => id !== row.id))} /></TableCell>
         <TableCell className={styles.numberColumn}>{(bank.page - 1) * 15 + index + 1}</TableCell>
-        <TableCell className={styles.promptCell}><div className={styles.promptText}><MathText>{row.prompt}</MathText></div><div className={styles.questionMeta}><span>{row.topic}</span>{row.category && <><span aria-hidden="true">·</span><span>{row.category}</span></>}</div></TableCell>
+        <TableCell className={styles.promptCell}><div className={styles.promptText}><MathText>{row.prompt}</MathText></div><div className={styles.questionMeta}><span>{row.topic}</span>{row.packageName && <><span aria-hidden="true">·</span><span className="font-medium text-[var(--emerald)]">{row.packageName}</span></>}{row.category && <><span aria-hidden="true">·</span><span>{row.category}</span></>}</div></TableCell>
         <TableCell><Button asChild size="sm" variant="ghost"><Link to={`/admin/soal/${row.id}`} aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}><Eye aria-hidden="true" /><span className={styles.previewLabel}>Pratinjau</span></Link></Button></TableCell>
-      </TableRow>)}{!bank.rows.length && <TableRow><TableCell colSpan={4} className={styles.emptyCell}>Tidak ada soal pada filter ini. Coba ubah subtes atau kategori.</TableCell></TableRow>}</TableBody>
+      </TableRow>)}{!bank.rows.length && <TableRow><TableCell colSpan={4} className={styles.emptyCell}>Tidak ada soal pada filter ini. Coba ubah subtes, paket, atau kategori.</TableCell></TableRow>}</TableBody>
     </Table>
   </>;
 }

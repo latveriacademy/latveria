@@ -14,7 +14,7 @@ export function HistoryView() {
       {history.length ? <ul className={styles.list} aria-label="Sesi latihan yang sudah dikumpulkan">
         {history.map((attempt) => <li className={styles.row} key={attempt.id}>
           <div className={styles.detail}>
-            <h2>{attempt.topic}</h2>
+            <h2>{attempt.topic}{attempt.packageName ? ` · ${attempt.packageName}` : ""}</h2>
             <time dateTime={attempt.submittedAt}>{new Date(attempt.submittedAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" })} WIB</time>
           </div>
           <span className={styles.result}>{attempt.correct} / {attempt.total} benar</span>
