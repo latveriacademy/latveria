@@ -240,6 +240,7 @@ h1 em {
 .main-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 48px;
   margin-top: 32px;
   padding: 12px 28px;

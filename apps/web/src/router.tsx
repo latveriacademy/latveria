@@ -82,7 +82,10 @@ export const router = createBrowserRouter([
   { path: "/", element: <Home />, errorElement: <ErrorPage /> },
   { path: "/login", element: <Login />, errorElement: <ErrorPage /> },
   { path: "/forbidden", element: <NotFound /> },
-  { path: "/dashboard", loader: () => guard("user"), hydrateFallbackElement: <p className="p-6" role="status">Memuat dashboard…</p>, element: <LatveriaOSApp />, errorElement: <ErrorPage />, children: [
+  { path: "/dashboard", loader: () => guard("user"), shouldRevalidate: ({ currentUrl, nextUrl, defaultShouldRevalidate }) => {
+    if (currentUrl.pathname.startsWith("/dashboard") && nextUrl.pathname.startsWith("/dashboard")) return false;
+    return defaultShouldRevalidate;
+  }, hydrateFallbackElement: <main className="mx-auto grid min-h-dvh max-w-xl content-center justify-items-center gap-4 px-6 py-12 text-center"><div className="size-8 animate-spin rounded-full border-2 border-[var(--emerald)] border-t-transparent" /><p className="text-[var(--soft-ink)]" role="status">Memuat ruang belajar…</p></main>, element: <LatveriaOSApp />, errorElement: <ErrorPage />, children: [
     { path: "riwayat", loader: () => api<HistoryItem[]>("/learner/history"), element: <HistoryView />, errorElement: <HistoryErrorView /> },
     { path: "riwayat/:id", loader: ({ params }) => api<Result>(`/learner/results/${encodeURIComponent(params.id ?? "")}`), element: <HistoryResultView />, errorElement: <HistoryErrorView /> },
   ] },
@@ -92,7 +95,10 @@ export const router = createBrowserRouter([
   { path: "/settings", element: <Navigate to="/dashboard?tab=settings" replace /> },
   { path: "/dashboard/topik", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/dashboard/topik/:slug", element: <Navigate to="/dashboard?tab=practice" replace /> },
-  { id: "admin", path: "/admin", loader: () => guard("admin"), hydrateFallbackElement: <p className="p-6 text-[var(--soft-ink)]" role="status">Memuat panel admin...</p>, element: <AdminLayout />, errorElement: <ErrorPage />, children: [
+  { id: "admin", path: "/admin", loader: () => guard("admin"), shouldRevalidate: ({ currentUrl, nextUrl, defaultShouldRevalidate }) => {
+    if (currentUrl.pathname.startsWith("/admin") && nextUrl.pathname.startsWith("/admin")) return false;
+    return defaultShouldRevalidate;
+  }, hydrateFallbackElement: <p className="p-6 text-[var(--soft-ink)]" role="status">Memuat panel admin...</p>, element: <AdminLayout />, errorElement: <ErrorPage />, children: [
     { index: true, loader: () => api<Topic[]>("/admin/topics"), element: <AdminSummary /> },
     { path: "soal", loader: ({ request }) => api<Bank>(`/admin/questions?${new URL(request.url).searchParams}`), element: <BankPage /> },
     { path: "soal/baru", loader: () => api<Topic[]>("/admin/topics"), element: <NewQuestion /> },
