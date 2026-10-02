@@ -573,7 +573,7 @@ app.post("/api/admin/questions", async (c) => {
 
 app.post("/api/admin/questions/import", async (c) => {
   const text = await c.req.text();
-  if (text.length > 200_000) throw new HTTPException(413, { message: "File JSON terlalu besar (maksimal 200 KB)." });
+  if (new TextEncoder().encode(text).byteLength > 200_000) throw new HTTPException(413, { message: "File JSON terlalu besar (maksimal 200 KB)." });
   let body: unknown;
   try { body = JSON.parse(text); } catch { throw new HTTPException(400, { message: "Format JSON tidak valid." }); }
   const parsed = questionImportSchema.safeParse(body);
@@ -586,42 +586,45 @@ app.post("/api/admin/questions/import", async (c) => {
   const validSlugs = new Set(utbkSubtests.map((subtest) => subtest.slug));
   const invalid = parsed.data.groups.findIndex((group) => !validSlugs.has(group.subtes as typeof utbkSubtests[number]["slug"]));
   if (invalid >= 0) throw new HTTPException(400, { message: `Subtes grup ${invalid + 1} tidak dikenal.` });
-  const total = await getDb().transaction(async (tx) => {
+  const result = await getDb().transaction(async (tx) => {
     const slugs = [...new Set(parsed.data.groups.map((group) => group.subtes))];
     const existing = await tx.select({ id: topics.id, slug: topics.slug }).from(topics).where(inArray(topics.slug, slugs));
     if (existing.length !== slugs.length) throw new HTTPException(400, { message: "Subtes belum tersedia di database." });
     const ids = new Map(existing.map((topic) => [topic.slug, topic.id]));
 
-    // Find or create default "Paket 1" for each subtest imported
-    const pkgs = await tx.select({ id: questionPackages.id, topicId: questionPackages.topicId, name: questionPackages.name })
-      .from(questionPackages)
-      .where(inArray(questionPackages.topicId, existing.map((t) => t.id)));
-    const pkgMap = new Map<string, string>();
-    for (const t of existing) {
-      const match = pkgs.find((p) => p.topicId === t.id && p.name === "Paket 1") ?? pkgs.find((p) => p.topicId === t.id);
-      if (match) {
-        pkgMap.set(t.id, match.id);
-      } else {
-        const [newPkg] = await tx.insert(questionPackages).values({ topicId: t.id, name: "Paket 1", order: 1 }).returning({ id: questionPackages.id });
-        pkgMap.set(t.id, newPkg.id);
-      }
-    }
-
-    const values = parsed.data.groups.flatMap((group) => {
+    const destinations = new Map<string, { id: string; name: string; slug: string; count: number }>();
+    let count = 0;
+    for (const group of parsed.data.groups) {
       const topicId = ids.get(group.subtes)!;
-      const packageId = pkgMap.get(topicId);
-      return group.questions.map((question) => ({
+      let pkg;
+      if (group.packageId) {
+        [pkg] = await tx.select({ id: questionPackages.id, name: questionPackages.name }).from(questionPackages)
+          .where(and(eq(questionPackages.id, group.packageId), eq(questionPackages.topicId, topicId))).for("update");
+        if (!pkg) throw new HTTPException(400, { message: `Paket tujuan tidak ditemukan pada subtes ${group.subtes}.` });
+      } else {
+        const name = group.packageName ?? "Paket 1";
+        await tx.insert(questionPackages).values({ topicId, name, order: 1 })
+          .onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
+        [pkg] = await tx.select({ id: questionPackages.id, name: questionPackages.name }).from(questionPackages)
+          .where(and(eq(questionPackages.topicId, topicId), eq(questionPackages.name, name))).for("update");
+      }
+      if (!pkg) throw new HTTPException(400, { message: "Paket tujuan tidak tersedia. Coba lagi." });
+      const values = group.questions.map((question) => ({
         ...question,
         category: group.category,
         topicId,
-        packageId,
+        packageId: pkg.id,
       }));
-    });
-    await tx.insert(questions).values(values);
-    return values.length;
+      await tx.insert(questions).values(values);
+      count += values.length;
+      const destination = destinations.get(pkg.id) ?? { ...pkg, slug: group.subtes, count: 0 };
+      destination.count += values.length;
+      destinations.set(pkg.id, destination);
+    }
+    return { count, packages: [...destinations.values()] };
   });
   invalidateCatalogCache();
-  return c.json({ count: total }, 201);
+  return c.json(result, 201);
 });
 
 app.get("/api/admin/questions/:id", async (c) => {

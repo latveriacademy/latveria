@@ -179,6 +179,34 @@ try {
   assert.equal(pkgResTopic1.status, 201);
   const testPkgTopic1 = await pkgResTopic1.json();
   packageIds.push(testPkgTopic1.id);
+  const importName = `Paket impor ${crypto.randomUUID()}`;
+  const namedImport = await request("/admin/questions/import", other.cookie, { groups: [{ ...batch.groups[0], packageName: importName }] });
+  assert.equal(namedImport.status, 201);
+  const namedResult = await namedImport.json();
+  assert.equal(namedResult.packages[0].name, importName);
+  const importedPackageId = namedResult.packages[0].id;
+  packageIds.push(importedPackageId);
+  const existingImport = await request("/admin/questions/import", other.cookie, { groups: [
+    { ...batch.groups[0], packageId: importedPackageId },
+    { ...batch.groups[0], packageName: importName },
+  ] });
+  assert.equal(existingImport.status, 201);
+  const existingResult = await existingImport.json();
+  assert.equal(existingResult.packages.length, 1);
+  assert.equal(existingResult.packages[0].id, importedPackageId);
+  assert.equal(existingResult.packages[0].count, 4);
+  const importedPackageQuestions = await getDb().select({ id: questions.id }).from(questions).where(eq(questions.packageId, importedPackageId));
+  questionIds.push(...importedPackageQuestions.map((row) => row.id));
+  assert.equal(importedPackageQuestions.length, 6);
+  const rollbackName = `Rollback ${crypto.randomUUID()}`;
+  const badDestination = await request("/admin/questions/import", other.cookie, { groups: [
+    { ...batch.groups[0], packageName: rollbackName },
+    { ...batch.groups[0], packageId: testPkgTopic1.id },
+  ] });
+  assert.equal(badDestination.status, 400);
+  assert.equal((await getDb().select().from(questionPackages).where(eq(questionPackages.name, rollbackName))).length, 0);
+  assert.equal((await getDb().select().from(questions).where(eq(questions.packageId, importedPackageId))).length, 6);
+  assert.equal((await request("/admin/questions/import", other.cookie, { padding: "é".repeat(100_000) })).status, 413);
 
   // 4. Admin creates a question inside testPkg
   const qInPkgRes = await request("/admin/questions", other.cookie, {

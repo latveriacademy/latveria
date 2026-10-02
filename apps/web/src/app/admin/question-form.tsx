@@ -11,11 +11,14 @@ import { tikzExamples } from "../../lib/tikz-examples";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../../components/ui/select";
 import styles from "./admin.module.css";
 
-export function QuestionForm({ topics, initialTopicId, question }: { topics: { id: string; name: string; section: "tps" | "literasi" }[]; initialTopicId?: string; question?: QuestionDetail }) {
+export function QuestionForm({ topics, initialTopicId, initialPackageId, question }: { topics: { id: string; name: string; section: "tps" | "literasi" }[]; initialTopicId?: string; initialPackageId?: string; question?: QuestionDetail }) {
   const navigate = useNavigate();
   const [selectedTopicId, setSelectedTopicId] = useState(question?.topicId ?? initialTopicId ?? topics[0]?.id);
   const [packages, setPackages] = useState<QuestionPackage[]>([]);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(question?.packageId ?? undefined);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+  const [packagesError, setPackagesError] = useState("");
+  const [packagesRetry, setPackagesRetry] = useState(0);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(question?.packageId ?? initialPackageId);
   const [showNewPkg, setShowNewPkg] = useState(false);
   const [newPkgName, setNewPkgName] = useState("");
   const [pkgPending, setPkgPending] = useState(false);
@@ -25,19 +28,28 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
 
   useEffect(() => {
     if (!selectedTopicId) return;
-    api<QuestionPackage[]>(`/admin/subtests/${selectedTopicId}/packages`)
+    const controller = new AbortController();
+    setPackagesLoading(true); setPackagesError(""); setPackages([]);
+    api<QuestionPackage[]>(`/admin/subtests/${selectedTopicId}/packages`, { signal: controller.signal })
       .then((data) => {
+        if (controller.signal.aborted) return;
         setPackages(data);
-        if (question?.packageId && data.some((p) => p.id === question.packageId)) {
-          setSelectedPackageId(question.packageId);
+        const preferred = question?.packageId ?? initialPackageId;
+        if (preferred && data.some((p) => p.id === preferred)) {
+          setSelectedPackageId(preferred);
+        } else if (initialPackageId && selectedTopicId === initialTopicId) {
+          setSelectedPackageId(undefined);
+          setPkgError("Paket tujuan tidak tersedia. Pilih paket lain sebelum menyimpan.");
         } else if (data.length > 0) {
           setSelectedPackageId(data[0].id);
         } else {
           setSelectedPackageId(undefined);
         }
       })
-      .catch(() => setPackages([]));
-  }, [selectedTopicId, question?.packageId]);
+      .catch(() => { if (!controller.signal.aborted) setPackagesError("Gagal memuat paket soal. Coba lagi."); })
+      .finally(() => { if (!controller.signal.aborted) setPackagesLoading(false); });
+    return () => controller.abort();
+  }, [selectedTopicId, question?.packageId, initialPackageId, initialTopicId, packagesRetry]);
 
   const handleCreatePackage = async () => {
     if (!newPkgName.trim() || !selectedTopicId) return;
@@ -60,6 +72,8 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
   };
 
   const createQuestion = async (_previous: string, form: FormData) => {
+    if (packagesLoading || packagesError) return "Paket tujuan belum dapat diperiksa. Coba muat kembali daftar paket.";
+    if (initialPackageId && selectedTopicId === initialTopicId && !selectedPackageId) return "Pilih paket tujuan sebelum menyimpan soal.";
     const parsed = questionSchema.safeParse({
       topicId: selectedTopicId,
       packageId: selectedPackageId || undefined,
@@ -76,7 +90,7 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
         question ? `/admin/questions/${question.id}` : "/admin/questions",
         { method: question ? "PUT" : "POST", body: JSON.stringify(parsed.data) }
       );
-      navigate(question ? `/admin/soal/${result.id}?updated=1` : `/admin/soal?subtes=${result.slug}&created=${result.id}`);
+      navigate(question ? `/admin/soal/${result.id}?updated=1` : initialPackageId && selectedPackageId === initialPackageId ? `/admin/paket/${initialPackageId}` : `/admin/soal?subtes=${result.slug}&created=${result.id}`);
       return "";
     } catch (error) {
       return error instanceof Error ? error.message : "Gagal menyimpan soal.";
@@ -113,12 +127,12 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
 
         <div className={styles.field}>
           <label htmlFor="packageId">Paket Soal</label>
-          {packages.length > 0 ? (
+          {packagesLoading ? <p role="status">Memuat paket…</p> : packagesError ? <div role="alert"><p>{packagesError}</p><Button type="button" variant="outline" onClick={() => setPackagesRetry((value) => value + 1)}>Coba lagi</Button></div> : packages.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex-1 min-w-[200px]">
                 <Select
                   value={selectedPackageId ?? "none"}
-                  onValueChange={(val) => setSelectedPackageId(val === "none" ? undefined : val)}
+                  onValueChange={(val) => { setSelectedPackageId(val === "none" ? undefined : val); setPkgError(""); }}
                 >
                   <SelectTrigger id="packageId">
                     <SelectValue placeholder="Pilih paket soal" />
@@ -167,9 +181,9 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
                   Batal
                 </Button>
               </div>
-              {pkgError && <p className="text-xs text-red-500" role="alert">{pkgError}</p>}
             </div>
           )}
+          {pkgError && <p className={styles.formError} role="alert">{pkgError}</p>}
         </div>
 
         <div className={styles.field}><label htmlFor="category">Materi / kategori</label><input id="category" name="category" maxLength={120} defaultValue={question?.category} placeholder="Contoh: Perbandingan dan persentase" /><span className={styles.hint}>Opsional. Isi sesuai materi yang ingin kamu kelompokkan.</span></div>
@@ -197,7 +211,7 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
         <div className={styles.field}><label htmlFor="source">Sumber soal</label><input id="source" name="source" maxLength={300} defaultValue={question?.source} required /></div>
       </fieldset>
       {message && <p className={styles.formError} role="alert">{message}</p>}
-      <div className={styles.formActions}><Button type="submit" disabled={pending}>{pending ? <><Loader2 className="animate-spin" />Menyimpan...</> : <><Save />{question ? "Simpan perubahan" : "Simpan soal"}</>}</Button><Button asChild variant="ghost"><Link to={question ? `/admin/soal/${question.id}` : "/admin/soal"}><ArrowLeft />Batal</Link></Button></div>
+      <div className={styles.formActions}><Button type="submit" disabled={pending || packagesLoading || !!packagesError}>{pending ? <><Loader2 className="animate-spin" />Menyimpan...</> : <><Save />{question ? "Simpan perubahan" : "Simpan soal"}</>}</Button><Button asChild variant="ghost"><Link to={question ? `/admin/soal/${question.id}` : initialPackageId ? `/admin/paket/${initialPackageId}` : "/admin/soal"}><ArrowLeft />Batal</Link></Button></div>
     </form>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseQuestionImport } from "./question-import";
+import { packageImportExample, parseQuestionImport } from "./question-import";
 import { parseTikz } from "./tikz";
 import { geometryImportExample } from "./tikz-examples";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "@latveria/shared";
@@ -11,6 +11,12 @@ const group = {
 };
 
 describe("parseQuestionImport", () => {
+  it("ships a valid named-package example with the correct answer index", () => {
+    const data = parseQuestionImport(JSON.stringify(packageImportExample));
+    expect(data.groups[0].packageName).toBe("Paket Persentase");
+    const question = data.groups[0].questions[0];
+    expect(question.options[question.correctAnswer]).toBe("20");
+  });
   it("accepts the same JSON text whether pasted or read from a file", () => {
     const data = { groups: [group] };
     expect(parseQuestionImport(JSON.stringify(data))).toEqual(data);
@@ -41,5 +47,12 @@ describe("parseQuestionImport", () => {
   it("identifies the question containing invalid options", () => {
     const invalid = { ...group, questions: [group.questions[0], { ...group.questions[0], options: ["A", "A", "B", "C"] }] };
     expect(() => parseQuestionImport(JSON.stringify({ groups: [invalid] }))).toThrow("grup 1, soal 2");
+  });
+  it("accepts a named package or an existing package ID on a group", () => {
+    const packageId = "00000000-0000-4000-8000-000000000001";
+    expect(parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageName: " Paket Persentase " }] })).groups[0].packageName).toBe("Paket Persentase");
+    expect(parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageId }] })).groups[0].packageId).toBe(packageId);
+    expect(() => parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageId, packageName: "Paket 2" }] }))).toThrow("jangan keduanya");
+    expect(() => parseQuestionImport(JSON.stringify({ groups: [{ ...group, questions: [{ ...group.questions[0], packageId }] }] }))).toThrow("bukan pada tiap soal");
   });
 });

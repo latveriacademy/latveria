@@ -64,6 +64,8 @@ Untuk banyak soal, buka **Impor JSON** di panel admin dan unggah `.json` (maksim
 
 `correctAnswer` memakai indeks nol (`0` untuk opsi pertama). `subtes` memakai slug dari `packages/shared/src/utbk-subtests.ts`. Kategori bebas per grup. Seluruh batch divalidasi dengan Zod dan ditulis dalam satu transaksi; jika satu soal salah, tidak ada soal yang disimpan.
 
+Paket dapat dikelola dari subtes pada Ringkasan admin. Impor mendukung `packageName` atau `packageId` pada setiap grup, atau memilih satu paket tujuan lewat form. Contoh sederhana/geometri dan unduhan JSON tersedia pada editor; panduan lengkap ada di [docs/impor-paket.md](docs/impor-paket.md).
+
 ## Database
 
 PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.

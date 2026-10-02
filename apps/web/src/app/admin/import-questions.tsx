@@ -1,83 +1,130 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { utbkSubtests } from "@latveria/shared";
-import { FileCheck, Loader2, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { utbkSubtests, type QuestionImport, type QuestionPackage } from "@latveria/shared";
+import { Download, FileCheck, Loader2, Upload } from "lucide-react";
 import { api } from "../../lib/api";
-import { parseQuestionImport } from "../../lib/question-import";
+import { packageImportExample, parseQuestionImport } from "../../lib/question-import";
 import { geometryImportExample } from "../../lib/tikz-examples";
 import { Button } from "../../components/ui/button";
 import { Panel, PanelHeader } from "../../components/ui/dashboard";
 import styles from "./admin.module.css";
+import packageStyles from "./packages.module.css";
 
 export function ImportQuestions() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState(params.has("paket") ? "package" : "json");
+  const [subtest, setSubtest] = useState(params.get("subtes") ?? "pengetahuan-kuantitatif");
+  const [packageId, setPackageId] = useState(params.get("paket") ?? "");
+  const [packages, setPackages] = useState<QuestionPackage[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [packagesError, setPackagesError] = useState("");
+  const [packagesRetry, setPackagesRetry] = useState(0);
   const [text, setText] = useState("");
-  const [batch, setBatch] = useState<typeof geometryImportExample | null>(null);
+  const [batch, setBatch] = useState<QuestionImport | null>(null);
+  const [preview, setPreview] = useState<{ name: string; isNew: boolean }[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [reading, setReading] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [fileName, setFileName] = useState("");
-  const busy = pending || reading;
+  const [exampleKind, setExampleKind] = useState("basic");
+  const busy = pending || reading || checking || loadingPackages;
+  const selectedPackage = packages.find((pkg) => pkg.id === packageId);
   const count = batch?.groups.reduce((sum, group) => sum + group.questions.length, 0) ?? 0;
 
-  const check = (source: string) => {
-    setError(""); setBatch(null);
-    try { setBatch(parseQuestionImport(source)); }
-    catch (error) { setError(error instanceof Error ? error.message : "JSON tidak dapat diperiksa."); }
-  };
+  useEffect(() => {
+    if (mode !== "package") return;
+    const controller = new AbortController();
+    setLoadingPackages(true); setPackagesError(""); setPackages([]);
+    api<QuestionPackage[]>(`/admin/subtests/${subtest}/packages`, { signal: controller.signal })
+      .then((data) => { if (!controller.signal.aborted) { setPackages(data); setPackageId((current) => data.some((pkg) => pkg.id === current) ? current : ""); } })
+      .catch(() => { if (!controller.signal.aborted) setPackagesError("Gagal memuat paket tujuan. Coba lagi."); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingPackages(false); });
+    return () => controller.abort();
+  }, [subtest, mode, packagesRetry]);
+
+  function example(kind: string): QuestionImport {
+    const source = kind === "geometry" ? geometryImportExample : packageImportExample;
+    return { groups: source.groups.map((group) => ({ ...group,
+      subtes: mode === "package" ? subtest : group.subtes,
+      packageName: mode === "package" && selectedPackage ? selectedPackage.name : kind === "geometry" ? "Paket Bangun Ruang" : "Paket Persentase",
+    })) };
+  }
+
+  async function check(source: string) {
+    setError(""); setBatch(null); setChecking(true);
+    try {
+      let data = parseQuestionImport(source);
+      if (mode === "package") {
+        if (!selectedPackage) throw new Error("Pilih paket tujuan terlebih dahulu.");
+        if (data.groups.some((group) => group.subtes !== subtest)) throw new Error("Semua grup JSON harus menggunakan subtes yang dipilih pada tujuan impor.");
+        data = { groups: data.groups.map((group) => ({ ...group, packageName: undefined, packageId: selectedPackage.id })) };
+      }
+      data = parseQuestionImport(JSON.stringify(data));
+      const destinations = new Map<string, QuestionPackage[]>();
+      await Promise.all([...new Set(data.groups.map((group) => group.subtes))].map(async (slug) => {
+        destinations.set(slug, await api<QuestionPackage[]>(`/admin/subtests/${slug}/packages`));
+      }));
+      const targets = data.groups.map((group) => {
+        const list = destinations.get(group.subtes)!;
+        const pkg = group.packageId ? list.find((item) => item.id === group.packageId) : list.find((item) => item.name === (group.packageName ?? "Paket 1"));
+        if (group.packageId && !pkg) throw new Error(`Paket tujuan tidak tersedia pada subtes ${group.subtes}.`);
+        return { name: pkg?.name ?? group.packageName ?? "Paket 1", isNew: !pkg };
+      });
+      setPreview(targets); setBatch(data);
+    } catch (error) { setError(error instanceof Error ? error.message : "JSON tidak dapat diperiksa."); }
+    finally { setChecking(false); }
+  }
 
   return <div className={styles.importLayout}>
-    <Panel>
-      <PanelHeader title="Data soal"><Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => {
-        setText(JSON.stringify(geometryImportExample, null, 2)); setBatch(null); setError(""); setFileName("");
-      }}>Gunakan contoh bangun ruang</Button></PanelHeader>
-      <div className={styles.importEditor}>
+    <div className={packageStyles.page}>
+      <Panel><PanelHeader title="Tujuan impor" />
         <div className={styles.field}>
-          <label htmlFor="json-input">JSON</label>
-          <textarea id="json-input" className={styles.jsonEditor} value={text} disabled={busy} spellCheck={false} autoCapitalize="off" autoCorrect="off" placeholder="Tempel JSON soal di sini…" aria-describedby={`json-help${error ? " json-error" : ""}`} aria-invalid={!!error} onChange={(event) => {
-            setText(event.target.value); setBatch(null); setError(""); setFileName("");
-          }} />
-          <p id="json-help" className={styles.importHelp}>Maksimal 100 soal dan 200 KB. Setiap soal memiliki 4 opsi; <code>correctAnswer</code> memakai indeks 0–3.</p>
+          <label htmlFor="import-mode">Masukkan soal ke</label>
+          <select id="import-mode" disabled={busy} value={mode} onChange={(event) => { setMode(event.target.value); setBatch(null); setError(""); }}>
+            <option value="json">Paket yang ditentukan dalam JSON</option><option value="package">Satu paket yang sudah ada</option>
+          </select>
         </div>
-        <div className={styles.field}>
-          <label htmlFor="json-file">Atau unggah file JSON</label>
-          <input id="json-file" type="file" accept=".json,application/json" disabled={busy} onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-            event.target.value = "";
+        {mode === "package" ? <div className={packageStyles.fields}>
+          <div className={styles.field}><label htmlFor="import-subtest">Subtes tujuan</label><select id="import-subtest" disabled={busy} value={subtest} onChange={(event) => { setSubtest(event.target.value); setPackageId(""); setBatch(null); setError(""); }}>{utbkSubtests.map((topic) => <option key={topic.slug} value={topic.slug}>{topic.name}</option>)}</select></div>
+          <div className={styles.field}><label htmlFor="import-package">Paket tujuan</label><select id="import-package" disabled={busy} value={packageId} onChange={(event) => { setPackageId(event.target.value); setBatch(null); setError(""); }}><option value="">{loadingPackages ? "Memuat paket…" : "Pilih paket"}</option>{packages.map((pkg) => <option key={pkg.id} value={pkg.id}>{pkg.name}{pkg.isActive ? "" : " (nonaktif)"}</option>)}</select></div>
+          <p className={packageStyles.help}>Tujuan dari form diterapkan ke seluruh soal. Semua grup harus memakai subtes yang dipilih.</p>
+          {packagesError ? <div role="alert"><p>{packagesError}</p><Button variant="outline" onClick={() => setPackagesRetry((value) => value + 1)}>Coba lagi</Button></div> : !loadingPackages && !packages.length && <Link to={`/admin/subtes/${subtest}`}>Buat paket pada subtes ini</Link>}
+        </div> : <p className={packageStyles.help}>Isi <code>packageName</code> pada setiap grup. Nama yang belum ada dibuat otomatis pada subtes tersebut; tanpa tujuan paket, soal masuk ke “Paket 1”.</p>}
+      </Panel>
+      <Panel><PanelHeader title="Data soal" />
+        <p className={packageStyles.help}>Mulai dari contoh format, lalu ganti pertanyaan, jawaban, dan sumber sesuai soalmu.</p>
+        <div className={packageStyles.toolbar}>
+          {[{ kind: "basic", label: "Gunakan contoh sederhana" }, { kind: "geometry", label: "Gunakan contoh geometri" }].map(({ kind, label }) => <Button key={kind} variant="outline" size="sm" disabled={busy} onClick={() => { setExampleKind(kind); setText(JSON.stringify(example(kind), null, 2)); setBatch(null); setError(""); setFileName(""); }}>{label}</Button>)}
+          <Button variant="ghost" size="sm" disabled={busy} onClick={() => {
+            const url = URL.createObjectURL(new Blob([JSON.stringify(example(exampleKind), null, 2)], { type: "application/json" }));
+            const link = document.createElement("a"); link.href = url; link.download = "contoh-impor-paket.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
+          }}><Download />Unduh contoh JSON</Button>
+        </div>
+        <div className={styles.importEditor}>
+          <div className={styles.field}><label htmlFor="json-input">Tempel atau edit JSON</label><textarea id="json-input" className={styles.jsonEditor} value={text} disabled={busy} spellCheck={false} autoCapitalize="off" autoCorrect="off" placeholder="Tempel JSON soal di sini…" aria-describedby="json-help" aria-invalid={!!error} onChange={(event) => { setText(event.target.value); setBatch(null); setError(""); setFileName(""); }} /><p id="json-help" className={styles.importHelp}>Maksimal 100 soal dan 200 KB. Empat opsi per soal; <code>correctAnswer</code>: 0 = opsi pertama, 1 = kedua, 2 = ketiga, 3 = keempat.</p></div>
+          <div className={styles.field}><label htmlFor="json-file">Atau unggah file JSON</label><input id="json-file" type="file" accept=".json,application/json" disabled={busy} onChange={async (event) => {
+            const file = event.target.files?.[0]; if (!file) return; event.target.value = "";
             setBatch(null); setError(""); setFileName("");
             if (file.size > 200_000) { setError("File melebihi 200 KB. Pilih file yang lebih kecil."); return; }
-            setReading(true);
-            try { const source = await file.text(); setText(source); setFileName(file.name); check(source); }
-            catch { setError("File tidak dapat dibaca. Coba pilih file lagi."); }
-            finally { setReading(false); }
-          }} />
-          <p className={styles.importHelp}>{reading ? "Membaca file…" : fileName ? `${fileName} sudah dimuat ke editor. Kamu bisa memperbaikinya sebelum impor.` : "Isi file akan masuk ke editor dan bisa diperbaiki sebelum diimpor."}</p>
+            setReading(true); try { const source = await file.text(); setText(source); setFileName(file.name); await check(source); }
+            catch { setError("File tidak dapat dibaca. Coba pilih file lagi."); } finally { setReading(false); }
+          }} /><p className={styles.importHelp}>{reading ? "Membaca file…" : fileName ? `${fileName} sudah dimuat dan bisa diedit.` : "Isi file akan masuk ke editor; periksa ringkasannya sebelum menyimpan."}</p></div>
+          <Button variant="outline" disabled={!text.trim() || busy || (mode === "package" && !selectedPackage)} onClick={() => check(text)}>{checking ? <Loader2 className="animate-spin" /> : <FileCheck />}{checking ? "Memeriksa…" : "Periksa JSON"}</Button>
+          {error && <p id="json-error" className={styles.formError} role="alert">{error}</p>}
         </div>
-        <Button type="button" variant="outline" disabled={!text.trim() || busy} onClick={() => check(text)}><FileCheck />Periksa JSON</Button>
-        {error && <p id="json-error" className={styles.formError} role="alert">{error}</p>}
-      </div>
-    </Panel>
-    <Panel className={styles.importSummary}>
-      <PanelHeader title="Ringkasan impor" />
-      {batch ? <div role="status">
-        <p className={styles.importCount}>{count} soal siap diimpor</p>
-        <ul className={styles.importGroups}>{batch.groups.map((group, index) => <li key={index}>
-          <strong>{utbkSubtests.find((subtest) => subtest.slug === group.subtes)?.name}</strong>
-          <span>{group.category} · {group.questions.length} soal</span>
-        </li>)}</ul>
-      </div> : <p className={styles.importHelp}>Tempel JSON atau pilih file, lalu periksa untuk melihat subtes, kategori, dan jumlah soal.</p>}
-      <p className={styles.importHelp}>Semua soal disimpan sekaligus. Jika ada yang tidak valid, seluruh impor dibatalkan.</p>
-      <div className={styles.importActions}>
-        <Button type="button" disabled={!batch || busy} onClick={async () => {
-          if (!batch || busy) return;
-          setPending(true); setError("");
-          try { const result = await api<{ count: number }>("/admin/questions/import", { method: "POST", body: JSON.stringify(batch) }); navigate(`/admin/soal?imported=${result.count}`); }
-          catch (error) { setError(error instanceof Error ? error.message : "Impor gagal. Coba lagi."); }
-          finally { setPending(false); }
-        }}>{pending ? <Loader2 className="animate-spin" /> : <Upload />}{pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}</Button>
-        <Button asChild variant="ghost"><Link to="/admin/soal">Kembali ke bank soal</Link></Button>
-      </div>
+        <details className={styles.diagramHelp}><summary>Panduan format dan slug subtes</summary><p>Satu grup berisi <code>subtes</code>, <code>packageName</code>, <code>category</code>, dan <code>questions</code>. Beberapa grup boleh memakai paket yang sama, atau paket/subtes berbeda. Untuk paket existing, <code>packageId</code> boleh menggantikan <code>packageName</code>; tujuan paket ditulis pada grup, bukan tiap soal.</p><ul>{utbkSubtests.map((topic) => <li key={topic.slug}>{topic.name}: <code>{topic.slug}</code></li>)}</ul><p>Rumus memakai $...$ atau $$...$$. Dalam JSON, karakter backslash LaTeX/TikZ ditulis dua kali; contoh geometri sudah memakai format yang benar.</p></details>
+      </Panel>
+    </div>
+    <Panel className={styles.importSummary}><PanelHeader title="Ringkasan impor" />
+      {batch ? <div role="status"><p className={styles.importCount}>{count} soal siap diimpor</p><ul className={styles.importGroups}>{batch.groups.map((group, index) => <li key={index}><strong>{preview[index].name}{preview[index].isNew ? " · Paket baru" : ""}</strong><span>{utbkSubtests.find((topic) => topic.slug === group.subtes)?.name}</span><span>{group.category} · {group.questions.length} soal</span></li>)}</ul></div> : <p className={styles.importHelp}>Pilih tujuan, muat JSON, lalu tekan “Periksa JSON” untuk melihat paket dan jumlah soal yang akan disimpan.</p>}
+      <p className={styles.importHelp}>Paket baru dan seluruh soal disimpan dalam satu transaksi. Jika ada data yang tidak valid, tidak ada perubahan yang disimpan.</p>
+      <div className={styles.importActions}><Button disabled={!batch || busy} onClick={async () => {
+        if (!batch || busy) return; setPending(true); setError("");
+        try { const result = await api<{ count: number; packages: { id: string }[] }>("/admin/questions/import", { method: "POST", body: JSON.stringify(batch) }); navigate(result.packages.length === 1 ? `/admin/paket/${result.packages[0].id}?imported=${result.count}` : `/admin/soal?imported=${result.count}`); }
+        catch (error) { setError(error instanceof Error ? error.message : "Impor gagal. Coba lagi."); } finally { setPending(false); }
+      }}>{pending ? <Loader2 className="animate-spin" /> : <Upload />}{pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}</Button><Button asChild variant="ghost"><Link to={params.has("paket") ? `/admin/paket/${params.get("paket")}` : "/admin/soal"}>Batal</Link></Button></div>
     </Panel>
   </div>;
 }

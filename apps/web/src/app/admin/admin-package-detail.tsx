@@ -1,354 +1,133 @@
-import { useState } from "react";
-import { Link, useLoaderData, useNavigate } from "react-router";
-import { ArrowLeft, Save, Trash2, Plus, MoveRight, LogOut } from "lucide-react";
-import { type PackageDetail, type QuestionPackage } from "@latveria/shared";
+import { useEffect, useState } from "react";
+import { Link, useLoaderData, useNavigate, useRevalidator, useSearchParams } from "react-router";
+import { ArrowLeft, Plus, Save, Upload } from "lucide-react";
+import type { Bank, PackageDetail, QuestionPackage } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
-import { PageHeading, Panel, PanelHeader, StatTile } from "../../components/ui/dashboard";
+import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 import { MathText } from "../../components/math-text";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import formStyles from "./admin.module.css";
+import styles from "./packages.module.css";
 
-type LoaderData = {
-  pkg: PackageDetail;
-  otherPackages: QuestionPackage[];
-  availableQuestions: { id: string; prompt: string; category: string | null; packageName: string | null }[];
-};
+type LoaderData = { pkg: PackageDetail; otherPackages: QuestionPackage[] };
 
 export function AdminPackageDetail() {
-  const { pkg: initialPkg, otherPackages, availableQuestions: initialAvailable } = useLoaderData<LoaderData>();
+  const { pkg, otherPackages } = useLoaderData<LoaderData>();
+  const revalidator = useRevalidator();
   const navigate = useNavigate();
-  const [pkg, setPkg] = useState<PackageDetail>(initialPkg);
-  const [availableQuestions, setAvailableQuestions] = useState(initialAvailable);
+  const [params] = useSearchParams();
   const [name, setName] = useState(pkg.name);
   const [description, setDescription] = useState(pkg.description ?? "");
   const [order, setOrder] = useState(pkg.order);
   const [isActive, setIsActive] = useState(pkg.isActive);
-  const [settingsPending, setSettingsPending] = useState(false);
-  const [settingsMessage, setSettingsMessage] = useState("");
-  const [deletePending, setDeletePending] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [busy, setBusy] = useState("");
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [selectedAddQuestionId, setSelectedAddQuestionId] = useState("");
-  const [addPending, setAddPending] = useState(false);
   const [moveTargets, setMoveTargets] = useState<Record<string, string>>({});
-  const [actionMessage, setActionMessage] = useState("");
+  const [showBank, setShowBank] = useState(false);
+  const [bankPage, setBankPage] = useState(1);
+  const [bankReload, setBankReload] = useState(0);
+  const [bank, setBank] = useState<Bank | null>(null);
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankError, setBankError] = useState("");
+  const [selectedQuestionId, setSelectedQuestionId] = useState("");
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSettingsPending(true);
-    setSettingsMessage("");
+  useEffect(() => {
+    setName(pkg.name); setDescription(pkg.description ?? ""); setOrder(pkg.order); setIsActive(pkg.isActive);
+  }, [pkg.id, pkg.name, pkg.description, pkg.order, pkg.isActive]);
+
+  useEffect(() => {
+    if (!showBank) return;
+    const controller = new AbortController();
+    setBankLoading(true); setBankError(""); setSelectedQuestionId("");
+    api<Bank>(`/admin/questions?subtes=${pkg.topicSlug}&halaman=${bankPage}`, { signal: controller.signal })
+      .then((data) => { if (!controller.signal.aborted) setBank(data); })
+      .catch((error) => { if (!controller.signal.aborted) setBankError(error instanceof Error ? error.message : "Gagal memuat bank soal."); })
+      .finally(() => { if (!controller.signal.aborted) setBankLoading(false); });
+    return () => controller.abort();
+  }, [showBank, pkg.topicSlug, bankPage, bankReload]);
+
+  async function runAction(key: string, path: string, init: RequestInit, text: string) {
+    if (busy) return;
+    setBusy(key); setMessage(null);
     try {
-      const updated = await api<QuestionPackage>(`/admin/packages/${pkg.id}`, {
-        method: "PUT",
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || null, order: Number(order), isActive }),
-      });
-      setPkg((prev) => ({ ...prev, ...updated }));
-      setSettingsMessage("Pengaturan paket berhasil disimpan.");
-    } catch (err) {
-      setSettingsMessage(err instanceof Error ? err.message : "Gagal menyimpan.");
-    } finally {
-      setSettingsPending(false);
-    }
-  };
+      await api(path, init);
+      await revalidator.revalidate();
+      setMessage({ error: false, text });
+      setSelectedQuestionId(""); setBankReload((value) => value + 1);
+    } catch (error) {
+      setMessage({ error: true, text: error instanceof Error ? error.message : "Perubahan belum tersimpan. Coba lagi." });
+    } finally { setBusy(""); }
+  }
 
-  const handleDeletePackage = async () => {
-    setDeletePending(true);
-    setDeleteError("");
-    try {
-      await api(`/admin/packages/${pkg.id}`, { method: "DELETE" });
-      navigate(`/admin/subtes/${pkg.topicSlug}`);
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus paket.");
-      setDeletePending(false);
-    }
-  };
+  const createUrl = `/admin/soal/baru?subtes=${pkg.topicSlug}&paket=${pkg.id}`;
+  const importUrl = `/admin/soal/impor?subtes=${pkg.topicSlug}&paket=${pkg.id}`;
+  const selectedQuestion = bank?.rows.find((question) => question.id === selectedQuestionId);
 
-  const handleAddQuestion = async () => {
-    if (!selectedAddQuestionId) return;
-    setAddPending(true);
-    setActionMessage("");
-    try {
-      await api(`/admin/packages/${pkg.id}/questions`, {
-        method: "POST",
-        body: JSON.stringify({ questionId: selectedAddQuestionId }),
-      });
-      const added = availableQuestions.find((q) => q.id === selectedAddQuestionId);
-      if (added) {
-        setPkg((prev) => ({
-          ...prev,
-          questionCount: prev.questionCount + 1,
-          questions: [...prev.questions, { id: added.id, prompt: added.prompt, category: added.category, source: "Bank Soal", usage: 0 }],
-        }));
-        setAvailableQuestions((prev) => prev.filter((q) => q.id !== selectedAddQuestionId));
-        setSelectedAddQuestionId("");
-        setActionMessage("Soal berhasil dimasukkan ke dalam paket.");
-      }
-    } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Gagal menambahkan soal.");
-    } finally {
-      setAddPending(false);
-    }
-  };
+  return <div className={styles.page}>
+    <Link className={styles.back} to={`/admin/subtes/${pkg.topicSlug}`}><ArrowLeft size={16} />{pkg.topicName}</Link>
+    <PageHeading title={pkg.name} description={<>{pkg.questionCount} soal · {pkg.isActive ? "Ditampilkan kepada peserta" : "Tidak ditampilkan kepada peserta"}</>} actions={<>
+      <Button asChild variant="outline"><Link to={importUrl}><Upload />Impor JSON</Link></Button>
+      <Button asChild><Link to={createUrl}><Plus />Buat soal</Link></Button>
+    </>} />
+    {params.has("imported") && <p className={styles.success} role="status">{params.get("imported")} soal berhasil diimpor ke paket ini.</p>}
+    {message && <p className={message.error ? formStyles.formError : styles.success} role={message.error ? "alert" : "status"}>{message.text}</p>}
 
-  const handleMoveQuestion = async (questionId: string) => {
-    const targetPkgId = moveTargets[questionId];
-    if (!targetPkgId) return;
-    setActionMessage("");
-    try {
-      await api(`/admin/questions/${questionId}/package`, {
-        method: "PUT",
-        body: JSON.stringify({ packageId: targetPkgId }),
-      });
-      setPkg((prev) => ({
-        ...prev,
-        questionCount: Math.max(0, prev.questionCount - 1),
-        questions: prev.questions.filter((q) => q.id !== questionId),
-      }));
-      setActionMessage("Soal berhasil dipindahkan.");
-    } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Gagal memindahkan soal.");
-    }
-  };
+    <Panel>
+      <PanelHeader title={`Soal dalam paket (${pkg.questions.length})`}><Button variant="outline" disabled={!!busy} aria-expanded={showBank} onClick={() => setShowBank(!showBank)}>{showBank ? "Tutup bank soal" : "Tambahkan dari bank soal"}</Button></PanelHeader>
+      {showBank && <div className={styles.bank}>
+        <h3>Pilih soal dari {pkg.topicName}</h3>
+        <p className={styles.help}>Soal yang sudah ada di paket ini tidak ditampilkan. Soal dari paket lain akan dipindahkan, bukan disalin.</p>
+        {bankLoading ? <p role="status">Memuat soal…</p> : bankError ? <div role="alert"><p>{bankError}</p><Button variant="outline" onClick={() => setBankReload((value) => value + 1)}>Coba lagi</Button></div> : bank && <>
+          <fieldset disabled={!!busy} className={styles.choices}><legend className="sr-only">Soal yang akan ditambahkan</legend>
+            {bank.rows.filter((question) => question.packageId !== pkg.id).map((question) => <label key={question.id} className={styles.choice}>
+              <input type="radio" name="bank-question" checked={selectedQuestionId === question.id} onChange={() => setSelectedQuestionId(question.id)} />
+              <span><MathText>{question.prompt}</MathText><span className={styles.help}>{question.packageName ? `Saat ini di ${question.packageName}` : "Belum masuk paket"}{question.category ? ` · ${question.category}` : ""}</span></span>
+            </label>)}
+            {!bank.rows.some((question) => question.packageId !== pkg.id) && <p>Tidak ada soal lain pada halaman ini. Cek halaman berikutnya atau buat soal baru.</p>}
+          </fieldset>
+          <div className={styles.toolbar}>
+            <Button variant="outline" disabled={bankPage <= 1 || !!busy} onClick={() => setBankPage(bankPage - 1)}>Sebelumnya</Button>
+            <span>Halaman {bank.page} / {bank.pageCount}</span>
+            <Button variant="outline" disabled={bankPage >= bank.pageCount || !!busy} onClick={() => setBankPage(bankPage + 1)}>Berikutnya</Button>
+          </div>
+          <div className={styles.toolbar}><p className={styles.help}>{selectedQuestion?.packageName ? `Soal akan dipindahkan dari ${selectedQuestion.packageName} ke ${pkg.name}.` : "Pilih satu soal untuk dimasukkan ke paket ini."}</p>
+            <Button disabled={!selectedQuestionId || !!busy} onClick={() => runAction("add", `/admin/packages/${pkg.id}/questions`, { method: "POST", body: JSON.stringify({ questionId: selectedQuestionId }) }, "Soal berhasil dimasukkan ke paket.")}>{busy === "add" ? "Menambahkan…" : "Tambahkan soal"}</Button>
+          </div>
+        </>}
+      </div>}
+      {!pkg.questions.length ? <div className={styles.empty}><h3>Mulai isi paket ini</h3><p>Buat soal satu per satu, impor JSON, atau pilih soal yang sudah ada di bank soal.</p><div className={styles.toolbar}><Button asChild><Link to={createUrl}>Buat soal</Link></Button><Button asChild variant="outline"><Link to={importUrl}>Impor JSON</Link></Button></div></div> : <>
+        <p className={styles.help}>Mengeluarkan soal hanya melepasnya dari paket. Soal tetap tersimpan di bank soal.</p>
+        <ol className={styles.questions}>{pkg.questions.map((question, index) => <li key={question.id}>
+          <div className={styles.question}><span className={styles.number}>{index + 1}.</span><div><MathText>{question.prompt}</MathText><p className={styles.help}>{question.category ?? "Tanpa kategori"} · {question.usage > 0 ? `${question.usage} jawaban peserta` : "Belum dikerjakan peserta"}</p></div></div>
+          <div className={styles.toolbar}>
+            <Button asChild variant="outline" size="sm"><Link to={`/admin/soal/${question.id}`}>Lihat soal</Link></Button>
+            {!!otherPackages.length && <details className={styles.move}><summary>Pindahkan ke paket lain</summary><div className={styles.toolbar}>
+              <label className="sr-only" htmlFor={`move-${question.id}`}>Paket tujuan soal {index + 1}</label>
+              <select id={`move-${question.id}`} disabled={!!busy} value={moveTargets[question.id] ?? ""} onChange={(event) => setMoveTargets({ ...moveTargets, [question.id]: event.target.value })}><option value="">Pilih paket tujuan</option>{otherPackages.map((other) => <option key={other.id} value={other.id}>{other.name}</option>)}</select>
+              <Button size="sm" disabled={!moveTargets[question.id] || !!busy} onClick={() => runAction(question.id, `/admin/questions/${question.id}/package`, { method: "PUT", body: JSON.stringify({ packageId: moveTargets[question.id] }) }, "Soal berhasil dipindahkan.")}>{busy === question.id ? "Memproses…" : "Pindahkan"}</Button>
+            </div></details>}
+            <Button variant="ghost" size="sm" disabled={!!busy} onClick={() => runAction(question.id, `/admin/packages/${pkg.id}/questions/${question.id}`, { method: "DELETE" }, "Soal dikeluarkan dari paket, tetap tersimpan di bank soal.")}>Keluarkan dari paket</Button>
+          </div>
+        </li>)}</ol>
+      </>}
+    </Panel>
 
-  const handleRemoveQuestion = async (questionId: string) => {
-    setActionMessage("");
-    try {
-      await api(`/admin/packages/${pkg.id}/questions/${questionId}`, { method: "DELETE" });
-      const removed = pkg.questions.find((q) => q.id === questionId);
-      setPkg((prev) => ({
-        ...prev,
-        questionCount: Math.max(0, prev.questionCount - 1),
-        questions: prev.questions.filter((q) => q.id !== questionId),
-      }));
-      if (removed) {
-        setAvailableQuestions((prev) => [...prev, { id: removed.id, prompt: removed.prompt, category: removed.category, packageName: null }]);
-      }
-      setActionMessage("Soal dikeluarkan dari paket.");
-    } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Gagal mengeluarkan soal.");
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link to={`/admin/subtes/${pkg.topicSlug}`}>
-            <ArrowLeft className="size-4" />
-            Kembali ke {pkg.topicName}
-          </Link>
-        </Button>
+    <Panel><details className={styles.settings}>
+      <summary>Pengaturan paket · {pkg.isActive ? "Aktif" : "Nonaktif"}</summary>
+      <form className={styles.settingsForm} onSubmit={(event) => { event.preventDefault(); runAction("settings", `/admin/packages/${pkg.id}`, { method: "PUT", body: JSON.stringify({ name: name.trim(), description: description.trim() || null, order, isActive }) }, "Pengaturan paket tersimpan."); }}>
+        <fieldset disabled={!!busy} className={styles.fields}>
+          <div className={formStyles.field}><label htmlFor="package-name">Nama paket</label><input id="package-name" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></div>
+          <div className={formStyles.field}><label htmlFor="package-order">Urutan tampilan</label><input id="package-order" type="number" min={0} step={1} required value={order} onChange={(event) => setOrder(Number(event.target.value))} /><span className={styles.help}>Angka yang lebih kecil tampil lebih dahulu.</span></div>
+          <div className={formStyles.field}><label htmlFor="package-description">Deskripsi (opsional)</label><textarea id="package-description" maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} /></div>
+          <label className={styles.checkbox}><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Tampilkan paket kepada peserta</label>
+          <Button type="submit"><Save />{busy === "settings" ? "Menyimpan…" : "Simpan pengaturan"}</Button>
+        </fieldset>
+      </form>
+      <div className={styles.delete}>
+        <p className={styles.help}>{pkg.questionCount ? "Pindahkan atau keluarkan semua soal sebelum menghapus paket. Paket dapat dinonaktifkan tanpa menghapus soal." : "Paket kosong dapat dihapus. Soal dan hasil latihan yang sudah tersimpan tidak ikut dihapus."}</p>
+        {confirmDelete ? <div className={styles.toolbar}><span>Hapus paket {pkg.name}?</span><Button variant="outline" disabled={!!busy} onClick={() => setConfirmDelete(false)}>Batal</Button><Button disabled={!!busy} onClick={async () => { setBusy("delete"); try { await api(`/admin/packages/${pkg.id}`, { method: "DELETE" }); navigate(`/admin/subtes/${pkg.topicSlug}`); } catch (error) { setMessage({ error: true, text: error instanceof Error ? error.message : "Gagal menghapus paket." }); } finally { setBusy(""); } }}>Ya, hapus paket</Button></div> : <Button variant="outline" disabled={pkg.questionCount > 0 || !!busy} onClick={() => setConfirmDelete(true)}>Hapus paket kosong</Button>}
       </div>
-
-      <PageHeading
-        title={`${pkg.topicName} / ${pkg.name}`}
-        description={`${pkg.questionCount} soal dalam paket ini`}
-        actions={
-          <Button asChild>
-            <Link to={`/admin/soal/baru?subtes=${pkg.topicSlug}`}>
-              <Plus className="size-4" />
-              Buat Soal Baru
-            </Link>
-          </Button>
-        }
-      />
-
-      <div className="hero-metrics-grid admin-stats">
-        <StatTile label="Total Soal" value={pkg.questionCount} />
-        <StatTile label="Status" value={pkg.isActive ? "Aktif" : "Nonaktif"} />
-        <StatTile label="Urutan" value={pkg.order} />
-      </div>
-
-      {actionMessage && (
-        <p className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md text-sm font-medium" role="status">
-          {actionMessage}
-        </p>
-      )}
-
-      {/* Edit Settings Panel */}
-      <Panel>
-        <PanelHeader title="Pengaturan Paket" />
-        <form onSubmit={handleSaveSettings} className="p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <label htmlFor="name" className="text-sm font-medium text-[var(--ink)]">Nama Paket</label>
-              <input
-                id="name"
-                className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="order" className="text-sm font-medium text-[var(--ink)]">Urutan</label>
-              <input
-                id="order"
-                type="number"
-                min="0"
-                className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
-                value={order}
-                onChange={(e) => setOrder(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <label htmlFor="description" className="text-sm font-medium text-[var(--ink)]">Deskripsi</label>
-            <textarea
-              id="description"
-              className="min-h-20 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] p-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              id="isActive"
-              type="checkbox"
-              className="size-4 accent-[var(--emerald)] cursor-pointer"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-            />
-            <label htmlFor="isActive" className="text-sm font-medium text-[var(--ink)] cursor-pointer">
-              Aktifkan paket untuk latihan peserta
-            </label>
-          </div>
-          {settingsMessage && <p className="text-sm text-[var(--emerald)] font-medium">{settingsMessage}</p>}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-            <Button type="submit" disabled={settingsPending}>
-              <Save className="size-4" />
-              {settingsPending ? "Menyimpan..." : "Simpan Pengaturan"}
-            </Button>
-            {confirmDelete ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-red-500">Hapus paket ini?</span>
-                <Button type="button" variant="outline" size="sm" onClick={() => setConfirmDelete(false)}>Batal</Button>
-                <Button type="button" size="sm" disabled={deletePending} onClick={handleDeletePackage}>
-                  <Trash2 className="size-4" />
-                  {deletePending ? "Menghapus..." : "Ya, Hapus Paket"}
-                </Button>
-              </div>
-            ) : (
-              <Button type="button" variant="outline" size="sm" onClick={() => setConfirmDelete(true)}>
-                <Trash2 className="size-4" />
-                Hapus Paket
-              </Button>
-            )}
-          </div>
-          {deleteError && <p className="text-sm text-red-500 font-medium" role="alert">{deleteError}</p>}
-        </form>
-      </Panel>
-
-      {/* Add Question to this Package */}
-      {availableQuestions.length > 0 && (
-        <Panel className="p-6">
-          <PanelHeader title="Tambahkan Soal ke Paket Ini" />
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="flex-1 min-w-[280px]">
-              <Select value={selectedAddQuestionId} onValueChange={setSelectedAddQuestionId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih soal dari subtes ini yang belum masuk paket..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableQuestions.map((q) => (
-                    <SelectItem key={q.id} value={q.id}>
-                      {q.prompt.length > 80 ? `${q.prompt.slice(0, 80)}…` : q.prompt}
-                      {q.packageName ? ` (saat ini: ${q.packageName})` : " (tanpa paket)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button disabled={!selectedAddQuestionId || addPending} onClick={handleAddQuestion}>
-              <Plus className="size-4" />
-              {addPending ? "Menambahkan..." : "Tambahkan Soal"}
-            </Button>
-          </div>
-        </Panel>
-      )}
-
-      {/* Questions List */}
-      <Panel>
-        <PanelHeader title={`Daftar Soal (${pkg.questions.length} Soal)`} />
-        {pkg.questions.length === 0 ? (
-          <div className="p-8 text-center text-[var(--soft-ink)]">
-            <p>Belum ada soal dalam paket ini.</p>
-          </div>
-        ) : (
-          <ol className="divide-y divide-[var(--edge)]">
-            {pkg.questions.map((q, idx) => (
-              <li key={q.id} className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <span className="font-mono text-sm font-bold text-[var(--emerald)] shrink-0 pt-0.5">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <div className="text-[var(--ink)] text-sm">
-                        <MathText>{q.prompt}</MathText>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-[var(--soft-ink)] font-mono">
-                        {q.category && <span>Kategori: {q.category}</span>}
-                        {q.usage > 0 && <span>· Dipakai: {q.usage} kali</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link to={`/admin/soal/${q.id}`}>
-                        Lihat Soal
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Move / Remove action row */}
-                <div className="flex flex-wrap items-center justify-end gap-2 pt-1 text-xs">
-                  {otherPackages.length > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[var(--soft-ink)]">Pindahkan ke:</span>
-                      <Select
-                        value={moveTargets[q.id] ?? ""}
-                        onValueChange={(val) => setMoveTargets((prev) => ({ ...prev, [q.id]: val }))}
-                      >
-                        <SelectTrigger className="h-8 text-xs min-w-[120px]">
-                          <SelectValue placeholder="Pilih paket" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {otherPackages.map((other) => (
-                            <SelectItem key={other.id} value={other.id}>
-                              {other.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs px-2"
-                        disabled={!moveTargets[q.id]}
-                        onClick={() => handleMoveQuestion(q.id)}
-                      >
-                        <MoveRight className="size-3" />
-                        Pindah
-                      </Button>
-                    </div>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-red-500 hover:text-red-600"
-                    onClick={() => handleRemoveQuestion(q.id)}
-                  >
-                    <LogOut className="size-3" />
-                    Keluarkan
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </Panel>
-    </div>
-  );
+    </details></Panel>
+  </div>;
 }

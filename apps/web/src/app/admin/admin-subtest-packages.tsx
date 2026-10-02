@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useNavigate } from "react-router";
 import { ArrowLeft, Plus, Settings, CheckCircle2, XCircle } from "lucide-react";
 import { type QuestionPackage, type Topic } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { PageHeading, Panel, PanelHeader, StatTile } from "../../components/ui/dashboard";
+import styles from "./packages.module.css";
 
 export function AdminSubtestPackages() {
   const { topic, initialPackages } = useLoaderData<{ topic: Topic; initialPackages: QuestionPackage[] }>();
-  const [packages, setPackages] = useState<QuestionPackage[]>(initialPackages);
+  const navigate = useNavigate();
+  const packages = initialPackages;
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [order, setOrder] = useState(packages.length + 1);
+  const [order, setOrder] = useState(Math.max(0, ...packages.map((pkg) => pkg.order)) + 1);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,11 +28,7 @@ export function AdminSubtestPackages() {
         method: "POST",
         body: JSON.stringify({ name: name.trim(), description: description.trim() || null, order: Number(order) }),
       });
-      setPackages((prev) => [...prev, created].sort((a, b) => a.order - b.order));
-      setName("");
-      setDescription("");
-      setOrder(packages.length + 2);
-      setShowAddModal(false);
+      navigate(`/admin/paket/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuat paket.");
     } finally {
@@ -41,7 +39,7 @@ export function AdminSubtestPackages() {
   const totalQuestions = packages.reduce((sum, p) => sum + p.questionCount, 0);
 
   return (
-    <div className="space-y-6">
+    <div className={styles.page}>
       <div className="flex items-center gap-2">
         <Button asChild variant="outline" size="sm">
           <Link to="/admin">
@@ -53,14 +51,15 @@ export function AdminSubtestPackages() {
 
       <PageHeading
         title={topic.name}
-        description={`Kelola paket soal untuk subtes ${topic.name}`}
+        description="Buat paket, isi dengan soal, lalu atur apakah paket tampil kepada peserta."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button asChild variant="outline">
+             <Button asChild variant="outline">
               <Link to={`/admin/soal?subtes=${topic.slug}`}>
                 Lihat semua soal
               </Link>
-            </Button>
+             </Button>
+             <Button asChild variant="outline"><Link to={`/admin/soal/impor?subtes=${topic.slug}`}>Impor JSON</Link></Button>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="size-4" />
               Tambah Paket
@@ -78,7 +77,8 @@ export function AdminSubtestPackages() {
       {showAddModal && (
         <Panel className="p-6 border-[var(--emerald)]">
           <PanelHeader title="Buat Paket Soal Baru" />
-          <form onSubmit={handleCreatePackage} className="space-y-4 mt-4">
+          <form onSubmit={handleCreatePackage} className={styles.settingsForm}>
+            <fieldset disabled={pending} className={styles.fields}>
             <div className="grid gap-2">
               <label htmlFor="pkg-name" className="text-sm font-medium text-[var(--ink)]">Nama Paket</label>
               <input
@@ -88,7 +88,8 @@ export function AdminSubtestPackages() {
                 className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
+                 required
+                 maxLength={100}
               />
             </div>
             <div className="grid gap-2">
@@ -97,7 +98,8 @@ export function AdminSubtestPackages() {
                 id="pkg-desc"
                 placeholder="Deskripsi singkat materi paket ini..."
                 className="min-h-20 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] p-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
-                value={description}
+                 value={description}
+                 maxLength={500}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
@@ -106,21 +108,25 @@ export function AdminSubtestPackages() {
               <input
                 id="pkg-order"
                 type="number"
-                min="0"
+                 min="0"
+                 step="1"
+                 required
                 className="min-h-11 border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-3 rounded-md focus:border-[var(--emerald)] focus:outline-none"
                 value={order}
                 onChange={(e) => setOrder(Number(e.target.value))}
-              />
+               />
+               <p className={styles.help}>Angka yang lebih kecil tampil lebih dahulu. Setelah dibuat, kamu bisa mengisi soal atau impor JSON.</p>
             </div>
             {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
             <div className="flex gap-2">
               <Button type="submit" disabled={pending}>
-                {pending ? "Menyimpan..." : "Simpan Paket"}
+                {pending ? "Membuat…" : "Buat paket dan isi soal"}
               </Button>
               <Button type="button" variant="ghost" onClick={() => setShowAddModal(false)}>
                 Batal
               </Button>
             </div>
+            </fieldset>
           </form>
         </Panel>
       )}
@@ -136,13 +142,13 @@ export function AdminSubtestPackages() {
             </Button>
           </div>
         ) : (
-          <ul className="divide-y divide-[var(--edge)]">
+          <ul className={styles.packageList}>
             {packages.map((pkg) => (
-              <li key={pkg.id} className="p-4 flex flex-wrap items-center justify-between gap-4 hover:bg-[var(--surface-elevated)] transition-colors">
+              <li key={pkg.id}>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-lg text-[var(--ink)]">{pkg.name}</span>
-                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-mono ${pkg.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-500/10 text-zinc-400"}`}>
+                    <h3>{pkg.name}</h3>
+                    <span className={styles.status}>
                       {pkg.isActive ? <CheckCircle2 className="size-3" /> : <XCircle className="size-3" />}
                       {pkg.isActive ? "Aktif" : "Nonaktif"}
                     </span>
@@ -150,15 +156,16 @@ export function AdminSubtestPackages() {
                   {pkg.description && (
                     <p className="text-sm text-[var(--soft-ink)]">{pkg.description}</p>
                   )}
-                  <div className="text-xs text-[var(--soft-ink)] font-mono">
-                    Urutan: {pkg.order} · {pkg.questionCount} soal
+                  <div className={styles.help}>
+                    {pkg.questionCount} soal · Urutan {pkg.order}{pkg.questionCount === 0 ? " · Belum berisi soal" : ""}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className={styles.toolbar}>
+                  <Button asChild variant="outline" size="sm"><Link to={`/admin/soal/impor?subtes=${topic.slug}&paket=${pkg.id}`}>Impor JSON</Link></Button>
                   <Button asChild variant="outline" size="sm">
                     <Link to={`/admin/paket/${pkg.id}`}>
                       <Settings className="size-4" />
-                      Kelola
+                      Kelola soal
                     </Link>
                   </Button>
                 </div>

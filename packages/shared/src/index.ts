@@ -51,8 +51,10 @@ export const questionImportSchema = z.object({
   groups: z.array(z.object({
     subtes: z.string().min(1),
     category: z.string().trim().min(1).max(120),
-    questions: z.array(questionSchema.omit({ topicId: true, category: true })).min(1).max(100),
-  })).min(1).max(20),
+    packageId: z.uuid("ID paket tidak valid.").optional(),
+    packageName: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100).optional(),
+    questions: z.array(questionSchema.omit({ topicId: true, category: true }).refine((question) => !question.packageId, { message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.", path: ["packageId"] })).min(1).max(100),
+  }).refine((group) => !(group.packageId && group.packageName), { message: "Gunakan packageId atau packageName, jangan keduanya.", path: ["packageName"] })).min(1).max(20),
 }).refine((input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 100, "Maksimal 100 soal per impor.");
 export const submissionSchema = z.object({
   answers: z.record(z.uuid(), z.number().int().min(0).max(3)),

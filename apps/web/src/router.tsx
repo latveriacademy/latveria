@@ -225,7 +225,7 @@ function BankPage() {
     </div>
   );
 }
-function NewQuestion() { const topics = useLoaderData<Topic[]>(); const [params] = useSearchParams(); return <><PageHeading title="Tambah soal" description="Soal langsung tersedia setelah disimpan." /><QuestionForm topics={topics} initialTopicId={topics.find((topic) => topic.slug === params.get("subtes"))?.id} /></>; }
+function NewQuestion() { const topics = useLoaderData<Topic[]>(); const [params] = useSearchParams(); return <><PageHeading title="Tambah soal" description="Soal langsung tersedia setelah disimpan." /><QuestionForm topics={topics} initialTopicId={topics.find((topic) => topic.slug === params.get("subtes"))?.id} initialPackageId={params.get("paket") ?? undefined} /></>; }
 function ImportPage() { return <><PageHeading title="Impor soal dari JSON" description="Tempel JSON atau unggah file, lalu periksa sebelum mengimpor." /><ImportQuestions /></>; }
 function EditQuestion() {
   const { item, topics } = useLoaderData<{ item: QuestionDetail; topics: Topic[] }>();
@@ -342,11 +342,7 @@ export const router = createBrowserRouter([
     { path: "paket/:packageId", loader: async ({ params }) => {
       const pkg = await api<PackageDetail>(`/admin/packages/${params.packageId}`);
       const otherPackages = (await api<QuestionPackage[]>(`/admin/subtests/${pkg.topicSlug}/packages`)).filter((p) => p.id !== pkg.id);
-      const bank = await api<Bank>(`/admin/questions?subtes=${pkg.topicSlug}&limit=100`);
-      const availableQuestions = bank.rows
-        .filter((r) => r.packageId !== pkg.id)
-        .map((r) => ({ id: r.id, prompt: r.prompt, category: r.category, packageName: r.packageName ?? null }));
-      return { pkg, otherPackages, availableQuestions };
+      return { pkg, otherPackages };
     }, element: <AdminPackageDetail /> },
     { path: "soal", loader: ({ request }) => api<Bank>(`/admin/questions?${new URL(request.url).searchParams}`), element: <BankPage /> },
     { path: "soal/baru", loader: () => api<Topic[]>("/admin/topics"), element: <NewQuestion /> },
