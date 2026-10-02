@@ -6,6 +6,7 @@ import { LatveriaCalculator } from '../components/LatveriaCalculator';
 import { MathText } from '../components/math-text';
 import { PageHeading, Panel, PanelHeader } from '../components/ui/dashboard';
 import styles from './practice-catalog.module.css';
+import { PracticeResultsDialog } from '../components/practice-results-dialog';
 import { Button } from '../components/ui/button';
 import { sound } from '../utils/audioFeedback';
 import {
@@ -883,80 +884,18 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
         {/* ========================================================
             EVALUATION SUMMARY DOSSIER MODAL (OPSIONAL VIEW)
             ======================================================== */}
-        {showSummaryModal && activeSession.results && (
-          <div className="modal-backdrop motion-fade-in" onClick={() => setShowSummaryModal(false)}>
-            <div
-              className="config-modal-card eval-summary-modal-card motion-scale-in"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h2 className="modal-title font-serif">
-                  Hasil latihan
-                </h2>
-                <p className="modal-desc text-sm text-[var(--soft-ink)]">
-                  {activeSession.subjectName}{activeSession.packageName ? ` · ${activeSession.packageName}` : ''}
-                </p>
-              </div>
-
-              <div className="results-metrics-grid">
-                <div className="result-metric-card highlight-card">
-                  <span className="card-label-mono font-mono">Skor</span>
-                  <div className="card-val-row font-serif">
-                    <span className="big-score">{activeSession.results.score}</span>
-                    <span className="score-denom">/ 100</span>
-                  </div>
-                </div>
-
-                <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">Benar</span>
-                  <div className="card-val-row font-serif">
-                    <span className="big-score text-sage">{activeSession.results.correctCount}</span>
-                    <span className="score-denom">SOAL</span>
-                  </div>
-                </div>
-
-                <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">Salah</span>
-                  <div className="card-val-row font-serif">
-                    <span className="big-score text-crimson">{activeSession.results.incorrectCount}</span>
-                    <span className="score-denom">SALAH</span>
-                  </div>
-                  <span className="status-badge-mono font-mono text-muted">
-                    {activeSession.results.unansweredCount} belum dijawab
-                  </span>
-                </div>
-
-                {activeSession.results.earnedXP != null && <div className="result-metric-card">
-                  <span className="card-label-mono font-mono">EXP diperoleh</span>
-                  <div className="card-val-row font-serif">
-                    <span className="big-score text-gold">+{activeSession.results.earnedXP}</span>
-                    <span className="score-denom">XP</span>
-                  </div>
-                </div>}
-              </div>
-
-              <div className="modal-actions-footer">
-                <button
-                  type="button"
-                  className="btn-latveria-secondary font-mono"
-                  onClick={() => setShowSummaryModal(false)}
-                >
-                  Tutup
-                </button>
-                <button
-                  type="button"
-                  className="btn-latveria-primary font-mono"
-                  onClick={() => {
-                    setShowSummaryModal(false);
-                    exitPractice();
-                  }}
-                >
-                  Selesai
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeSession.results && <PracticeResultsDialog
+          open={showSummaryModal}
+          subject={activeSession.subjectName}
+          packageName={activeSession.packageName}
+          correct={activeSession.results.correctCount}
+          total={activeSession.totalQuestions}
+          unanswered={activeSession.results.unansweredCount}
+          earnedXP={activeSession.results.earnedXP}
+          onClose={() => setShowSummaryModal(false)}
+          onExit={() => { setShowSummaryModal(false); exitPractice(); }}
+          exitLabel={reviewSession ? 'Kembali ke riwayat' : 'Kembali ke latihan'}
+        />}
       </div>
     );
   }
