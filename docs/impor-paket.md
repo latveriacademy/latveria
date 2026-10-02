@@ -40,10 +40,70 @@ Untuk beberapa paket atau materi, tambahkan grup ke array `groups`. Dua grup den
 ## Alur impor
 
 1. Pilih **Paket yang ditentukan dalam JSON**, atau **Satu paket yang sudah ada**. Pada opsi kedua, seluruh grup harus memakai subtes tujuan; pilihan paket di form berlaku untuk seluruh soal.
-2. Tempel JSON, unggah file, atau gunakan contoh sederhana/geometri. **Unduh contoh JSON** menyediakan file yang dapat diedit.
+2. Tempel JSON, unggah file, atau gunakan contoh sederhana, rumus, atau geometri. **Unduh contoh JSON** menyediakan file dari contoh yang dipilih.
 3. Tekan **Periksa JSON**. Ringkasan menunjukkan nama paket, subtes, kategori, jumlah soal, dan paket yang akan dibuat.
 4. Tekan **Impor … soal**. Impor satu paket membuka halaman paket tersebut; impor beberapa paket kembali ke bank soal.
 
 Batas setiap impor: **100 soal dan 200 KB**, empat opsi unik per soal. Backend memvalidasi ulang tujuan paket dan isi soal. Semua pembuatan paket dan penyisipan soal dilakukan dalam satu transaksi; kegagalan tidak menyimpan sebagian batch. Mengimpor file yang sama lagi akan menambah salinan soal, bukan memperbarui soal sebelumnya.
 
-Rumus memakai `$...$` inline atau `$$...$$` blok. Dalam JSON, backslash harus di-escape: sumber LaTeX `\frac{1}{2}` ditulis `"$\\frac{1}{2}$"`. Contoh geometri pada halaman impor sudah memiliki escaping JSON yang benar.
+## Menulis rumus agar mudah dibaca
+
+Rumus bisa dipakai pada `prompt`, setiap string dalam `options`, dan `explanation`. Halaman impor menyediakan enam contoh lengkap lewat **Gunakan contoh rumus**, serta pratinjau dan cuplikan JSON pada **Panduan impor → Rumus matematika**.
+
+| Bentuk | Kegunaan |
+| --- | --- |
+| `$...$` | Rumus menyatu dengan kalimat, cocok untuk pangkat atau akar singkat. |
+| `$\displaystyle ...$` | Limit, pecahan, integral, dan sigma tampil lebih besar, tetap di dalam kalimat. |
+| `$$...$$` | Rumus pada baris tersendiri, cocok untuk persamaan panjang atau beberapa langkah. |
+
+### Backslash: editor soal dan JSON berbeda
+
+- **Editor soal biasa:** tulis satu backslash, misalnya `$\frac{1}{2}$`.
+- **JSON:** tulis dua backslash, misalnya `"$\\frac{1}{2}$"`.
+- **Baris baru dalam string JSON:** tulis `\n`. Jangan menekan Enter di tengah string JSON tanpa escaping.
+- **Pemisah baris LaTeX `aligned`:** dua backslash dalam sumber LaTeX menjadi empat backslash dalam JSON.
+
+Gunakan cuplikan berikut sebagai field pada objek soal, bukan sebagai keseluruhan file impor.
+
+### Limit satu sisi
+
+```json
+"prompt": "Nilai $\\displaystyle \\lim_{x \\to 2^+} \\frac{3}{x-2}$ adalah ..."
+```
+
+`2^+` berarti mendekati 2 dari kanan. `\displaystyle` membuat notasi limit dan pecahan lebih mudah dibaca. Contoh opsi:
+
+```json
+"options": ["$+\\infty$", "$-\\infty$", "$0$", "$3$"],
+"correctAnswer": 0
+```
+
+### Pecahan, akar, dan pangkat
+
+```json
+"prompt": "Hasil $\\displaystyle \\frac{2}{3} + \\frac{1}{6}$ adalah ..."
+```
+
+```json
+"prompt": "Nilai $\\sqrt{49} + 2^3$ adalah ..."
+```
+
+### Integral dan sigma
+
+```json
+"prompt": "Nilai $\\displaystyle \\int_{0}^{2} x\\,dx$ adalah ..."
+```
+
+```json
+"prompt": "Nilai $\\displaystyle \\sum_{k=1}^{4} k$ adalah ..."
+```
+
+### Rumus blok dan langkah berurutan
+
+```json
+"prompt": "Tentukan nilai $x$ dari persamaan berikut.\n$$\\begin{aligned}2x + 3 &= 11 \\\\ 2x &= 8 \\\\ x &= ?\\end{aligned}$$"
+```
+
+`&` menyelaraskan tanda sama dengan; `\\\\` di JSON memisahkan baris LaTeX. Gunakan rumus blok untuk langkah panjang agar tidak menumpuk di dalam satu kalimat.
+
+Diagram TikZ tetap memakai `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`. Contoh geometri pada halaman impor sudah memiliki escaping JSON yang benar.

@@ -1,0 +1,34 @@
+.guide { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-subtle); }
+.guide > h3 { margin: 0; font: 600 22px/1.3 var(--font-serif); }
+.intro, .body p, .fields dd { color: var(--text-secondary); font-size: 14px; line-height: 1.75; }
+.intro { margin: 10px 0 18px; }
+.section { border-top: 1px solid var(--border-subtle); }
+.section:last-child { border-bottom: 1px solid var(--border-subtle); }
+.section > summary { padding: 18px 0; cursor: pointer; font-size: 15px; font-weight: 600; min-height: 48px; }
+.section > summary:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+.body { padding: 0 0 24px; }
+.body p { margin: 0 0 16px; max-width: 70ch; }
+.body h4 { font-size: 14px; font-weight: 600; margin: 24px 0 10px; }
+.fields { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr); gap: 14px 20px; margin: 8px 0 24px; }
+.fields dt { font-size: 13px; line-height: 1.75; }
+.fields dd { margin: 0; min-width: 0; }
+.guide code { font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; color: var(--text-primary); }
+.label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.body select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--border-medium); border-radius: var(--radius-xs); background: var(--bg-input); color: var(--text-primary); padding: 10px 12px; font: inherit; }
+.body select:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+.preview { margin: 20px 0 0; padding: 20px 0; border-block: 1px solid var(--border-subtle); }
+.preview figcaption { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+.formula { font-size: 17px; line-height: 1.9; overflow-x: auto; padding: 8px 0; }
+.codeHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 20px 0 12px; }
+.codeHeader h4 { margin: 0; }
+.code { padding: 16px; margin: 0 0 16px; background: var(--bg-input); border-radius: var(--radius-xs); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.slugs { margin: 0; }
+.slugs > div { padding: 14px 0; border-bottom: 1px solid var(--border-subtle); }
+.slugs > div:last-child { border-bottom: 0; }
+.slugs dt { font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+.slugs dd { margin: 0; }
+@media (max-width: 640px) {
+  .fields { grid-template-columns: 1fr; gap: 6px; }
+  .fields dd { margin-bottom: 12px; }
+  .codeHeader { align-items: flex-start; }
+}

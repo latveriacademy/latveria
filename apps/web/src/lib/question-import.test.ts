@@ -3,6 +3,9 @@ import { packageImportExample, parseQuestionImport } from "./question-import";
 import { parseTikz } from "./tikz";
 import { geometryImportExample } from "./tikz-examples";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "@latveria/shared";
+import { renderToStaticMarkup } from "react-dom/server";
+import { MathFormula } from "../components/math-formula";
+import { mathImportExample, mathNotationExamples } from "./math-import-examples";
 
 const group = {
   subtes: "pengetahuan-kuantitatif",
@@ -11,6 +14,24 @@ const group = {
 };
 
 describe("parseQuestionImport", () => {
+  it("round-trips math examples through JSON and renders every formula without fallback", () => {
+    const text = JSON.stringify(mathImportExample);
+    const data = parseQuestionImport(text);
+    expect(data.groups[0].questions).toHaveLength(6);
+    expect(data.groups[0].questions[0].prompt).toBe(String.raw`Nilai $\displaystyle \lim_{x \to 2^+} \frac{3}{x-2}$ adalah ...`);
+    expect(text).toContain(String.raw`\\displaystyle \\lim`);
+    for (const example of mathNotationExamples) {
+      const formulas = [example.prompt, ...example.options, example.explanation].flatMap((source) => source.match(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g) ?? []);
+      expect(formulas.length).toBeGreaterThan(0);
+      for (const formula of formulas) {
+        const display = formula.startsWith("$$");
+        const source = formula.slice(display ? 2 : 1, display ? -2 : -1);
+        const html = renderToStaticMarkup(MathFormula({ source, displayMode: display }));
+        expect(html).toContain("katex");
+        expect(html).not.toContain("math-error");
+      }
+    }
+  });
   it("ships a valid named-package example with the correct answer index", () => {
     const data = parseQuestionImport(JSON.stringify(packageImportExample));
     expect(data.groups[0].packageName).toBe("Paket Persentase");

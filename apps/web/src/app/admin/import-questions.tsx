@@ -5,6 +5,8 @@ import { Download, FileCheck, Loader2, Upload } from "lucide-react";
 import { api } from "../../lib/api";
 import { packageImportExample, parseQuestionImport } from "../../lib/question-import";
 import { geometryImportExample } from "../../lib/tikz-examples";
+import { mathImportExample } from "../../lib/math-import-examples";
+import { ImportGuide } from "./import-guide";
 import { Button } from "../../components/ui/button";
 import { Panel, PanelHeader } from "../../components/ui/dashboard";
 import styles from "./admin.module.css";
@@ -45,10 +47,10 @@ export function ImportQuestions() {
   }, [subtest, mode, packagesRetry]);
 
   function example(kind: string): QuestionImport {
-    const source = kind === "geometry" ? geometryImportExample : packageImportExample;
+    const source = kind === "geometry" ? geometryImportExample : kind === "math" ? mathImportExample : packageImportExample;
     return { groups: source.groups.map((group) => ({ ...group,
       subtes: mode === "package" ? subtest : group.subtes,
-      packageName: mode === "package" && selectedPackage ? selectedPackage.name : kind === "geometry" ? "Paket Bangun Ruang" : "Paket Persentase",
+      packageName: mode === "package" && selectedPackage ? selectedPackage.name : kind === "geometry" ? "Paket Bangun Ruang" : kind === "math" ? "Paket Rumus Matematika" : "Paket Persentase",
     })) };
   }
 
@@ -96,7 +98,7 @@ export function ImportQuestions() {
       <Panel><PanelHeader title="Data soal" />
         <p className={packageStyles.help}>Mulai dari contoh format, lalu ganti pertanyaan, jawaban, dan sumber sesuai soalmu.</p>
         <div className={packageStyles.toolbar}>
-          {[{ kind: "basic", label: "Gunakan contoh sederhana" }, { kind: "geometry", label: "Gunakan contoh geometri" }].map(({ kind, label }) => <Button key={kind} variant="outline" size="sm" disabled={busy} onClick={() => { setExampleKind(kind); setText(JSON.stringify(example(kind), null, 2)); setBatch(null); setError(""); setFileName(""); }}>{label}</Button>)}
+          {[{ kind: "basic", label: "Gunakan contoh sederhana" }, { kind: "math", label: "Gunakan contoh rumus" }, { kind: "geometry", label: "Gunakan contoh geometri" }].map(({ kind, label }) => <Button key={kind} variant="outline" size="sm" disabled={busy} onClick={() => { setExampleKind(kind); setText(JSON.stringify(example(kind), null, 2)); setBatch(null); setError(""); setFileName(""); }}>{label}</Button>)}
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => {
             const url = URL.createObjectURL(new Blob([JSON.stringify(example(exampleKind), null, 2)], { type: "application/json" }));
             const link = document.createElement("a"); link.href = url; link.download = "contoh-impor-paket.json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -114,7 +116,7 @@ export function ImportQuestions() {
           <Button variant="outline" disabled={!text.trim() || busy || (mode === "package" && !selectedPackage)} onClick={() => check(text)}>{checking ? <Loader2 className="animate-spin" /> : <FileCheck />}{checking ? "Memeriksa…" : "Periksa JSON"}</Button>
           {error && <p id="json-error" className={styles.formError} role="alert">{error}</p>}
         </div>
-        <details className={styles.diagramHelp}><summary>Panduan format dan slug subtes</summary><p>Satu grup berisi <code>subtes</code>, <code>packageName</code>, <code>category</code>, dan <code>questions</code>. Beberapa grup boleh memakai paket yang sama, atau paket/subtes berbeda. Untuk paket existing, <code>packageId</code> boleh menggantikan <code>packageName</code>; tujuan paket ditulis pada grup, bukan tiap soal.</p><ul>{utbkSubtests.map((topic) => <li key={topic.slug}>{topic.name}: <code>{topic.slug}</code></li>)}</ul><p>Rumus memakai $...$ atau $$...$$. Dalam JSON, karakter backslash LaTeX/TikZ ditulis dua kali; contoh geometri sudah memakai format yang benar.</p></details>
+        <ImportGuide />
       </Panel>
     </div>
     <Panel className={styles.importSummary}><PanelHeader title="Ringkasan impor" />
