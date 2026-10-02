@@ -43,6 +43,13 @@
       "when": 1790857172509,
       "tag": "0005_wooden_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790939456122,
+      "tag": "0006_lush_proteus",
+      "breakpoints": true
     }
   ]
 }

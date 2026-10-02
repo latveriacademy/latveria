@@ -4,7 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
-import { questions } from "../src/lib/db/schema";
+import { questions, questionPackages } from "../src/lib/db/schema";
 import { pyramidQuestion } from "@latveria/shared";
 
 loadLocalEnv();
@@ -12,6 +12,7 @@ if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).host
 const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const users: string[] = [];
 const questionIds: string[] = [];
+const packageIds: string[] = [];
 async function request(path: string, cookie = "", body?: unknown, method = body ? "POST" : "GET") {
   return app.request(`${origin}/api${path}`, { method, headers: { Origin: origin, Cookie: cookie, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
 }
@@ -144,10 +145,135 @@ try {
   assert.equal((await bulk.json()).count, 2);
   assert.equal((await request(`/admin/questions/${batchRows[0].id}`, other.cookie)).status, 404);
   assert.equal((await request(`/admin/questions/${question.id}`, other.cookie, undefined, "DELETE")).status, 200);
+
+  // --- Question Packages Verification ---
+  // 1. Learner cannot access admin package routes
+  assert.equal((await request(`/admin/subtests/${topics[0].slug}/packages`, learner.cookie)).status, 403);
+  assert.equal((await request(`/admin/subtests/${topics[0].slug}/packages`, learner.cookie, { name: "Paket Uji" })).status, 403);
+
+  // 2. Admin creates a new package
+  const testPkgName = `Paket Uji ${crypto.randomUUID().slice(0, 8)}`;
+  const pkgRes = await request(`/admin/subtests/${topics[0].slug}/packages`, other.cookie, {
+    name: testPkgName,
+    description: "Deskripsi paket uji coba",
+    order: 99,
+  });
+  assert.equal(pkgRes.status, 201);
+  const testPkg = await pkgRes.json();
+  packageIds.push(testPkg.id);
+  assert.equal(testPkg.name, testPkgName);
+  assert.equal(testPkg.order, 99);
+
+  // Duplicate name in same topic is rejected with 409 Conflict
+  const dupPkgRes = await request(`/admin/subtests/${topics[0].slug}/packages`, other.cookie, {
+    name: testPkgName,
+  });
+  assert.equal(dupPkgRes.status, 409);
+
+  // 3. Admin creates another package on a different topic
+  const testPkg2Name = `Paket Subtes 2 ${crypto.randomUUID().slice(0, 8)}`;
+  const pkgResTopic1 = await request(`/admin/subtests/${topics[1].slug}/packages`, other.cookie, {
+    name: testPkg2Name,
+    order: 1,
+  });
+  assert.equal(pkgResTopic1.status, 201);
+  const testPkgTopic1 = await pkgResTopic1.json();
+  packageIds.push(testPkgTopic1.id);
+
+  // 4. Admin creates a question inside testPkg
+  const qInPkgRes = await request("/admin/questions", other.cookie, {
+    topicId: topics[0].id,
+    packageId: testPkg.id,
+    prompt: "Soal dalam paket uji coba $y=2x$",
+    options: ["A", "B", "C", "D"],
+    correctAnswer: 0,
+    explanation: "Penjelasan soal paket uji coba.",
+    source: "Dummy paket",
+    category: "Aljabar",
+  });
+  assert.equal(qInPkgRes.status, 201);
+  const qInPkg = await qInPkgRes.json();
+  questionIds.push(qInPkg.id);
+  assert.equal(qInPkg.packageId, testPkg.id);
+
+  // 5. Cross-subtest rejection: cannot create question with package from different topic (400)
+  const crossSubtestCreate = await request("/admin/questions", other.cookie, {
+    topicId: topics[0].id,
+    packageId: testPkgTopic1.id, // belongs to topics[1]!
+    prompt: "Soal silang subtes",
+    options: ["A", "B", "C", "D"],
+    correctAnswer: 0,
+    explanation: "Penjelasan.",
+    source: "Dummy",
+  });
+  assert.equal(crossSubtestCreate.status, 400);
+
+  // 6. Cross-subtest rejection on question package assignment / move (400)
+  const crossAssign = await request(`/admin/packages/${testPkgTopic1.id}/questions`, other.cookie, {
+    questionId: qInPkg.id,
+  });
+  assert.equal(crossAssign.status, 400);
+
+  const crossMove = await request(`/admin/questions/${qInPkg.id}/package`, other.cookie, {
+    packageId: testPkgTopic1.id,
+  }, "PUT");
+  assert.equal(crossMove.status, 400);
+
+  // 7. Safe package deletion: cannot delete package that contains questions (409 Conflict)
+  const deleteConflict = await request(`/admin/packages/${testPkg.id}`, other.cookie, undefined, "DELETE");
+  assert.equal(deleteConflict.status, 409);
+
+  // 8. Learner fetches active packages for subtest
+  const learnerPackagesRes = await request(`/learner/topics/${topics[0].slug}/packages`, learner.cookie);
+  assert.equal(learnerPackagesRes.status, 200);
+  const learnerPackages = await learnerPackagesRes.json();
+  assert.ok(learnerPackages.some((p: { id: string }) => p.id === testPkg.id));
+
+  // 9. Learner fetches practice by package
+  const pkgPracticeRes = await request(`/learner/practice/${topics[0].slug}/${testPkg.id}`, learner.cookie);
+  assert.equal(pkgPracticeRes.status, 200);
+  const pkgPractice = await pkgPracticeRes.json();
+  assert.equal(pkgPractice.packageId, testPkg.id);
+  assert.equal(pkgPractice.packageName, testPkgName);
+  assert.equal(pkgPractice.items.length, 1);
+  assert.equal(pkgPractice.items[0].id, qInPkg.id);
+
+  // 10. Learner cannot submit questions from outside the package to a package attempt (400)
+  const crossPkgSubmit = await request(`/learner/practice/${topics[0].slug}/${testPkg.id}`, learner.cookie, {
+    answers: {
+      [qInPkg.id]: 0,
+      [practice.items[0].id]: 1, // belongs to Paket 1, not testPkg!
+    },
+  });
+  assert.equal(crossPkgSubmit.status, 400);
+
+  // 11. Learner submits attempt for testPkg
+  const pkgSubmit = await request(`/learner/practice/${topics[0].slug}/${testPkg.id}`, learner.cookie, {
+    answers: { [qInPkg.id]: 0 },
+  });
+  assert.equal(pkgSubmit.status, 201);
+  const pkgAttempt = await pkgSubmit.json();
+  assert.equal(pkgAttempt.packageId, testPkg.id);
+
+  // 12. Learner views result: result contains packageName and packageId
+  const pkgResult = await (await request(`/learner/results/${pkgAttempt.id}`, learner.cookie)).json();
+  assert.equal(pkgResult.attempt.packageId, testPkg.id);
+  assert.equal(pkgResult.attempt.packageName, testPkgName);
+
+  // 13. History includes packageName
+  const updatedHistory = await (await request("/learner/history", learner.cookie)).json();
+  const histItem = updatedHistory.find((h: { id: string }) => h.id === pkgAttempt.id);
+  assert.ok(histItem);
+  assert.equal(histItem.packageName, testPkgName);
+
+  // 14. Question in pkg now has usage from attempt, so deleting is locked (409 Conflict)
+  assert.equal((await request(`/admin/questions/${qInPkg.id}`, other.cookie, undefined, "DELETE")).status, 409);
+
   assert.equal((await request("/auth/sign-out", learner.cookie, {})).status, 200);
   assert.equal((await request("/learner/topics", learner.cookie)).status, 401);
-  console.info("API integration: auth, roles, key secrecy, ownership, submission, admin edit/delete, atomic import, logout PASSED.");
+  console.info("API integration: auth, roles, key secrecy, ownership, submission, admin edit/delete, atomic import, packages, logout PASSED.");
 } finally {
   if (users.length) await getDb().delete(user).where(inArray(user.id, users));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));
+  if (packageIds.length) await getDb().delete(questionPackages).where(inArray(questionPackages.id, packageIds));
 }

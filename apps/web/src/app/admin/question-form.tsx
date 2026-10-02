@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { questionSchema, type QuestionDetail } from "@latveria/shared";
+import { questionSchema, type QuestionDetail, type QuestionPackage } from "@latveria/shared";
 import { api } from "../../lib/api";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { MathText } from "../../components/math-text";
 import { tikzExamples } from "../../lib/tikz-examples";
@@ -13,23 +13,165 @@ import styles from "./admin.module.css";
 
 export function QuestionForm({ topics, initialTopicId, question }: { topics: { id: string; name: string; section: "tps" | "literasi" }[]; initialTopicId?: string; question?: QuestionDetail }) {
   const navigate = useNavigate();
+  const [selectedTopicId, setSelectedTopicId] = useState(question?.topicId ?? initialTopicId ?? topics[0]?.id);
+  const [packages, setPackages] = useState<QuestionPackage[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(question?.packageId ?? undefined);
+  const [showNewPkg, setShowNewPkg] = useState(false);
+  const [newPkgName, setNewPkgName] = useState("");
+  const [pkgPending, setPkgPending] = useState(false);
+  const [pkgError, setPkgError] = useState("");
   const [prompt, setPrompt] = useState(question?.prompt ?? "");
   const [diagramError, setDiagramError] = useState("");
+
+  useEffect(() => {
+    if (!selectedTopicId) return;
+    api<QuestionPackage[]>(`/admin/subtests/${selectedTopicId}/packages`)
+      .then((data) => {
+        setPackages(data);
+        if (question?.packageId && data.some((p) => p.id === question.packageId)) {
+          setSelectedPackageId(question.packageId);
+        } else if (data.length > 0) {
+          setSelectedPackageId(data[0].id);
+        } else {
+          setSelectedPackageId(undefined);
+        }
+      })
+      .catch(() => setPackages([]));
+  }, [selectedTopicId, question?.packageId]);
+
+  const handleCreatePackage = async () => {
+    if (!newPkgName.trim() || !selectedTopicId) return;
+    setPkgPending(true);
+    setPkgError("");
+    try {
+      const created = await api<QuestionPackage>(`/admin/subtests/${selectedTopicId}/packages`, {
+        method: "POST",
+        body: JSON.stringify({ name: newPkgName.trim(), order: packages.length + 1 }),
+      });
+      setPackages((prev) => [...prev, created]);
+      setSelectedPackageId(created.id);
+      setNewPkgName("");
+      setShowNewPkg(false);
+    } catch (err) {
+      setPkgError(err instanceof Error ? err.message : "Gagal membuat paket.");
+    } finally {
+      setPkgPending(false);
+    }
+  };
+
   const createQuestion = async (_previous: string, form: FormData) => {
-    const parsed = questionSchema.safeParse({ topicId: form.get("topicId"), prompt: form.get("prompt"), options: [0, 1, 2, 3].map((index) => form.get(`option-${index}`)), correctAnswer: Number(form.get("correctAnswer")), explanation: form.get("explanation"), source: form.get("source"), category: String(form.get("category") ?? "").trim() || undefined });
+    const parsed = questionSchema.safeParse({
+      topicId: selectedTopicId,
+      packageId: selectedPackageId || undefined,
+      prompt: form.get("prompt"),
+      options: [0, 1, 2, 3].map((index) => form.get(`option-${index}`)),
+      correctAnswer: Number(form.get("correctAnswer")),
+      explanation: form.get("explanation"),
+      source: form.get("source"),
+      category: String(form.get("category") ?? "").trim() || undefined,
+    });
     if (!parsed.success) return parsed.error.issues[0].message;
     try {
-      const result = await api<{ id: string; slug: string }>(question ? `/admin/questions/${question.id}` : "/admin/questions", { method: question ? "PUT" : "POST", body: JSON.stringify(parsed.data) });
+      const result = await api<{ id: string; slug: string }>(
+        question ? `/admin/questions/${question.id}` : "/admin/questions",
+        { method: question ? "PUT" : "POST", body: JSON.stringify(parsed.data) }
+      );
       navigate(question ? `/admin/soal/${result.id}?updated=1` : `/admin/soal?subtes=${result.slug}&created=${result.id}`);
       return "";
-    } catch (error) { return error instanceof Error ? error.message : "Gagal menyimpan soal."; }
+    } catch (error) {
+      return error instanceof Error ? error.message : "Gagal menyimpan soal.";
+    }
   };
+
   const [message, action, pending] = useActionState(createQuestion, "");
   if (!topics.length) return <div className={styles.empty}><p>Belum ada subtes. Jalankan <code>bun run db:seed</code> untuk memuat katalog UTBK.</p></div>;
+
   return (
     <form action={action} className={styles.questionForm}>
       <fieldset className={styles.formSection}><legend>Soal</legend>
-        <div className={styles.field}><label htmlFor="topicId">Subtes</label><Select name="topicId" defaultValue={question?.topicId ?? initialTopicId} required><SelectTrigger id="topicId"><SelectValue placeholder="Pilih subtes" /></SelectTrigger><SelectContent>{(["tps", "literasi"] as const).map((section) => <SelectGroup key={section}><SelectLabel>{section === "tps" ? "Tes Potensi Skolastik" : "Tes Literasi"}</SelectLabel>{topics.filter((topic) => topic.section === section).map((topic) => <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>)}</SelectGroup>)}</SelectContent></Select></div>
+        <div className={styles.field}>
+          <label htmlFor="topicId">Subtes</label>
+          <Select
+            name="topicId"
+            value={selectedTopicId}
+            onValueChange={(val) => setSelectedTopicId(val)}
+            required
+          >
+            <SelectTrigger id="topicId"><SelectValue placeholder="Pilih subtes" /></SelectTrigger>
+            <SelectContent>
+              {(["tps", "literasi"] as const).map((section) => (
+                <SelectGroup key={section}>
+                  <SelectLabel>{section === "tps" ? "Tes Potensi Skolastik" : "Tes Literasi"}</SelectLabel>
+                  {topics.filter((topic) => topic.section === section).map((topic) => (
+                    <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="packageId">Paket Soal</label>
+          {packages.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <Select
+                  value={selectedPackageId ?? "none"}
+                  onValueChange={(val) => setSelectedPackageId(val === "none" ? undefined : val)}
+                >
+                  <SelectTrigger id="packageId">
+                    <SelectValue placeholder="Pilih paket soal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {packages.map((pkg) => (
+                      <SelectItem key={pkg.id} value={pkg.id}>
+                        {pkg.name} ({pkg.questionCount} soal)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewPkg(!showNewPkg)}>
+                <Plus className="size-4" />
+                Buat Paket
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-[var(--soft-ink)] italic p-2 border border-[var(--edge)] rounded-md bg-[var(--surface-elevated)]">
+                Belum ada paket pada subtes ini
+              </span>
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewPkg(!showNewPkg)}>
+                <Plus className="size-4" />
+                Buat Paket
+              </Button>
+            </div>
+          )}
+
+          {showNewPkg && (
+            <div className="mt-2 p-3 border border-[var(--edge)] bg-[var(--surface-elevated)] rounded-md space-y-2">
+              <div className="text-xs font-semibold text-[var(--ink)]">Tambah Paket Baru untuk Subtes Ini</div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Nama paket (mis. Paket 1)"
+                  className="min-h-9 text-sm border border-[var(--edge)] bg-[var(--bg)] text-[var(--ink)] px-2 rounded-md focus:border-[var(--emerald)] focus:outline-none flex-1"
+                  value={newPkgName}
+                  onChange={(e) => setNewPkgName(e.target.value)}
+                />
+                <Button type="button" size="sm" disabled={pkgPending || !newPkgName.trim()} onClick={handleCreatePackage}>
+                  {pkgPending ? "Membuat..." : "Simpan Paket"}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewPkg(false)}>
+                  Batal
+                </Button>
+              </div>
+              {pkgError && <p className="text-xs text-red-500" role="alert">{pkgError}</p>}
+            </div>
+          )}
+        </div>
+
         <div className={styles.field}><label htmlFor="category">Materi / kategori</label><input id="category" name="category" maxLength={120} defaultValue={question?.category} placeholder="Contoh: Perbandingan dan persentase" /><span className={styles.hint}>Opsional. Isi sesuai materi yang ingin kamu kelompokkan.</span></div>
         <div className={styles.field}><label htmlFor="prompt">Pertanyaan</label><textarea id="prompt" name="prompt" minLength={5} maxLength={1000} value={prompt} onChange={(event) => { setPrompt(event.target.value); setDiagramError(""); }} required /></div>
         <p className={styles.hint}>Rumus: <code>$x^2$</code> inline atau <code>$$\frac&#123;1&#125;&#123;2&#125;$$</code> blok.</p>
