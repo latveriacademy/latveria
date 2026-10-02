@@ -21,6 +21,7 @@
     "test": "bun run --filter '@latveria/*' test",
     "check": "bun run lint && bun run typecheck && bun run test && bun run build",
     "test:integration": "bun run --filter @latveria/api test:integration",
+    "test:containers": "node scripts/verify-containers.mjs",
     "db:generate": "bun run --filter @latveria/api db:generate",
     "db:migrate": "bun run --filter @latveria/api db:migrate",
     "db:check": "bun run --filter @latveria/api db:check",

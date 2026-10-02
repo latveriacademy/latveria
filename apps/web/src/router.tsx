@@ -2,7 +2,7 @@ import { lazy, useState } from "react";
 import { isRouteErrorResponse } from "react-router";
 import { createBrowserRouter, Link, Navigate, redirect, useLoaderData, useNavigate, useRevalidator, useRouteError, useSearchParams } from "react-router";
 import { ArrowLeft, Plus, Upload, Trash2, Pencil } from "lucide-react";
-import { credentialsSchema, signupSchema, type Bank, type QuestionDetail, type Topic, type User } from "@latveria/shared";
+import { credentialsSchema, signupSchema, type Bank, type QuestionDetail, type Topic, type User, type HistoryItem, type Result } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { authClient } from "./lib/auth-client";
 import { QuestionForm } from "./app/admin/question-form";
@@ -14,10 +14,12 @@ import { ThemeToggle } from "./components/theme-toggle";
 import { Brand, PageHeading, Panel, PanelHeader, StatTile } from "./components/ui/dashboard";
 import { MathText } from "./components/math-text";
 import as from "./app/admin/admin.module.css";
+import { HistoryView, HistoryErrorView } from "./views/HistoryView";
 
 const Home = lazy(() => import("./app/landing"));
 const LatveriaOSApp = lazy(() => import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })));
 const QuestionBankTable = lazy(() => import("./app/admin/question-bank-table").then((module) => ({ default: module.QuestionBankTable })));
+const HistoryResultView = lazy(() => import("./views/HistoryResultView").then((module) => ({ default: module.HistoryResultView })));
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -80,15 +82,16 @@ export const router = createBrowserRouter([
   { path: "/", element: <Home />, errorElement: <ErrorPage /> },
   { path: "/login", element: <Login />, errorElement: <ErrorPage /> },
   { path: "/forbidden", element: <NotFound /> },
-  { path: "/dashboard", loader: () => guard("user"), element: <LatveriaOSApp />, errorElement: <ErrorPage /> },
+  { path: "/dashboard", loader: () => guard("user"), hydrateFallbackElement: <p className="p-6" role="status">Memuat dashboard…</p>, element: <LatveriaOSApp />, errorElement: <ErrorPage />, children: [
+    { path: "riwayat", loader: () => api<HistoryItem[]>("/learner/history"), element: <HistoryView />, errorElement: <HistoryErrorView /> },
+    { path: "riwayat/:id", loader: ({ params }) => api<Result>(`/learner/results/${encodeURIComponent(params.id ?? "")}`), element: <HistoryResultView />, errorElement: <HistoryErrorView /> },
+  ] },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
   { path: "/profile", element: <Navigate to="/dashboard?tab=profile" replace /> },
   { path: "/settings", element: <Navigate to="/dashboard?tab=settings" replace /> },
   { path: "/dashboard/topik", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/dashboard/topik/:slug", element: <Navigate to="/dashboard?tab=practice" replace /> },
-  { path: "/dashboard/riwayat", element: <Navigate to="/dashboard?tab=dashboard" replace /> },
-  { path: "/dashboard/riwayat/:id", element: <Navigate to="/dashboard?tab=dashboard" replace /> },
   { id: "admin", path: "/admin", loader: () => guard("admin"), hydrateFallbackElement: <p className="p-6 text-[var(--soft-ink)]" role="status">Memuat panel admin...</p>, element: <AdminLayout />, errorElement: <ErrorPage />, children: [
     { index: true, loader: () => api<Topic[]>("/admin/topics"), element: <AdminSummary /> },
     { path: "soal", loader: ({ request }) => api<Bank>(`/admin/questions?${new URL(request.url).searchParams}`), element: <BankPage /> },

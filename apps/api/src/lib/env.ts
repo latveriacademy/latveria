@@ -1,4 +1,10 @@
+import { existsSync } from "node:fs";
+import { loadEnvFile } from "node:process";
 import { z } from "zod";
+
+export function loadLocalEnv() {
+  if (existsSync(".env.local")) loadEnvFile(".env.local");
+}
 
 const databaseUrl = z.url().refine((value) => {
   if (!URL.canParse(value)) return false;

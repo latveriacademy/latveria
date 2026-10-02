@@ -44,13 +44,17 @@ Shared tidak mengimpor kode backend. Tipe request diinferensikan dari Zod (`z.in
 
 Development menggunakan proxy Vite dari port 3000 ke API 3001. Produksi menggunakan Hono untuk melayani `apps/web/dist` bersama API, dengan fallback SPA untuk deep link. Backend dijalankan via tsx; belum memerlukan bundler backend. Hosting membutuhkan proses Node/reverse proxy HTTPS, bukan Next-specific hosting.
 
+Deployment Docker memisahkan image frontend Nginx dan backend Node.js 22. Nginx melayani SPA dan mem-proxy `/api/*` ke backend pada jaringan Compose; `SERVE_WEB=false` mematikan penyajian SPA Hono pada image backend. Mode produksi Node langsung tetap dapat melayani SPA. CLI database memuat `.env.local` jika tersedia dan menerima environment runtime container; migrasi memakai migrator Drizzle tanpa dependency CLI development. GitHub Actions menjalankan pemeriksaan, integrasi PostgreSQL, dan smoke test kedua image sebelum publish GHCR. Konfigurasi dan prosedur deployment ada di `deploy/README.md`.
+
 ## Alur dan keamanan
 
 - Better Auth handler di `/api/auth/*`; signup hanya saat backend development, role client tidak diterima. Tidak ada akun admin default.
+- Profil peserta disimpan pada tabel akun melalui `GET/PUT /api/learner/profile`. Kontrak `profileSchema` mengizinkan nama, nama panggilan, target PTN, bio, dan motto; ID, email, dan role tidak diterima. Endpoint memakai ID sesi, bukan ID dari client. Migrasi `0005_wooden_lord_hawal.sql` menambah empat kolom teks tanpa mengubah identitas atau sesi lama. Foto profil menggunakan placeholder ikon; form menunggu profil server dan hanya memperbarui UI setelah simpan berhasil.
 - `/api/me` mengembalikan identitas minimum; semua endpoint learner/admin memvalidasi sesi dan role server-side. Admin tidak mengakses API peserta. Role frontend hanya untuk navigasi.
 - Operasi tulis mewajibkan Origin sama dengan `BETTER_AUTH_URL`. Tidak ada CORS wildcard; proxy dan deployment memakai satu origin.
 - Endpoint latihan hanya memilih ID, prompt, dan opsi. Sesi dapat memakai sebagian soal dari bank subtes. Backend memeriksa setiap questionId termasuk dalam subtes dan memvalidasi opsi saat submit, menilai dari kunci database, lalu menyimpan attempt/answers dalam transaksi. Frontend mewajibkan semua soal yang dipilih dijawab; kegagalan submit mempertahankan draft, sedangkan kegagalan pemuatan review dapat dicoba ulang memakai attempt ID yang sudah tersimpan.
 - Endpoint hasil mencari attempt dengan ID **dan** userId sebelum membaca kunci/pembahasan. Client tidak dapat melihat hasil peserta lain.
+- Tombol Riwayat pada header Latihan membuka `/dashboard/riwayat`; daftar dan hasil memakai loader React Router untuk `/api/learner/history` serta `/api/learner/results/:id`. Hasil di `/dashboard/riwayat/:id` menggunakan renderer soal yang sama dengan state review lokal baca-saja. Membuka hasil tidak mengirim submission atau memberi EXP; refresh dan tombol kembali mengikuti URL halaman.
 - Admin membuat soal melalui Zod shared. Penghapusan soal terpakai ditolak foreign key PostgreSQL, termasuk saat bersamaan dengan submit.
 - Migrasi Drizzle dipindah bersama metadata tanpa mengganti SQL/ID lama. RLS tanpa kebijakan publik tetap aktif; otorisasi API tetap wajib karena koneksi server dapat melewati RLS.
 

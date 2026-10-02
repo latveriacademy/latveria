@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
@@ -10,19 +10,15 @@ import { PracticeView } from './views/PracticeView';
 import { LeaderboardView } from './views/LeaderboardView';
 import { ProfileView } from './views/ProfileView';
 import { SettingsView } from './views/SettingsView';
-import { useSearchParams } from 'react-router';
+import { useMatch, useNavigation, useOutlet } from 'react-router';
 import { DashboardShell } from './components/ui/dashboard-shell';
 
 function AppShell() {
-  const { currentTab, setCurrentTab, activeSession, sidebarOpen, toggleSidebar } = useApp();
-  const [searchParams] = useSearchParams();
-
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && ['dashboard', 'practice', 'leaderboard', 'profile', 'settings'].includes(tab)) {
-      setCurrentTab(tab);
-    }
-  }, [searchParams, setCurrentTab]);
+  const { currentTab, activeSession, sidebarOpen, toggleSidebar } = useApp();
+  const outlet = useOutlet();
+  const navigation = useNavigation();
+  const historyResult = useMatch('/dashboard/riwayat/:id');
+  const immersive = !!activeSession || !!historyResult;
 
   const renderActiveView = () => {
     switch (currentTab) {
@@ -43,14 +39,14 @@ function AppShell() {
 
   return (
       <DashboardShell
-        immersive={!!activeSession}
+        immersive={immersive}
         sidebarOpen={sidebarOpen}
         onCloseSidebar={toggleSidebar}
-        sidebar={!activeSession && <Sidebar />}
-        header={!activeSession && <HeaderBar />}
-        bottomNav={!activeSession && <BottomNav />}
+        sidebar={!immersive && <Sidebar />}
+        header={!immersive && <HeaderBar />}
+        bottomNav={!immersive && <BottomNav />}
         overlays={<><LexiconDrawer /><ToastNotification /></>}
-      >{renderActiveView()}</DashboardShell>
+      >{navigation.state === 'loading' && <p role="status">Memuat…</p>}{outlet ?? renderActiveView()}</DashboardShell>
   );
 }
 

@@ -1,8 +1,7 @@
-import { loadEnvFile } from "node:process";
 import { defineConfig } from "drizzle-kit";
-import { getDatabaseUrl } from "./src/lib/env";
+import { getDatabaseUrl, loadLocalEnv } from "./src/lib/env";
 
-if (!process.argv.includes("generate")) loadEnvFile(".env.local");
+if (!process.argv.includes("generate")) loadLocalEnv();
 
 export default defineConfig({
   dialect: "postgresql",

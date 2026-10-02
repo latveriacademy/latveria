@@ -1,17 +1,135 @@
-# Latveria
+# Panduan proyek Latveria
 
-- Identitas UI: gunakan nama **latveriacademy** dan logo `apps/web/src/assets/latveria.webp`. Semua halaman memakai tema dashboard (hijau gelap/emas dan perkamen), termasuk login dan admin; landing memakai aksen hijau, bukan emas. Hindari copy dekoratif, pseudo-telemetry, jargon institusional, eyebrow, watermark, dan pola visual generik; pertahankan label tindakan, bantuan form, dan pesan validasi yang berguna. Route admin yang tidak boleh diakses peserta menampilkan halaman tidak ditemukan tanpa mengungkap kebutuhan role admin.
+Panduan ini berlaku untuk pengembang dan agen yang bekerja di repositori **latveriacademy**.
+Baca `PLAN.md` untuk arah produk dan `ARCHITECTURE.md` untuk keputusan teknis.
 
-- Produk: latihan UTBK Indonesia. Baca `PLAN.md` dan `ARCHITECTURE.md`; EXP dan skor resmi UTBK tetap konsep terpisah. PvP, peringkat kompetitif, musim, jenjang, dan lencana belum masuk MVP.
-- Monorepo Bun: `apps/web` adalah React/Vite SPA (React Router, Tailwind, shadcn/ui); `apps/api` adalah Hono/Node + Better Auth + Drizzle; `packages/shared` memuat Zod request, tipe API, dan subtes. Jangan impor database/secret ke frontend atau shared.
-- Gunakan Bun 1.3.14 dan Node 22 ≥22.12. `bun install --frozen-lockfile`, `bun run dev` menjalankan web:3000/API:3001, `bun run check` = lint → tipe semua paket → tes → build. Uji terarah via `bun run --filter @latveria/web test src/components/math-text.test.tsx` atau `bun run --filter @latveria/api test src/lib/env.test.ts`. Gunakan `bun run test` (Vitest), bukan runner `bun test`.
-- Workspace ada di `package.json`; hanya gunakan `bun.lock`. `bunfig.toml` memakai isolated linker dan tidak memasang peer framework opsional. Script dependensi native yang dipercaya tercatat di `trustedDependencies`. Bun adalah package manager/task runner; jangan memaksa `--bun` pada CLI Node tanpa verifikasi runtime.
-- Env hanya di `apps/api/.env.local` (lihat `.env.example`). Saat migrasi Next→Vite, pindahkan env lama, jangan ganti secret jika sesi lama perlu dipertahankan. `BETTER_AUTH_URL` menunjuk origin frontend. Vite mem-proxy `/api`; produksi Hono melayani `apps/web/dist` dan API pada satu origin.
-- `docker compose up -d --wait`: PostgreSQL 5433, Adminer 8080. `bun run db:migrate && bun run db:seed`. CLI memakai `node:process.loadEnvFile`; `db:generate` luring. Migrasi lama kini di `apps/api/drizzle`; jangan reset DB atau regenerate baseline. Migrasi tidak otomatis saat build/start.
-- Seed 7 subtes SNPMB 2026 + 14 soal dummy, idempoten. Empat slug lama dipindah dengan ID tetap agar history/soal admin terhubung. Sumber nama: `https://snpmb.id/utbk-snbt/informasi-umum`. `bun run db:admin <email>` hanya DB localhost.
-- Better Auth signup hanya backend development, role default user/input role ditolak. API middleware mewajibkan sesi, memisahkan `/api/learner/*` dan `/api/admin/*`, dan memeriksa Origin pada operasi tulis. Router frontend bukan batas keamanan. Tabel RLS tidak memiliki akses publik, koneksi server bisa melewati RLS.
-- Bank soal admin mendukung edit/hapus hanya sebelum soal memiliki jawaban peserta; update API mengunci baris dan cek penggunaan di transaksi. Tambah soal dan impor diakses melalui tombol Bank soal, bukan menu sidebar. Impor menerima file atau JSON yang ditempel ke editor, dengan ringkasan sebelum submit. Impor JSON batch memakai `questionImportSchema` di shared, maksimal 100 soal / 200 KB; backend memvalidasi ulang dan menyisipkan atomik. `correctAnswer` memakai indeks 0–3.
-- Latsol satu soal: jawaban draft keyed questionId, bebas lompat/skip dan diubah sampai submit. Hasil hanya pemilik attempt; prompt/options endpoint tidak boleh mengirim kunci/pembahasan. Warna correctness hanya saat review. Desktop grid sticky kanan; mobile picker dialog.
-- LaTeX source teks melalui `apps/web/src/components/math-text.tsx`: `$...$` inline, `$$...$$` blok, `trust: false`, sintaks salah fallback source. Renderer kini React client, bukan Next Server Component.
-- Integrasi backend lokal: `bun run test:integration`; butuh migrasi/seed, membersihkan data test sendiri. `bun run start` memakai tsx pada backend produksi dan SPA dist; tidak ada Next typegen.
-- Workflow yang diminta pengguna: buat issue sebelum perubahan, tautkan Project jika token mengizinkan, commit intended files, push, tutup issue setelah verifikasi. Jangan stage perubahan pengguna lain. Playwright hanya saat interaksi/visual perlu diperiksa.
+## Produk dan batas MVP
+
+- Produk ini adalah platform latihan UTBK-SNBT Indonesia.
+- EXP dan skor resmi UTBK adalah dua konsep terpisah. Jangan menyajikan EXP atau persentase jawaban benar sebagai skor resmi UTBK.
+- PvP, peringkat kompetitif, musim, jenjang, dan lencana belum masuk MVP.
+
+## Identitas dan desain antarmuka
+
+- Gunakan nama **latveriacademy** dan logo `apps/web/src/assets/latveria.webp`.
+- Dashboard, login, dan admin memakai tema hijau gelap/emas serta perkamen. Landing memakai aksen hijau, bukan emas.
+- Gunakan komponen bersama di `apps/web/src/components/ui/dashboard.tsx` dan `dashboard-shell.tsx` agar tampilan peserta dan admin konsisten.
+- Hindari copy dekoratif, telemetry palsu, jargon institusional, eyebrow hiasan, watermark, dan pola visual generik.
+- Pertahankan label tindakan, bantuan form, legenda status, dan pesan validasi yang berguna.
+- Peserta yang membuka route admin melihat **Halaman tidak ditemukan**, tanpa penjelasan tentang kebutuhan role admin.
+
+## Arsitektur dan batas paket
+
+| Lokasi | Isi dan tanggung jawab |
+| --- | --- |
+| `apps/web` | React/Vite SPA, React Router, Tailwind, shadcn/ui, dan renderer matematika |
+| `apps/api` | Hono di Node.js, Better Auth, Drizzle, database, migrasi, dan CLI |
+| `packages/shared` | Skema request Zod, tipe API, dan katalog subtes UTBK |
+
+Frontend dan shared tidak boleh mengimpor database atau secret server.
+Validasi input di backend tetap wajib, meskipun frontend sudah memvalidasinya.
+
+## Tooling dan perintah kerja
+
+Gunakan **Bun 1.3.14** dan **Node.js 22, minimal 22.12**.
+Bun adalah package manager dan task runner; runtime backend tetap Node.js.
+
+| Perintah | Kegunaan |
+| --- | --- |
+| `bun install --frozen-lockfile` | Memasang dependensi sesuai lockfile |
+| `docker compose up -d --wait` | Menjalankan PostgreSQL di port 5433 dan Adminer di port 8080 |
+| `bun run dev` | Menjalankan web di port 3000 dan API di port 3001 |
+| `bun run db:migrate` | Menerapkan migrasi database |
+| `bun run db:seed` | Mengisi katalog dan soal contoh secara idempoten |
+| `bun run db:generate` | Membuat migrasi secara luring |
+| `bun run db:admin <email>` | Menjadikan akun lokal sebagai admin; hanya untuk DB localhost |
+| `bun run test` | Menjalankan tes Vitest |
+| `bun run test:integration` | Menguji backend lokal; membutuhkan migrasi/seed dan membersihkan data tes sendiri |
+| `bun run check` | Menjalankan lint → typecheck semua paket → tes → build |
+| `bun run start` | Menjalankan backend produksi melalui tsx dan melayani SPA dist |
+
+Contoh tes terarah:
+
+```sh
+bun run --filter @latveria/web test src/components/math-text.test.tsx
+bun run --filter @latveria/api test src/lib/env.test.ts
+```
+
+- Gunakan `bun run test`, bukan runner `bun test`.
+- Definisi workspace ada di `package.json`. Gunakan hanya `bun.lock` sebagai lockfile.
+- `bunfig.toml` menggunakan isolated linker dan tidak memasang peer framework opsional.
+- Script dependensi native yang dipercaya tercatat di `trustedDependencies`.
+- Jangan memaksa CLI Node memakai `--bun` tanpa memverifikasi kompatibilitas runtime.
+- Proyek sudah memakai Vite; tidak ada Next typegen.
+
+## Environment, database, dan keamanan
+
+### Environment dan deployment
+
+- Simpan env hanya di `apps/api/.env.local`; lihat `apps/api/.env.example`.
+- `BETTER_AUTH_URL` menunjuk origin frontend, bukan port API internal.
+- Saat development, Vite meneruskan `/api` ke backend. Saat produksi, Hono melayani `apps/web/dist` dan API pada satu origin.
+- Saat memindahkan env lama dari Next ke Vite, pertahankan secret jika sesi lama perlu tetap valid.
+
+### Database
+
+- Migrasi berada di `apps/api/drizzle`. Jangan reset database atau membuat ulang baseline migrasi.
+- Migrasi tidak berjalan otomatis saat build atau start.
+- CLI menggunakan `node:process.loadEnvFile`.
+- Seed mengisi tujuh subtes SNPMB 2026 dan soal dummy secara idempoten, termasuk contoh geometri.
+- Empat slug topik lama dipindahkan dengan ID tetap agar riwayat dan soal admin tetap terhubung.
+- Acuan nama subtes: https://snpmb.id/utbk-snbt/informasi-umum.
+
+### Autentikasi dan otorisasi
+
+- Signup Better Auth hanya aktif pada backend development.
+- Role akun baru adalah `user`; input role dari client ditolak.
+- Middleware API mewajibkan sesi dan memisahkan akses `/api/learner/*` dari `/api/admin/*`.
+- Operasi tulis memeriksa header `Origin`.
+- Router frontend bukan batas keamanan. Backend tetap memeriksa role dan kepemilikan data.
+- Tabel dengan RLS tidak memiliki akses publik; koneksi server dapat melewati RLS.
+
+## Aturan fitur
+
+### Profil peserta
+
+- Baca dan simpan melalui `GET/PUT /api/learner/profile` dengan `profileSchema` shared.
+- Nama, panggilan, target PTN, bio, dan motto disimpan di database.
+- ID, email, dan role bukan field yang bisa diedit.
+- Foto profil menggunakan placeholder ikon pengguna.
+- Jangan menyimpan perubahan profil hanya di localStorage.
+
+### Bank soal dan impor admin
+
+- Soal hanya bisa diedit atau dihapus sebelum memiliki jawaban peserta.
+- Update API mengunci baris dan memeriksa penggunaan soal di dalam transaksi.
+- Tambah soal dan impor diakses dari tombol Bank soal, bukan menu sidebar.
+- Impor menerima file JSON maupun JSON yang ditempel ke editor, dengan ringkasan sebelum submit.
+- Gunakan `questionImportSchema` shared. Batasnya **100 soal dan 200 KB** per impor.
+- Backend memvalidasi ulang dan menyisipkan seluruh batch secara atomik.
+- `correctAnswer` memakai indeks 0–3.
+
+### Latihan, hasil, dan riwayat
+
+- Latihan menampilkan satu soal per layar. Draft jawaban terhubung ke questionId dan boleh diubah, dilewati, atau dipilih ulang sampai submit.
+- Endpoint soal aktif tidak mengirim kunci atau pembahasan. Indikator benar/salah hanya muncul saat review.
+- Hasil hanya boleh dibaca pemilik attempt.
+- Navigator desktop berada sticky di kanan; mobile memakai dialog pemilih soal.
+- Tombol **Riwayat** berada di kanan header halaman Latihan. Riwayat dan hasil memakai `/api/learner/history` serta `/api/learner/results/:id`.
+- Membuka kembali hasil dari riwayat adalah review baca-saja; jangan membuat attempt atau memberi EXP lagi.
+
+### Rumus dan diagram geometri
+
+- Gunakan `apps/web/src/components/math-text.tsx` untuk menampilkan sumber LaTeX: `$...$` inline dan `$$...$$` blok.
+- KaTeX harus tetap memakai `trust: false`. Sintaks salah mempertahankan teks sumber.
+- TikZ dasar memakai blok `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`, lalu dirender sebagai SVG lokal.
+- Sintaks diagram yang belum didukung menampilkan sumber beserta pesan yang jelas. Renderer ini React client, bukan Next Server Component.
+
+## Konvensi kerja dan Git
+
+- Perubahan kecil tidak memerlukan issue. Untuk pekerjaan lebih besar, buat issue terlebih dahulu dan tautkan Project jika token mengizinkan.
+- Periksa `git status`, `git diff`, dan riwayat commit sebelum commit. Stage hanya perubahan yang memang ditargetkan.
+- Jangan stage atau commit perubahan lokal pengguna yang berada di luar lingkup tugas.
+- Jalankan pemeriksaan yang sesuai dengan perubahan. Gunakan `bun run check` untuk verifikasi penuh dan tes integrasi saat mengubah API/database.
+- Push perubahan dan tutup issue setelah verifikasi, jika ada.
+- Gunakan Playwright hanya ketika interaksi atau tampilan memang perlu diperiksa.

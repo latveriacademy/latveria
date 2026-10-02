@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import { History } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { LatveriaCalculator } from '../components/LatveriaCalculator';
@@ -37,23 +39,27 @@ import {
   Maximize2
 } from 'lucide-react';
 
-export const PracticeView = () => {
+export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}) => {
   const {
-    activeSession,
-    setActiveSession,
+    activeSession: liveSession,
+    setActiveSession: setLiveSession,
     sessionResults,
     setSessionResults,
     startPractice,
     selectAnswer,
     toggleFlag,
     finishSession,
-    exitPractice,
+    exitPractice: exitLivePractice,
     openLexicon,
     topics,
     loading,
     submitting,
     submissionError
   } = useApp();
+  const [reviewState, setReviewState] = useState(reviewSession ?? null);
+  const activeSession = reviewSession ? reviewState : liveSession;
+  const setActiveSession = reviewSession ? setReviewState : setLiveSession;
+  const exitPractice = reviewSession ? onReviewExit : exitLivePractice;
 
   // Selection Screen State
   const [selectedSubject, setSelectedSubject] = useState(null);
@@ -272,14 +278,14 @@ export const PracticeView = () => {
                 <span className="text-sage">{activeSession.results?.correctCount || 0} benar</span>
                 <span className="eval-score-divider">•</span>
                 <span className="text-crimson">{activeSession.results?.incorrectCount || 0} salah</span>
-                <button
+                {currIdx < totalQ - 1 && <button
                   type="button"
                   className="btn-open-dossier-pill font-mono"
                   onClick={() => setShowSummaryModal(true)}
                 >
                   <BarChart2 size={13} />
                   <span>Ringkasan</span>
-                </button>
+                </button>}
               </div>
             ) : activeSession.mode === 'Timed Practice' ? (
               <div className={`timer-display font-mono ${timeLeft < 120 ? 'timer-warning' : ''}`}>
@@ -326,7 +332,7 @@ export const PracticeView = () => {
                   <span className="font-mono">{isFlagged ? 'Ditandai' : 'Tandai'}</span>
                 </button>
 
-                <button
+                {currIdx < totalQ - 1 && <button
                   type="button"
                   id="btn-open-submit-modal"
                   className="btn-latveria-primary btn-submit-exam font-mono"
@@ -334,13 +340,14 @@ export const PracticeView = () => {
                   onClick={() => setShowSubmitModal(true)}
                 >
                   <span>{submitting ? 'Memproses…' : activeSession.attemptId ? 'Muat hasil' : 'Kumpulkan'}</span>
-                </button>
+                </button>}
               </>
             ) : (
               <button
                 type="button"
                 className="btn-latveria-primary btn-submit-exam font-mono"
                 onClick={() => {
+                  if (onReviewStart) { onReviewStart(); return; }
                   sound.playClick();
                   startPractice(
                     activeSession.subjectId,
@@ -351,7 +358,7 @@ export const PracticeView = () => {
                 }}
               >
                 <RotateCcw size={14} />
-                <span>Ulangi latihan</span>
+                <span>{onReviewStart ? 'Latihan lagi' : 'Ulangi latihan'}</span>
               </button>
             )}
 
@@ -690,40 +697,17 @@ export const PracticeView = () => {
               </div>
 
               <div className="navigator-legend font-mono">
-                {isEvaluated ? "✓ benar · × salah · ○ kosong" : "Kosong · dijawab · ditandai"}
+                {isEvaluated ? <>
+                  <span className="legend-item text-sage"><span className="legend-indicator eval-c" aria-hidden="true" />Benar</span>
+                  <span className="legend-item text-crimson"><span className="legend-indicator eval-i" aria-hidden="true" />Salah</span>
+                  <span className="legend-item text-muted"><span className="legend-indicator eval-u" aria-hidden="true" />Kosong</span>
+                </> : <>
+                  <span className="legend-item"><span className="legend-indicator unans" aria-hidden="true" />Belum dijawab</span>
+                  <span className="legend-item"><span className="legend-indicator ans" aria-hidden="true" />Terjawab</span>
+                  <span className="legend-item"><span className="legend-indicator flag" aria-hidden="true" />Ditandai</span>
+                </>}
               </div>
 
-              {/* Bottom Quick Tools inside Navigator */}
-              <div className="navigator-tools-panel">
-                <button
-                  type="button"
-                  className="btn-tool-outline font-mono w-full"
-                  onClick={() => setShowCalculator(!showCalculator)}
-                >
-                  <Calculator size={14} />
-                  <span>{showCalculator ? 'Tutup kalkulator' : 'Kalkulator'}</span>
-                </button>
-
-                {!isEvaluated ? (
-                  <button
-                    type="button"
-                    className="btn-latveria-primary btn-gold-solid font-mono w-full"
-                    disabled={submitting}
-                    onClick={() => setShowSubmitModal(true)}
-                  >
-                    <FileCheck size={15} />
-                    <span>Kumpulkan</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-latveria-secondary font-mono w-full"
-                    onClick={exitPractice}
-                  >
-                    <span>Kembali</span>
-                  </button>
-                )}
-              </div>
             </div>
           </aside>
         </div>
@@ -909,13 +893,13 @@ export const PracticeView = () => {
                   </span>
                 </div>
 
-                <div className="result-metric-card">
+                {activeSession.results.earnedXP != null && <div className="result-metric-card">
                   <span className="card-label-mono font-mono">EXP diperoleh</span>
                   <div className="card-val-row font-serif">
                     <span className="big-score text-gold">+{activeSession.results.earnedXP}</span>
                     <span className="score-denom">XP</span>
                   </div>
-                </div>
+                </div>}
               </div>
 
               <div className="modal-actions-footer">
@@ -952,7 +936,7 @@ export const PracticeView = () => {
       <LatveriaWatermark size={380} opacity={0.03} />
 
       {/* Catalog Header */}
-      <PageHeading title="Latihan" />
+      <PageHeading title="Latihan" actions={<Button asChild variant="outline"><Link to="/dashboard/riwayat"><History />Riwayat</Link></Button>} />
 
       {/* Subject Cards Grid */}
       <ul className="subjects-grid" aria-label="Subtes latihan">

@@ -7,6 +7,8 @@ import { getDb } from "./lib/db";
 import { allowedOrigins } from "./lib/origins";
 import { bulkDeleteSchema } from "@latveria/shared";
 import { practiceAnswers, practiceAttempts, questions, topics } from "./lib/db/schema";
+import { user as accounts } from "./lib/db/auth-schema";
+import { profileSchema, type Profile } from "@latveria/shared";
 
 export const app = new Hono<{ Variables: { user: User } }>();
 app.get("/api/health", (c) => c.json({ status: "ok" }));
@@ -46,6 +48,19 @@ async function catalog(): Promise<Topic[]> {
   });
 }
 app.get("/api/learner/topics", async (c) => c.json(await catalog()));
+const profileFields = { name: accounts.name, codename: accounts.codename, targetUniversity: accounts.targetUniversity, bio: accounts.bio, motto: accounts.motto };
+app.get("/api/learner/profile", async (c) => {
+  const [profile] = await getDb().select(profileFields).from(accounts).where(eq(accounts.id, c.get("user").id));
+  if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
+  return c.json(profile satisfies Profile);
+});
+app.put("/api/learner/profile", async (c) => {
+  const parsed = profileSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0].message });
+  const [profile] = await getDb().update(accounts).set(parsed.data).where(eq(accounts.id, c.get("user").id)).returning(profileFields);
+  if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
+  return c.json(profile satisfies Profile);
+});
 app.get("/api/admin/topics", async (c) => c.json(await catalog()));
 app.get("/api/learner/summary", async (c) => {
   const [summary] = await getDb().select({ attempts: count(), tried: countDistinct(practiceAttempts.topicId), correct: sum(practiceAttempts.correctCount), answered: sum(practiceAttempts.totalCount) }).from(practiceAttempts).where(eq(practiceAttempts.userId, c.get("user").id));

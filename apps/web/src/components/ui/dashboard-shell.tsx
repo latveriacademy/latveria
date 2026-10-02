@@ -9,10 +9,7 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
   return <div className={cn("latveria-app-shell", className)} {...props}>
     <a className="skip-link" href={`#${contentId}`}>Lewati navigasi</a>
     {sidebar}
-    {/* Backdrop untuk mobile — klik untuk tutup sidebar */}
-    {sidebarOpen && onCloseSidebar && (
-      <div className="sidebar-mobile-backdrop" onClick={onCloseSidebar} aria-hidden="true" />
-    )}
+    {sidebarOpen && onCloseSidebar && <div className="sidebar-mobile-backdrop" onClick={onCloseSidebar} aria-hidden="true" />}
     <div className={`latveria-main-viewport ${immersive ? "in-exam-mode" : ""} ${!sidebarOpen ? "sidebar-collapsed" : ""}`}>
       {header}
       <main className="latveria-content-scroll" id={contentId}>{children}</main>
@@ -24,13 +21,8 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
 
 export function DashboardSidebar({ home, identity, children, collapsed = false }: { home: string; identity: ReactNode; children: ReactNode; collapsed?: boolean }) {
   return <aside className={`latveria-sidebar${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama">
-    <div className="sidebar-brand-wrapper">
-      <Brand to={home} />
-    </div>
-    <div className="sidebar-scrollable-content">
-      {identity}
-      {children}
-    </div>
+    <div className="sidebar-brand-wrapper"><Brand to={home} /></div>
+    <div className="sidebar-scrollable-content">{identity}{children}</div>
     <div className="sidebar-footer"><LogoutButton className="nav-button" /></div>
   </aside>;
 }
@@ -53,9 +45,8 @@ export function DashboardNavigation({ items, active, onSelect, mobile = false }:
 export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen = true }: { home: string; children: ReactNode; onToggleSidebar?: () => void; sidebarOpen?: boolean }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
-  return <header className="latveria-header-bar">
-
-    {/* Kiri: burger + logo berdampingan dalam satu grup */}
+  const showBrand = !sidebarOpen || !onToggleSidebar;
+  return <header className={`latveria-header-bar${showBrand ? " header-brand-present" : ""}`}>
     <div className="header-left-group">
       {onToggleSidebar && (
         <button
@@ -69,12 +60,11 @@ export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen =
           <Menu size={17} />
         </button>
       )}
-      {/* Logo header: navigasi ke home/landing page */}
+      {/* Logo header: navigasi ke landing page */}
       <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}>
-        <Brand to={home} className="header-brand" />
+        <Brand to="/" className="header-brand" />
       </div>
     </div>
-
     <div className="header-meta-group"><div className="live-clock-panel font-mono">
       <Clock size={13} className="text-gold" />
       <span className="clock-date">{now.toLocaleDateString("id-ID", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).toUpperCase()}</span>

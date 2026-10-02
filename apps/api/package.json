@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:integration": "NODE_ENV=development tsx scripts/verify-api.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx scripts/migrate-db.ts",
     "db:seed": "tsx scripts/seed-db.ts",
     "db:check": "tsx scripts/check-db.ts",
     "db:admin": "tsx scripts/promote-admin.ts"

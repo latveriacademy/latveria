@@ -1,4 +1,4 @@
-import { loadEnvFile } from "node:process";
+import { loadLocalEnv } from "../src/lib/env";
 import assert from "node:assert/strict";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
@@ -7,7 +7,7 @@ import { user } from "../src/lib/db/auth-schema";
 import { questions } from "../src/lib/db/schema";
 import { pyramidQuestion } from "@latveria/shared";
 
-loadEnvFile(".env.local");
+loadLocalEnv();
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname)) throw new Error("Verifikasi integrasi hanya untuk DB lokal.");
 const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const users: string[] = [];
@@ -27,8 +27,26 @@ async function signup() {
 }
 try {
   assert.equal((await request("/learner/topics")).status, 401);
+  assert.equal((await request("/learner/profile")).status, 401);
   const learner = await signup();
   const other = await signup();
+  const initialProfile = await (await request("/learner/profile", learner.cookie)).json();
+  assert.equal(initialProfile.name, "Penguji API");
+  assert.equal(initialProfile.bio, "");
+  const profileInput = { name: " Peserta baru ", codename: "Pelajar", targetUniversity: "UI - Matematika", bio: "Latihan setiap hari", motto: "Terus belajar" };
+  const expectedProfile = { ...profileInput, name: "Peserta baru" };
+  const profileUpdate = await request("/learner/profile", learner.cookie, profileInput, "PUT");
+  assert.equal(profileUpdate.status, 200);
+  assert.deepEqual(await profileUpdate.json(), expectedProfile);
+  assert.deepEqual(await (await request("/learner/profile", learner.cookie)).json(), expectedProfile);
+  assert.equal((await (await request("/me", learner.cookie)).json()).name, expectedProfile.name);
+  assert.equal((await (await request("/learner/profile", other.cookie)).json()).name, initialProfile.name);
+  for (const field of ["role", "id", "email"]) assert.equal((await request("/learner/profile", learner.cookie, { ...profileInput, [field]: "forbidden" }, "PUT")).status, 400);
+  assert.equal((await request("/learner/profile", learner.cookie, { ...profileInput, name: " " }, "PUT")).status, 400);
+  assert.equal((await request("/learner/profile", learner.cookie, { ...profileInput, bio: "x".repeat(501) }, "PUT")).status, 400);
+  const deniedProfile = await app.request(`${origin}/api/learner/profile`, { method: "PUT", headers: { Cookie: learner.cookie, Origin: "https://untrusted.example", "Content-Type": "application/json" }, body: JSON.stringify({ ...profileInput, name: "Changed" }) });
+  assert.equal(deniedProfile.status, 403);
+  assert.deepEqual(await (await request("/learner/profile", learner.cookie)).json(), expectedProfile);
   assert.equal((await request("/admin/questions", learner.cookie)).status, 403);
   const topics = await (await request("/learner/topics", learner.cookie)).json();
   assert.equal(topics.length, 7);
@@ -82,8 +100,15 @@ try {
   const result = await (await request(`/learner/results/${attempt.id}`, learner.cookie)).json();
   assert.equal(result.answers.length, practice.items.length);
   assert.ok("correctAnswer" in result.answers[0]);
+  const history = await (await request("/learner/history", learner.cookie)).json();
+  assert.ok(history.some((item: { id: string; total: number }) => item.id === attempt.id && item.total === result.answers.length));
+  assert.deepEqual(await (await request("/learner/history", other.cookie)).json(), []);
+  const summaryBeforeReview = await (await request("/learner/summary", learner.cookie)).json();
+  assert.equal((await request(`/learner/results/${attempt.id}`, learner.cookie)).status, 200);
+  assert.deepEqual(await (await request("/learner/summary", learner.cookie)).json(), summaryBeforeReview);
   await getDb().update(user).set({ role: "admin" }).where(eq(user.id, other.id));
   assert.equal((await request("/learner/topics", other.cookie)).status, 403);
+  assert.equal((await request("/learner/profile", other.cookie)).status, 403);
   assert.equal((await request("/admin/questions", other.cookie)).status, 200);
   const created = await request("/admin/questions", other.cookie, { topicId: topics[0].id, prompt: "Soal uji API $x^2$", options: ["1", "2", "3", "4"], correctAnswer: 3, explanation: "Penjelasan uji API.", source: "Dummy integrasi", category: "Kategori uji API" });
   assert.equal(created.status, 201);

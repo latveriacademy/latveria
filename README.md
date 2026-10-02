@@ -89,6 +89,12 @@ Gunakan `bun run test`, bukan `bun test`: proyek memakai Vitest, termasuk mockin
 
 ## Build dan produksi
 
+### Image Docker dan GitHub Actions
+
+Frontend dan backend tersedia sebagai image terpisah di GHCR. `compose.production.yaml` menarik kedua image dan menjalankan PostgreSQL persisten; Nginx menyajikan SPA serta meneruskan `/api` ke backend. GitHub Actions memeriksa kode, integrasi database, dan smoke test container sebelum publish pada `main`/tag `v*`. Panduan env server, migrasi, pull/update, dan rollback ada di [deploy/README.md](deploy/README.md).
+
+### Menjalankan langsung dengan Node
+
 ```sh
 bun run build
 bun run start
