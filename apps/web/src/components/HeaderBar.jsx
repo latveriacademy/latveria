@@ -21,7 +21,7 @@ export const HeaderBar = () => {
   };
 
   return (
-    <DashboardHeader home="/dashboard" onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen}>
+    <DashboardHeader home="/" onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen}>
         {/* Streak Pill */}
         <div
           className="header-stat-pill"

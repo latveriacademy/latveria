@@ -69,9 +69,9 @@ export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen =
           <Menu size={17} />
         </button>
       )}
-      {/* Logo header: navigasi ke landing page */}
+      {/* Logo header: navigasi ke home/landing page */}
       <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}>
-        <Brand to="/" className="header-brand" />
+        <Brand to={home} className="header-brand" />
       </div>
     </div>
 
