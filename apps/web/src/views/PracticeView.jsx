@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { History } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { LatveriaCalculator } from '../components/LatveriaCalculator';
 import { MathText } from '../components/math-text';
-import { PageHeading } from '../components/ui/dashboard';
+import { PageHeading, Panel, PanelHeader } from '../components/ui/dashboard';
+import styles from './practice-catalog.module.css';
 import { Button } from '../components/ui/button';
 import { sound } from '../utils/audioFeedback';
 import {
@@ -53,7 +53,8 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
     exitPractice: exitLivePractice,
     openLexicon,
     topics,
-    setTopics,
+    topicsLoading,
+    topicsError,
     refreshTopics,
     loading,
     submitting,
@@ -65,32 +66,32 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   const exitPractice = reviewSession ? onReviewExit : exitLivePractice;
 
   // Selection Screen State
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('Sulit');
   const [selectedMode, setSelectedMode] = useState('Practice');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [showConfigModal, setShowConfigModal] = useState(false);
 
   // Subtest Package Selection State
-  const [selectedSubtest, setSelectedSubtest] = useState(null);
+  const [params] = useSearchParams();
+  const selectedSubtest = topics.find((topic) => topic.slug === params.get('subtes'));
+  const selectedSlug = selectedSubtest?.slug;
   const [subtestPackages, setSubtestPackages] = useState([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [packagesError, setPackagesError] = useState('');
+  const [packagesRetry, setPackagesRetry] = useState(0);
+  const hasSession = Boolean(activeSession);
 
-  const handleSelectSubtest = async (subject) => {
-    setSelectedSubtest(subject);
+  useEffect(() => {
     setSelectedPackage(null);
+    if (!selectedSlug || hasSession) return;
+    const controller = new AbortController();
+    setSubtestPackages([]);
+    setPackagesError('');
     setLoadingPackages(true);
-    try {
-      const pkgs = await fetchSubtestPackages(subject.slug || subject.id);
-      setSubtestPackages(pkgs);
-      setTopics((prev) => prev.map((t) => (t.id === subject.id || t.slug === subject.slug) ? { ...t, packageCount: pkgs.length } : t));
-    } catch {
-      setSubtestPackages([]);
-    } finally {
-      setLoadingPackages(false);
-    }
-  };
+    fetchSubtestPackages(selectedSlug, controller.signal)
+      .then((packages) => { if (!controller.signal.aborted) setSubtestPackages(packages); })
+      .catch(() => { if (!controller.signal.aborted) setPackagesError('Gagal memuat paket soal. Coba lagi.'); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingPackages(false); });
+    return () => controller.abort();
+  }, [selectedSlug, hasSession, fetchSubtestPackages, packagesRetry]);
 
   // In-Session Navigator (Mobile Sheet / Drawer)
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -965,29 +966,16 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   // ========================================================
   return (
     <div className="latveria-view-container practice-catalog-view">
-      <LatveriaWatermark size={380} opacity={0.03} />
-
       {selectedSubtest ? (
-        /* Subtest Packages Selection View */
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedSubtest(null);
-                setSelectedPackage(null);
-                refreshTopics();
-              }}
-            >
-              <ChevronLeft className="size-4 mr-1" />
-              Semua subtes
-            </Button>
-          </div>
-
+        <>
+          <nav aria-label="Lokasi latihan" className={styles.breadcrumb}>
+            <Link to="/dashboard?tab=practice"><ChevronLeft size={16} />Semua subtes</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{selectedSubtest.name}</span>
+          </nav>
           <PageHeading
             title={selectedSubtest.name}
-            description={`Pilih paket soal untuk memulai latihan subtes ${selectedSubtest.name}.`}
+            description={selectedSubtest.description}
             actions={
               <Button asChild variant="outline">
                 <Link to="/dashboard/riwayat">
@@ -999,66 +987,83 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           />
 
           {loadingPackages ? (
-            <div className="flex flex-col items-center justify-center p-16 text-[var(--soft-ink)]">
-              <div className="size-8 animate-spin rounded-full border-2 border-[var(--emerald)] border-t-transparent mb-3" />
-              <p className="font-mono text-sm">Memuat paket soal…</p>
-            </div>
+            <Panel className={styles.state} role="status"><span className={styles.spinner} aria-hidden="true" /><p>Memuat paket soal…</p></Panel>
+          ) : packagesError ? (
+            <Panel className={styles.state} role="alert">
+              <AlertTriangle size={28} aria-hidden="true" />
+              <h2>Paket belum dapat dimuat</h2>
+              <p>{packagesError}</p>
+              <Button variant="outline" onClick={() => setPackagesRetry((retry) => retry + 1)}>Coba lagi</Button>
+            </Panel>
           ) : subtestPackages.length === 0 ? (
-            <div className="border border-[var(--edge)] bg-[var(--surface)] p-12 text-center rounded-lg space-y-4">
-              <p className="text-[var(--soft-ink)]">Belum ada paket soal aktif untuk subtes ini.</p>
-              <Button variant="outline" onClick={() => setSelectedSubtest(null)}>
-                Kembali ke daftar subtes
-              </Button>
-            </div>
+            <Panel className={styles.state}>
+              <BookOpen size={28} aria-hidden="true" />
+              <h2>Belum ada paket soal</h2>
+              <p>Paket aktif untuk subtes ini belum tersedia. Kamu bisa memilih subtes lain.</p>
+              <Button asChild variant="outline"><Link to="/dashboard?tab=practice">Pilih subtes lain</Link></Button>
+            </Panel>
           ) : (
-            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" aria-label={`Paket soal ${selectedSubtest.name}`}>
+            <Panel className={styles.packagePanel}>
+              <PanelHeader title="Paket soal"><span className={styles.count}>{subtestPackages.length} paket tersedia</span></PanelHeader>
+              <ul className={styles.packageList} aria-label={`Paket soal ${selectedSubtest.name}`}>
               {subtestPackages.map((pkg) => (
-                <li
-                  key={pkg.id}
-                  className="border border-[var(--edge)] bg-[var(--surface)] hover:border-[var(--emerald)] p-6 rounded-lg flex flex-col justify-between transition-all shadow-sm gap-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-[var(--surface-muted)] text-[var(--gold)] font-medium border border-[var(--edge)]">
-                        {pkg.questionCount} Soal
-                      </span>
-                      <span className="text-xs font-mono text-[var(--soft-ink)]">Paket #{pkg.order}</span>
+                <li key={pkg.id} className={styles.packageItem}>
+                  <div className={styles.packageRow}>
+                    <div className={styles.packageDetail}>
+                      <h3>{pkg.name}</h3>
+                      {pkg.description && <p>{pkg.description}</p>}
+                      <span className={styles.packageMeta}>{pkg.questionCount} soal{pkg.questionCount === 0 ? ' · Belum siap dikerjakan' : ' · Pembahasan setelah selesai'}</span>
                     </div>
-                    <h3 className="font-serif text-xl font-bold text-[var(--ink)]">{pkg.name}</h3>
-                    {pkg.description ? (
-                      <p className="text-sm text-[var(--soft-ink)] line-clamp-3">{pkg.description}</p>
-                    ) : (
-                      <p className="text-sm text-[var(--soft-ink)] italic">Paket latihan terarah subtes {selectedSubtest.name}.</p>
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t border-[var(--edge)]">
                     <Button
                       type="button"
-                      className="w-full flex items-center justify-center gap-2"
+                      variant="outline"
                       disabled={pkg.questionCount === 0 || loading}
-                      onClick={() => {
-                        setSelectedPackage(pkg);
-                        setSelectedSubject(selectedSubtest.id);
-                        setQuestionCount(pkg.questionCount);
-                        setShowConfigModal(true);
-                      }}
+                      aria-expanded={selectedPackage?.id === pkg.id}
+                      aria-controls={`setup-${pkg.id}`}
+                      aria-label={pkg.questionCount === 0 ? `${pkg.name} belum tersedia` : `${selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan latihan'} ${pkg.name}`}
+                      onClick={() => setSelectedPackage(selectedPackage?.id === pkg.id ? null : pkg)}
                     >
-                      <Play size={14} fill="currentColor" />
-                      <span>{pkg.questionCount === 0 ? 'Belum Ada Soal' : 'Mulai Latihan'}</span>
+                      {pkg.questionCount === 0 ? 'Belum tersedia' : selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan latihan'}
+                      <ChevronRight size={16} />
                     </Button>
                   </div>
+                  {selectedPackage?.id === pkg.id && (
+                    <form id={`setup-${pkg.id}`} className={styles.setup} onSubmit={(event) => {
+                      event.preventDefault();
+                      if (!loading) startPractice(selectedSubtest.id, selectedMode, pkg.questionCount, '', pkg.id);
+                    }}>
+                      <fieldset disabled={loading} className={styles.modeGroup}>
+                        <legend>Waktu pengerjaan</legend>
+                        <div className={styles.modes}>
+                          {[
+                            { id: 'Practice', title: 'Tanpa batas waktu', description: 'Kerjakan dengan ritmemu sendiri.' },
+                            { id: 'Timed Practice', title: 'Dengan batas waktu', description: `90 detik per soal · ${(pkg.questionCount * 1.5).toLocaleString('id-ID')} menit total` },
+                          ].map((mode) => (
+                            <label key={mode.id} className={styles.mode}>
+                              <input type="radio" name="practice-mode" value={mode.id} checked={selectedMode === mode.id} onChange={() => setSelectedMode(mode.id)} />
+                              <span><strong>{mode.title}</strong><span>{mode.description}</span></span>
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <div className={styles.setupFooter}>
+                        <p>Semua {pkg.questionCount} soal dalam paket akan dikerjakan.</p>
+                        <Button type="submit" disabled={loading}><Play size={16} />{loading ? 'Menyiapkan soal…' : 'Mulai latihan'}</Button>
+                      </div>
+                    </form>
+                  )}
                 </li>
               ))}
-            </ul>
+              </ul>
+            </Panel>
           )}
-        </div>
+        </>
       ) : (
         /* Subtests Catalog View */
         <>
           <PageHeading
             title="Latihan"
-            description="Pilih subtes SNPMB 2026 untuk melihat paket soal yang tersedia."
+            description="Pilih subtes, lalu pilih paket soal yang ingin kamu kerjakan."
             actions={
               <Button asChild variant="outline">
                 <Link to="/dashboard/riwayat">
@@ -1069,152 +1074,40 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             }
           />
 
-          <ul className="subjects-grid" aria-label="Subtes latihan">
-            {topics.map((subject) => {
+          {topicsLoading ? (
+            <Panel className={styles.state} role="status"><span className={styles.spinner} aria-hidden="true" /><p>Memuat subtes…</p></Panel>
+          ) : topicsError ? (
+            <Panel role="alert" className={styles.state}>
+              <AlertTriangle size={28} aria-hidden="true" />
+              <h2>Subtes belum dapat dimuat</h2>
+              <p>{topicsError}</p>
+              <Button variant="outline" onClick={refreshTopics}>Coba lagi</Button>
+            </Panel>
+          ) : topics.length === 0 ? (
+            <Panel className={styles.state} role="status"><BookOpen size={28} aria-hidden="true" /><h2>Belum ada subtes latihan</h2><p>Daftar subtes akan muncul di sini setelah tersedia.</p></Panel>
+          ) : <div className={styles.groups}>
+            {['Tes Skolastik', 'Tes Literasi'].map((category) => <Panel key={category} className={styles.subjectPanel}>
+              <PanelHeader title={category === 'Tes Skolastik' ? 'Tes Potensi Skolastik' : category} />
+              <ul className={styles.subjectList} aria-label={`Subtes ${category}`}>
+            {topics.filter((subject) => subject.category === category).map((subject) => {
               const Icon = getSubjectIcon(subject.id);
-              const isSelected = selectedSubject === subject.id;
 
               return (
-                <li
-                  key={subject.id}
-                  className={`subject-card ${isSelected ? 'active-subject' : ''}`}
-                >
-                  <div className="subject-card-top">
-                    <div className="subject-icon-box">
-                      <Icon size={22} className="text-gold" />
-                    </div>
-                    <div className="subject-code-tag font-mono">{subject.code}</div>
-                  </div>
-
-                  <div className="subject-card-body">
-                    <span className="subject-category font-mono">{subject.category}</span>
-                    <h3 className="subject-title font-serif">{subject.name}</h3>
-                    <p className="subject-description">{subject.description}</p>
-                  </div>
-
-                  {/* Progress and Package/Question Metrics */}
-                  <div className="subject-metrics-strip">
-                    <div className="s-metric">
-                      <span className="s-label font-mono">PAKET</span>
-                      <span className="s-val font-serif">{subject.packageCount ?? 0}</span>
-                    </div>
-                    <div className="s-metric">
-                      <span className="s-label font-mono">TOTAL SOAL</span>
-                      <span className="s-val font-serif">{subject.questionsCount}</span>
-                    </div>
-                  </div>
-
-                  <div className="subject-card-action">
-                    <Button
-                      type="button"
-                      className="btn-latveria-primary w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectSubtest(subject);
-                      }}
-                    >
-                      <span>Lihat Paket Soal</span>
-                      <ChevronRight size={14} />
-                    </Button>
-                  </div>
+                <li key={subject.id}>
+                  <Link className={styles.subject} to={`/dashboard?tab=practice&subtes=${encodeURIComponent(subject.slug)}`}>
+                    <Icon size={22} aria-hidden="true" />
+                    <span><span className={styles.subjectName}>{subject.name}</span><span className={styles.subjectMeta}>{subject.packageCount ?? 0} paket · {subject.questionsCount} soal</span></span>
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </Link>
                 </li>
               );
             })}
-          </ul>
+              </ul>
+            </Panel>)}
+          </div>}
         </>
       )}
 
-      {/* Configuration Modal */}
-      {showConfigModal && (
-        <div className="modal-backdrop" onClick={() => setShowConfigModal(false)}>
-          <div
-            className="config-modal-card"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-labelledby="modal-config-title"
-          >
-            <div className="modal-header">
-              <h2 id="modal-config-title" className="modal-title font-serif">
-                {selectedSubtest?.name || topics.find((s) => s.id === selectedSubject)?.name}
-              </h2>
-              {selectedPackage && (
-                <p className="text-sm font-mono text-[var(--gold)]">
-                  {selectedPackage.name} · {selectedPackage.questionCount} Soal
-                </p>
-              )}
-            </div>
-
-            <div className="modal-body-form">
-              {/* Mode Selection */}
-              <div className="form-group">
-                <label className="form-label-mono font-mono">Mode</label>
-                <div className="options-pill-grid">
-                  {[
-                    { id: 'Practice', label: 'Bebas waktu', note: 'Tanpa batas waktu' },
-                    { id: 'Timed Practice', label: 'Berwaktu', note: '90 detik per soal' },
-                    { id: 'Review', label: 'Ulasan', note: 'Lihat pembahasan' }
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      className={`pill-option-btn ${selectedMode === m.id ? 'active' : ''}`}
-                      onClick={() => setSelectedMode(m.id)}
-                    >
-                      <span className="btn-main font-mono">{m.label}</span>
-                      <span className="btn-sub">{m.note}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Difficulty Selection */}
-              <div className="form-group">
-                <label className="form-label-mono font-mono">Kesulitan</label>
-                <div className="options-pill-grid cols-3">
-                  {['Standar', 'Menengah', 'Sulit'].map((diff) => (
-                    <button
-                      key={diff}
-                      type="button"
-                      className={`pill-option-btn ${selectedDifficulty === diff ? 'active' : ''}`}
-                      onClick={() => setSelectedDifficulty(diff)}
-                    >
-                      <span className="btn-main font-mono">{diff}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-actions-footer">
-              <button
-                type="button"
-                className="btn-latveria-secondary"
-                onClick={() => setShowConfigModal(false)}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                className="btn-latveria-primary btn-gold-solid"
-                disabled={loading}
-                onClick={() => {
-                  setShowConfigModal(false);
-                  startPractice(
-                    selectedSubtest?.id || selectedSubject,
-                    selectedMode,
-                    selectedPackage ? selectedPackage.questionCount : questionCount,
-                    selectedDifficulty,
-                    selectedPackage?.id
-                  );
-                }}
-              >
-                <span>{loading ? 'Memuat…' : 'Mulai latihan'}</span>
-                <Play size={15} fill="currentColor" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

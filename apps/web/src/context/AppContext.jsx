@@ -83,15 +83,16 @@ export const AppProvider = ({ children }) => {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const tab = params.get('tab') || 'dashboard';
+  const practiceSubtest = params.get('subtes');
   const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
-  const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}`), [navigate]);
+  const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}${next === 'practice' && practiceSubtest ? `&subtes=${encodeURIComponent(practiceSubtest)}` : ''}`), [navigate, practiceSubtest]);
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
   const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (window.innerWidth <= 768) return false;
     const saved = localStorage.getItem('latveria_sidebar');
     if (saved !== null) return saved === 'true';
-    // Default: tertutup di mobile (≤768px), terbuka di desktop
-    return window.innerWidth > 768;
+    return true;
   });
   const toggleSidebar = useCallback(() => {
     setSidebarOpen(prev => {
@@ -124,6 +125,8 @@ export const AppProvider = ({ children }) => {
 
   // Real topics from API (replaces UTBK_SUBJECTS)
   const [topics, setTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
+  const [topicsError, setTopicsError] = useState('');
 
   // Learner summary from API
   const [summary, setSummary] = useState(null);
@@ -175,15 +178,17 @@ export const AppProvider = ({ children }) => {
   }, [soundEnabled]);
 
   const refreshTopics = useCallback(async () => {
+    setTopicsLoading(true);
+    setTopicsError('');
     try {
-      const res = await fetch('/api/learner/topics');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setTopics(data.map(topicToSubject));
-        }
-      }
-    } catch {}
+      const data = await api('/learner/topics');
+      if (!Array.isArray(data)) throw new Error('Respons subtes tidak valid.');
+      setTopics(data.map(topicToSubject));
+    } catch {
+      setTopicsError('Gagal memuat subtes. Coba lagi.');
+    } finally {
+      setTopicsLoading(false);
+    }
   }, []);
 
   // Synchronize with backend authenticated user + fetch topics/summary/history
@@ -232,7 +237,7 @@ export const AppProvider = ({ children }) => {
         }
       })
       .catch(() => {});
-  }, [loadProfile]);
+  }, [loadProfile, refreshTopics]);
 
   // Synchronize Theme & Body Class
   useEffect(() => {
@@ -314,12 +319,10 @@ export const AppProvider = ({ children }) => {
     setLexiconState({ isOpen: false, wordData: null });
   };
 
-  const fetchSubtestPackages = useCallback(async (slugOrId) => {
-    try {
-      return await api(`/learner/topics/${slugOrId}/packages`);
-    } catch {
-      return [];
-    }
+  const fetchSubtestPackages = useCallback(async (slugOrId, signal) => {
+    const data = await api(`/learner/topics/${slugOrId}/packages`, { signal });
+    if (!Array.isArray(data)) throw new Error('Respons paket tidak valid.');
+    return data;
   }, []);
 
   // Start a Practice Session — fetches real questions from API
@@ -393,7 +396,7 @@ export const AppProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [topics]);
+  }, [topics, setCurrentTab]);
 
   // Select Answer
   const selectAnswer = (questionIndex, optionKey) => {
@@ -608,6 +611,8 @@ export const AppProvider = ({ children }) => {
         profileError,
         loadProfile,
         topics,
+        topicsLoading,
+        topicsError,
         setTopics,
         refreshTopics,
         summary,
