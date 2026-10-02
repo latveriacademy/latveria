@@ -42,7 +42,7 @@ export function DashboardNavigation({ items, active, onSelect, mobile = false }:
   return <nav className="sidebar-nav" aria-label="Navigasi utama"><ul className="nav-list">{items.map((item) => <li key={item.id} className="nav-item"><NavigationAction item={item} active={active === item.id} onSelect={onSelect} mobile={false} /></li>)}</ul></nav>;
 }
 
-export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen = true }: { home: string; children: ReactNode; onToggleSidebar?: () => void; sidebarOpen?: boolean }) {
+export function DashboardHeader({ home = "/", children, onToggleSidebar, sidebarOpen = true }: { home?: string; children: ReactNode; onToggleSidebar?: () => void; sidebarOpen?: boolean }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
   const showBrand = !sidebarOpen || !onToggleSidebar;
@@ -60,9 +60,9 @@ export function DashboardHeader({ home, children, onToggleSidebar, sidebarOpen =
           <Menu size={17} />
         </button>
       )}
-      {/* Logo header: navigasi ke landing page */}
+      {/* Logo header: navigasi ke home/landing page */}
       <div className={`header-brand-slot${sidebarOpen ? " header-brand-hidden" : " header-brand-visible"}`}>
-        <Brand to="/" className="header-brand" />
+        <Brand to={home} className="header-brand" />
       </div>
     </div>
     <div className="header-meta-group"><div className="live-clock-panel font-mono">
