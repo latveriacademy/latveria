@@ -714,6 +714,6 @@ app.delete("/api/admin/questions/:id", async (c) => {
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) return c.json({ error: error.message || "Permintaan ditolak." }, error.status);
-  console.error("API request failed:", error.name);
+  console.error("API request failed:", error);
   return c.json({ error: "Operasi gagal. Coba lagi." }, 500);
 });
