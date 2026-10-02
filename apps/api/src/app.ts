@@ -62,6 +62,12 @@ app.use("/api/learner/*", async (c, next) => {
   await next();
 });
 
+const cachedCatalog: Map<boolean, { data: Topic[]; expiresAt: number }> = new Map();
+
+export function invalidateCatalogCache() {
+  cachedCatalog.clear();
+}
+
 async function resolveTopic(idOrSlug: string) {
   const isUuid = idSchema.safeParse(idOrSlug).success;
   const [topic] = await getDb().select().from(topics).where(isUuid ? eq(topics.id, idOrSlug) : eq(topics.slug, idOrSlug));
@@ -69,6 +75,11 @@ async function resolveTopic(idOrSlug: string) {
 }
 
 async function catalog(activeOnly = false): Promise<Topic[]> {
+  const now = Date.now();
+  const cached = cachedCatalog.get(activeOnly);
+  if (cached && now < cached.expiresAt) {
+    return cached.data;
+  }
   const [rows, pkgRows] = await Promise.all([
     getDb().select({ id: topics.id, slug: topics.slug, name: topics.name, description: topics.description, questionCount: count(questions.id) })
       .from(topics).leftJoin(questions, eq(questions.topicId, topics.id)).groupBy(topics.id),
@@ -78,10 +89,12 @@ async function catalog(activeOnly = false): Promise<Topic[]> {
       .groupBy(questionPackages.topicId),
   ]);
   const pkgMap = new Map(pkgRows.map((p) => [p.topicId, Number(p.packageCount ?? 0)]));
-  return utbkSubtests.flatMap((subtest) => {
+  const result = utbkSubtests.flatMap((subtest) => {
     const row = rows.find((topic) => topic.slug === subtest.slug);
     return row ? [{ ...row, section: subtest.section, short: subtest.short, packageCount: pkgMap.get(row.id) ?? 0 }] : [];
   });
+  cachedCatalog.set(activeOnly, { data: result, expiresAt: now + 30_000 });
+  return result;
 }
 app.get("/api/learner/topics", async (c) => c.json(await catalog(true)));
 const profileFields = { name: accounts.name, codename: accounts.codename, targetUniversity: accounts.targetUniversity, bio: accounts.bio, motto: accounts.motto };
@@ -475,7 +488,8 @@ app.get("/api/admin/questions", async (c) => {
     query.paket ? (idSchema.safeParse(query.paket).success ? eq(questions.packageId, query.paket) : eq(questionPackages.name, query.paket)) : undefined,
   );
   const db = getDb();
-  const [[total], categories, counts, pkgs] = await Promise.all([
+  const pageParam = query.halaman;
+  const [[total], categories, counts, pkgs, initialRows] = await Promise.all([
     db.select({ value: count() }).from(questions).innerJoin(topics, eq(questions.topicId, topics.id)).leftJoin(questionPackages, eq(questions.packageId, questionPackages.id)).where(where),
     db.selectDistinct({ category: questions.category }).from(questions).innerJoin(topics, eq(questions.topicId, topics.id)).where(query.subtes ? eq(topics.slug, query.subtes) : undefined).orderBy(questions.category),
     catalog(),
@@ -490,10 +504,25 @@ app.get("/api/admin/questions", async (c) => {
       .where(query.subtes ? eq(topics.slug, query.subtes) : undefined)
       .groupBy(questionPackages.id)
       .orderBy(questionPackages.order),
+    db.select({
+      id: questions.id,
+      prompt: questions.prompt,
+      category: questions.category,
+      packageId: questions.packageId,
+      packageName: questionPackages.name,
+      topic: topics.name,
+      source: questions.source,
+    }).from(questions)
+      .innerJoin(topics, eq(questions.topicId, topics.id))
+      .leftJoin(questionPackages, eq(questions.packageId, questionPackages.id))
+      .where(where)
+      .orderBy(topics.name, questions.id)
+      .limit(15)
+      .offset((pageParam - 1) * 15),
   ]);
   const pageCount = Math.max(1, Math.ceil(total.value / 15));
-  const page = Math.min(query.halaman, pageCount);
-  const rows = await db.select({
+  const page = Math.min(pageParam, pageCount);
+  const rows = page === pageParam ? initialRows : await db.select({
     id: questions.id,
     prompt: questions.prompt,
     category: questions.category,
@@ -538,6 +567,7 @@ app.post("/api/admin/questions", async (c) => {
   }
 
   const [created] = await getDb().insert(questions).values(parsed.data).returning({ id: questions.id, packageId: questions.packageId });
+  invalidateCatalogCache();
   return c.json({ id: created.id, slug: topic.slug, packageId: created.packageId }, 201);
 });
 
@@ -590,6 +620,7 @@ app.post("/api/admin/questions/import", async (c) => {
     await tx.insert(questions).values(values);
     return values.length;
   });
+  invalidateCatalogCache();
   return c.json({ count: total }, 201);
 });
 
@@ -647,6 +678,7 @@ app.put("/api/admin/questions/:id", async (c) => {
     }).where(eq(questions.id, id.data));
     return topic.slug;
   });
+  invalidateCatalogCache();
   return c.json({ id: id.data, slug: result });
 });
 
@@ -661,6 +693,7 @@ app.post("/api/admin/questions/bulk-delete", async (c) => {
     if (usage.value) throw new HTTPException(409, { message: "Penghapusan dibatalkan: ada soal terpilih yang sudah dipakai peserta. Tidak ada soal dihapus." });
     return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
   });
+  invalidateCatalogCache();
   return c.json({ count: deleted.length });
 });
 
@@ -670,6 +703,7 @@ app.delete("/api/admin/questions/:id", async (c) => {
   try {
     const deleted = await getDb().delete(questions).where(eq(questions.id, id.data)).returning({ id: questions.id });
     if (!deleted.length) throw new HTTPException(404);
+    invalidateCatalogCache();
   } catch (error) {
     if (error instanceof HTTPException) throw error;
     // FK database menolak penghapusan soal terpakai, termasuk race dengan submit.

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { utbkSubtests } from "@latveria/shared";
-import { FileCheck, Upload } from "lucide-react";
+import { FileCheck, Loader2, Upload } from "lucide-react";
 import { api } from "../../lib/api";
 import { parseQuestionImport } from "../../lib/question-import";
 import { geometryImportExample } from "../../lib/tikz-examples";
@@ -75,7 +75,7 @@ export function ImportQuestions() {
           try { const result = await api<{ count: number }>("/admin/questions/import", { method: "POST", body: JSON.stringify(batch) }); navigate(`/admin/soal?imported=${result.count}`); }
           catch (error) { setError(error instanceof Error ? error.message : "Impor gagal. Coba lagi."); }
           finally { setPending(false); }
-        }}><Upload />{pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}</Button>
+        }}>{pending ? <Loader2 className="animate-spin" /> : <Upload />}{pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}</Button>
         <Button asChild variant="ghost"><Link to="/admin/soal">Kembali ke bank soal</Link></Button>
       </div>
     </Panel>

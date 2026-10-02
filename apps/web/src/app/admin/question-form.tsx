@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { questionSchema, type QuestionDetail, type QuestionPackage } from "@latveria/shared";
 import { api } from "../../lib/api";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { MathText } from "../../components/math-text";
 import { tikzExamples } from "../../lib/tikz-examples";
@@ -197,7 +197,7 @@ export function QuestionForm({ topics, initialTopicId, question }: { topics: { i
         <div className={styles.field}><label htmlFor="source">Sumber soal</label><input id="source" name="source" maxLength={300} defaultValue={question?.source} required /></div>
       </fieldset>
       {message && <p className={styles.formError} role="alert">{message}</p>}
-      <div className={styles.formActions}><Button type="submit" disabled={pending}>{pending ? "Menyimpan..." : <><Save />{question ? "Simpan perubahan" : "Simpan soal"}</>}</Button><Button asChild variant="ghost"><Link to={question ? `/admin/soal/${question.id}` : "/admin/soal"}><ArrowLeft />Batal</Link></Button></div>
+      <div className={styles.formActions}><Button type="submit" disabled={pending}>{pending ? <><Loader2 className="animate-spin" />Menyimpan...</> : <><Save />{question ? "Simpan perubahan" : "Simpan soal"}</>}</Button><Button asChild variant="ghost"><Link to={question ? `/admin/soal/${question.id}` : "/admin/soal"}><ArrowLeft />Batal</Link></Button></div>
     </form>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Eye, Trash2, X } from "lucide-react";
+import { Eye, Loader2, Trash2, X } from "lucide-react";
 import { bulkDeleteSchema, type Bank } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
@@ -36,7 +36,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
             const next = new URLSearchParams(params); next.delete("created"); next.delete("imported"); next.delete("updated"); next.set("deleted", String(result.count)); setParams(next);
           } catch (error) { setError(error instanceof Error ? error.message : "Penghapusan gagal. Coba lagi."); }
           finally { setPending(false); }
-        }}><Trash2 aria-hidden="true" />{pending ? "Menghapus..." : "Ya, hapus"}</Button>
+        }}>{pending ? <Loader2 className="animate-spin" /> : <Trash2 aria-hidden="true" />}{pending ? "Menghapus..." : "Ya, hapus"}</Button>
       </div>
     </section>}
     {error && <p className={styles.formError} role="alert">{error}</p>}
