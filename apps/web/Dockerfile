@@ -1,0 +1,17 @@
+FROM node:22-bookworm-slim AS build
+COPY --from=oven/bun:1.3.14-slim /usr/local/bin/bun /usr/local/bin/bun
+WORKDIR /app
+COPY package.json bun.lock bunfig.toml ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+RUN bun install --frozen-lockfile --filter @latveria/web --filter @latveria/shared
+COPY apps/web ./apps/web
+COPY packages/shared ./packages/shared
+RUN bun run --filter @latveria/web build
+
+FROM nginx:1.28-alpine AS runtime
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=5 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1

@@ -44,6 +44,8 @@ Shared tidak mengimpor kode backend. Tipe request diinferensikan dari Zod (`z.in
 
 Development menggunakan proxy Vite dari port 3000 ke API 3001. Produksi menggunakan Hono untuk melayani `apps/web/dist` bersama API, dengan fallback SPA untuk deep link. Backend dijalankan via tsx; belum memerlukan bundler backend. Hosting membutuhkan proses Node/reverse proxy HTTPS, bukan Next-specific hosting.
 
+Deployment Docker memisahkan image frontend Nginx dan backend Node.js 22. Nginx melayani SPA dan mem-proxy `/api/*` ke backend pada jaringan Compose; `SERVE_WEB=false` mematikan penyajian SPA Hono pada image backend. Mode produksi Node langsung tetap dapat melayani SPA. CLI database memuat `.env.local` jika tersedia dan menerima environment runtime container; migrasi memakai migrator Drizzle tanpa dependency CLI development. GitHub Actions menjalankan pemeriksaan, integrasi PostgreSQL, dan smoke test kedua image sebelum publish GHCR. Konfigurasi dan prosedur deployment ada di `deploy/README.md`.
+
 ## Alur dan keamanan
 
 - Better Auth handler di `/api/auth/*`; signup hanya saat backend development, role client tidak diterima. Tidak ada akun admin default.

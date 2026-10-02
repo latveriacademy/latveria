@@ -1,8 +1,7 @@
-import { loadEnvFile } from "node:process";
 import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getDatabaseUrl } from "../src/lib/env";
+import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
 import { practiceAnswers, questions, topics } from "../src/lib/db/schema";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, utbkSubtests } from "@latveria/shared";
 import { geometryQuestionData } from "../src/lib/roof-question";
@@ -15,7 +14,7 @@ const legacySlugs = [
 ] as const;
 
 async function main() {
-  loadEnvFile(".env.local");
+  loadLocalEnv();
   const client = postgres(getDatabaseUrl("DATABASE_URL"), { max: 1, prepare: false, connect_timeout: 10 });
   const db = drizzle(client);
   try {
