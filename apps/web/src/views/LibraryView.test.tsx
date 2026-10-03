@@ -7,7 +7,7 @@ it("reserves Library for learning material and directs question work elsewhere",
   const html = renderToStaticMarkup(
     <MemoryRouter>
       <LibraryView />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(html).toContain("Library");

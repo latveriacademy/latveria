@@ -3,7 +3,8 @@ import { utbkSubtests, type Result } from "@latveria/shared";
 const letters = ["A", "B", "C", "D"];
 
 export function reviewResultToSession(result: Result) {
-  if (!result.answers.length || result.answers.length !== result.attempt.total) throw new Error("Hasil sesi belum lengkap. Coba muat lagi.");
+  if (!result.answers.length || result.answers.length !== result.attempt.total)
+    throw new Error("Hasil sesi belum lengkap. Coba muat lagi.");
   const subtest = utbkSubtests.find((item) => item.slug === result.attempt.slug);
   const short = subtest?.short ?? "";
   const subjectId = short === "BI" ? "LBI" : short === "EN" ? "LBE" : short;
@@ -14,8 +15,10 @@ export function reviewResultToSession(result: Result) {
     correctAnswer: letters[answer.correctAnswer],
     explanation: answer.explanation,
   }));
-  const answers = Object.fromEntries(result.answers.map((answer, index) => [index, letters[answer.selectedAnswer]]));
-  const accuracy = Math.round(result.attempt.correct / result.attempt.total * 100);
+  const answers = Object.fromEntries(
+    result.answers.map((answer, index) => [index, letters[answer.selectedAnswer]]),
+  );
+  const accuracy = Math.round((result.attempt.correct / result.attempt.total) * 100);
   const results = {
     attemptId: result.attempt.id,
     score: result.attempt.score ?? accuracy,

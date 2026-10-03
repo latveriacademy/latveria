@@ -15,13 +15,19 @@ import {
 const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
 const CACHE_TTL_MS = 60_000;
 
-function getCacheKey(userId: string, metric: Metric, subtest: Subtest, period: Period, limit: number): string {
+function getCacheKey(
+  userId: string,
+  metric: Metric,
+  subtest: Subtest,
+  period: Period,
+  limit: number,
+): string {
   return `${userId}:${metric}:${subtest}:${period}:${limit}`;
 }
 
 export async function getLeaderboard(
   currentUserId: string,
-  params: { metric: Metric; subtest: Subtest; period: Period; limit: number }
+  params: { metric: Metric; subtest: Subtest; period: Period; limit: number },
 ): Promise<LeaderboardResponse> {
   const { metric, subtest, period, limit } = params;
   const cacheKey = getCacheKey(currentUserId, metric, subtest, period, limit);
@@ -93,14 +99,16 @@ export async function getLeaderboard(
         userAttempts.map((a) => {
           const wibDate = new Date(a.submittedAt.getTime() + 7 * 60 * 60 * 1000);
           return `${wibDate.getUTCFullYear()}-${String(wibDate.getUTCMonth() + 1).padStart(2, "0")}-${String(wibDate.getUTCDate()).padStart(2, "0")}`;
-        })
+        }),
       );
 
       const now = new Date();
       const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
       const today = `${wibNow.getUTCFullYear()}-${String(wibNow.getUTCMonth() + 1).padStart(2, "0")}-${String(wibNow.getUTCDate()).padStart(2, "0")}`;
       const practicedToday = days.has(today);
-      let day = practicedToday ? today : new Date(wibNow.getTime() - 86_400_000).toISOString().slice(0, 10);
+      let day = practicedToday
+        ? today
+        : new Date(wibNow.getTime() - 86_400_000).toISOString().slice(0, 10);
       let streakDays = 0;
 
       while (days.has(day)) {
@@ -114,7 +122,12 @@ export async function getLeaderboard(
   } else {
     const periodConditions = [
       ...(topicSlug ? [eq(topics.slug, topicSlug)] : []),
-      ...(period === "all" ? [] : [gte(practiceAttempts.submittedAt, periodRange.start), lte(practiceAttempts.submittedAt, periodRange.end)]),
+      ...(period === "all"
+        ? []
+        : [
+            gte(practiceAttempts.submittedAt, periodRange.start),
+            lte(practiceAttempts.submittedAt, periodRange.end),
+          ]),
     ];
     const periodAttempts = await db
       .select({
@@ -132,7 +145,12 @@ export async function getLeaderboard(
     const answerConditions = [
       eq(practiceAnswers.isFirstAttempt, true),
       ...(topicSlug ? [eq(topics.slug, topicSlug)] : []),
-      ...(period === "all" ? [] : [gte(practiceAnswers.submittedAt, periodRange.start), lte(practiceAnswers.submittedAt, periodRange.end)]),
+      ...(period === "all"
+        ? []
+        : [
+            gte(practiceAnswers.submittedAt, periodRange.start),
+            lte(practiceAnswers.submittedAt, periodRange.end),
+          ]),
     ];
     const answers = await db
       .select({
@@ -179,7 +197,9 @@ export async function getLeaderboard(
       stats.attempts++;
       stats.periodCorrect += attempt.correctCount;
       stats.lastAt = attempt.submittedAt > stats.lastAt ? attempt.submittedAt : stats.lastAt;
-      stats.scoreTotal += attempt.score ?? Math.round((attempt.correctCount / Math.max(1, attempt.totalCount)) * 1000);
+      stats.scoreTotal +=
+        attempt.score ??
+        Math.round((attempt.correctCount / Math.max(1, attempt.totalCount)) * 1000);
       stats.scoreCount++;
     }
 
@@ -220,19 +240,21 @@ export async function getLeaderboard(
       data.accuracy = data.answered ? Math.round((data.correct / data.answered) * 10000) / 100 : 0;
       data.lastAnswerAt = stats.lastAt;
       data.totalXP = lifetime.attempts * 30 + lifetime.correct * 15;
-      data.level = learnerSummary(lifetimeAttempts.filter((attempt) => attempt.userId === userId)).level;
+      data.level = learnerSummary(
+        lifetimeAttempts.filter((attempt) => attempt.userId === userId),
+      ).level;
       data.metricValue =
         metric === "xp"
           ? stats.attempts * 30 + stats.periodCorrect * 15
           : metric === "answered"
-          ? data.answered
-          : metric === "correct"
-          ? data.correct
-          : metric === "accuracy"
-          ? data.accuracy
-          : stats.scoreCount
-          ? Math.round(stats.scoreTotal / stats.scoreCount)
-          : 0;
+            ? data.answered
+            : metric === "correct"
+              ? data.correct
+              : metric === "accuracy"
+                ? data.accuracy
+                : stats.scoreCount
+                  ? Math.round(stats.scoreTotal / stats.scoreCount)
+                  : 0;
     }
   }
 
@@ -244,7 +266,8 @@ export async function getLeaderboard(
 
   sortedUsers.sort((a, b) => {
     if (a.metricValue !== b.metricValue) return b.metricValue - a.metricValue;
-    if (a.lastAnswerAt.getTime() !== b.lastAnswerAt.getTime()) return a.lastAnswerAt.getTime() - b.lastAnswerAt.getTime();
+    if (a.lastAnswerAt.getTime() !== b.lastAnswerAt.getTime())
+      return a.lastAnswerAt.getTime() - b.lastAnswerAt.getTime();
     return a.id.localeCompare(b.id);
   });
 
@@ -272,7 +295,10 @@ export async function getLeaderboard(
   const userData = userMetrics.get(currentUserId);
 
   if (userData) {
-    const needsMore = metric === "accuracy" && userData.answered < minAnswers ? minAnswers - userData.answered : null;
+    const needsMore =
+      metric === "accuracy" && userData.answered < minAnswers
+        ? minAnswers - userData.answered
+        : null;
 
     me = {
       rank: userRankIdx >= 0 ? userRankIdx + 1 : null,

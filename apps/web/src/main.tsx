@@ -16,8 +16,14 @@ import "@fontsource/jetbrains-mono/latin-600.css";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <React.Suspense fallback={<p className="p-6 text-[var(--soft-ink)]" role="status">Memuat halaman...</p>}>
+    <React.Suspense
+      fallback={
+        <p className="p-6 text-[var(--soft-ink)]" role="status">
+          Memuat halaman...
+        </p>
+      }
+    >
       <RouterProvider router={router} />
     </React.Suspense>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

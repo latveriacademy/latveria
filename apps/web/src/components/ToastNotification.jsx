@@ -1,6 +1,6 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
-import { Award, Zap, CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
+import React from "react";
+import { useApp } from "../context/AppContext";
+import { Award, Zap, CheckCircle2, AlertCircle, Info, Sparkles } from "lucide-react";
 
 export const ToastNotification = () => {
   const { toasts } = useApp();
@@ -11,23 +11,23 @@ export const ToastNotification = () => {
     <div className="latveria-toast-container" aria-live="polite" aria-atomic="true">
       {toasts.map((toast) => {
         let Icon = Award;
-        let badgeStyle = 'gold';
+        let badgeStyle = "gold";
 
-        if (toast.type === 'xp') {
+        if (toast.type === "xp") {
           Icon = Zap;
-          badgeStyle = 'gold';
-        } else if (toast.type === 'level-up') {
+          badgeStyle = "gold";
+        } else if (toast.type === "level-up") {
           Icon = Sparkles;
-          badgeStyle = 'emerald';
-        } else if (toast.type === 'success') {
+          badgeStyle = "emerald";
+        } else if (toast.type === "success") {
           Icon = CheckCircle2;
-          badgeStyle = 'emerald';
-        } else if (toast.type === 'error') {
+          badgeStyle = "emerald";
+        } else if (toast.type === "error") {
           Icon = AlertCircle;
-          badgeStyle = 'crimson';
+          badgeStyle = "crimson";
         } else {
           Icon = Info;
-          badgeStyle = 'brass';
+          badgeStyle = "brass";
         }
 
         return (

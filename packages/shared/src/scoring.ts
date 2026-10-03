@@ -35,7 +35,7 @@ export interface LatveriaScoreResult {
 
 export function calculateLatveriaScore(
   items: ScoringItemInput[],
-  standardTimeSeconds = 90
+  standardTimeSeconds = 90,
 ): LatveriaScoreResult {
   if (!items || items.length === 0) {
     return {
@@ -79,7 +79,10 @@ export function calculateLatveriaScore(
       correctCount++;
       // Time efficiency factor
       const ratio = standardTimeSeconds / Math.max(10, timeSpent);
-      timeFactor = Math.max(0.85, Math.min(1.15, 0.88 + 0.22 * Math.min(1.2, ratio / (ratio + 0.3))));
+      timeFactor = Math.max(
+        0.85,
+        Math.min(1.15, 0.88 + 0.22 * Math.min(1.2, ratio / (ratio + 0.3))),
+      );
       timeFactor = Math.round(timeFactor * 100) / 100;
     } else {
       incorrectCount++;
@@ -106,9 +109,10 @@ export function calculateLatveriaScore(
   const averageTime = Math.round((totalTime / items.length) * 10) / 10;
 
   // Normalized score 0 - 1000
-  const normalizedScore = maxPossibleRawScore > 0
-    ? Math.min(1000, Math.max(0, Math.round((totalRawScore / maxPossibleRawScore) * 1000)))
-    : 0;
+  const normalizedScore =
+    maxPossibleRawScore > 0
+      ? Math.min(1000, Math.max(0, Math.round((totalRawScore / maxPossibleRawScore) * 1000)))
+      : 0;
 
   // Performance Index (accuracy weighted with time efficiency, max 100)
   const performanceIndex = Math.min(100, Math.round((normalizedScore / 10) * 10) / 10);

@@ -1,15 +1,27 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
 export { utbkSubtests } from "./utbk-subtests";
-export { practiceXP, levelProgress, practiceDay, practiceStreak, learnerSummary, type LearnerSummary } from "./progression";
+export {
+  practiceXP,
+  levelProgress,
+  practiceDay,
+  practiceStreak,
+  learnerSummary,
+  type LearnerSummary,
+} from "./progression";
 export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
-export { calculateLatveriaScore, type LatveriaScoreResult, type ScoringItemInput, type ItemScoreBreakdown } from "./scoring";
+export {
+  calculateLatveriaScore,
+  type LatveriaScoreResult,
+  type ScoringItemInput,
+  type ItemScoreBreakdown,
+} from "./scoring";
 
 // Leaderboard query parameters schema
 export const leaderboardQuerySchema = z.object({
-  metric: z.enum(['xp', 'answered', 'correct', 'accuracy', 'streak']).default('xp'),
-  subtest: z.enum(['all', 'PU', 'PPU', 'PBM', 'PK', 'BI', 'EN', 'PM']).default('all'),
-  period: z.enum(['daily', 'weekly', 'monthly', 'all']).default('weekly'),
+  metric: z.enum(["xp", "answered", "correct", "accuracy", "streak"]).default("xp"),
+  subtest: z.enum(["all", "PU", "PPU", "PBM", "PK", "BI", "EN", "PM"]).default("all"),
+  period: z.enum(["daily", "weekly", "monthly", "all"]).default("weekly"),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
@@ -40,15 +52,17 @@ export type LeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;
 // Leaderboard response
 export const leaderboardResponseSchema = z.object({
   entries: z.array(leaderboardEntrySchema),
-  me: z.object({
-    rank: z.number().nullable(),
-    metricValue: z.number().nullable(),
-    answered: z.number().nullable(),
-    correct: z.number().nullable(),
-    accuracy: z.number().nullable(),
-    streak: z.number().nullable(),
-    needsMore: z.number().nullable().optional(), // questions needed to appear on leaderboard
-  }).nullable(),
+  me: z
+    .object({
+      rank: z.number().nullable(),
+      metricValue: z.number().nullable(),
+      answered: z.number().nullable(),
+      correct: z.number().nullable(),
+      accuracy: z.number().nullable(),
+      streak: z.number().nullable(),
+      needsMore: z.number().nullable().optional(), // questions needed to appear on leaderboard
+    })
+    .nullable(),
   meta: z.object({
     metric: z.string(),
     subtest: z.string(),
@@ -60,23 +74,44 @@ export const leaderboardResponseSchema = z.object({
 });
 export type LeaderboardResponse = z.infer<typeof leaderboardResponseSchema>;
 export type LegacyLeaderboardEntry = {
-  rank: number; id: string; name: string; codename: string | null; level: number;
-  xp: number; score: number; accuracy: number; attemptsCount: number; totalAnswered: number;
+  rank: number;
+  id: string;
+  name: string;
+  codename: string | null;
+  level: number;
+  xp: number;
+  score: number;
+  accuracy: number;
+  attemptsCount: number;
+  totalAnswered: number;
 };
 
-export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
+export const credentialsSchema = z.object({
+  email: z.email(),
+  password: z.string().min(8).max(128),
+});
 export const signupSchema = credentialsSchema.extend({ name: z.string().trim().min(1).max(100) });
-export const profileSchema = z.object({
-  name: z.string().trim().min(1, "Nama tidak boleh kosong.").max(100, "Nama maksimal 100 karakter."),
-  codename: z.string().trim().max(100, "Nama panggilan maksimal 100 karakter."),
-  targetUniversity: z.string().trim().max(200, "Target PTN maksimal 200 karakter."),
-  bio: z.string().trim().max(500, "Bio maksimal 500 karakter."),
-  motto: z.string().trim().max(200, "Motto maksimal 200 karakter."),
-}).strict();
+export const profileSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Nama tidak boleh kosong.")
+      .max(100, "Nama maksimal 100 karakter."),
+    codename: z.string().trim().max(100, "Nama panggilan maksimal 100 karakter."),
+    targetUniversity: z.string().trim().max(200, "Target PTN maksimal 200 karakter."),
+    bio: z.string().trim().max(500, "Bio maksimal 500 karakter."),
+    motto: z.string().trim().max(200, "Motto maksimal 200 karakter."),
+  })
+  .strict();
 export type Profile = z.infer<typeof profileSchema>;
 
 export const affirmationSchema = z.object({
-  affirmation: z.string().trim().min(3, "Afirmasi minimal 3 karakter.").max(300, "Afirmasi maksimal 300 karakter."),
+  affirmation: z
+    .string()
+    .trim()
+    .min(3, "Afirmasi minimal 3 karakter.")
+    .max(300, "Afirmasi maksimal 300 karakter."),
   author: z.string().trim().max(100).optional().nullable(),
   active: z.boolean().default(true),
 });
@@ -135,7 +170,11 @@ export type SystemConfigItem = {
 };
 
 export const createPackageSchema = z.object({
-  name: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100, "Nama paket maksimal 100 karakter."),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nama paket tidak boleh kosong.")
+    .max(100, "Nama paket maksimal 100 karakter."),
   description: z.string().trim().max(500, "Deskripsi maksimal 500 karakter.").optional().nullable(),
   order: z.coerce.number().int().min(0, "Urutan harus berupa bilangan bulat positif.").default(0),
   isActive: z.boolean().default(true),
@@ -165,7 +204,10 @@ export const questionSchema = z.object({
   topicId: z.uuid(),
   packageId: z.uuid("ID paket tidak valid.").optional().nullable(),
   prompt: z.string().trim().min(5).max(1000),
-  options: z.array(z.string().trim().min(1).max(300)).length(4).refine((items) => new Set(items).size === 4, "Opsi harus berbeda."),
+  options: z
+    .array(z.string().trim().min(1).max(300))
+    .length(4)
+    .refine((items) => new Set(items).size === 4, "Opsi harus berbeda."),
   correctAnswer: z.number().int().min(0).max(3),
   explanation: z.string().trim().min(5).max(2000),
   source: z.string().trim().min(3).max(300),
@@ -173,15 +215,45 @@ export const questionSchema = z.object({
   itemWeight: z.number().int().min(10).max(300).optional(),
   calculatorAllowed: z.boolean().optional(),
 });
-export const questionImportSchema = z.object({
-  groups: z.array(z.object({
-    subtes: z.string().min(1),
-    category: z.string().trim().min(1).max(120),
-    packageId: z.uuid("ID paket tidak valid.").optional(),
-    packageName: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100).optional(),
-    questions: z.array(questionSchema.omit({ topicId: true, category: true }).refine((question) => !question.packageId, { message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.", path: ["packageId"] })).min(1).max(160),
-  }).refine((group) => !(group.packageId && group.packageName), { message: "Gunakan packageId atau packageName, jangan keduanya.", path: ["packageName"] })).min(1).max(30),
-}).refine((input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 200, "Maksimal 200 soal per impor.");
+export const questionImportSchema = z
+  .object({
+    groups: z
+      .array(
+        z
+          .object({
+            subtes: z.string().min(1),
+            category: z.string().trim().min(1).max(120),
+            packageId: z.uuid("ID paket tidak valid.").optional(),
+            packageName: z
+              .string()
+              .trim()
+              .min(1, "Nama paket tidak boleh kosong.")
+              .max(100)
+              .optional(),
+            questions: z
+              .array(
+                questionSchema
+                  .omit({ topicId: true, category: true })
+                  .refine((question) => !question.packageId, {
+                    message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.",
+                    path: ["packageId"],
+                  }),
+              )
+              .min(1)
+              .max(160),
+          })
+          .refine((group) => !(group.packageId && group.packageName), {
+            message: "Gunakan packageId atau packageName, jangan keduanya.",
+            path: ["packageName"],
+          }),
+      )
+      .min(1)
+      .max(30),
+  })
+  .refine(
+    (input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 200,
+    "Maksimal 200 soal per impor.",
+  );
 
 export const submissionSchema = z.object({
   submissionId: z.uuid().optional(),
@@ -197,14 +269,35 @@ export const bankQuerySchema = z.object({
   halaman: z.coerce.number().int().min(1).max(10000).default(1),
 });
 export const idSchema = z.uuid();
-export const bulkDeleteSchema = z.object({ ids: z.array(idSchema).min(1).max(100).refine((ids) => new Set(ids).size === ids.length, "ID soal tidak boleh berulang.") });
+export const bulkDeleteSchema = z.object({
+  ids: z
+    .array(idSchema)
+    .min(1)
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length, "ID soal tidak boleh berulang."),
+});
 export type NewQuestion = z.infer<typeof questionSchema>;
 export type QuestionImport = z.infer<typeof questionImportSchema>;
 export type Submission = z.infer<typeof submissionSchema>;
 export type User = { id: string; name: string; email: string; role: string };
-export type Topic = { id: string; slug: string; name: string; description: string; short: string; section: string; category?: string; questionCount: number; packageCount?: number };
+export type Topic = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  short: string;
+  section: string;
+  category?: string;
+  questionCount: number;
+  packageCount?: number;
+};
 export type PracticeQuestion = { id: string; prompt: string; options: string[] };
-export type ReviewQuestion = PracticeQuestion & { selectedAnswer: number; correctAnswer: number; isCorrect: number; explanation: string };
+export type ReviewQuestion = PracticeQuestion & {
+  selectedAnswer: number;
+  correctAnswer: number;
+  isCorrect: number;
+  explanation: string;
+};
 export type HistoryItem = {
   id: string;
   topic: string;
@@ -221,9 +314,23 @@ export type HistoryItem = {
   scoreBreakdown?: LatveriaScoreResult | null;
 };
 export type Result = { attempt: HistoryItem; answers: ReviewQuestion[] };
-export type QuestionDetail = NewQuestion & { id: string; topic: string; slug: string; packageName?: string | null; usage: number };
+export type QuestionDetail = NewQuestion & {
+  id: string;
+  topic: string;
+  slug: string;
+  packageName?: string | null;
+  usage: number;
+};
 export type Bank = {
-  rows: { id: string; prompt: string; category: string | null; topic: string; packageId?: string | null; packageName?: string | null; source: string }[];
+  rows: {
+    id: string;
+    prompt: string;
+    category: string | null;
+    topic: string;
+    packageId?: string | null;
+    packageName?: string | null;
+    source: string;
+  }[];
   total: number;
   page: number;
   pageCount: number;

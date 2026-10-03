@@ -10,7 +10,15 @@ import { mathImportExample, mathNotationExamples } from "./math-import-examples"
 const group = {
   subtes: "pengetahuan-kuantitatif",
   category: "Persentase",
-  questions: [{ prompt: "Berapakah seperempat dari 80?", options: ["10", "15", "20", "25"], correctAnswer: 2, explanation: "Seperempat dari 80 adalah 20.", source: "Contoh buatan tim" }],
+  questions: [
+    {
+      prompt: "Berapakah seperempat dari 80?",
+      options: ["10", "15", "20", "25"],
+      correctAnswer: 2,
+      explanation: "Seperempat dari 80 adalah 20.",
+      source: "Contoh buatan tim",
+    },
+  ],
 };
 
 describe("parseQuestionImport", () => {
@@ -18,10 +26,14 @@ describe("parseQuestionImport", () => {
     const text = JSON.stringify(mathImportExample);
     const data = parseQuestionImport(text);
     expect(data.groups[0].questions).toHaveLength(6);
-    expect(data.groups[0].questions[0].prompt).toBe(String.raw`Nilai $\displaystyle \lim_{x \to 2^+} \frac{3}{x-2}$ adalah ...`);
+    expect(data.groups[0].questions[0].prompt).toBe(
+      String.raw`Nilai $\displaystyle \lim_{x \to 2^+} \frac{3}{x-2}$ adalah ...`,
+    );
     expect(text).toContain(String.raw`\\displaystyle \\lim`);
     for (const example of mathNotationExamples) {
-      const formulas = [example.prompt, ...example.options, example.explanation].flatMap((source) => source.match(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g) ?? []);
+      const formulas = [example.prompt, ...example.options, example.explanation].flatMap(
+        (source) => source.match(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g) ?? [],
+      );
       expect(formulas.length).toBeGreaterThan(0);
       for (const formula of formulas) {
         const display = formula.startsWith("$$");
@@ -45,14 +57,22 @@ describe("parseQuestionImport", () => {
   it("ships a valid importable pyramid question with renderer-compatible TikZ under the prompt limit", () => {
     const batch = parseQuestionImport(JSON.stringify(geometryImportExample));
     expect(batch.groups[0].questions).toHaveLength(3);
-    expect(batch.groups[0].questions.map((question) => question.prompt)).toEqual([pyramidQuestion.prompt, openCuboidQuestion.prompt, cylinderTankQuestion.prompt]);
+    expect(batch.groups[0].questions.map((question) => question.prompt)).toEqual([
+      pyramidQuestion.prompt,
+      openCuboidQuestion.prompt,
+      cylinderTankQuestion.prompt,
+    ]);
     for (const question of batch.groups[0].questions) {
-      const diagram = question.prompt.match(/\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/)?.[0];
+      const diagram = question.prompt.match(
+        /\\begin\{tikzpicture\}[\s\S]*?\\end\{tikzpicture\}/,
+      )?.[0];
       expect(question.prompt.length).toBeLessThanOrEqual(1000);
       expect(diagram).toBeTruthy();
       expect(parseTikz(diagram!).shapes.length).toBeGreaterThan(0);
     }
-    expect(batch.groups[0].questions[0].options[batch.groups[0].questions[0].correctAnswer]).toBe("1.200 genteng");
+    expect(batch.groups[0].questions[0].options[batch.groups[0].questions[0].correctAnswer]).toBe(
+      "1.200 genteng",
+    );
   });
   it.each(["", "{oops}"])("rejects empty or malformed input: %s", (text) => {
     expect(() => parseQuestionImport(text)).toThrow();
@@ -63,17 +83,41 @@ describe("parseQuestionImport", () => {
     expect(() => parseQuestionImport(text)).toThrow("200 KB");
   });
   it("identifies the group for an unknown subtest", () => {
-    expect(() => parseQuestionImport(JSON.stringify({ groups: [group, { ...group, subtes: "unknown" }] }))).toThrow("grup 2");
+    expect(() =>
+      parseQuestionImport(JSON.stringify({ groups: [group, { ...group, subtes: "unknown" }] })),
+    ).toThrow("grup 2");
   });
   it("identifies the question containing invalid options", () => {
-    const invalid = { ...group, questions: [group.questions[0], { ...group.questions[0], options: ["A", "A", "B", "C"] }] };
-    expect(() => parseQuestionImport(JSON.stringify({ groups: [invalid] }))).toThrow("grup 1, soal 2");
+    const invalid = {
+      ...group,
+      questions: [group.questions[0], { ...group.questions[0], options: ["A", "A", "B", "C"] }],
+    };
+    expect(() => parseQuestionImport(JSON.stringify({ groups: [invalid] }))).toThrow(
+      "grup 1, soal 2",
+    );
   });
   it("accepts a named package or an existing package ID on a group", () => {
     const packageId = "00000000-0000-4000-8000-000000000001";
-    expect(parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageName: " Paket Persentase " }] })).groups[0].packageName).toBe("Paket Persentase");
-    expect(parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageId }] })).groups[0].packageId).toBe(packageId);
-    expect(() => parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageId, packageName: "Paket 2" }] }))).toThrow("jangan keduanya");
-    expect(() => parseQuestionImport(JSON.stringify({ groups: [{ ...group, questions: [{ ...group.questions[0], packageId }] }] }))).toThrow("bukan pada tiap soal");
+    expect(
+      parseQuestionImport(
+        JSON.stringify({ groups: [{ ...group, packageName: " Paket Persentase " }] }),
+      ).groups[0].packageName,
+    ).toBe("Paket Persentase");
+    expect(
+      parseQuestionImport(JSON.stringify({ groups: [{ ...group, packageId }] })).groups[0]
+        .packageId,
+    ).toBe(packageId);
+    expect(() =>
+      parseQuestionImport(
+        JSON.stringify({ groups: [{ ...group, packageId, packageName: "Paket 2" }] }),
+      ),
+    ).toThrow("jangan keduanya");
+    expect(() =>
+      parseQuestionImport(
+        JSON.stringify({
+          groups: [{ ...group, questions: [{ ...group.questions[0], packageId }] }],
+        }),
+      ),
+    ).toThrow("bukan pada tiap soal");
   });
 });

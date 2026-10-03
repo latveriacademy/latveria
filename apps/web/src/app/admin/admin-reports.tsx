@@ -69,7 +69,9 @@ export function AdminReports() {
         </PanelHeader>
 
         {loading ? (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>Memuat laporan…</div>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>
+            Memuat laporan…
+          </div>
         ) : error ? (
           <div style={{ padding: 32, textAlign: "center", color: "red" }}>{error}</div>
         ) : reports.length === 0 ? (
@@ -81,7 +83,15 @@ export function AdminReports() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--edge)", textAlign: "left", color: "var(--soft-ink)", fontSize: 12, textTransform: "uppercase" }}>
+                <tr
+                  style={{
+                    borderBottom: "1px solid var(--edge)",
+                    textAlign: "left",
+                    color: "var(--soft-ink)",
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                  }}
+                >
                   <th style={{ padding: "12px 16px" }}>Tanggal</th>
                   <th style={{ padding: "12px 16px" }}>Alasan</th>
                   <th style={{ padding: "12px 16px" }}>Keterangan</th>
@@ -93,11 +103,31 @@ export function AdminReports() {
               <tbody>
                 {reports.map((r) => (
                   <tr key={r.id} style={{ borderBottom: "1px solid var(--edge)" }}>
-                    <td style={{ padding: "12px 16px", whiteSpace: "nowrap", fontFamily: "var(--font-mono)", fontSize: 12 }}>
-                      {new Date(r.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    <td
+                      style={{
+                        padding: "12px 16px",
+                        whiteSpace: "nowrap",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 12,
+                      }}
+                    >
+                      {new Date(r.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </td>
                     <td style={{ padding: "12px 16px", fontWeight: 600 }}>
-                      <span style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(220, 38, 38, 0.1)", color: "#dc2626", fontSize: 12 }}>
+                      <span
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          background: "rgba(220, 38, 38, 0.1)",
+                          color: "#dc2626",
+                          fontSize: 12,
+                        }}
+                      >
                         {r.reason}
                       </span>
                     </td>
@@ -107,7 +137,13 @@ export function AdminReports() {
                     <td style={{ padding: "12px 16px" }}>
                       <Link
                         to={`/admin/soal/${r.questionId}`}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--emerald)", textDecoration: "underline" }}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          color: "var(--emerald)",
+                          textDecoration: "underline",
+                        }}
                       >
                         Pratinjau <ExternalLink size={12} />
                       </Link>
@@ -119,7 +155,9 @@ export function AdminReports() {
                       <select
                         value={r.status}
                         disabled={updatingId === r.id}
-                        onChange={(e) => handleUpdateStatus(r.id, e.target.value as ReportItem["status"])}
+                        onChange={(e) =>
+                          handleUpdateStatus(r.id, e.target.value as ReportItem["status"])
+                        }
                         style={{
                           padding: "4px 8px",
                           borderRadius: 4,

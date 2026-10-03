@@ -28,7 +28,10 @@ const profileFields = {
 };
 
 export async function getLearnerProfile(userId: string): Promise<Profile> {
-  const [profile] = await getDb().select(profileFields).from(accounts).where(eq(accounts.id, userId));
+  const [profile] = await getDb()
+    .select(profileFields)
+    .from(accounts)
+    .where(eq(accounts.id, userId));
   if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
   return profile;
 }
@@ -36,7 +39,11 @@ export async function getLearnerProfile(userId: string): Promise<Profile> {
 export async function updateLearnerProfile(userId: string, body: unknown): Promise<Profile> {
   const parsed = profileSchema.safeParse(body);
   if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0].message });
-  const [profile] = await getDb().update(accounts).set(parsed.data).where(eq(accounts.id, userId)).returning(profileFields);
+  const [profile] = await getDb()
+    .update(accounts)
+    .set(parsed.data)
+    .where(eq(accounts.id, userId))
+    .returning(profileFields);
   if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
   return profile;
 }
@@ -87,7 +94,10 @@ export async function getAffirmations(activeOnly = true): Promise<Affirmation[]>
 
 export async function createAffirmation(body: unknown) {
   const parsed = affirmationSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data afirmasi tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data afirmasi tidak valid.",
+    });
   const [created] = await getDb()
     .insert(affirmations)
     .values({
@@ -107,7 +117,10 @@ export async function updateAffirmation(idParam: string, body: unknown) {
   const id = idSchema.safeParse(idParam);
   if (!id.success) throw new HTTPException(404, { message: "ID tidak valid." });
   const parsed = affirmationSchema.partial().safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data afirmasi tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data afirmasi tidak valid.",
+    });
   const [updated] = await getDb()
     .update(affirmations)
     .set({
@@ -133,7 +146,10 @@ export async function deleteAffirmation(idParam: string) {
 
 export async function createReport(userId: string, body: unknown) {
   const parsed = questionReportSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data laporan tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data laporan tidak valid.",
+    });
   const [created] = await getDb()
     .insert(questionReports)
     .values({
@@ -183,7 +199,10 @@ export async function getReports(): Promise<QuestionReportItem[]> {
 export async function updateReportStatus(idParam: string, status: unknown) {
   const id = idSchema.safeParse(idParam);
   if (!id.success) throw new HTTPException(404, { message: "ID tidak valid." });
-  if (typeof status !== "string" || !["open", "reviewing", "resolved", "rejected"].includes(status)) {
+  if (
+    typeof status !== "string" ||
+    !["open", "reviewing", "resolved", "rejected"].includes(status)
+  ) {
     throw new HTTPException(400, { message: "Status tidak valid." });
   }
   const [updated] = await getDb()

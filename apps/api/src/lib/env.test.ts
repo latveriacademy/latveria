@@ -14,6 +14,8 @@ it.each([undefined, "", "https://user:rahasia@example.com/db", "postgres://local
   "menolak konfigurasi tidak sah tanpa membocorkan kredensial: %s",
   (value) => {
     vi.stubEnv("DATABASE_URL", value);
-    expect(() => getDatabaseUrl("DATABASE_URL")).toThrow(/^DATABASE_URL harus berisi URL PostgreSQL dengan host dan nama database\. Periksa \.env\.local\.$/);
+    expect(() => getDatabaseUrl("DATABASE_URL")).toThrow(
+      /^DATABASE_URL harus berisi URL PostgreSQL dengan host dan nama database\. Periksa \.env\.local\.$/,
+    );
   },
 );

@@ -9,7 +9,9 @@ it("keeps formula source available during lazy rendering", () => {
 });
 
 it("mempertahankan teks biasa dan LaTeX salah tanpa menjalankan HTML", () => {
-  const html = renderToStaticMarkup(<MathText>{"<script>bahaya</script> dan $\\invalidcommand$"}</MathText>);
+  const html = renderToStaticMarkup(
+    <MathText>{"<script>bahaya</script> dan $\\invalidcommand$"}</MathText>,
+  );
   expect(html).toContain("&lt;script&gt;bahaya&lt;/script&gt;");
   expect(html).toContain("$\\invalidcommand$");
   expect(html).not.toContain("<script>");
@@ -17,7 +19,12 @@ it("mempertahankan teks biasa dan LaTeX salah tanpa menjalankan HTML", () => {
 
 it("renders inline and display formulas using KaTeX", async () => {
   const { MathFormula } = await import("./math-formula");
-  const html = renderToStaticMarkup(<><MathFormula source="x^2" /><MathFormula source="\\frac{1}{2}" displayMode /></>);
+  const html = renderToStaticMarkup(
+    <>
+      <MathFormula source="x^2" />
+      <MathFormula source="\\frac{1}{2}" displayMode />
+    </>,
+  );
   expect(html).toContain("katex");
   expect(html).toContain("katex-display");
 });
@@ -35,7 +42,11 @@ it("renders supported TikZ geometry as accessible inline SVG", () => {
 
 it("renders TikZ pictures as accessible SVG once the renderer is loaded", async () => {
   const { TikzDiagram } = await import("./tikz-diagram");
-  const html = renderToStaticMarkup(<TikzDiagram source={String.raw`\begin{tikzpicture}\draw (0,0)--(4,0)--(0,3)--cycle;\node at (0,0) {$A$};\end{tikzpicture}`} />);
+  const html = renderToStaticMarkup(
+    <TikzDiagram
+      source={String.raw`\begin{tikzpicture}\draw (0,0)--(4,0)--(0,3)--cycle;\node at (0,0) {$A$};\end{tikzpicture}`}
+    />,
+  );
   expect(html).toContain("<svg");
   expect(html).toContain('role="img"');
   expect(html).toContain("katex");
@@ -44,10 +55,14 @@ it("renders TikZ pictures as accessible SVG once the renderer is loaded", async 
 
 it("uses author-provided TikZ alt text for the diagram title", async () => {
   const { TikzDiagram } = await import("./tikz-diagram");
-  const html = renderToStaticMarkup(<TikzDiagram source={String.raw`\begin{tikzpicture}
+  const html = renderToStaticMarkup(
+    <TikzDiagram
+      source={String.raw`\begin{tikzpicture}
 % alt: Segitiga ABC.
 \draw (0,0)--(4,0)--(0,3)--cycle;
-\end{tikzpicture}`} />);
+\end{tikzpicture}`}
+    />,
+  );
   expect(html).toContain("Segitiga ABC.");
 });
 

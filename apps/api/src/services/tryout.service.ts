@@ -1,10 +1,6 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import {
-  calculateLatveriaScore,
-  idSchema,
-  utbkSubtests,
-} from "@latveria/shared";
+import { calculateLatveriaScore, idSchema, utbkSubtests } from "@latveria/shared";
 import { getDb } from "../lib/db";
 import {
   questionPackages,
@@ -21,29 +17,33 @@ export async function startTryout(userId: string, packageId: string) {
   if (!pkgId.success) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
   const officialSubtests = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug)
+    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
   );
 
   const db = getDb();
   const result = await db.transaction(async (tx) => {
-    const [pkg] = await tx.select().from(questionPackages).where(
-      and(
-        eq(questionPackages.id, pkgId.data),
-        eq(questionPackages.isActive, true),
-        eq(questionPackages.published, true),
-        or(
-          eq(questionPackages.isFullTryout, true),
-          eq(questionPackages.packageType, "Simulasi"),
-          eq(questionPackages.packageType, "Simulasi Akbar")
-        )
-      )
-    );
+    const [pkg] = await tx
+      .select()
+      .from(questionPackages)
+      .where(
+        and(
+          eq(questionPackages.id, pkgId.data),
+          eq(questionPackages.isActive, true),
+          eq(questionPackages.published, true),
+          or(
+            eq(questionPackages.isFullTryout, true),
+            eq(questionPackages.packageType, "Simulasi"),
+            eq(questionPackages.packageType, "Simulasi Akbar"),
+          ),
+        ),
+      );
     if (!pkg) throw new HTTPException(404, { message: "Tryout tidak tersedia." });
 
     const tryoutTopics = pkg.isFullTryout
       ? officialSubtests
       : officialSubtests.filter((topic) => topic.id === pkg.topicId);
-    if (!tryoutTopics.length) throw new HTTPException(409, { message: "Tryout belum memiliki subtes aktif." });
+    if (!tryoutTopics.length)
+      throw new HTTPException(409, { message: "Tryout belum memiliki subtes aktif." });
 
     const [existingSession] = await tx
       .select()
@@ -52,10 +52,11 @@ export async function startTryout(userId: string, packageId: string) {
         and(
           eq(tryoutSessions.userId, userId),
           eq(tryoutSessions.packageId, pkg.id),
-          inArray(tryoutSessions.state, ["active", "break"])
-        )
+          inArray(tryoutSessions.state, ["active", "break"]),
+        ),
       );
-    if (existingSession && existingSession.questionSets !== "{}") return { session: existingSession, status: 200 as const };
+    if (existingSession && existingSession.questionSets !== "{}")
+      return { session: existingSession, status: 200 as const };
 
     const questionSets: Record<string, string[]> = {};
     const baseCount = Math.floor(pkg.targetQuestions / tryoutTopics.length);
@@ -91,7 +92,11 @@ export async function startTryout(userId: string, packageId: string) {
     if (existingSession) {
       const [session] = await tx
         .update(tryoutSessions)
-        .set({ questionSets: JSON.stringify(questionSets), currentQuestionIndex: 0, subtestStartedAt: new Date() })
+        .set({
+          questionSets: JSON.stringify(questionSets),
+          currentQuestionIndex: 0,
+          subtestStartedAt: new Date(),
+        })
         .where(eq(tryoutSessions.id, existingSession.id))
         .returning();
       return { session, status: 200 as const };
@@ -128,13 +133,18 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId)));
   if (!session) throw new HTTPException(404, { message: "Sesi tidak ditemukan." });
 
-  const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, session.packageId));
+  const [pkg] = await getDb()
+    .select()
+    .from(questionPackages)
+    .where(eq(questionPackages.id, session.packageId));
   if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
   const available = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug)
+    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
   );
-  const subtests = pkg.isFullTryout ? available : available.filter((topic) => topic.id === pkg.topicId);
+  const subtests = pkg.isFullTryout
+    ? available
+    : available.filter((topic) => topic.id === pkg.topicId);
   const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
 
   let state = session.state;
@@ -151,7 +161,13 @@ export async function getTryoutSession(userId: string, sessionId: string) {
         currentQuestionIndex: 0,
         subtestStartedAt: new Date(),
       })
-      .where(and(eq(tryoutSessions.id, session.id), eq(tryoutSessions.userId, userId), eq(tryoutSessions.state, "break")));
+      .where(
+        and(
+          eq(tryoutSessions.id, session.id),
+          eq(tryoutSessions.userId, userId),
+          eq(tryoutSessions.state, "break"),
+        ),
+      );
   }
 
   const currentSubtest = subtests[currentSubtestIndex] || subtests[0];
@@ -166,7 +182,11 @@ export async function getTryoutSession(userId: string, sessionId: string) {
       calculatorAllowed: questions.calculatorAllowed,
     })
     .from(questions)
-    .where(selectedQuestionIds.length ? and(eq(questions.topicId, currentSubtest.id), inArray(questions.id, selectedQuestionIds)) : sql`false`)
+    .where(
+      selectedQuestionIds.length
+        ? and(eq(questions.topicId, currentSubtest.id), inArray(questions.id, selectedQuestionIds))
+        : sql`false`,
+    )
     .orderBy(questions.order, questions.id);
 
   const score =
@@ -181,13 +201,13 @@ export async function getTryoutSession(userId: string, sessionId: string) {
               isCorrect: item.isCorrect,
               itemWeight: item.itemWeight,
               timeSpentSeconds: item.timeSpentSeconds,
-            }))
+            })),
           );
         })()
       : null;
 
   const currentSubtestDuration = pkg.isFullTryout
-    ? [30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30
+    ? ([30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30)
     : pkg.duration;
   const elapsed = Math.max(0, Math.floor((Date.now() - session.subtestStartedAt.getTime()) / 1000));
   const activeTimeRemaining = Math.max(0, currentSubtestDuration * 60 - elapsed);
@@ -219,7 +239,12 @@ export async function getTryoutSession(userId: string, sessionId: string) {
 export async function autosaveTryout(userId: string, sessionId: string, body: unknown) {
   const sId = idSchema.safeParse(sessionId);
   if (!sId.success) throw new HTTPException(404);
-  const b = body as { answers?: unknown; flags?: unknown; questionTimes?: unknown; currentQuestionIndex?: unknown };
+  const b = body as {
+    answers?: unknown;
+    flags?: unknown;
+    questionTimes?: unknown;
+    currentQuestionIndex?: unknown;
+  };
   if (
     !b ||
     typeof b.answers !== "object" ||
@@ -236,7 +261,13 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
   const [session] = await getDb()
     .select()
     .from(tryoutSessions)
-    .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId), eq(tryoutSessions.state, "active")));
+    .where(
+      and(
+        eq(tryoutSessions.id, sId.data),
+        eq(tryoutSessions.userId, userId),
+        eq(tryoutSessions.state, "active"),
+      ),
+    );
   if (!session) throw new HTTPException(404, { message: "Sesi tryout aktif tidak ditemukan." });
 
   const [packageInfo] = await getDb()
@@ -247,12 +278,14 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
 
   const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
   const availableSubtests = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug)
+    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
   );
-  const activeSubtest = (packageInfo.isFullTryout
-    ? availableSubtests
-    : availableSubtests.filter((topic) => topic.id === packageInfo.topicId))[session.currentSubtestIndex];
-  const allowed = new Set(activeSubtest ? questionSets[activeSubtest.id] ?? [] : []);
+  const activeSubtest = (
+    packageInfo.isFullTryout
+      ? availableSubtests
+      : availableSubtests.filter((topic) => topic.id === packageInfo.topicId)
+  )[session.currentSubtestIndex];
+  const allowed = new Set(activeSubtest ? (questionSets[activeSubtest.id] ?? []) : []);
 
   const answers = b.answers as Record<string, unknown>;
   const flags = b.flags as Record<string, unknown>;
@@ -260,20 +293,32 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
   const previouslyAllowed = new Set(
     Object.entries(questionSets)
       .slice(0, session.currentSubtestIndex + 1)
-      .flatMap(([, ids]) => ids)
+      .flatMap(([, ids]) => ids),
   );
 
   if (
     Object.entries(answers).some(
-      ([id, value]) => !previouslyAllowed.has(id) || !Number.isInteger(Number(value)) || Number(value) < 0 || Number(value) > 3
+      ([id, value]) =>
+        !previouslyAllowed.has(id) ||
+        !Number.isInteger(Number(value)) ||
+        Number(value) < 0 ||
+        Number(value) > 3,
     ) ||
-    Object.entries(flags).some(([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean") ||
+    Object.entries(flags).some(
+      ([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean",
+    ) ||
     Object.entries(times).some(
-      ([id, value]) => !previouslyAllowed.has(id) || !Number.isInteger(value) || Number(value) < 0 || Number(value) > 3600
+      ([id, value]) =>
+        !previouslyAllowed.has(id) ||
+        !Number.isInteger(value) ||
+        Number(value) < 0 ||
+        Number(value) > 3600,
     ) ||
     (b.currentQuestionIndex as number) >= Math.max(1, allowed.size)
   )
-    throw new HTTPException(400, { message: "Jawaban atau posisi soal tidak sesuai dengan sesi tryout." });
+    throw new HTTPException(400, {
+      message: "Jawaban atau posisi soal tidak sesuai dengan sesi tryout.",
+    });
 
   const updated = await getDb()
     .update(tryoutSessions)
@@ -283,9 +328,16 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
       questionTimes: JSON.stringify(times),
       currentQuestionIndex: b.currentQuestionIndex as number,
     })
-    .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId), eq(tryoutSessions.state, "active")))
+    .where(
+      and(
+        eq(tryoutSessions.id, sId.data),
+        eq(tryoutSessions.userId, userId),
+        eq(tryoutSessions.state, "active"),
+      ),
+    )
     .returning({ id: tryoutSessions.id });
-  if (!updated.length) throw new HTTPException(409, { message: "Sesi berubah. Muat ulang tryout." });
+  if (!updated.length)
+    throw new HTTPException(409, { message: "Sesi berubah. Muat ulang tryout." });
 
   return { saved: true };
 }
@@ -294,7 +346,13 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
   const sId = idSchema.safeParse(sessionId);
   if (!sId.success) throw new HTTPException(404);
   const b = body as { answers?: unknown; timeSpentByQuestion?: unknown };
-  if (!b || typeof b.answers !== "object" || Array.isArray(b.answers) || typeof b.timeSpentByQuestion !== "object" || Array.isArray(b.timeSpentByQuestion))
+  if (
+    !b ||
+    typeof b.answers !== "object" ||
+    Array.isArray(b.answers) ||
+    typeof b.timeSpentByQuestion !== "object" ||
+    Array.isArray(b.timeSpentByQuestion)
+  )
     throw new HTTPException(400, { message: "Jawaban tryout tidak valid." });
 
   return await getDb().transaction(async (tx) => {
@@ -303,13 +361,19 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       .from(tryoutSessions)
       .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId)))
       .for("update");
-    if (!session || session.state !== "active") throw new HTTPException(409, { message: "Subtes ini sudah dikumpulkan atau sesi tidak aktif." });
+    if (!session || session.state !== "active")
+      throw new HTTPException(409, {
+        message: "Subtes ini sudah dikumpulkan atau sesi tidak aktif.",
+      });
 
-    const [pkg] = await tx.select().from(questionPackages).where(eq(questionPackages.id, session.packageId));
+    const [pkg] = await tx
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, session.packageId));
     if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
     const all = (await catalog(true)).filter((topic) =>
-      utbkSubtests.some((subtest) => subtest.slug === topic.slug)
+      utbkSubtests.some((subtest) => subtest.slug === topic.slug),
     );
     const subtests = pkg.isFullTryout ? all : all.filter((topic) => topic.id === pkg.topicId);
     const current = subtests[session.currentSubtestIndex];
@@ -323,30 +387,46 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
     const previouslySubmittedIds = new Set(
       Object.entries(sets)
         .slice(0, session.currentSubtestIndex + 1)
-        .flatMap(([, questionIds]) => questionIds)
+        .flatMap(([, questionIds]) => questionIds),
     );
     const currentAnswers = Object.fromEntries(
-      ids.filter((id) => Object.hasOwn(bodyAnswers, id)).map((id) => [id, bodyAnswers[id]])
+      ids.filter((id) => Object.hasOwn(bodyAnswers, id)).map((id) => [id, bodyAnswers[id]]),
     );
     const allAnswers = { ...savedAnswers, ...currentAnswers };
 
     if (
       Object.keys(currentAnswers).length !== ids.length ||
-      ids.some((id) => !Number.isInteger(Number(currentAnswers[id])) || Number(currentAnswers[id]) < 0 || Number(currentAnswers[id]) > 3) ||
+      ids.some(
+        (id) =>
+          !Number.isInteger(Number(currentAnswers[id])) ||
+          Number(currentAnswers[id]) < 0 ||
+          Number(currentAnswers[id]) > 3,
+      ) ||
       Object.keys(bodyAnswers).some((id) => !previouslySubmittedIds.has(id)) ||
       Object.entries(times).some(
-        ([id, value]) => !previouslySubmittedIds.has(id) || !Number.isInteger(value) || Number(value) < 0 || Number(value) > 3600
+        ([id, value]) =>
+          !previouslySubmittedIds.has(id) ||
+          !Number.isInteger(value) ||
+          Number(value) < 0 ||
+          Number(value) > 3600,
       )
     )
-      throw new HTTPException(400, { message: "Jawab semua soal subtes ini sebelum mengumpulkan." });
+      throw new HTTPException(400, {
+        message: "Jawab semua soal subtes ini sebelum mengumpulkan.",
+      });
 
     const questionRows = ids.length
       ? await tx
-          .select({ id: questions.id, correctAnswer: questions.correctAnswer, itemWeight: questions.itemWeight })
+          .select({
+            id: questions.id,
+            correctAnswer: questions.correctAnswer,
+            itemWeight: questions.itemWeight,
+          })
           .from(questions)
           .where(and(eq(questions.topicId, current.id), inArray(questions.id, ids)))
       : [];
-    if (questionRows.length !== ids.length) throw new HTTPException(409, { message: "Soal tryout berubah. Muat ulang sesi." });
+    if (questionRows.length !== ids.length)
+      throw new HTTPException(409, { message: "Soal tryout berubah. Muat ulang sesi." });
 
     const result = calculateLatveriaScore(
       questionRows.map((question) => ({
@@ -354,10 +434,12 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
         isCorrect: Number(currentAnswers[question.id]) === question.correctAnswer,
         itemWeight: question.itemWeight,
         timeSpentSeconds: Number.isInteger(times[question.id]) ? Number(times[question.id]) : 60,
-      }))
+      })),
     );
 
-    const prior = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<typeof calculateLatveriaScore>["itemBreakdowns"];
+    const prior = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<
+      typeof calculateLatveriaScore
+    >["itemBreakdowns"];
     const scoreBreakdown = [...prior, ...result.itemBreakdowns];
     const aggregate = calculateLatveriaScore(
       scoreBreakdown.map((item) => ({
@@ -365,7 +447,7 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
         isCorrect: item.isCorrect,
         itemWeight: item.itemWeight,
         timeSpentSeconds: item.timeSpentSeconds,
-      }))
+      })),
     );
 
     const isLast = session.currentSubtestIndex >= subtests.length - 1;
@@ -383,7 +465,10 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       return { status: "completed" as const, score: aggregate };
     }
 
-    const [cfg] = await tx.select().from(systemConfig).where(eq(systemConfig.key, "break_duration_minutes"));
+    const [cfg] = await tx
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, "break_duration_minutes"));
     const breakMinutes = Math.max(0, Number(cfg?.value || 15));
     const breakEndsAt = new Date(Date.now() + breakMinutes * 60 * 1000);
     await tx
@@ -407,7 +492,18 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
 }
 
 export async function createAdminTryout(body: unknown) {
-  const b = body as { name?: string; topicId?: string; isFullTryout?: boolean; targetQuestions?: number; questions?: unknown[]; description?: string; category?: string; duration?: number; published?: boolean; order?: number };
+  const b = body as {
+    name?: string;
+    topicId?: string;
+    isFullTryout?: boolean;
+    targetQuestions?: number;
+    questions?: unknown[];
+    description?: string;
+    category?: string;
+    duration?: number;
+    published?: boolean;
+    order?: number;
+  };
   if (!b || !b.name || !b.topicId) {
     throw new HTTPException(400, { message: "Nama tryout dan subtes wajib diisi." });
   }
@@ -455,9 +551,10 @@ export async function createAdminTryout(body: unknown) {
       order?: number;
       subtestOrder?: number;
     };
-    await getDb().insert(questions).values(
-      (questionsList as QuestionInput[]).map(
-        (q, idx: number) => ({
+    await getDb()
+      .insert(questions)
+      .values(
+        (questionsList as QuestionInput[]).map((q, idx: number) => ({
           topicId: topic.id,
           packageId: pkg.id,
           prompt: q.prompt,
@@ -470,9 +567,8 @@ export async function createAdminTryout(body: unknown) {
           calculatorAllowed: Boolean(q.calculatorAllowed),
           order: q.order ?? idx + 1,
           subtestOrder: q.subtestOrder ?? 1,
-        })
-      )
-    );
+        })),
+      );
   }
 
   invalidateCatalogCache();

@@ -23,10 +23,10 @@ import {
 export const packageHandler = new Hono<AppEnv>();
 
 packageHandler.get("/api/admin/subtests/:subtestId/packages", async (c) =>
-  c.json(await getSubtestPackages(c.req.param("subtestId")))
+  c.json(await getSubtestPackages(c.req.param("subtestId"))),
 );
 packageHandler.get("/api/admin/topics/:subtestId/packages", async (c) =>
-  c.json(await getSubtestPackages(c.req.param("subtestId")))
+  c.json(await getSubtestPackages(c.req.param("subtestId"))),
 );
 
 packageHandler.post("/api/admin/subtests/:subtestId/packages", async (c) => {
@@ -63,7 +63,10 @@ packageHandler.post("/api/admin/packages/:packageId/questions", async (c) => {
   const pId = idSchema.safeParse(c.req.param("packageId"));
   if (!pId.success) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
   const parsed = assignQuestionToPackageSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data soal tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data soal tidak valid.",
+    });
   return c.json(await addQuestionToPackage(pId.data, parsed.data.questionId));
 });
 
@@ -71,7 +74,10 @@ async function handleMove(c: import("hono").Context) {
   const qId = idSchema.safeParse(c.req.param("questionId"));
   if (!qId.success) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
   const parsed = moveQuestionPackageSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data paket tujuan tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data paket tujuan tidak valid.",
+    });
   return c.json(await moveQuestionPackage(qId.data, parsed.data.packageId));
 }
 
@@ -81,7 +87,8 @@ packageHandler.post("/api/admin/questions/:questionId/package", handleMove);
 packageHandler.delete("/api/admin/packages/:packageId/questions/:questionId", async (c) => {
   const pId = idSchema.safeParse(c.req.param("packageId"));
   const qId = idSchema.safeParse(c.req.param("questionId"));
-  if (!pId.success || !qId.success) throw new HTTPException(404, { message: "Paket atau soal tidak ditemukan." });
+  if (!pId.success || !qId.success)
+    throw new HTTPException(404, { message: "Paket atau soal tidak ditemukan." });
   return c.json(await removeQuestionFromPackage(pId.data, qId.data));
 });
 

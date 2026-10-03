@@ -4,7 +4,11 @@ import postgres from "postgres";
 import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
 
 loadLocalEnv();
-const client = postgres(getDatabaseUrl("DATABASE_MIGRATION_URL"), { max: 1, prepare: false, connect_timeout: 10 });
+const client = postgres(getDatabaseUrl("DATABASE_MIGRATION_URL"), {
+  max: 1,
+  prepare: false,
+  connect_timeout: 10,
+});
 try {
   await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
   console.info("Migrasi database selesai.");

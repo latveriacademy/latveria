@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useApp } from '../context/AppContext';
-import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
+import React, { useState, useEffect, useCallback } from "react";
+import { useApp } from "../context/AppContext";
+import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
 import {
   Flame,
   Award,
@@ -17,11 +17,11 @@ import {
   Clock,
   ChevronRight,
   RotateCcw,
-} from 'lucide-react';
-import { sound } from '../utils/audioFeedback';
-import { Panel, PanelHeader, ProgressBar, StatTile } from '../components/ui/dashboard';
-import { Button } from '../components/ui/button';
-import { AnimatedNumber, FadeUp, StaggerContainer } from '../lib/motion';
+} from "lucide-react";
+import { sound } from "../utils/audioFeedback";
+import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
+import { Button } from "../components/ui/button";
+import { AnimatedNumber, FadeUp, StaggerContainer } from "../lib/motion";
 
 // --- UTBK Countdown Hook ---
 function useUtbkCountdown() {
@@ -29,7 +29,7 @@ function useUtbkCountdown() {
   const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
-    fetch('/api/learner/config')
+    fetch("/api/learner/config")
       .then((res) => (res.ok ? res.json() : null))
       .then((cfg) => {
         if (cfg?.utbk_target_date) {
@@ -69,7 +69,7 @@ function useAffirmation() {
   const [pool, setPool] = useState([]);
 
   useEffect(() => {
-    fetch('/api/learner/affirmations')
+    fetch("/api/learner/affirmations")
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -92,7 +92,7 @@ function useAffirmation() {
 
 export const DashboardView = () => {
   const { user, topics, setCurrentTab, startPractice } = useApp();
-  const [chartMetric, setChartMetric] = useState('questions'); // 'questions' | 'xp' | 'accuracy'
+  const [chartMetric, setChartMetric] = useState("questions"); // 'questions' | 'xp' | 'accuracy'
   const countdown = useUtbkCountdown();
   const { affirmation, rotate, hasPool } = useAffirmation();
 
@@ -103,12 +103,12 @@ export const DashboardView = () => {
 
   const handleLaunchTraining = (subjectId) => {
     sound.playClick();
-    const targetId = subjectId || (topics[0]?.id ?? 'PU');
-    startPractice(targetId, 'Practice', 10, 'Latverian Elite');
+    const targetId = subjectId || (topics[0]?.id ?? "PU");
+    startPractice(targetId, "Practice", 10, "Latverian Elite");
   };
 
   // Format countdown segment
-  const pad = (n) => String(n).padStart(2, '0');
+  const pad = (n) => String(n).padStart(2, "0");
 
   return (
     <div className="latveria-view-container dashboard-view">
@@ -117,7 +117,6 @@ export const DashboardView = () => {
 
       {/* Hero: Personal Academic Command Center */}
       <section className="command-hero-card motion-fade-up">
-
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
@@ -126,16 +125,29 @@ export const DashboardView = () => {
 
             {/* Quick Metrics Bar */}
             <div className="hero-metrics-grid">
-              <StatTile label="STATUS LEVEL" value={`LEVEL ${user.level < 10 ? `0${user.level}` : user.level}`}>
+              <StatTile
+                label="STATUS LEVEL"
+                value={`LEVEL ${user.level < 10 ? `0${user.level}` : user.level}`}
+              >
                 <span className="metric-sub-note">{user.title}</span>
               </StatTile>
 
-              <StatTile label="ACTIVE STREAK" value={user.streakDays} icon={<Flame size={20} className="text-orange" />}>
+              <StatTile
+                label="ACTIVE STREAK"
+                value={user.streakDays}
+                icon={<Flame size={20} className="text-orange" />}
+              >
                 <span className="metric-sub-note">Konsistensi protokol terjaga</span>
               </StatTile>
 
-              <StatTile label="GLOBAL ACCURACY" value={user.accuracy} icon={<Target size={20} className="text-sage" />}>
-                <span className="metric-sub-note">Berdasarkan {user.questionsCompleted} butir soal</span>
+              <StatTile
+                label="GLOBAL ACCURACY"
+                value={user.accuracy}
+                icon={<Target size={20} className="text-sage" />}
+              >
+                <span className="metric-sub-note">
+                  Berdasarkan {user.questionsCompleted} butir soal
+                </span>
               </StatTile>
             </div>
 
@@ -146,15 +158,24 @@ export const DashboardView = () => {
                   <span className="text-gold font-bold">
                     <AnimatedNumber value={user.currentXP} />
                   </span>
-                  <span className="text-muted"> / <AnimatedNumber value={user.nextLevelXP} /> XP</span>
+                  <span className="text-muted">
+                    {" "}
+                    / <AnimatedNumber value={user.nextLevelXP} /> XP
+                  </span>
                 </div>
                 <div className="xp-right font-mono">
                   <span>
-                    <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP MENUJU LEVEL {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}
+                    <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP MENUJU LEVEL{" "}
+                    {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}
                   </span>
                 </div>
               </div>
-              <ProgressBar value={xpPercentage} label="EXP" className="hero-progress-track" fillClassName="hero-progress-fill" />
+              <ProgressBar
+                value={xpPercentage}
+                label="EXP"
+                className="hero-progress-track"
+                fillClassName="hero-progress-fill"
+              />
             </div>
           </div>
 
@@ -169,7 +190,7 @@ export const DashboardView = () => {
                 type="button"
                 id="btn-quick-training"
                 className="btn-latveria-primary w-full"
-                onClick={() => handleLaunchTraining('PU')}
+                onClick={() => handleLaunchTraining("PU")}
               >
                 <Play size={16} fill="currentColor" />
                 <span>Gas drilling</span>
@@ -179,7 +200,7 @@ export const DashboardView = () => {
                 type="button"
                 id="btn-goto-practice"
                 className="btn-latveria-secondary w-full"
-                onClick={() => setCurrentTab('practice')}
+                onClick={() => setCurrentTab("practice")}
               >
                 <span>Pilih subtes</span>
                 <ArrowUpRight size={15} />
@@ -192,8 +213,7 @@ export const DashboardView = () => {
       {/* Main Grid: Affirmation + UTBK Countdown & Weekly Analytics */}
       <div className="dashboard-grid-dual">
         {/* Left Column: Affirmation + UTBK Countdown */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {/* UTBK Countdown Panel */}
           <Panel className="utbk-countdown-panel">
             <PanelHeader title="Hitung mundur UTBK">
@@ -201,14 +221,16 @@ export const DashboardView = () => {
             </PanelHeader>
             {countdown ? (
               countdown.passed ? (
-                <p className="font-mono text-sm text-[var(--soft-ink)] px-4 pb-4">UTBK telah berlangsung. Semoga berhasil!</p>
+                <p className="font-mono text-sm text-[var(--soft-ink)] px-4 pb-4">
+                  UTBK telah berlangsung. Semoga berhasil!
+                </p>
               ) : (
                 <div className="utbk-countdown-grid font-mono">
                   {[
-                    { label: 'HARI', value: countdown.days },
-                    { label: 'JAM', value: pad(countdown.hours) },
-                    { label: 'MENIT', value: pad(countdown.minutes) },
-                    { label: 'DETIK', value: pad(countdown.seconds) },
+                    { label: "HARI", value: countdown.days },
+                    { label: "JAM", value: pad(countdown.hours) },
+                    { label: "MENIT", value: pad(countdown.minutes) },
+                    { label: "DETIK", value: pad(countdown.seconds) },
                   ].map((seg) => (
                     <div key={seg.label} className="countdown-seg">
                       <span className="countdown-num font-serif">{seg.value}</span>
@@ -232,7 +254,10 @@ export const DashboardView = () => {
                 <button
                   type="button"
                   className="btn-icon-minimal font-mono"
-                  onClick={() => { sound.playClick(); rotate(); }}
+                  onClick={() => {
+                    sound.playClick();
+                    rotate();
+                  }}
                   title="Afirmasi berikutnya"
                 >
                   <RotateCcw size={14} />
@@ -260,27 +285,26 @@ export const DashboardView = () => {
         {/* Right Column: Weekly Academic Progress */}
         <Panel className="analytics-panel">
           <PanelHeader title="Perkembangan mingguan">
-
             {/* Metric Switcher Toggles */}
             <div className="chart-metric-switch font-mono">
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === 'questions' ? 'active' : ''}`}
-                onClick={() => setChartMetric('questions')}
+                className={`metric-btn ${chartMetric === "questions" ? "active" : ""}`}
+                onClick={() => setChartMetric("questions")}
               >
                 SOAL
               </button>
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === 'xp' ? 'active' : ''}`}
-                onClick={() => setChartMetric('xp')}
+                className={`metric-btn ${chartMetric === "xp" ? "active" : ""}`}
+                onClick={() => setChartMetric("xp")}
               >
                 XP
               </button>
               <button
                 type="button"
-                className={`metric-btn ${chartMetric === 'accuracy' ? 'active' : ''}`}
-                onClick={() => setChartMetric('accuracy')}
+                className={`metric-btn ${chartMetric === "accuracy" ? "active" : ""}`}
+                onClick={() => setChartMetric("accuracy")}
               >
                 AKURASI %
               </button>
@@ -295,7 +319,11 @@ export const DashboardView = () => {
                 const heightPercent = maxMetricVal > 0 ? Math.round((val / maxMetricVal) * 100) : 0;
 
                 return (
-                  <div key={idx} className="chart-day-column" title={`${item.fullDay}: ${val} ${chartMetric}`}>
+                  <div
+                    key={idx}
+                    className="chart-day-column"
+                    title={`${item.fullDay}: ${val} ${chartMetric}`}
+                  >
                     <div className="bar-track">
                       <div
                         className="bar-fill transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -315,7 +343,10 @@ export const DashboardView = () => {
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">TOTAL MINGGU INI</span>
               <span className="stat-val font-serif">
-                <AnimatedNumber value={user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)} /> Soal
+                <AnimatedNumber
+                  value={user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)}
+                />{" "}
+                Soal
               </span>
             </div>
             <div className="chart-stat-tile">
@@ -324,7 +355,9 @@ export const DashboardView = () => {
             </div>
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">AKUMULASI XP</span>
-              <span className="stat-val font-serif text-gold">+{user.weeklyXP.toLocaleString()} EXP</span>
+              <span className="stat-val font-serif text-gold">
+                +{user.weeklyXP.toLocaleString()} EXP
+              </span>
             </div>
           </div>
         </Panel>
@@ -377,10 +410,15 @@ export const DashboardView = () => {
 
           <div className="activity-stream-list">
             {user.recentActivities.length === 0 ? (
-              <p className="text-muted font-sans text-sm px-1 py-3">Belum ada riwayat latihan. Gas drilling pertamamu!</p>
+              <p className="text-muted font-sans text-sm px-1 py-3">
+                Belum ada riwayat latihan. Gas drilling pertamamu!
+              </p>
             ) : (
               user.recentActivities.map((act) => (
-                <div key={act.id} className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]">
+                <div
+                  key={act.id}
+                  className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]"
+                >
                   <div className="activity-sub-badge font-mono">{act.code}</div>
                   <div className="activity-body">
                     <div className="activity-title-text font-sans">{act.title}</div>

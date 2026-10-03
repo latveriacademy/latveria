@@ -72,7 +72,13 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
     const [pkg] = await getDb()
       .select()
       .from(questionPackages)
-      .where(and(eq(questionPackages.id, pkgId.data), eq(questionPackages.topicId, topic.id), eq(questionPackages.isActive, true)));
+      .where(
+        and(
+          eq(questionPackages.id, pkgId.data),
+          eq(questionPackages.topicId, topic.id),
+          eq(questionPackages.isActive, true),
+        ),
+      );
     if (!pkg) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
     const items = await getDb()
@@ -99,14 +105,20 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
   return { topic, items };
 }
 
-export async function submitPractice(userId: string, slug: string, rawPackageParam: string | undefined, body: unknown) {
+export async function submitPractice(
+  userId: string,
+  slug: string,
+  rawPackageParam: string | undefined,
+  body: unknown,
+) {
   const parsed = submissionSchema.safeParse(body);
   if (!parsed.success) throw new HTTPException(400, { message: "Jawaban tidak valid." });
   const submission = parsed.data;
 
-  const targetPackageId = rawPackageParam && idSchema.safeParse(rawPackageParam).success
-    ? rawPackageParam
-    : submission.packageId ?? undefined;
+  const targetPackageId =
+    rawPackageParam && idSchema.safeParse(rawPackageParam).success
+      ? rawPackageParam
+      : (submission.packageId ?? undefined);
 
   return await getDb().transaction(async (tx) => {
     const [topic] = await tx.select().from(topics).where(eq(topics.slug, slug));
@@ -116,16 +128,26 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
       const [saved] = await tx
         .select()
         .from(practiceAttempts)
-        .where(and(eq(practiceAttempts.id, submission.submissionId!), eq(practiceAttempts.userId, userId)));
+        .where(
+          and(
+            eq(practiceAttempts.id, submission.submissionId!),
+            eq(practiceAttempts.userId, userId),
+          ),
+        );
       if (!saved) return null;
-      const answers = await tx.select().from(practiceAnswers).where(eq(practiceAnswers.attemptId, saved.id));
+      const answers = await tx
+        .select()
+        .from(practiceAnswers)
+        .where(eq(practiceAnswers.attemptId, saved.id));
       if (
         saved.topicId !== topic.id ||
         saved.packageId !== (targetPackageId ?? null) ||
         answers.length !== Object.keys(submission.answers).length ||
         !answers.every((answer) => submission.answers[answer.questionId] === answer.selectedAnswer)
       ) {
-        throw new HTTPException(409, { message: "Jawaban berbeda dari pengumpulan yang sudah tersimpan. Mulai latihan baru." });
+        throw new HTTPException(409, {
+          message: "Jawaban berbeda dari pengumpulan yang sudah tersimpan. Mulai latihan baru.",
+        });
       }
       return {
         id: saved.id,
@@ -147,7 +169,9 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
       const [pkg] = await tx
         .select()
         .from(questionPackages)
-        .where(and(eq(questionPackages.id, targetPackageId), eq(questionPackages.topicId, topic.id)));
+        .where(
+          and(eq(questionPackages.id, targetPackageId), eq(questionPackages.topicId, topic.id)),
+        );
       if (!pkg) throw new HTTPException(400, { message: "Paket tidak valid untuk subtes ini." });
       validatedPackageId = pkg.id;
     }
@@ -156,7 +180,11 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
     if (!ids.length) throw new HTTPException(400, { message: "Jawab soal sebelum dikumpulkan." });
 
     const whereClause = validatedPackageId
-      ? and(eq(questions.topicId, topic.id), eq(questions.packageId, validatedPackageId), inArray(questions.id, ids))
+      ? and(
+          eq(questions.topicId, topic.id),
+          eq(questions.packageId, validatedPackageId),
+          inArray(questions.id, ids),
+        )
       : and(eq(questions.topicId, topic.id), inArray(questions.id, ids));
 
     const rows = await tx
@@ -167,15 +195,22 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
       })
       .from(questions)
       .where(whereClause);
-    if (rows.length !== ids.length) throw new HTTPException(400, { message: "Soal tidak valid untuk subtes/paket ini. Muat ulang latihan." });
+    if (rows.length !== ids.length)
+      throw new HTTPException(400, {
+        message: "Soal tidak valid untuk subtes/paket ini. Muat ulang latihan.",
+      });
 
     const scoreResult = calculateLatveriaScore(
       rows.map((row) => ({
         questionId: row.id,
         isCorrect: row.answer === submission.answers[row.id],
-        timeSpentSeconds: submission.questionTimes?.[row.id] ?? (submission.timeSpentSeconds ? Math.round(submission.timeSpentSeconds / rows.length) : 60),
+        timeSpentSeconds:
+          submission.questionTimes?.[row.id] ??
+          (submission.timeSpentSeconds
+            ? Math.round(submission.timeSpentSeconds / rows.length)
+            : 60),
         itemWeight: row.itemWeight ?? 100,
-      }))
+      })),
     );
 
     const correctCount = rows.filter((row) => row.answer === submission.answers[row.id]).length;
@@ -191,7 +226,8 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
         correctCount,
         score: scoreResult.score,
         rawScore: scoreResult.rawScore,
-        timeSpentSeconds: submission.timeSpentSeconds ?? Math.round(scoreResult.averageTime * rows.length),
+        timeSpentSeconds:
+          submission.timeSpentSeconds ?? Math.round(scoreResult.averageTime * rows.length),
         scoreBreakdown: JSON.stringify(scoreResult),
       })
       .onConflictDoNothing({ target: practiceAttempts.id })
@@ -200,7 +236,9 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
     if (!attempt) {
       const saved = submission.submissionId ? await replay() : null;
       if (saved) return saved;
-      throw new HTTPException(409, { message: "ID pengumpulan sudah digunakan. Mulai latihan baru." });
+      throw new HTTPException(409, {
+        message: "ID pengumpulan sudah digunakan. Mulai latihan baru.",
+      });
     }
 
     const breakdownMap = new Map(scoreResult.itemBreakdowns.map((b) => [b.questionId, b]));
@@ -219,7 +257,7 @@ export async function submitPractice(userId: string, slug: string, rawPackagePar
           isFirstAttempt: true,
           submittedAt: new Date(),
         };
-      })
+      }),
     );
 
     return {

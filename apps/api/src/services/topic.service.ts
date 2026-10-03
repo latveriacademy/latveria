@@ -47,7 +47,9 @@ export async function catalog(activeOnly = false): Promise<Topic[]> {
       .groupBy(questionPackages.topicId),
   ]);
   const pkgMap = new Map(pkgRows.map((p) => [p.topicId, Number(p.packageCount ?? 0)]));
-  const utbkMap = new Map<string, (typeof utbkSubtests)[number]>(utbkSubtests.map((s) => [s.slug, s]));
+  const utbkMap = new Map<string, (typeof utbkSubtests)[number]>(
+    utbkSubtests.map((s) => [s.slug, s]),
+  );
 
   const result: Topic[] = rows.map((row) => {
     const utbk = utbkMap.get(row.slug);
@@ -78,35 +80,62 @@ export async function catalog(activeOnly = false): Promise<Topic[]> {
 }
 
 export async function createAdminTopic(body: unknown) {
-  if (!body || typeof body !== "object" || !("name" in body) || !("slug" in body) || !body.name || !body.slug) {
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !("name" in body) ||
+    !("slug" in body) ||
+    !body.name ||
+    !body.slug
+  ) {
     throw new HTTPException(400, { message: "Nama dan slug topik wajib diisi." });
   }
-  const b = body as { name: string; slug: string; description?: string; category?: string; section?: string; order?: number };
+  const b = body as {
+    name: string;
+    slug: string;
+    description?: string;
+    category?: string;
+    section?: string;
+    order?: number;
+  };
   const [existing] = await getDb().select().from(topics).where(eq(topics.slug, b.slug));
   if (existing) throw new HTTPException(409, { message: "Slug sudah digunakan." });
 
-  const [created] = await getDb().insert(topics).values({
-    slug: b.slug,
-    name: b.name,
-    description: b.description ?? "",
-    category: b.category || "utbk",
-    section: b.section || "tps",
-    order: Number(b.order || 0),
-  }).returning();
+  const [created] = await getDb()
+    .insert(topics)
+    .values({
+      slug: b.slug,
+      name: b.name,
+      description: b.description ?? "",
+      category: b.category || "utbk",
+      section: b.section || "tps",
+      order: Number(b.order || 0),
+    })
+    .returning();
 
   invalidateCatalogCache();
   return created;
 }
 
 export async function updateAdminTopic(id: string, body: unknown) {
-  const b = (body && typeof body === "object" ? body : {}) as { name?: string; description?: string; category?: string; section?: string; order?: number };
-  const [updated] = await getDb().update(topics).set({
-    name: b.name,
-    description: b.description,
-    category: b.category,
-    section: b.section,
-    order: b.order,
-  }).where(eq(topics.id, id)).returning();
+  const b = (body && typeof body === "object" ? body : {}) as {
+    name?: string;
+    description?: string;
+    category?: string;
+    section?: string;
+    order?: number;
+  };
+  const [updated] = await getDb()
+    .update(topics)
+    .set({
+      name: b.name,
+      description: b.description,
+      category: b.category,
+      section: b.section,
+      order: b.order,
+    })
+    .where(eq(topics.id, id))
+    .returning();
   if (!updated) throw new HTTPException(404, { message: "Topik tidak ditemukan." });
 
   invalidateCatalogCache();
@@ -114,9 +143,14 @@ export async function updateAdminTopic(id: string, body: unknown) {
 }
 
 export async function deleteAdminTopic(id: string) {
-  const [qCount] = await getDb().select({ value: count() }).from(questions).where(eq(questions.topicId, id));
+  const [qCount] = await getDb()
+    .select({ value: count() })
+    .from(questions)
+    .where(eq(questions.topicId, id));
   if (qCount.value > 0) {
-    throw new HTTPException(409, { message: `Topik masih memiliki ${qCount.value} soal. Hapus soal terlebih dahulu.` });
+    throw new HTTPException(409, {
+      message: `Topik masih memiliki ${qCount.value} soal. Hapus soal terlebih dahulu.`,
+    });
   }
   await getDb().delete(topics).where(eq(topics.id, id));
   invalidateCatalogCache();

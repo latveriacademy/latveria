@@ -14,7 +14,9 @@ function createDatabase() {
   return drizzle(client, { schema: { ...schema, ...authSchema } });
 }
 
-const cache = globalThis as typeof globalThis & { latveriaDatabase?: ReturnType<typeof createDatabase> };
+const cache = globalThis as typeof globalThis & {
+  latveriaDatabase?: ReturnType<typeof createDatabase>;
+};
 
 export function getDb() {
   // Koneksi dibuat saat diperlukan; build dan halaman awal tidak memerlukan rahasia.

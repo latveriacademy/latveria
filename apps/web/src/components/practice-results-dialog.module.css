@@ -1,27 +1,127 @@
-.dialog { position: fixed; inset: 0; margin: auto; width: min(520px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); padding: 0; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-primary); box-shadow: 0 20px 60px rgb(0 0 0 / 25%); }
-.dialog::backdrop { background: rgb(0 0 0 / 65%); }
-.content { padding: 28px; }
-.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.header h2 { margin: 0; font: 600 28px/1.2 var(--font-serif); }
-.header p { margin: 8px 0 0; color: var(--text-secondary); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
-.header button { flex-shrink: 0; min-height: 44px; min-width: 44px; }
-.accuracy { padding: 28px 0 24px; }
-.accuracy p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
-.accuracy > div { display: flex; align-items: baseline; gap: 6px; margin: 8px 0; font-variant-numeric: tabular-nums; }
-.accuracy strong { font: 600 64px/1.1 var(--font-serif); }
-.accuracy > div > span { font-size: 28px; color: var(--text-secondary); }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 20px 0; border-block: 1px solid var(--border-subtle); }
-.stats dt { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
-.stats dd { margin: 8px 0 0; font-size: 26px; line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; }
-.correct { color: var(--accent-sage); }
-.incorrect { color: var(--accent-crimson); }
-.exp { display: flex; justify-content: space-between; gap: 16px; padding: 18px 0; font-size: 14px; }
-.exp span { color: var(--text-secondary); }
-.exp strong { color: var(--accent-gold); font-variant-numeric: tabular-nums; }
-.footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-.footer button { min-height: 44px; }
+.dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(520px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 25%);
+}
+.dialog::backdrop {
+  background: rgb(0 0 0 / 65%);
+}
+.content {
+  padding: 28px;
+}
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.header h2 {
+  margin: 0;
+  font: 600 28px/1.2 var(--font-serif);
+}
+.header p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.header button {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+}
+.accuracy {
+  padding: 28px 0 24px;
+}
+.accuracy p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.accuracy > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+.accuracy strong {
+  font: 600 64px/1.1 var(--font-serif);
+}
+.accuracy > div > span {
+  font-size: 28px;
+  color: var(--text-secondary);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 20px 0;
+  border-block: 1px solid var(--border-subtle);
+}
+.stats dt {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.stats dd {
+  margin: 8px 0 0;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.correct {
+  color: var(--accent-sage);
+}
+.incorrect {
+  color: var(--accent-crimson);
+}
+.exp {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  font-size: 14px;
+}
+.exp span {
+  color: var(--text-secondary);
+}
+.exp strong {
+  color: var(--accent-gold);
+  font-variant-numeric: tabular-nums;
+}
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.footer button {
+  min-height: 44px;
+}
 @media (max-width: 480px) {
-  .content { padding: 22px; }
-  .footer { flex-direction: column; }
-  .footer button { width: 100%; }
+  .content {
+    padding: 22px;
+  }
+  .footer {
+    flex-direction: column;
+  }
+  .footer button {
+    width: 100%;
+  }
 }

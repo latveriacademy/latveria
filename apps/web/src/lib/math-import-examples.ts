@@ -6,12 +6,18 @@ export const mathNotationExamples = [
     prompt: String.raw`Nilai $\displaystyle \lim_{x \to 2^+} \frac{3}{x-2}$ adalah ...`,
     options: [String.raw`$+\infty$`, String.raw`$-\infty$`, "$0$", "$3$"],
     correctAnswer: 0,
-    explanation: "Saat x mendekati 2 dari kanan, x − 2 bernilai positif dan mendekati nol. Hasil bagi menuju tak hingga positif.",
+    explanation:
+      "Saat x mendekati 2 dari kanan, x − 2 bernilai positif dan mendekati nol. Hasil bagi menuju tak hingga positif.",
   },
   {
     name: "Penjumlahan pecahan",
     prompt: String.raw`Hasil $\displaystyle \frac{2}{3} + \frac{1}{6}$ adalah ...`,
-    options: [String.raw`$\frac{1}{2}$`, String.raw`$\frac{2}{3}$`, String.raw`$\frac{5}{6}$`, "$1$"],
+    options: [
+      String.raw`$\frac{1}{2}$`,
+      String.raw`$\frac{2}{3}$`,
+      String.raw`$\frac{5}{6}$`,
+      "$1$",
+    ],
     correctAnswer: 2,
     explanation: "Samakan penyebut: 2/3 = 4/6, sehingga 4/6 + 1/6 = 5/6.",
   },
@@ -46,9 +52,16 @@ $$\begin{aligned}2x + 3 &= 11 \\ 2x &= 8 \\ x &= ?\end{aligned}$$`,
   },
 ];
 
-export const mathImportExample: QuestionImport = { groups: [{
-  subtes: "penalaran-matematika",
-  packageName: "Paket Rumus Matematika",
-  category: "Notasi matematika",
-  questions: mathNotationExamples.map(({ name: _name, ...question }) => ({ ...question, source: "Contoh format rumus matematika" })),
-}] };
+export const mathImportExample: QuestionImport = {
+  groups: [
+    {
+      subtes: "penalaran-matematika",
+      packageName: "Paket Rumus Matematika",
+      category: "Notasi matematika",
+      questions: mathNotationExamples.map(({ name: _name, ...question }) => ({
+        ...question,
+        source: "Contoh format rumus matematika",
+      })),
+    },
+  ],
+};

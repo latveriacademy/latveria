@@ -24,10 +24,15 @@ app.on(["POST", "GET"], "/api/auth/*", async (c) => {
     c.req.path === "/api/auth/sign-up/email"
       ? signupSchema
       : c.req.path === "/api/auth/sign-in/email"
-      ? credentialsSchema
-      : null;
+        ? credentialsSchema
+        : null;
   if (c.req.method === "POST" && schema) {
-    const parsed = schema.safeParse(await c.req.raw.clone().json().catch(() => null));
+    const parsed = schema.safeParse(
+      await c.req.raw
+        .clone()
+        .json()
+        .catch(() => null),
+    );
     if (!parsed.success) throw new HTTPException(400, { message: "Data akun tidak valid." });
   }
   return getAuth().handler(c.req.raw);
@@ -37,7 +42,12 @@ app.on(["POST", "GET"], "/api/auth/*", async (c) => {
 app.use("/api/*", async (c, next) => {
   const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
-  c.set("user", { id: session.user.id, email: session.user.email, name: session.user.name, role: session.user.role });
+  c.set("user", {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+    role: session.user.role,
+  });
   if (!["GET", "HEAD"].includes(c.req.method)) {
     if (!allowedOrigins().includes(c.req.header("origin") ?? "")) {
       throw new HTTPException(403, { message: "Origin tidak diizinkan." });
@@ -50,12 +60,14 @@ app.get("/api/me", (c) => c.json(c.get("user")));
 
 // Role guards
 app.use("/api/admin/*", async (c, next) => {
-  if (c.get("user").role !== "admin") throw new HTTPException(403, { message: "Akses khusus admin." });
+  if (c.get("user").role !== "admin")
+    throw new HTTPException(403, { message: "Akses khusus admin." });
   await next();
 });
 
 app.use("/api/learner/*", async (c, next) => {
-  if (c.get("user").role === "admin") throw new HTTPException(403, { message: "Gunakan panel admin." });
+  if (c.get("user").role === "admin")
+    throw new HTTPException(403, { message: "Gunakan panel admin." });
   await next();
 });
 
@@ -69,7 +81,8 @@ app.route("/", questionHandler);
 app.route("/", systemHandler);
 
 app.onError((error, c) => {
-  if (error instanceof HTTPException) return c.json({ error: error.message || "Permintaan ditolak." }, error.status);
+  if (error instanceof HTTPException)
+    return c.json({ error: error.message || "Permintaan ditolak." }, error.status);
   console.error("API request failed:", error);
   return c.json({ error: "Operasi gagal. Coba lagi." }, 500);
 });

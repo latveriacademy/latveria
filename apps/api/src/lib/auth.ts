@@ -5,7 +5,11 @@ import * as schema from "./db/auth-schema";
 import { allowedOrigins } from "./origins";
 
 function createAuth() {
-  if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32 || !process.env.BETTER_AUTH_URL) {
+  if (
+    !process.env.BETTER_AUTH_SECRET ||
+    process.env.BETTER_AUTH_SECRET.length < 32 ||
+    !process.env.BETTER_AUTH_URL
+  ) {
     throw new Error("BETTER_AUTH_SECRET (minimal 32 karakter) dan BETTER_AUTH_URL wajib diisi.");
   }
   return betterAuth({

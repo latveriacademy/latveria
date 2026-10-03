@@ -10,7 +10,8 @@ export function LandingMotion() {
     const media = gsap.matchMedia();
     media.add("(prefers-reduced-motion: no-preference)", () => {
       const intro = gsap.timeline({ defaults: { ease: "power3.out", duration: 1 } });
-      intro.from(".hero-title-line", { y: 55, opacity: 0, stagger: 0.13 })
+      intro
+        .from(".hero-title-line", { y: 55, opacity: 0, stagger: 0.13 })
         .from(".hero-art", { rotate: -12, scale: 0.86, opacity: 0 }, 0.1)
         .from(".hero-description, .main-link", { y: 20, opacity: 0, stagger: 0.1 }, 0.4);
 

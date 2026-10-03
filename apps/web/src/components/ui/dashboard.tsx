@@ -4,17 +4,45 @@ import { cn } from "../../lib/utils";
 import logo from "../../assets/latveria.webp";
 import { AnimatedNumber } from "../../lib/motion";
 
-export function Brand({ to = "/", className, children }: { to?: string; className?: string; children?: ReactNode }) {
+export function Brand({
+  to = "/",
+  className,
+  children,
+}: {
+  to?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
-    <Link to={to} className={cn("app-brand group transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]", className)}>
-      <img src={logo} alt="" width={40} height={40} className="transition-transform duration-200 group-hover:scale-105" />
+    <Link
+      to={to}
+      className={cn(
+        "app-brand group transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]",
+        className,
+      )}
+    >
+      <img
+        src={logo}
+        alt=""
+        width={40}
+        height={40}
+        className="transition-transform duration-200 group-hover:scale-105"
+      />
       <span>latveriacademy</span>
       {children}
     </Link>
   );
 }
 
-export function PageHeading({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeading({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
     <header className="app-page-heading motion-fade-up">
       <div>
@@ -42,7 +70,7 @@ export function Panel({ className, children, ...props }: ComponentProps<"section
     <section
       className={cn(
         "dashboard-panel motion-fade-up transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--edge-strong)]",
-        className
+        className,
       )}
       {...props}
     >
@@ -51,18 +79,32 @@ export function Panel({ className, children, ...props }: ComponentProps<"section
   );
 }
 
-export function StatTile({ label, value, icon, children, className }: { label: string; value: ReactNode; icon?: ReactNode; children?: ReactNode; className?: string }) {
+export function StatTile({
+  label,
+  value,
+  icon,
+  children,
+  className,
+}: {
+  label: string;
+  value: ReactNode;
+  icon?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
   const isNumeric = typeof value === "number";
   return (
     <div
       className={cn(
         "hero-metric-tile motion-fade-up transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-y-[-2px] hover:shadow-md hover:border-[var(--edge-strong)] group",
-        className
+        className,
       )}
     >
       <span className="metric-label-mono font-mono">{label}</span>
       <div className="metric-val-row">
-        {icon && <span className="transition-transform duration-200 group-hover:scale-110">{icon}</span>}
+        {icon && (
+          <span className="transition-transform duration-200 group-hover:scale-110">{icon}</span>
+        )}
         <span className="metric-num font-serif">
           {isNumeric ? <AnimatedNumber value={value as number} /> : value}
         </span>
@@ -100,7 +142,10 @@ export function ProgressBar({
       aria-valuemax={100}
     >
       <div
-        className={cn(fillClassName, "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width]")}
+        className={cn(
+          fillClassName,
+          "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width]",
+        )}
         style={{ width: `${percent}%` }}
       />
     </div>

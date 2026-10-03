@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": false,
+  "jsxSingleQuote": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "sortPackageJson": false,
+  "ignorePatterns": ["bun.lock", "apps/api/drizzle/**", "apps/web/drizzle/**"]
+}

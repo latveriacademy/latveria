@@ -6,12 +6,12 @@
 export const motionTokens = {
   duration: {
     instant: 0,
-    micro: 100,      // Micro-interactions (clicks, toggles)
-    fast: 160,       // Hover, focus, small popups
-    normal: 240,     // Component transitions, cards, panels
-    smooth: 340,     // Layout movements, expand/collapse, modals
-    page: 280,       // Page transitions
-    number: 700,     // Numeric count-up animation
+    micro: 100, // Micro-interactions (clicks, toggles)
+    fast: 160, // Hover, focus, small popups
+    normal: 240, // Component transitions, cards, panels
+    smooth: 340, // Layout movements, expand/collapse, modals
+    page: 280, // Page transitions
+    number: 700, // Numeric count-up animation
   },
   ease: {
     // Figma standard snappy curve

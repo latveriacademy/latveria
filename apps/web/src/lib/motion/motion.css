@@ -97,7 +97,8 @@
 }
 
 @keyframes motionPulseSubtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -145,10 +146,11 @@
    -------------------------------------------------------------------------- */
 
 .motion-interactive {
-  transition: transform var(--motion-duration-fast) var(--motion-ease-spring),
-              box-shadow var(--motion-duration-fast) var(--motion-ease-spring),
-              border-color var(--motion-duration-fast) var(--motion-ease-standard),
-              background-color var(--motion-duration-fast) var(--motion-ease-standard);
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-spring),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-spring),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
   will-change: transform;
 }
 

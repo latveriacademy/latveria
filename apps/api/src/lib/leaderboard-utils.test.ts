@@ -1,16 +1,21 @@
 import { expect, it, describe } from "vitest";
-import { getPeriodRange, ACCURACY_MIN_ANSWERS, SUBTEST_TO_SLUG, tiebreaker } from "./leaderboard-utils";
+import {
+  getPeriodRange,
+  ACCURACY_MIN_ANSWERS,
+  SUBTEST_TO_SLUG,
+  tiebreaker,
+} from "./leaderboard-utils";
 
 describe("getPeriodRange", () => {
   it("returns full range for 'all' period", () => {
-    const range = getPeriodRange('all', new Date("2026-10-15T10:00:00Z"));
+    const range = getPeriodRange("all", new Date("2026-10-15T10:00:00Z"));
     expect(range.startWIB).toBe("Awal zamanan");
     expect(range.endWIB).toBe("Sekarang");
   });
 
   it("calculates daily period correctly", () => {
     // October 15, 2026 WIB
-    const range = getPeriodRange('daily', new Date("2026-10-15T03:00:00Z")); // 10:00 WIB
+    const range = getPeriodRange("daily", new Date("2026-10-15T03:00:00Z")); // 10:00 WIB
     expect(range.startWIB).toContain("2026-10-15");
     expect(range.endWIB).toContain("2026-10-15");
     expect(range.start.getTime()).toBeLessThan(range.end.getTime());
@@ -19,14 +24,14 @@ describe("getPeriodRange", () => {
   it("calculates weekly period (Monday to Sunday)", () => {
     // Wednesday Oct 14, 2026 (WIB)
     // Week should be Oct 12 (Monday) to Oct 18 (Sunday)
-    const range = getPeriodRange('weekly', new Date("2026-10-14T03:00:00Z")); // 10:00 WIB Wed
+    const range = getPeriodRange("weekly", new Date("2026-10-14T03:00:00Z")); // 10:00 WIB Wed
     expect(range.startWIB).toContain("2026-10-12");
     expect(range.endWIB).toContain("2026-10-18");
   });
 
   it("handles week boundary at Monday midnight", () => {
     // Monday Oct 12, 2026 00:00 WIB = Oct 11, 2026 17:00 UTC
-    const range = getPeriodRange('weekly', new Date("2026-10-11T17:00:00Z"));
+    const range = getPeriodRange("weekly", new Date("2026-10-11T17:00:00Z"));
     // Start of week should be Monday Oct 12
     expect(range.startWIB).toContain("2026-10-12");
     expect(range.endWIB).toContain("2026-10-18");
@@ -34,21 +39,21 @@ describe("getPeriodRange", () => {
 
   it("calculates monthly period correctly", () => {
     // Oct 15, 2026
-    const range = getPeriodRange('monthly', new Date("2026-10-15T03:00:00Z")); // 10:00 WIB
+    const range = getPeriodRange("monthly", new Date("2026-10-15T03:00:00Z")); // 10:00 WIB
     expect(range.startWIB).toContain("2026-10-01");
     expect(range.endWIB).toContain("2026-10-31");
   });
 
   it("handles month boundary at end of February", () => {
     // Feb 28, 2026
-    const range = getPeriodRange('monthly', new Date("2026-02-28T03:00:00Z")); // 10:00 WIB
+    const range = getPeriodRange("monthly", new Date("2026-02-28T03:00:00Z")); // 10:00 WIB
     expect(range.startWIB).toContain("2026-02-01");
     expect(range.endWIB).toContain("2026-02-28");
   });
 
   it("handles leap year February", () => {
     // Feb 28, 2028 (leap year)
-    const range = getPeriodRange('monthly', new Date("2028-02-28T03:00:00Z"));
+    const range = getPeriodRange("monthly", new Date("2028-02-28T03:00:00Z"));
     expect(range.endWIB).toContain("2028-02-29");
   });
 });
@@ -71,14 +76,14 @@ describe("ACCURACY_MIN_ANSWERS", () => {
 
 describe("SUBTEST_TO_SLUG", () => {
   it("maps subtest codes to correct topic slugs", () => {
-    expect(SUBTEST_TO_SLUG.all).toBe('');
-    expect(SUBTEST_TO_SLUG.PU).toBe('penalaran-umum');
-    expect(SUBTEST_TO_SLUG.PPU).toBe('pengetahuan-pemahaman-umum');
-    expect(SUBTEST_TO_SLUG.PBM).toBe('pemahaman-bacaan-menulis');
-    expect(SUBTEST_TO_SLUG.PK).toBe('pengetahuan-kuantitatif');
-    expect(SUBTEST_TO_SLUG.BI).toBe('literasi-bahasa-indonesia');
-    expect(SUBTEST_TO_SLUG.EN).toBe('literasi-bahasa-inggris');
-    expect(SUBTEST_TO_SLUG.PM).toBe('penalaran-matematika');
+    expect(SUBTEST_TO_SLUG.all).toBe("");
+    expect(SUBTEST_TO_SLUG.PU).toBe("penalaran-umum");
+    expect(SUBTEST_TO_SLUG.PPU).toBe("pengetahuan-pemahaman-umum");
+    expect(SUBTEST_TO_SLUG.PBM).toBe("pemahaman-bacaan-menulis");
+    expect(SUBTEST_TO_SLUG.PK).toBe("pengetahuan-kuantitatif");
+    expect(SUBTEST_TO_SLUG.BI).toBe("literasi-bahasa-indonesia");
+    expect(SUBTEST_TO_SLUG.EN).toBe("literasi-bahasa-inggris");
+    expect(SUBTEST_TO_SLUG.PM).toBe("penalaran-matematika");
   });
 });
 

@@ -19,7 +19,7 @@ import {
 export const systemHandler = new Hono<AppEnv>();
 
 systemHandler.get("/api/learner/profile", async (c) =>
-  c.json(await getLearnerProfile(c.get("user").id))
+  c.json(await getLearnerProfile(c.get("user").id)),
 );
 
 systemHandler.put("/api/learner/profile", async (c) => {
@@ -54,7 +54,7 @@ systemHandler.put("/api/admin/affirmations/:id", async (c) => {
 });
 
 systemHandler.delete("/api/admin/affirmations/:id", async (c) =>
-  c.json(await deleteAffirmation(c.req.param("id")))
+  c.json(await deleteAffirmation(c.req.param("id"))),
 );
 
 systemHandler.post("/api/learner/reports", async (c) => {

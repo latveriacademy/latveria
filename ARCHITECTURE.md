@@ -2,15 +2,15 @@
 
 ## Stack yang berjalan
 
-| Bagian | Teknologi | Tanggung jawab |
-| --- | --- | --- |
-| Frontend | React 19 + Vite + React Router | Landing, dashboard peserta, latsol/review, dan panel admin |
-| UI | Tailwind 4 + shadcn/ui (Radix) + Lucide | Komponen dengan palet perkamen/hijau |
-| Backend | Hono + Node.js 22 | HTTP API, otorisasi, transaksi, dan file SPA produksi |
-| Validation | Zod di `@latveria/shared` | Skema request yang sama di browser dan API |
-| Akun | Better Auth | Hash kata sandi, cookie sesi, penyimpanan sesi di PostgreSQL |
-| Database | PostgreSQL + Drizzle | Soal, kategori, pengguna, attempt, jawaban, migrasi |
-| Konten | KaTeX | LaTeX dengan trust false dan fallback source |
+| Bagian     | Teknologi                               | Tanggung jawab                                               |
+| ---------- | --------------------------------------- | ------------------------------------------------------------ |
+| Frontend   | React 19 + Vite + React Router          | Landing, dashboard peserta, latsol/review, dan panel admin   |
+| UI         | Tailwind 4 + shadcn/ui (Radix) + Lucide | Komponen dengan palet perkamen/hijau                         |
+| Backend    | Hono + Node.js 22                       | HTTP API, otorisasi, transaksi, dan file SPA produksi        |
+| Validation | Zod di `@latveria/shared`               | Skema request yang sama di browser dan API                   |
+| Akun       | Better Auth                             | Hash kata sandi, cookie sesi, penyimpanan sesi di PostgreSQL |
+| Database   | PostgreSQL + Drizzle                    | Soal, kategori, pengguna, attempt, jawaban, migrasi          |
+| Konten     | KaTeX                                   | LaTeX dengan trust false dan fallback source                 |
 
 Soal mendukung diagram geometri melalui blok `\\begin{tikzpicture} ... \\end{tikzpicture}` yang dirender ke SVG lokal oleh `components/tikz-diagram.tsx`. Sintaks saat ini mencakup garis/poligon (`\\draw`/`\\fill`, `--`, `cycle`), rectangle, circle, ellipse, ketebalan/garis putus-putus, label `\\node at`, koordinat 2D/3D dengan proyeksi miring, dan deskripsi aksesibilitas `% alt:`. Label matematika memakai KaTeX `trust:false`. Parser dibatasi 4.000 karakter, 100 perintah, koordinat/ukuran −100…100; sintaks TikZ umum lain belum didukung dan ditampilkan sebagai teks sumber dengan pesan. Renderer yang sama digunakan di authoring preview, pratinjau admin, latihan, dan review.
 

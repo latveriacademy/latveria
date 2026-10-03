@@ -77,7 +77,9 @@ export function AnimatedNumber({
     return () => cancelAnimationFrame(animId);
   }, [value, duration, reducedMotion]);
 
-  return <span className={cn("inline-block tabular-nums", className)}>{formatter(displayValue)}</span>;
+  return (
+    <span className={cn("inline-block tabular-nums", className)}>{formatter(displayValue)}</span>
+  );
 }
 
 export function FadeIn({
@@ -167,11 +169,7 @@ export function SlideIn({
   );
 }
 
-export function StaggerContainer({
-  children,
-  className,
-  ...props
-}: ComponentProps<"div">) {
+export function StaggerContainer({ children, className, ...props }: ComponentProps<"div">) {
   return (
     <div className={cn("motion-stagger-container", className)} {...props}>
       {React.Children.map(children, (child, idx) => {
@@ -206,11 +204,7 @@ export function StaggerItem({
   );
 }
 
-export function HoverScale({
-  children,
-  className,
-  ...props
-}: ComponentProps<"div">) {
+export function HoverScale({ children, className, ...props }: ComponentProps<"div">) {
   return (
     <div className={cn("motion-interactive", className)} {...props}>
       {children}
@@ -218,11 +212,7 @@ export function HoverScale({
   );
 }
 
-export function PressScale({
-  children,
-  className,
-  ...props
-}: ComponentProps<"div">) {
+export function PressScale({ children, className, ...props }: ComponentProps<"div">) {
   return (
     <div className={cn("motion-press-only", className)} {...props}>
       {children}
@@ -230,11 +220,7 @@ export function PressScale({
   );
 }
 
-export function PageTransition({
-  children,
-  className,
-  ...props
-}: ComponentProps<"div">) {
+export function PageTransition({ children, className, ...props }: ComponentProps<"div">) {
   return (
     <div className={cn("motion-page-enter", className)} {...props}>
       {children}
@@ -252,22 +238,12 @@ export function Collapse({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "motion-collapse-wrapper",
-        isOpen && "is-expanded",
-        className
-      )}
-    >
+    <div className={cn("motion-collapse-wrapper", isOpen && "is-expanded", className)}>
       <div className="motion-collapse-inner">{children}</div>
     </div>
   );
 }
 
-export function Skeleton({
-  className,
-  style,
-  ...props
-}: ComponentProps<"div">) {
+export function Skeleton({ className, style, ...props }: ComponentProps<"div">) {
   return <div className={cn("motion-skeleton", className)} style={style} {...props} />;
 }

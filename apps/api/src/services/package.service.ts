@@ -8,7 +8,13 @@ import {
   type QuestionPackage,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import { practiceAnswers, questionPackages, questions, topics, tryoutPackageQuestions } from "../lib/db/schema";
+import {
+  practiceAnswers,
+  questionPackages,
+  questions,
+  topics,
+  tryoutPackageQuestions,
+} from "../lib/db/schema";
 import { invalidateCatalogCache, resolveTopic } from "./topic.service";
 
 export async function getSubtestPackages(subtestId: string): Promise<QuestionPackage[]> {
@@ -46,17 +52,28 @@ export async function getSubtestPackages(subtestId: string): Promise<QuestionPac
   }));
 }
 
-export async function createSubtestPackage(subtestId: string, body: unknown): Promise<QuestionPackage> {
+export async function createSubtestPackage(
+  subtestId: string,
+  body: unknown,
+): Promise<QuestionPackage> {
   const topic = await resolveTopic(subtestId);
   if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
   const parsed = createPackageSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data paket tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data paket tidak valid.",
+    });
 
   const [existing] = await getDb()
     .select({ id: questionPackages.id })
     .from(questionPackages)
-    .where(and(eq(questionPackages.topicId, topic.id), eq(questionPackages.name, parsed.data.name)));
-  if (existing) throw new HTTPException(409, { message: `Paket '${parsed.data.name}' sudah ada pada subtes ini.` });
+    .where(
+      and(eq(questionPackages.topicId, topic.id), eq(questionPackages.name, parsed.data.name)),
+    );
+  if (existing)
+    throw new HTTPException(409, {
+      message: `Paket '${parsed.data.name}' sudah ada pada subtes ini.`,
+    });
 
   const [created] = await getDb()
     .insert(questionPackages)
@@ -133,17 +150,31 @@ export async function getPackageDetail(packageId: string): Promise<PackageDetail
 
 export async function updatePackage(packageId: string, body: unknown): Promise<QuestionPackage> {
   const parsed = updatePackageSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? "Data paket tidak valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Data paket tidak valid.",
+    });
 
-  const [existing] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, packageId));
+  const [existing] = await getDb()
+    .select()
+    .from(questionPackages)
+    .where(eq(questionPackages.id, packageId));
   if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
   if (parsed.data.name && parsed.data.name !== existing.name) {
     const [conflict] = await getDb()
       .select({ id: questionPackages.id })
       .from(questionPackages)
-      .where(and(eq(questionPackages.topicId, existing.topicId), eq(questionPackages.name, parsed.data.name)));
-    if (conflict) throw new HTTPException(409, { message: `Paket '${parsed.data.name}' sudah ada pada subtes ini.` });
+      .where(
+        and(
+          eq(questionPackages.topicId, existing.topicId),
+          eq(questionPackages.name, parsed.data.name),
+        ),
+      );
+    if (conflict)
+      throw new HTTPException(409, {
+        message: `Paket '${parsed.data.name}' sudah ada pada subtes ini.`,
+      });
   }
 
   const [updated] = await getDb()
@@ -155,7 +186,10 @@ export async function updatePackage(packageId: string, body: unknown): Promise<Q
     .where(eq(questionPackages.id, packageId))
     .returning();
 
-  const [qCount] = await getDb().select({ value: count() }).from(questions).where(eq(questions.packageId, packageId));
+  const [qCount] = await getDb()
+    .select({ value: count() })
+    .from(questions)
+    .where(eq(questions.packageId, packageId));
 
   return {
     ...updated,
@@ -166,12 +200,20 @@ export async function updatePackage(packageId: string, body: unknown): Promise<Q
 }
 
 export async function deletePackage(packageId: string): Promise<{ success: true }> {
-  const [existing] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, packageId));
+  const [existing] = await getDb()
+    .select()
+    .from(questionPackages)
+    .where(eq(questionPackages.id, packageId));
   if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
-  const [qCount] = await getDb().select({ value: count() }).from(questions).where(eq(questions.packageId, packageId));
+  const [qCount] = await getDb()
+    .select({ value: count() })
+    .from(questions)
+    .where(eq(questions.packageId, packageId));
   if (qCount.value > 0) {
-    throw new HTTPException(409, { message: `Paket masih berisi ${qCount.value} soal. Pindahkan atau keluarkan soal sebelum menghapus paket.` });
+    throw new HTTPException(409, {
+      message: `Paket masih berisi ${qCount.value} soal. Pindahkan atau keluarkan soal sebelum menghapus paket.`,
+    });
   }
 
   await getDb().delete(questionPackages).where(eq(questionPackages.id, packageId));
@@ -179,14 +221,19 @@ export async function deletePackage(packageId: string): Promise<{ success: true 
 }
 
 export async function addQuestionToPackage(packageId: string, questionId: string) {
-  const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, packageId));
+  const [pkg] = await getDb()
+    .select()
+    .from(questionPackages)
+    .where(eq(questionPackages.id, packageId));
   if (!pkg) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
   const [q] = await getDb().select().from(questions).where(eq(questions.id, questionId));
   if (!q) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
 
   if (q.topicId !== pkg.topicId) {
-    throw new HTTPException(400, { message: "Soal tidak dapat dimasukkan ke paket dari subtes yang berbeda." });
+    throw new HTTPException(400, {
+      message: "Soal tidak dapat dimasukkan ke paket dari subtes yang berbeda.",
+    });
   }
 
   await getDb().update(questions).set({ packageId: pkg.id }).where(eq(questions.id, q.id));
@@ -198,10 +245,15 @@ export async function moveQuestionPackage(questionId: string, targetPackageId: s
   if (!q) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
 
   if (targetPackageId) {
-    const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, targetPackageId));
+    const [pkg] = await getDb()
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, targetPackageId));
     if (!pkg) throw new HTTPException(404, { message: "Paket tujuan tidak ditemukan." });
     if (pkg.topicId !== q.topicId) {
-      throw new HTTPException(400, { message: "Soal tidak dapat dipindahkan ke paket dari subtes yang berbeda." });
+      throw new HTTPException(400, {
+        message: "Soal tidak dapat dipindahkan ke paket dari subtes yang berbeda.",
+      });
     }
     await getDb().update(questions).set({ packageId: pkg.id }).where(eq(questions.id, q.id));
   } else {
@@ -222,7 +274,9 @@ export async function removeQuestionFromPackage(packageId: string, questionId: s
   return { success: true };
 }
 
-export async function getLearnerPackagesByTopic(subtestIdOrSlug: string): Promise<LearnerPackage[]> {
+export async function getLearnerPackagesByTopic(
+  subtestIdOrSlug: string,
+): Promise<LearnerPackage[]> {
   const topic = await resolveTopic(subtestIdOrSlug);
   if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
   const rows = await getDb()
@@ -270,18 +324,26 @@ export async function getAllLearnerPackages() {
       .where(and(eq(questionPackages.isActive, true), eq(questionPackages.published, true)))
       .groupBy(questionPackages.id, topics.id)
       .orderBy(questionPackages.order, questionPackages.createdAt),
-    db.select({ packageId: tryoutPackageQuestions.packageId, questionCount: count() }).from(tryoutPackageQuestions).groupBy(tryoutPackageQuestions.packageId),
+    db
+      .select({ packageId: tryoutPackageQuestions.packageId, questionCount: count() })
+      .from(tryoutPackageQuestions)
+      .groupBy(tryoutPackageQuestions.packageId),
   ]);
   const pinnedCounts = new Map(pinned.map((item) => [item.packageId, Number(item.questionCount)]));
 
   return rows.map((row) => ({
     ...row,
-    questionCount: row.isFullTryout ? (pinnedCounts.get(row.id) ?? 0) : Number(row.questionCount ?? 0),
+    questionCount: row.isFullTryout
+      ? (pinnedCounts.get(row.id) ?? 0)
+      : Number(row.questionCount ?? 0),
   }));
 }
 
 export async function duplicatePackage(packageId: string) {
-  const [existing] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, packageId));
+  const [existing] = await getDb()
+    .select()
+    .from(questionPackages)
+    .where(eq(questionPackages.id, packageId));
   if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
   const newName = `${existing.name} (Salinan ${Date.now().toString().slice(-4)})`;
@@ -304,22 +366,24 @@ export async function duplicatePackage(packageId: string) {
 
   const qRows = await getDb().select().from(questions).where(eq(questions.packageId, existing.id));
   if (qRows.length > 0) {
-    await getDb().insert(questions).values(
-      qRows.map((q) => ({
-        topicId: q.topicId,
-        packageId: created.id,
-        prompt: q.prompt,
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        explanation: q.explanation,
-        source: q.source,
-        category: q.category,
-        itemWeight: q.itemWeight,
-        calculatorAllowed: q.calculatorAllowed,
-        order: q.order,
-        subtestOrder: q.subtestOrder,
-      }))
-    );
+    await getDb()
+      .insert(questions)
+      .values(
+        qRows.map((q) => ({
+          topicId: q.topicId,
+          packageId: created.id,
+          prompt: q.prompt,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          source: q.source,
+          category: q.category,
+          itemWeight: q.itemWeight,
+          calculatorAllowed: q.calculatorAllowed,
+          order: q.order,
+          subtestOrder: q.subtestOrder,
+        })),
+      );
   }
 
   invalidateCatalogCache();

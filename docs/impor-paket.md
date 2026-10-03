@@ -50,11 +50,11 @@ Batas setiap impor: **100 soal dan 200 KB**, empat opsi unik per soal. Backend m
 
 Rumus bisa dipakai pada `prompt`, setiap string dalam `options`, dan `explanation`. Halaman impor menyediakan enam contoh lengkap lewat **Gunakan contoh rumus**, serta pratinjau dan cuplikan JSON pada **Panduan impor → Rumus matematika**.
 
-| Bentuk | Kegunaan |
-| --- | --- |
-| `$...$` | Rumus menyatu dengan kalimat, cocok untuk pangkat atau akar singkat. |
-| `$\displaystyle ...$` | Limit, pecahan, integral, dan sigma tampil lebih besar, tetap di dalam kalimat. |
-| `$$...$$` | Rumus pada baris tersendiri, cocok untuk persamaan panjang atau beberapa langkah. |
+| Bentuk                | Kegunaan                                                                          |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `$...$`               | Rumus menyatu dengan kalimat, cocok untuk pangkat atau akar singkat.              |
+| `$\displaystyle ...$` | Limit, pecahan, integral, dan sigma tampil lebih besar, tetap di dalam kalimat.   |
+| `$$...$$`             | Rumus pada baris tersendiri, cocok untuk persamaan panjang atau beberapa langkah. |
 
 ### Backslash: editor soal dan JSON berbeda
 

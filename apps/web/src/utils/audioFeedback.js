@@ -8,13 +8,13 @@ class SoundEngine {
   }
 
   init() {
-    if (!this.ctx && typeof window !== 'undefined') {
+    if (!this.ctx && typeof window !== "undefined") {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === "suspended") {
       this.ctx.resume();
     }
   }
@@ -29,7 +29,7 @@ class SoundEngine {
       const gain = this.ctx.createGain();
       const now = this.ctx.currentTime;
 
-      osc.type = 'triangle';
+      osc.type = "triangle";
       osc.frequency.setValueAtTime(140, now);
       osc.frequency.exponentialRampToValueAtTime(40, now + 0.035);
 
@@ -56,7 +56,7 @@ class SoundEngine {
       const gain = this.ctx.createGain();
       const now = this.ctx.currentTime;
 
-      osc.type = 'sine';
+      osc.type = "sine";
       osc.frequency.setValueAtTime(320, now);
       osc.frequency.exponentialRampToValueAtTime(220, now + 0.06);
 
@@ -86,7 +86,7 @@ class SoundEngine {
         const gain = this.ctx.createGain();
         const startTime = now + idx * 0.06;
 
-        osc.type = 'sine';
+        osc.type = "sine";
         osc.frequency.setValueAtTime(freq, startTime);
 
         gain.gain.setValueAtTime(0.04, startTime);

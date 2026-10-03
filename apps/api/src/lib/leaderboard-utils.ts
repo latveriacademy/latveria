@@ -3,14 +3,14 @@
 
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+7
 
-export type Period = 'daily' | 'weekly' | 'monthly' | 'all';
-export type Metric = 'xp' | 'answered' | 'correct' | 'accuracy' | 'streak';
+export type Period = "daily" | "weekly" | "monthly" | "all";
+export type Metric = "xp" | "answered" | "correct" | "accuracy" | "streak";
 
 export interface PeriodRange {
   start: Date; // UTC
-  end: Date;   // UTC (inclusive, up to 23:59:59.999 WIB)
+  end: Date; // UTC (inclusive, up to 23:59:59.999 WIB)
   startWIB: string; // ISO string in WIB
-  endWIB: string;   // ISO string in WIB
+  endWIB: string; // ISO string in WIB
 }
 
 const dayMs = 86_400_000;
@@ -85,7 +85,7 @@ function endOfMonthWIB(date: Date): Date {
  * Format a UTC date to WIB ISO string (for display)
  */
 function toWIBISO(date: Date): string {
-  return date.toISOString().replace('T', ' ').slice(0, 19) + ' WIB';
+  return date.toISOString().replace("T", " ").slice(0, 19) + " WIB";
 }
 
 /**
@@ -93,27 +93,27 @@ function toWIBISO(date: Date): string {
  */
 export function getPeriodRange(period: Period, fromDate: Date = new Date()): PeriodRange {
   switch (period) {
-    case 'daily': {
+    case "daily": {
       const start = startOfDayWIB(fromDate);
       const end = endOfDayWIB(fromDate);
       return { start, end, startWIB: toWIBISO(start), endWIB: toWIBISO(end) };
     }
-    case 'weekly': {
+    case "weekly": {
       const start = startOfWeekWIB(fromDate);
       const end = endOfWeekWIB(fromDate);
       return { start, end, startWIB: toWIBISO(start), endWIB: toWIBISO(end) };
     }
-    case 'monthly': {
+    case "monthly": {
       const start = startOfMonthWIB(fromDate);
       const end = endOfMonthWIB(fromDate);
       return { start, end, startWIB: toWIBISO(start), endWIB: toWIBISO(end) };
     }
-    case 'all':
+    case "all":
     default: {
       // Return a very wide range (epoch to far future)
       const start = new Date(0);
-      const end = new Date('2100-01-01T00:00:00.000Z');
-      return { start, end, startWIB: 'Awal zamanan', endWIB: 'Sekarang' };
+      const end = new Date("2100-01-01T00:00:00.000Z");
+      return { start, end, startWIB: "Awal zamanan", endWIB: "Sekarang" };
     }
   }
 }
@@ -134,23 +134,24 @@ export type Subtest = keyof typeof ACCURACY_MIN_ANSWERS;
 
 // Map short codes to topic slugs
 export const SUBTEST_TO_SLUG: Record<Subtest, string> = {
-  all: '',
-  PU: 'penalaran-umum',
-  PPU: 'pengetahuan-pemahaman-umum',
-  PBM: 'pemahaman-bacaan-menulis',
-  PK: 'pengetahuan-kuantitatif',
-  BI: 'literasi-bahasa-indonesia',
-  EN: 'literasi-bahasa-inggris',
-  PM: 'penalaran-matematika',
+  all: "",
+  PU: "penalaran-umum",
+  PPU: "pengetahuan-pemahaman-umum",
+  PBM: "pemahaman-bacaan-menulis",
+  PK: "pengetahuan-kuantitatif",
+  BI: "literasi-bahasa-indonesia",
+  EN: "literasi-bahasa-inggris",
+  PM: "penalaran-matematika",
 };
 
 // Tiebreaker helper: returns 0 if equal, negative if a < b, positive if a > b
-export type TiebreakerKey = 'value' | 'timestamp' | 'userId';
+export type TiebreakerKey = "value" | "timestamp" | "userId";
 export function tiebreaker(
   a: { value: number; timestamp: Date; userId: string },
-  b: { value: number; timestamp: Date; userId: string }
+  b: { value: number; timestamp: Date; userId: string },
 ): number {
   if (a.value !== b.value) return b.value - a.value; // Higher value first
-  if (a.timestamp.getTime() !== b.timestamp.getTime()) return a.timestamp.getTime() - b.timestamp.getTime(); // Earlier first
+  if (a.timestamp.getTime() !== b.timestamp.getTime())
+    return a.timestamp.getTime() - b.timestamp.getTime(); // Earlier first
   return a.userId.localeCompare(b.userId); // Alphabetical userId
 }

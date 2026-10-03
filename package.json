@@ -7,19 +7,23 @@
     "apps/*",
     "packages/*"
   ],
-  "trustedDependencies": ["esbuild"],
+  "trustedDependencies": [
+    "esbuild"
+  ],
   "engines": {
     "node": ">=22.12.0 <23",
     "bun": ">=1.3.14"
   },
   "scripts": {
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "dev": "bun run --parallel --filter '@latveria/web' --filter '@latveria/api' dev",
     "build": "bun run --filter '@latveria/*' --if-present build",
     "start": "bun run --filter @latveria/api start",
     "lint": "eslint apps/*/src apps/api/scripts packages/shared/src",
     "typecheck": "bun run --filter '@latveria/*' typecheck",
     "test": "bun run --filter '@latveria/*' test",
-    "check": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
     "test:integration": "bun run --filter @latveria/api test:integration",
     "test:containers": "node scripts/verify-containers.mjs",
     "db:generate": "bun run --filter @latveria/api db:generate",
@@ -30,6 +34,7 @@
   },
   "devDependencies": {
     "eslint": "^9.39.5",
+    "oxfmt": "^0.71.0",
     "typescript-eslint": "^8.71.0"
   }
 }

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { LogoutButton } from '../components/logout-button';
-import { PageHeading } from '../components/ui/dashboard';
-import { useApp } from '../context/AppContext';
-import { LatveriaWatermark } from '../components/LatveriaSeal';
+import React, { useState } from "react";
+import { LogoutButton } from "../components/logout-button";
+import { PageHeading } from "../components/ui/dashboard";
+import { useApp } from "../context/AppContext";
+import { LatveriaWatermark } from "../components/LatveriaSeal";
 import {
   Settings,
   Sun,
@@ -15,20 +15,12 @@ import {
   CheckCircle2,
   Sliders,
   Bell,
-  Sparkles
-} from 'lucide-react';
-import { sound } from '../utils/audioFeedback';
+  Sparkles,
+} from "lucide-react";
+import { sound } from "../utils/audioFeedback";
 
 export const SettingsView = () => {
-  const {
-    theme,
-    setTheme,
-    soundEnabled,
-    setSoundEnabled,
-    user,
-    setUser,
-    showToast
-  } = useApp();
+  const { theme, setTheme, soundEnabled, setSoundEnabled, user, setUser, showToast } = useApp();
 
   // Settings local state
   const [timerDuration, setTimerDuration] = useState(90);
@@ -37,12 +29,12 @@ export const SettingsView = () => {
 
   const handleResetData = () => {
     sound.playSelect();
-    setTheme('dark');
+    setTheme("dark");
     setSoundEnabled(true);
     setTimerDuration(90);
     setInstantFeedback(false);
     setShowConfirmReset(false);
-    showToast('Preferensi direset', 'Tema dan pengaturan lokal kembali ke nilai awal.', 'info');
+    showToast("Preferensi direset", "Tema dan pengaturan lokal kembali ke nilai awal.", "info");
   };
 
   return (
@@ -73,16 +65,17 @@ export const SettingsView = () => {
               <div className="setting-meta">
                 <span className="setting-name font-sans">Tema Visual Latveria</span>
                 <span className="setting-desc">
-                  Pilih antara mode Latveria Obsidian (hutan hijau gelap) atau Imperial Parchment (kertas arsip bertekstur).
+                  Pilih antara mode Latveria Obsidian (hutan hijau gelap) atau Imperial Parchment
+                  (kertas arsip bertekstur).
                 </span>
               </div>
               <div className="theme-toggle-options font-mono">
                 <button
                   type="button"
-                  className={`theme-opt-btn ${theme === 'dark' ? 'active' : ''}`}
+                  className={`theme-opt-btn ${theme === "dark" ? "active" : ""}`}
                   onClick={() => {
                     sound.playClick();
-                    setTheme('dark');
+                    setTheme("dark");
                   }}
                 >
                   <Moon size={16} />
@@ -90,10 +83,10 @@ export const SettingsView = () => {
                 </button>
                 <button
                   type="button"
-                  className={`theme-opt-btn ${theme === 'parchment' ? 'active' : ''}`}
+                  className={`theme-opt-btn ${theme === "parchment" ? "active" : ""}`}
                   onClick={() => {
                     sound.playClick();
-                    setTheme('parchment');
+                    setTheme("parchment");
                   }}
                 >
                   <Sun size={16} />
@@ -111,7 +104,7 @@ export const SettingsView = () => {
               </div>
               <button
                 type="button"
-                className={`switch-btn font-mono ${soundEnabled ? 'active' : ''}`}
+                className={`switch-btn font-mono ${soundEnabled ? "active" : ""}`}
                 onClick={() => {
                   setSoundEnabled(!soundEnabled);
                   if (!soundEnabled) sound.playClick();
@@ -143,7 +136,9 @@ export const SettingsView = () => {
           <div className="settings-items-list">
             <div className="setting-row">
               <div className="setting-meta">
-                <span className="setting-name font-sans">Alokasi Waktu per Butir Soal (Timed Mode)</span>
+                <span className="setting-name font-sans">
+                  Alokasi Waktu per Butir Soal (Timed Mode)
+                </span>
                 <span className="setting-desc">
                   Standar BP3 UTBK: Rata-rata 90 detik per soal untuk tes skolastik dan literasi.
                 </span>
@@ -153,7 +148,7 @@ export const SettingsView = () => {
                   <button
                     key={dur}
                     type="button"
-                    className={`time-opt-btn ${timerDuration === dur ? 'active' : ''}`}
+                    className={`time-opt-btn ${timerDuration === dur ? "active" : ""}`}
                     onClick={() => {
                       sound.playClick();
                       setTimerDuration(dur);
@@ -169,7 +164,8 @@ export const SettingsView = () => {
               <div className="setting-meta">
                 <span className="setting-name font-sans">Mode Pembahasan Selesai Sesi</span>
                 <span className="setting-desc">
-                  Tampilkan seluruh anotasi mendalam, rujukan konsep, dan analisis jebakan di akhir tes.
+                  Tampilkan seluruh anotasi mendalam, rujukan konsep, dan analisis jebakan di akhir
+                  tes.
                 </span>
               </div>
               <div className="badge-verified font-mono">STANDAR INSTITUSI (AKTIF)</div>
@@ -188,7 +184,8 @@ export const SettingsView = () => {
               <div className="setting-meta">
                 <span className="setting-name font-sans">Reset preferensi lokal</span>
                 <span className="setting-desc">
-                  Reset tema, suara, dan pengaturan latihan lokal. EXP dan streak tersimpan di server.
+                  Reset tema, suara, dan pengaturan latihan lokal. EXP dan streak tersimpan di
+                  server.
                 </span>
               </div>
               <button
@@ -212,7 +209,8 @@ export const SettingsView = () => {
               <h2 className="modal-title font-serif text-crimson">Reset preferensi lokal?</h2>
             </div>
             <p className="modal-prompt-text font-serif">
-              Tema, suara, dan pengaturan latihan lokal akan kembali ke nilai awal. Progres latihan tetap berasal dari data server.
+              Tema, suara, dan pengaturan latihan lokal akan kembali ke nilai awal. Progres latihan
+              tetap berasal dari data server.
             </p>
             <div className="modal-actions-footer">
               <button

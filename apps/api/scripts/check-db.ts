@@ -17,6 +17,8 @@ async function main() {
 }
 
 main().catch(() => {
-  console.error("Pemeriksaan database gagal. Periksa DATABASE_URL, kredensial, SSL, dan akses jaringan di .env.local.");
+  console.error(
+    "Pemeriksaan database gagal. Periksa DATABASE_URL, kredensial, SSL, dan akses jaringan di .env.local.",
+  );
   process.exitCode = 1;
 });

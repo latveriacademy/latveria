@@ -4,7 +4,10 @@ import { profileSchema } from "./index";
 const profile = { name: "Peserta", codename: "", targetUniversity: "", bio: "", motto: "" };
 
 it("trims profile fields while allowing optional details to be empty", () => {
-  expect(profileSchema.parse({ ...profile, name: " Peserta ", bio: " Belajar UTBK " })).toEqual({ ...profile, bio: "Belajar UTBK" });
+  expect(profileSchema.parse({ ...profile, name: " Peserta ", bio: " Belajar UTBK " })).toEqual({
+    ...profile,
+    bio: "Belajar UTBK",
+  });
 });
 it("rejects empty names and oversized bios", () => {
   expect(profileSchema.safeParse({ ...profile, name: "   " }).success).toBe(false);

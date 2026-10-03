@@ -11,11 +11,11 @@ import {
 export const practiceHandler = new Hono<AppEnv>();
 
 practiceHandler.get("/api/learner/summary", async (c) =>
-  c.json(await getLearnerSummary(c.get("user").id))
+  c.json(await getLearnerSummary(c.get("user").id)),
 );
 
 practiceHandler.get("/api/learner/history", async (c) =>
-  c.json(await getLearnerHistory(c.get("user").id))
+  c.json(await getLearnerHistory(c.get("user").id)),
 );
 
 practiceHandler.get("/api/learner/practice/:slug/:packageId", async (c) => {
@@ -34,7 +34,7 @@ async function handleSubmit(c: import("hono").Context<AppEnv>) {
     c.get("user").id,
     c.req.param("slug")!,
     c.req.param("packageId"),
-    body
+    body,
   );
   return c.json(result, 201);
 }

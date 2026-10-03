@@ -20,11 +20,11 @@ Baca `PLAN.md` untuk arah produk dan `ARCHITECTURE.md` untuk keputusan teknis.
 
 ## Arsitektur dan batas paket
 
-| Lokasi | Isi dan tanggung jawab |
-| --- | --- |
-| `apps/web` | React/Vite SPA, React Router, Tailwind, shadcn/ui, dan renderer matematika |
-| `apps/api` | Hono di Node.js, Better Auth, Drizzle, database, migrasi, dan CLI |
-| `packages/shared` | Skema request Zod, tipe API, dan katalog subtes UTBK |
+| Lokasi            | Isi dan tanggung jawab                                                     |
+| ----------------- | -------------------------------------------------------------------------- |
+| `apps/web`        | React/Vite SPA, React Router, Tailwind, shadcn/ui, dan renderer matematika |
+| `apps/api`        | Hono di Node.js, Better Auth, Drizzle, database, migrasi, dan CLI          |
+| `packages/shared` | Skema request Zod, tipe API, dan katalog subtes UTBK                       |
 
 Frontend dan shared tidak boleh mengimpor database atau secret server.
 Validasi input di backend tetap wajib, meskipun frontend sudah memvalidasinya.
@@ -34,19 +34,19 @@ Validasi input di backend tetap wajib, meskipun frontend sudah memvalidasinya.
 Gunakan **Bun 1.3.14** dan **Node.js 22, minimal 22.12**.
 Bun adalah package manager dan task runner; runtime backend tetap Node.js.
 
-| Perintah | Kegunaan |
-| --- | --- |
-| `bun install --frozen-lockfile` | Memasang dependensi sesuai lockfile |
-| `docker compose up -d --wait` | Menjalankan PostgreSQL di port 5433 dan Adminer di port 8080 |
-| `bun run dev` | Menjalankan web di port 3000 dan API di port 3001 |
-| `bun run db:migrate` | Menerapkan migrasi database |
-| `bun run db:seed` | Mengisi katalog dan soal contoh secara idempoten |
-| `bun run db:generate` | Membuat migrasi secara luring |
-| `bun run db:admin <email>` | Menjadikan akun lokal sebagai admin; hanya untuk DB localhost |
-| `bun run test` | Menjalankan tes Vitest |
-| `bun run test:integration` | Menguji backend lokal; membutuhkan migrasi/seed dan membersihkan data tes sendiri |
-| `bun run check` | Menjalankan lint → typecheck semua paket → tes → build |
-| `bun run start` | Menjalankan backend produksi melalui tsx dan melayani SPA dist |
+| Perintah                        | Kegunaan                                                                          |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| `bun install --frozen-lockfile` | Memasang dependensi sesuai lockfile                                               |
+| `docker compose up -d --wait`   | Menjalankan PostgreSQL di port 5433 dan Adminer di port 8080                      |
+| `bun run dev`                   | Menjalankan web di port 3000 dan API di port 3001                                 |
+| `bun run db:migrate`            | Menerapkan migrasi database                                                       |
+| `bun run db:seed`               | Mengisi katalog dan soal contoh secara idempoten                                  |
+| `bun run db:generate`           | Membuat migrasi secara luring                                                     |
+| `bun run db:admin <email>`      | Menjadikan akun lokal sebagai admin; hanya untuk DB localhost                     |
+| `bun run test`                  | Menjalankan tes Vitest                                                            |
+| `bun run test:integration`      | Menguji backend lokal; membutuhkan migrasi/seed dan membersihkan data tes sendiri |
+| `bun run check`                 | Menjalankan lint → typecheck semua paket → tes → build                            |
+| `bun run start`                 | Menjalankan backend produksi melalui tsx dan melayani SPA dist                    |
 
 Contoh tes terarah:
 

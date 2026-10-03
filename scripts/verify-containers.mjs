@@ -26,9 +26,19 @@ assert.match(missingApi.headers.get("content-type"), /application\/json/);
 const signup = await fetch(`${origin}/api/auth/sign-up/email`, {
   method: "POST",
   headers: { Origin: origin, "Content-Type": "application/json" },
-  body: JSON.stringify({ name: "Container check", email: "container-check@example.test", password: "Container-check-password!" }),
+  body: JSON.stringify({
+    name: "Container check",
+    email: "container-check@example.test",
+    password: "Container-check-password!",
+  }),
   signal: AbortSignal.timeout(10_000),
 });
 assert.equal(signup.status, 400);
-assert.equal((await signup.json()).code, "EMAIL_PASSWORD_SIGN_UP_DISABLED", "Signup harus ditutup di produksi.");
-console.info("Smoke test container: SPA, asset, proxy API, autentikasi, dan signup produksi lolos.");
+assert.equal(
+  (await signup.json()).code,
+  "EMAIL_PASSWORD_SIGN_UP_DISABLED",
+  "Signup harus ditutup di produksi.",
+);
+console.info(
+  "Smoke test container: SPA, asset, proxy API, autentikasi, dan signup produksi lolos.",
+);

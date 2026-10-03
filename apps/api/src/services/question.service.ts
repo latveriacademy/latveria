@@ -11,19 +11,17 @@ import {
   type QuestionDetail,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import {
-  practiceAnswers,
-  questionPackages,
-  questions,
-  topics,
-} from "../lib/db/schema";
+import { practiceAnswers, questionPackages, questions, topics } from "../lib/db/schema";
 import { catalog, invalidateCatalogCache } from "./topic.service";
 
-export async function getAdminQuestions(queryParams: Record<string, string | undefined>): Promise<Bank> {
+export async function getAdminQuestions(
+  queryParams: Record<string, string | undefined>,
+): Promise<Bank> {
   const parsed = bankQuerySchema.safeParse(queryParams);
   if (!parsed.success) throw new HTTPException(400, { message: "Filter tidak valid." });
   const query = parsed.data;
-  if (query.subtes && !utbkSubtests.some((subtest) => subtest.slug === query.subtes)) throw new HTTPException(404);
+  if (query.subtes && !utbkSubtests.some((subtest) => subtest.slug === query.subtes))
+    throw new HTTPException(404);
 
   const where = and(
     query.subtes ? eq(topics.slug, query.subtes) : undefined,
@@ -32,7 +30,7 @@ export async function getAdminQuestions(queryParams: Record<string, string | und
       ? idSchema.safeParse(query.paket).success
         ? eq(questions.packageId, query.paket)
         : eq(questionPackages.name, query.paket)
-      : undefined
+      : undefined,
   );
   const db = getDb();
   const pageParam = query.halaman;
@@ -112,7 +110,11 @@ export async function getAdminQuestions(queryParams: Record<string, string | und
     categories: categories.flatMap((row) => (row.category ? [row.category] : [])),
     packages: pkgs.map((p) => ({ ...p, questionCount: Number(p.questionCount ?? 0) })),
     tabs: [
-      { slug: "semua", name: "Semua", value: counts.reduce((sum, row) => sum + row.questionCount, 0) },
+      {
+        slug: "semua",
+        name: "Semua",
+        value: counts.reduce((sum, row) => sum + row.questionCount, 0),
+      },
       ...counts.map((row) => ({ slug: row.slug, name: row.name, value: row.questionCount })),
     ],
   };
@@ -120,25 +122,38 @@ export async function getAdminQuestions(queryParams: Record<string, string | und
 
 export async function createQuestion(body: unknown) {
   const parsed = questionSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: "Periksa isian soal, opsi, dan pembahasan." });
-  const [topic] = await getDb().select({ slug: topics.slug }).from(topics).where(eq(topics.id, parsed.data.topicId));
+  if (!parsed.success)
+    throw new HTTPException(400, { message: "Periksa isian soal, opsi, dan pembahasan." });
+  const [topic] = await getDb()
+    .select({ slug: topics.slug })
+    .from(topics)
+    .where(eq(topics.id, parsed.data.topicId));
   if (!topic) throw new HTTPException(400, { message: "Subtes tidak ditemukan." });
 
   if (parsed.data.packageId) {
-    const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, parsed.data.packageId));
+    const [pkg] = await getDb()
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, parsed.data.packageId));
     if (!pkg) throw new HTTPException(400, { message: "Paket soal tidak ditemukan." });
     if (pkg.topicId !== parsed.data.topicId) {
-      throw new HTTPException(400, { message: "Paket soal tidak cocok dengan subtes yang dipilih." });
+      throw new HTTPException(400, {
+        message: "Paket soal tidak cocok dengan subtes yang dipilih.",
+      });
     }
   }
 
-  const [created] = await getDb().insert(questions).values(parsed.data).returning({ id: questions.id, packageId: questions.packageId });
+  const [created] = await getDb()
+    .insert(questions)
+    .values(parsed.data)
+    .returning({ id: questions.id, packageId: questions.packageId });
   invalidateCatalogCache();
   return { id: created.id, slug: topic.slug, packageId: created.packageId };
 }
 
 export async function importQuestions(text: string) {
-  if (new TextEncoder().encode(text).byteLength > 200_000) throw new HTTPException(413, { message: "File JSON terlalu besar (maksimal 200 KB)." });
+  if (new TextEncoder().encode(text).byteLength > 200_000)
+    throw new HTTPException(413, { message: "File JSON terlalu besar (maksimal 200 KB)." });
   let body: unknown;
   try {
     body = JSON.parse(text);
@@ -155,16 +170,26 @@ export async function importQuestions(text: string) {
     });
   }
   const validSlugs = new Set(utbkSubtests.map((subtest) => subtest.slug));
-  const invalid = parsed.data.groups.findIndex((group) => !validSlugs.has(group.subtes as (typeof utbkSubtests)[number]["slug"]));
-  if (invalid >= 0) throw new HTTPException(400, { message: `Subtes grup ${invalid + 1} tidak dikenal.` });
+  const invalid = parsed.data.groups.findIndex(
+    (group) => !validSlugs.has(group.subtes as (typeof utbkSubtests)[number]["slug"]),
+  );
+  if (invalid >= 0)
+    throw new HTTPException(400, { message: `Subtes grup ${invalid + 1} tidak dikenal.` });
 
   const result = await getDb().transaction(async (tx) => {
     const slugs = [...new Set(parsed.data.groups.map((group) => group.subtes))];
-    const existing = await tx.select({ id: topics.id, slug: topics.slug }).from(topics).where(inArray(topics.slug, slugs));
-    if (existing.length !== slugs.length) throw new HTTPException(400, { message: "Subtes belum tersedia di database." });
+    const existing = await tx
+      .select({ id: topics.id, slug: topics.slug })
+      .from(topics)
+      .where(inArray(topics.slug, slugs));
+    if (existing.length !== slugs.length)
+      throw new HTTPException(400, { message: "Subtes belum tersedia di database." });
     const ids = new Map(existing.map((topic) => [topic.slug, topic.id]));
 
-    const destinations = new Map<string, { id: string; name: string; slug: string; count: number }>();
+    const destinations = new Map<
+      string,
+      { id: string; name: string; slug: string; count: number }
+    >();
     let count = 0;
     for (const group of parsed.data.groups) {
       const topicId = ids.get(group.subtes)!;
@@ -173,9 +198,14 @@ export async function importQuestions(text: string) {
         [pkg] = await tx
           .select({ id: questionPackages.id, name: questionPackages.name })
           .from(questionPackages)
-          .where(and(eq(questionPackages.id, group.packageId), eq(questionPackages.topicId, topicId)))
+          .where(
+            and(eq(questionPackages.id, group.packageId), eq(questionPackages.topicId, topicId)),
+          )
           .for("update");
-        if (!pkg) throw new HTTPException(400, { message: `Paket tujuan tidak ditemukan pada subtes ${group.subtes}.` });
+        if (!pkg)
+          throw new HTTPException(400, {
+            message: `Paket tujuan tidak ditemukan pada subtes ${group.subtes}.`,
+          });
       } else {
         const name = group.packageName ?? "Paket 1";
         await tx
@@ -188,7 +218,8 @@ export async function importQuestions(text: string) {
           .where(and(eq(questionPackages.topicId, topicId), eq(questionPackages.name, name)))
           .for("update");
       }
-      if (!pkg) throw new HTTPException(400, { message: "Paket tujuan tidak tersedia. Coba lagi." });
+      if (!pkg)
+        throw new HTTPException(400, { message: "Paket tujuan tidak tersedia. Coba lagi." });
       const values = group.questions.map((question) => ({
         ...question,
         category: group.category,
@@ -231,28 +262,50 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
     .leftJoin(questionPackages, eq(questions.packageId, questionPackages.id))
     .where(eq(questions.id, id.data));
   if (!item) throw new HTTPException(404);
-  const [usage] = await getDb().select({ value: count() }).from(practiceAnswers).where(eq(practiceAnswers.questionId, id.data));
+  const [usage] = await getDb()
+    .select({ value: count() })
+    .from(practiceAnswers)
+    .where(eq(practiceAnswers.questionId, id.data));
   return { ...item, category: item.category ?? undefined, usage: usage.value };
 }
 
 export async function updateQuestion(idParam: string, body: unknown) {
   const id = idSchema.safeParse(idParam);
   const parsed = questionSchema.safeParse(body);
-  if (!id.success || !parsed.success) throw new HTTPException(400, { message: "Data soal tidak valid." });
+  if (!id.success || !parsed.success)
+    throw new HTTPException(400, { message: "Data soal tidak valid." });
   const db = getDb();
   const result = await db.transaction(async (tx) => {
-    const [existing] = await tx.select({ id: questions.id }).from(questions).where(eq(questions.id, id.data)).for("update");
+    const [existing] = await tx
+      .select({ id: questions.id })
+      .from(questions)
+      .where(eq(questions.id, id.data))
+      .for("update");
     if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
-    const [usage] = await tx.select({ value: count() }).from(practiceAnswers).where(eq(practiceAnswers.questionId, id.data));
-    if (usage.value) throw new HTTPException(409, { message: "Soal sudah digunakan dalam latihan dan tidak dapat diedit." });
-    const [topic] = await tx.select({ slug: topics.slug }).from(topics).where(eq(topics.id, parsed.data.topicId));
+    const [usage] = await tx
+      .select({ value: count() })
+      .from(practiceAnswers)
+      .where(eq(practiceAnswers.questionId, id.data));
+    if (usage.value)
+      throw new HTTPException(409, {
+        message: "Soal sudah digunakan dalam latihan dan tidak dapat diedit.",
+      });
+    const [topic] = await tx
+      .select({ slug: topics.slug })
+      .from(topics)
+      .where(eq(topics.id, parsed.data.topicId));
     if (!topic) throw new HTTPException(400, { message: "Subtes tidak ditemukan." });
 
     if (parsed.data.packageId) {
-      const [pkg] = await tx.select().from(questionPackages).where(eq(questionPackages.id, parsed.data.packageId));
+      const [pkg] = await tx
+        .select()
+        .from(questionPackages)
+        .where(eq(questionPackages.id, parsed.data.packageId));
       if (!pkg) throw new HTTPException(400, { message: "Paket soal tidak ditemukan." });
       if (pkg.topicId !== parsed.data.topicId) {
-        throw new HTTPException(400, { message: "Paket soal tidak cocok dengan subtes yang dipilih." });
+        throw new HTTPException(400, {
+          message: "Paket soal tidak cocok dengan subtes yang dipilih.",
+        });
       }
     }
 
@@ -272,15 +325,28 @@ export async function updateQuestion(idParam: string, body: unknown) {
 
 export async function bulkDeleteQuestions(body: unknown) {
   const parsed = bulkDeleteSchema.safeParse(body);
-  if (!parsed.success) throw new HTTPException(400, { message: "Pilih 1–100 soal dengan ID valid." });
+  if (!parsed.success)
+    throw new HTTPException(400, { message: "Pilih 1–100 soal dengan ID valid." });
   const ids = parsed.data.ids;
   const deleted = await getDb().transaction(async (tx) => {
-    const rows = await tx.select({ id: questions.id }).from(questions).where(inArray(questions.id, ids)).orderBy(questions.id).for("update");
-    if (rows.length !== ids.length) throw new HTTPException(404, { message: "Sebagian soal tidak ditemukan. Muat ulang bank soal." });
-    const [usage] = await tx.select({ value: count() }).from(practiceAnswers).where(inArray(practiceAnswers.questionId, ids));
+    const rows = await tx
+      .select({ id: questions.id })
+      .from(questions)
+      .where(inArray(questions.id, ids))
+      .orderBy(questions.id)
+      .for("update");
+    if (rows.length !== ids.length)
+      throw new HTTPException(404, {
+        message: "Sebagian soal tidak ditemukan. Muat ulang bank soal.",
+      });
+    const [usage] = await tx
+      .select({ value: count() })
+      .from(practiceAnswers)
+      .where(inArray(practiceAnswers.questionId, ids));
     if (usage.value)
       throw new HTTPException(409, {
-        message: "Penghapusan dibatalkan: ada soal terpilih yang sudah dipakai peserta. Tidak ada soal dihapus.",
+        message:
+          "Penghapusan dibatalkan: ada soal terpilih yang sudah dipakai peserta. Tidak ada soal dihapus.",
       });
     return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
   });
@@ -292,7 +358,10 @@ export async function deleteQuestion(idParam: string) {
   const id = idSchema.safeParse(idParam);
   if (!id.success) throw new HTTPException(400);
   try {
-    const deleted = await getDb().delete(questions).where(eq(questions.id, id.data)).returning({ id: questions.id });
+    const deleted = await getDb()
+      .delete(questions)
+      .where(eq(questions.id, id.data))
+      .returning({ id: questions.id });
     if (!deleted.length) throw new HTTPException(404);
     invalidateCatalogCache();
   } catch (error) {

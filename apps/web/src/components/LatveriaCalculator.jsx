@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { X, Delete, Minimize2 } from 'lucide-react';
-import { sound } from '../utils/audioFeedback';
+import React, { useState } from "react";
+import { X, Delete, Minimize2 } from "lucide-react";
+import { sound } from "../utils/audioFeedback";
 
 export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
-  const [display, setDisplay] = useState('0');
+  const [display, setDisplay] = useState("0");
   const [prevValue, setPrevValue] = useState(null);
   const [operation, setOperation] = useState(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
@@ -17,25 +17,25 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
       setDisplay(String(digit));
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? String(digit) : display + digit);
+      setDisplay(display === "0" ? String(digit) : display + digit);
     }
   };
 
   const handleDecimal = () => {
     sound.playClick();
     if (waitingForOperand) {
-      setDisplay('0.');
+      setDisplay("0.");
       setWaitingForOperand(false);
       return;
     }
-    if (!display.includes('.')) {
-      setDisplay(display + '.');
+    if (!display.includes(".")) {
+      setDisplay(display + ".");
     }
   };
 
   const handleClear = () => {
     sound.playClick();
-    setDisplay('0');
+    setDisplay("0");
     setPrevValue(null);
     setOperation(null);
     setWaitingForOperand(false);
@@ -47,7 +47,7 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
     if (display.length > 1) {
       setDisplay(display.slice(0, -1));
     } else {
-      setDisplay('0');
+      setDisplay("0");
     }
   };
 
@@ -76,17 +76,17 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
       let newValue = currentValue;
 
       switch (operation) {
-        case '+':
+        case "+":
           newValue = currentValue + inputValue;
           break;
-        case '-':
+        case "-":
           newValue = currentValue - inputValue;
           break;
-        case '×':
+        case "×":
           newValue = currentValue * inputValue;
           break;
-        case '÷':
-          newValue = inputValue !== 0 ? currentValue / inputValue : 'Error';
+        case "÷":
+          newValue = inputValue !== 0 ? currentValue / inputValue : "Error";
           break;
         default:
           break;
@@ -109,17 +109,17 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
     let newValue = currentValue;
 
     switch (operation) {
-      case '+':
+      case "+":
         newValue = currentValue + inputValue;
         break;
-      case '-':
+      case "-":
         newValue = currentValue - inputValue;
         break;
-      case '×':
+      case "×":
         newValue = currentValue * inputValue;
         break;
-      case '÷':
-        newValue = inputValue !== 0 ? currentValue / inputValue : 'Error';
+      case "÷":
+        newValue = inputValue !== 0 ? currentValue / inputValue : "Error";
         break;
       default:
         break;
@@ -172,39 +172,93 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
           {/* LCD Digital Display */}
           <div className="calc-display-box font-mono">
             <div className="calc-display-equation">
-              {prevValue !== null && `${prevValue} ${operation || ''}`}
+              {prevValue !== null && `${prevValue} ${operation || ""}`}
             </div>
             <div className="calc-display-main">{display}</div>
           </div>
 
           {/* Keypad Grid */}
           <div className="calc-keypad-grid font-mono">
-            <button type="button" className="calc-key op-key" onClick={handleClear}>C</button>
-            <button type="button" className="calc-key op-key" onClick={handleSign}>±</button>
-            <button type="button" className="calc-key op-key" onClick={handlePercent}>%</button>
-            <button type="button" className="calc-key op-key math-key" onClick={() => performOperation('÷')}>÷</button>
+            <button type="button" className="calc-key op-key" onClick={handleClear}>
+              C
+            </button>
+            <button type="button" className="calc-key op-key" onClick={handleSign}>
+              ±
+            </button>
+            <button type="button" className="calc-key op-key" onClick={handlePercent}>
+              %
+            </button>
+            <button
+              type="button"
+              className="calc-key op-key math-key"
+              onClick={() => performOperation("÷")}
+            >
+              ÷
+            </button>
 
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(7)}>7</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(8)}>8</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(9)}>9</button>
-            <button type="button" className="calc-key op-key math-key" onClick={() => performOperation('×')}>×</button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(7)}>
+              7
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(8)}>
+              8
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(9)}>
+              9
+            </button>
+            <button
+              type="button"
+              className="calc-key op-key math-key"
+              onClick={() => performOperation("×")}
+            >
+              ×
+            </button>
 
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(4)}>4</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(5)}>5</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(6)}>6</button>
-            <button type="button" className="calc-key op-key math-key" onClick={() => performOperation('-')}>-</button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(4)}>
+              4
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(5)}>
+              5
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(6)}>
+              6
+            </button>
+            <button
+              type="button"
+              className="calc-key op-key math-key"
+              onClick={() => performOperation("-")}
+            >
+              -
+            </button>
 
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(1)}>1</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(2)}>2</button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(3)}>3</button>
-            <button type="button" className="calc-key op-key math-key" onClick={() => performOperation('+')}>+</button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(1)}>
+              1
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(2)}>
+              2
+            </button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(3)}>
+              3
+            </button>
+            <button
+              type="button"
+              className="calc-key op-key math-key"
+              onClick={() => performOperation("+")}
+            >
+              +
+            </button>
 
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(0)}>0</button>
-            <button type="button" className="calc-key num-key" onClick={handleDecimal}>.</button>
+            <button type="button" className="calc-key num-key" onClick={() => handleDigit(0)}>
+              0
+            </button>
+            <button type="button" className="calc-key num-key" onClick={handleDecimal}>
+              .
+            </button>
             <button type="button" className="calc-key op-key" onClick={handleBackspace}>
               <Delete size={14} />
             </button>
-            <button type="button" className="calc-key eq-key" onClick={handleEquals}>=</button>
+            <button type="button" className="calc-key eq-key" onClick={handleEquals}>
+              =
+            </button>
           </div>
         </div>
       )}

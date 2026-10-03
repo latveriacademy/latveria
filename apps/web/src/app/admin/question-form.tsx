@@ -8,17 +8,39 @@ import { ArrowLeft, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { MathText } from "../../components/math-text";
 import { tikzExamples } from "../../lib/tikz-examples";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import styles from "./admin.module.css";
 
-export function QuestionForm({ topics, initialTopicId, initialPackageId, question }: { topics: { id: string; name: string; section: string }[]; initialTopicId?: string; initialPackageId?: string; question?: QuestionDetail }) {
+export function QuestionForm({
+  topics,
+  initialTopicId,
+  initialPackageId,
+  question,
+}: {
+  topics: { id: string; name: string; section: string }[];
+  initialTopicId?: string;
+  initialPackageId?: string;
+  question?: QuestionDetail;
+}) {
   const navigate = useNavigate();
-  const [selectedTopicId, setSelectedTopicId] = useState(question?.topicId ?? initialTopicId ?? topics[0]?.id);
+  const [selectedTopicId, setSelectedTopicId] = useState(
+    question?.topicId ?? initialTopicId ?? topics[0]?.id,
+  );
   const [packages, setPackages] = useState<QuestionPackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [packagesError, setPackagesError] = useState("");
   const [packagesRetry, setPackagesRetry] = useState(0);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(question?.packageId ?? initialPackageId);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(
+    question?.packageId ?? initialPackageId,
+  );
   const [showNewPkg, setShowNewPkg] = useState(false);
   const [newPkgName, setNewPkgName] = useState("");
   const [pkgPending, setPkgPending] = useState(false);
@@ -29,8 +51,12 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
   useEffect(() => {
     if (!selectedTopicId) return;
     const controller = new AbortController();
-    setPackagesLoading(true); setPackagesError(""); setPackages([]);
-    api<QuestionPackage[]>(`/admin/subtests/${selectedTopicId}/packages`, { signal: controller.signal })
+    setPackagesLoading(true);
+    setPackagesError("");
+    setPackages([]);
+    api<QuestionPackage[]>(`/admin/subtests/${selectedTopicId}/packages`, {
+      signal: controller.signal,
+    })
       .then((data) => {
         if (controller.signal.aborted) return;
         setPackages(data);
@@ -46,8 +72,12 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
           setSelectedPackageId(undefined);
         }
       })
-      .catch(() => { if (!controller.signal.aborted) setPackagesError("Gagal memuat paket soal. Coba lagi."); })
-      .finally(() => { if (!controller.signal.aborted) setPackagesLoading(false); });
+      .catch(() => {
+        if (!controller.signal.aborted) setPackagesError("Gagal memuat paket soal. Coba lagi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setPackagesLoading(false);
+      });
     return () => controller.abort();
   }, [selectedTopicId, question?.packageId, initialPackageId, initialTopicId, packagesRetry]);
 
@@ -72,8 +102,10 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
   };
 
   const createQuestion = async (_previous: string, form: FormData) => {
-    if (packagesLoading || packagesError) return "Paket tujuan belum dapat diperiksa. Coba muat kembali daftar paket.";
-    if (initialPackageId && selectedTopicId === initialTopicId && !selectedPackageId) return "Pilih paket tujuan sebelum menyimpan soal.";
+    if (packagesLoading || packagesError)
+      return "Paket tujuan belum dapat diperiksa. Coba muat kembali daftar paket.";
+    if (initialPackageId && selectedTopicId === initialTopicId && !selectedPackageId)
+      return "Pilih paket tujuan sebelum menyimpan soal.";
     const parsed = questionSchema.safeParse({
       topicId: selectedTopicId,
       packageId: selectedPackageId || undefined,
@@ -88,9 +120,15 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
     try {
       const result = await api<{ id: string; slug: string }>(
         question ? `/admin/questions/${question.id}` : "/admin/questions",
-        { method: question ? "PUT" : "POST", body: JSON.stringify(parsed.data) }
+        { method: question ? "PUT" : "POST", body: JSON.stringify(parsed.data) },
       );
-      navigate(question ? `/admin/soal/${result.id}?updated=1` : initialPackageId && selectedPackageId === initialPackageId ? `/admin/paket/${initialPackageId}` : `/admin/soal?subtes=${result.slug}&created=${result.id}`);
+      navigate(
+        question
+          ? `/admin/soal/${result.id}?updated=1`
+          : initialPackageId && selectedPackageId === initialPackageId
+            ? `/admin/paket/${initialPackageId}`
+            : `/admin/soal?subtes=${result.slug}&created=${result.id}`,
+      );
       return "";
     } catch (error) {
       return error instanceof Error ? error.message : "Gagal menyimpan soal.";
@@ -98,11 +136,19 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
   };
 
   const [message, action, pending] = useActionState(createQuestion, "");
-  if (!topics.length) return <div className={styles.empty}><p>Belum ada subtes. Jalankan <code>bun run db:seed</code> untuk memuat katalog UTBK.</p></div>;
+  if (!topics.length)
+    return (
+      <div className={styles.empty}>
+        <p>
+          Belum ada subtes. Jalankan <code>bun run db:seed</code> untuk memuat katalog UTBK.
+        </p>
+      </div>
+    );
 
   return (
     <form action={action} className={styles.questionForm}>
-      <fieldset className={styles.formSection}><legend>Soal</legend>
+      <fieldset className={styles.formSection}>
+        <legend>Soal</legend>
         <div className={styles.field}>
           <label htmlFor="topicId">Subtes</label>
           <Select
@@ -111,14 +157,22 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
             onValueChange={(val) => setSelectedTopicId(val)}
             required
           >
-            <SelectTrigger id="topicId"><SelectValue placeholder="Pilih subtes" /></SelectTrigger>
+            <SelectTrigger id="topicId">
+              <SelectValue placeholder="Pilih subtes" />
+            </SelectTrigger>
             <SelectContent>
               {(["tps", "literasi"] as const).map((section) => (
                 <SelectGroup key={section}>
-                  <SelectLabel>{section === "tps" ? "Tes Potensi Skolastik" : "Tes Literasi"}</SelectLabel>
-                  {topics.filter((topic) => topic.section === section).map((topic) => (
-                    <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>
-                  ))}
+                  <SelectLabel>
+                    {section === "tps" ? "Tes Potensi Skolastik" : "Tes Literasi"}
+                  </SelectLabel>
+                  {topics
+                    .filter((topic) => topic.section === section)
+                    .map((topic) => (
+                      <SelectItem key={topic.id} value={topic.id}>
+                        {topic.name}
+                      </SelectItem>
+                    ))}
                 </SelectGroup>
               ))}
             </SelectContent>
@@ -127,12 +181,28 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
 
         <div className={styles.field}>
           <label htmlFor="packageId">Paket Soal</label>
-          {packagesLoading ? <p role="status">Memuat paket…</p> : packagesError ? <div role="alert"><p>{packagesError}</p><Button type="button" variant="outline" onClick={() => setPackagesRetry((value) => value + 1)}>Coba lagi</Button></div> : packages.length > 0 ? (
+          {packagesLoading ? (
+            <p role="status">Memuat paket…</p>
+          ) : packagesError ? (
+            <div role="alert">
+              <p>{packagesError}</p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPackagesRetry((value) => value + 1)}
+              >
+                Coba lagi
+              </Button>
+            </div>
+          ) : packages.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex-1 min-w-[200px]">
                 <Select
                   value={selectedPackageId ?? "none"}
-                  onValueChange={(val) => { setSelectedPackageId(val === "none" ? undefined : val); setPkgError(""); }}
+                  onValueChange={(val) => {
+                    setSelectedPackageId(val === "none" ? undefined : val);
+                    setPkgError("");
+                  }}
                 >
                   <SelectTrigger id="packageId">
                     <SelectValue placeholder="Pilih paket soal" />
@@ -146,7 +216,12 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewPkg(!showNewPkg)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowNewPkg(!showNewPkg)}
+              >
                 <Plus className="size-4" />
                 Buat Paket
               </Button>
@@ -156,7 +231,12 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
               <span className="text-sm text-[var(--soft-ink)] italic p-2 border border-[var(--edge)] rounded-md bg-[var(--surface-elevated)]">
                 Belum ada paket pada subtes ini
               </span>
-              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewPkg(!showNewPkg)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowNewPkg(!showNewPkg)}
+              >
                 <Plus className="size-4" />
                 Buat Paket
               </Button>
@@ -165,7 +245,9 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
 
           {showNewPkg && (
             <div className="mt-2 p-3 border border-[var(--edge)] bg-[var(--surface-elevated)] rounded-md space-y-2">
-              <div className="text-xs font-semibold text-[var(--ink)]">Tambah Paket Baru untuk Subtes Ini</div>
+              <div className="text-xs font-semibold text-[var(--ink)]">
+                Tambah Paket Baru untuk Subtes Ini
+              </div>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -174,44 +256,198 @@ export function QuestionForm({ topics, initialTopicId, initialPackageId, questio
                   value={newPkgName}
                   onChange={(e) => setNewPkgName(e.target.value)}
                 />
-                <Button type="button" size="sm" disabled={pkgPending || !newPkgName.trim()} onClick={handleCreatePackage}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={pkgPending || !newPkgName.trim()}
+                  onClick={handleCreatePackage}
+                >
                   {pkgPending ? "Membuat..." : "Simpan Paket"}
                 </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewPkg(false)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowNewPkg(false)}
+                >
                   Batal
                 </Button>
               </div>
             </div>
           )}
-          {pkgError && <p className={styles.formError} role="alert">{pkgError}</p>}
+          {pkgError && (
+            <p className={styles.formError} role="alert">
+              {pkgError}
+            </p>
+          )}
         </div>
 
-        <div className={styles.field}><label htmlFor="category">Materi / kategori</label><input id="category" name="category" maxLength={120} defaultValue={question?.category} placeholder="Contoh: Perbandingan dan persentase" /><span className={styles.hint}>Opsional. Isi sesuai materi yang ingin kamu kelompokkan.</span></div>
-        <div className={styles.field}><label htmlFor="prompt">Pertanyaan</label><textarea id="prompt" name="prompt" minLength={5} maxLength={1000} value={prompt} onChange={(event) => { setPrompt(event.target.value); setDiagramError(""); }} required /></div>
-        <p className={styles.hint}>Rumus: <code>$x^2$</code> inline atau <code>$$\frac&#123;1&#125;&#123;2&#125;$$</code> blok.</p>
+        <div className={styles.field}>
+          <label htmlFor="category">Materi / kategori</label>
+          <input
+            id="category"
+            name="category"
+            maxLength={120}
+            defaultValue={question?.category}
+            placeholder="Contoh: Perbandingan dan persentase"
+          />
+          <span className={styles.hint}>
+            Opsional. Isi sesuai materi yang ingin kamu kelompokkan.
+          </span>
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="prompt">Pertanyaan</label>
+          <textarea
+            id="prompt"
+            name="prompt"
+            minLength={5}
+            maxLength={1000}
+            value={prompt}
+            onChange={(event) => {
+              setPrompt(event.target.value);
+              setDiagramError("");
+            }}
+            required
+          />
+        </div>
+        <p className={styles.hint}>
+          Rumus: <code>$x^2$</code> inline atau <code>$$\frac&#123;1&#125;&#123;2&#125;$$</code>{" "}
+          blok.
+        </p>
         <details className={styles.diagramHelp}>
           <summary>Tambahkan diagram geometri</summary>
-          <p>TikZ dasar mendukung garis, poligon, rectangle, lingkaran, elips, dan label LaTeX. Koordinat (x,y,z) diproyeksikan untuk bangun ruang.</p>
-          <div className={styles.formActions}>{tikzExamples.map((example) => <Button type="button" size="sm" variant="outline" key={example.name} disabled={pending} onClick={() => {
-            const next = prompt.trim() ? `${prompt}\n\n${example.source}` : example.source;
-            if (next.length > 1000) { setDiagramError("Contoh ini melebihi batas 1.000 karakter pertanyaan. Ringkas teks atau diagram sebelum menambahkannya."); return; }
-            setPrompt(next); setDiagramError("");
-          }}>Tambahkan {example.name.toLowerCase()}</Button>)}</div>
-          <p>Ubah koordinat dan label di teks pertanyaan. Gunakan <code>% alt: deskripsi bangun</code> untuk membantu pembaca layar. Sintaks TikZ lain belum didukung.</p>
+          <p>
+            TikZ dasar mendukung garis, poligon, rectangle, lingkaran, elips, dan label LaTeX.
+            Koordinat (x,y,z) diproyeksikan untuk bangun ruang.
+          </p>
+          <div className={styles.formActions}>
+            {tikzExamples.map((example) => (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                key={example.name}
+                disabled={pending}
+                onClick={() => {
+                  const next = prompt.trim() ? `${prompt}\n\n${example.source}` : example.source;
+                  if (next.length > 1000) {
+                    setDiagramError(
+                      "Contoh ini melebihi batas 1.000 karakter pertanyaan. Ringkas teks atau diagram sebelum menambahkannya.",
+                    );
+                    return;
+                  }
+                  setPrompt(next);
+                  setDiagramError("");
+                }}
+              >
+                Tambahkan {example.name.toLowerCase()}
+              </Button>
+            ))}
+          </div>
+          <p>
+            Ubah koordinat dan label di teks pertanyaan. Gunakan{" "}
+            <code>% alt: deskripsi bangun</code> untuk membantu pembaca layar. Sintaks TikZ lain
+            belum didukung.
+          </p>
           {diagramError && <p role="alert">{diagramError}</p>}
         </details>
-        {prompt && <div className={styles.promptPreview}><h2>Pratinjau pertanyaan</h2><MathText>{prompt}</MathText></div>}
+        {prompt && (
+          <div className={styles.promptPreview}>
+            <h2>Pratinjau pertanyaan</h2>
+            <MathText>{prompt}</MathText>
+          </div>
+        )}
       </fieldset>
-      <fieldset className={styles.formSection}><legend>Pilihan jawaban</legend>
-        <div className={styles.options}>{[0, 1, 2, 3].map((index) => <div className={styles.field} key={index}><label htmlFor={`option-${index}`}>Opsi {index + 1}</label><input id={`option-${index}`} name={`option-${index}`} maxLength={300} defaultValue={question?.options[index]} required /></div>)}</div>
-        <div className={styles.field}><label htmlFor="correctAnswer">Jawaban benar</label><Select name="correctAnswer" defaultValue={String(question?.correctAnswer ?? 0)}><SelectTrigger id="correctAnswer"><SelectValue /></SelectTrigger><SelectContent>{[0, 1, 2, 3].map((index) => <SelectItem key={index} value={String(index)}>Opsi {index + 1}</SelectItem>)}</SelectContent></Select></div>
+      <fieldset className={styles.formSection}>
+        <legend>Pilihan jawaban</legend>
+        <div className={styles.options}>
+          {[0, 1, 2, 3].map((index) => (
+            <div className={styles.field} key={index}>
+              <label htmlFor={`option-${index}`}>Opsi {index + 1}</label>
+              <input
+                id={`option-${index}`}
+                name={`option-${index}`}
+                maxLength={300}
+                defaultValue={question?.options[index]}
+                required
+              />
+            </div>
+          ))}
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="correctAnswer">Jawaban benar</label>
+          <Select name="correctAnswer" defaultValue={String(question?.correctAnswer ?? 0)}>
+            <SelectTrigger id="correctAnswer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[0, 1, 2, 3].map((index) => (
+                <SelectItem key={index} value={String(index)}>
+                  Opsi {index + 1}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </fieldset>
-      <fieldset className={styles.formSection}><legend>Pembahasan dan sumber</legend>
-        <div className={styles.field}><label htmlFor="explanation">Pembahasan</label><textarea id="explanation" name="explanation" minLength={5} maxLength={2000} defaultValue={question?.explanation} required /></div>
-        <div className={styles.field}><label htmlFor="source">Sumber soal</label><input id="source" name="source" maxLength={300} defaultValue={question?.source} required /></div>
+      <fieldset className={styles.formSection}>
+        <legend>Pembahasan dan sumber</legend>
+        <div className={styles.field}>
+          <label htmlFor="explanation">Pembahasan</label>
+          <textarea
+            id="explanation"
+            name="explanation"
+            minLength={5}
+            maxLength={2000}
+            defaultValue={question?.explanation}
+            required
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="source">Sumber soal</label>
+          <input
+            id="source"
+            name="source"
+            maxLength={300}
+            defaultValue={question?.source}
+            required
+          />
+        </div>
       </fieldset>
-      {message && <p className={styles.formError} role="alert">{message}</p>}
-      <div className={styles.formActions}><Button type="submit" disabled={pending || packagesLoading || !!packagesError}>{pending ? <><Loader2 className="animate-spin" />Menyimpan...</> : <><Save />{question ? "Simpan perubahan" : "Simpan soal"}</>}</Button><Button asChild variant="ghost"><Link to={question ? `/admin/soal/${question.id}` : initialPackageId ? `/admin/paket/${initialPackageId}` : "/admin/soal"}><ArrowLeft />Batal</Link></Button></div>
+      {message && (
+        <p className={styles.formError} role="alert">
+          {message}
+        </p>
+      )}
+      <div className={styles.formActions}>
+        <Button type="submit" disabled={pending || packagesLoading || !!packagesError}>
+          {pending ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Menyimpan...
+            </>
+          ) : (
+            <>
+              <Save />
+              {question ? "Simpan perubahan" : "Simpan soal"}
+            </>
+          )}
+        </Button>
+        <Button asChild variant="ghost">
+          <Link
+            to={
+              question
+                ? `/admin/soal/${question.id}`
+                : initialPackageId
+                  ? `/admin/paket/${initialPackageId}`
+                  : "/admin/soal"
+            }
+          >
+            <ArrowLeft />
+            Batal
+          </Link>
+        </Button>
+      </div>
     </form>
   );
 }

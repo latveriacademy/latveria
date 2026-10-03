@@ -2,7 +2,13 @@ import { useCallback, useState } from "react";
 import { Outlet, useLocation, useNavigation, useRouteLoaderData } from "react-router";
 import { LayoutDashboard, BookOpen, AlertCircle, MessageSquareQuote, Loader2 } from "lucide-react";
 import type { User } from "@latveria/shared";
-import { DashboardShell, DashboardSidebar, DashboardHeader, DashboardNavigation, type NavigationItem } from "../../components/ui/dashboard-shell";
+import {
+  DashboardShell,
+  DashboardSidebar,
+  DashboardHeader,
+  DashboardNavigation,
+  type NavigationItem,
+} from "../../components/ui/dashboard-shell";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoutButton } from "../../components/logout-button";
 
@@ -37,7 +43,13 @@ export function AdminLayout() {
   const isNavigating = navigationState.state !== "idle";
   // Responsive target pathname for instant tab highlight on click
   const targetPath = navigationState.location?.pathname ?? pathname;
-  const active = [...navigation].reverse().find((item) => targetPath === item.to || (item.to !== "/admin" && targetPath.startsWith(`${item.to}/`)))?.id ?? "summary";
+  const active =
+    [...navigation]
+      .reverse()
+      .find(
+        (item) =>
+          targetPath === item.to || (item.to !== "/admin" && targetPath.startsWith(`${item.to}/`)),
+      )?.id ?? "summary";
 
   return (
     <DashboardShell
@@ -87,8 +99,15 @@ export function AdminLayout() {
           </div>
         </>
       )}
-      <div key={pathname} className={`latveria-view-container admin-view motion-page-enter ${isNavigating ? "opacity-60 transition-opacity duration-150" : ""}`}>
-        {isNavigating && <p className="sr-only" role="status">Memuat…</p>}
+      <div
+        key={pathname}
+        className={`latveria-view-container admin-view motion-page-enter ${isNavigating ? "opacity-60 transition-opacity duration-150" : ""}`}
+      >
+        {isNavigating && (
+          <p className="sr-only" role="status">
+            Memuat…
+          </p>
+        )}
         <Outlet />
       </div>
     </DashboardShell>

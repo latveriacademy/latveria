@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useApp } from '../context/AppContext';
-import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
-import { api } from '../lib/api';
+import React, { useState, useEffect, useCallback } from "react";
+import { useApp } from "../context/AppContext";
+import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
+import { api } from "../lib/api";
 import {
   Trophy,
   Search,
@@ -11,34 +11,34 @@ import {
   Percent,
   TrendingUp,
   AlertCircle,
-  Loader2
-} from 'lucide-react';
-import { sound } from '../utils/audioFeedback';
+  Loader2,
+} from "lucide-react";
+import { sound } from "../utils/audioFeedback";
 
 const METRICS = [
-  { id: 'xp', label: 'XP', icon: Trophy },
-  { id: 'answered', label: 'Soal Dijawab', icon: Target },
-  { id: 'correct', label: 'Soal Benar', icon: CheckCircle },
-  { id: 'accuracy', label: 'Akurasi', icon: Percent },
-  { id: 'streak', label: 'Streak', icon: Flame },
+  { id: "xp", label: "XP", icon: Trophy },
+  { id: "answered", label: "Soal Dijawab", icon: Target },
+  { id: "correct", label: "Soal Benar", icon: CheckCircle },
+  { id: "accuracy", label: "Akurasi", icon: Percent },
+  { id: "streak", label: "Streak", icon: Flame },
 ];
 
 const SUBTESTS = [
-  { id: 'all', label: 'Semua' },
-  { id: 'PU', label: 'PU' },
-  { id: 'PPU', label: 'PPU' },
-  { id: 'PBM', label: 'PBM' },
-  { id: 'PK', label: 'PK' },
-  { id: 'BI', label: 'BI' },
-  { id: 'EN', label: 'EN' },
-  { id: 'PM', label: 'PM' },
+  { id: "all", label: "Semua" },
+  { id: "PU", label: "PU" },
+  { id: "PPU", label: "PPU" },
+  { id: "PBM", label: "PBM" },
+  { id: "PK", label: "PK" },
+  { id: "BI", label: "BI" },
+  { id: "EN", label: "EN" },
+  { id: "PM", label: "PM" },
 ];
 
 const PERIODS = [
-  { id: 'daily', label: 'Harian' },
-  { id: 'weekly', label: 'Mingguan' },
-  { id: 'monthly', label: 'Bulanan' },
-  { id: 'all', label: 'Semua' },
+  { id: "daily", label: "Harian" },
+  { id: "weekly", label: "Mingguan" },
+  { id: "monthly", label: "Bulanan" },
+  { id: "all", label: "Semua" },
 ];
 
 const ACCURACY_MIN_ALL = 50;
@@ -54,13 +54,13 @@ function getCacheKey(userId, metric, subtest, period) {
 
 export const LeaderboardView = () => {
   const { user } = useApp();
-  const [metric, setMetric] = useState('xp');
-  const [subtest, setSubtest] = useState('all');
-  const [period, setPeriod] = useState('weekly');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [metric, setMetric] = useState("xp");
+  const [subtest, setSubtest] = useState("all");
+  const [period, setPeriod] = useState("weekly");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [data, setData] = useState(null);
 
   const fetchLeaderboard = useCallback(async () => {
@@ -73,13 +73,13 @@ export const LeaderboardView = () => {
     }
 
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const result = await api(`/leaderboard?metric=${metric}&subtest=${subtest}&period=${period}`);
       cache.set(cacheKey, { data: result, timestamp: Date.now() });
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat papan peringkat.');
+      setError(err instanceof Error ? err.message : "Gagal memuat papan peringkat.");
       setData(null);
     } finally {
       setLoading(false);
@@ -94,25 +94,27 @@ export const LeaderboardView = () => {
     sound.playClick();
     setMetric(newMetric);
     // Disable subtest filter for streak
-    if (newMetric === 'streak') {
-      setSubtest('all');
+    if (newMetric === "streak") {
+      setSubtest("all");
     }
   };
 
-  const filteredEntries = data?.entries?.filter((entry) =>
-    entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.id.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredEntries =
+    data?.entries?.filter(
+      (entry) =>
+        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.id.toLowerCase().includes(searchQuery.toLowerCase()),
+    ) || [];
 
   const formatMetricValue = (value, type) => {
-    if (type === 'accuracy') return `${value}%`;
-    if (type === 'streak') return `${value} hari`;
-    return value?.toLocaleString('id-ID');
+    if (type === "accuracy") return `${value}%`;
+    if (type === "streak") return `${value} hari`;
+    return value?.toLocaleString("id-ID");
   };
 
   const getAccuracyNote = () => {
-    if (metric !== 'accuracy') return null;
-    const min = subtest === 'all' ? ACCURACY_MIN_ALL : ACCURACY_MIN_SUBTEST;
+    if (metric !== "accuracy") return null;
+    const min = subtest === "all" ? ACCURACY_MIN_ALL : ACCURACY_MIN_SUBTEST;
     return (
       <div className="accuracy-min-note font-mono">
         <AlertCircle size={12} />
@@ -157,7 +159,7 @@ export const LeaderboardView = () => {
               <button
                 key={m.id}
                 type="button"
-                className={`metric-tab ${metric === m.id ? 'active' : ''}`}
+                className={`metric-tab ${metric === m.id ? "active" : ""}`}
                 onClick={() => handleMetricChange(m.id)}
               >
                 <Icon size={14} />
@@ -172,12 +174,16 @@ export const LeaderboardView = () => {
           <select
             className="filter-select font-sans"
             value={subtest}
-            onChange={(e) => { setSubtest(e.target.value); }}
-            disabled={metric === 'streak'}
+            onChange={(e) => {
+              setSubtest(e.target.value);
+            }}
+            disabled={metric === "streak"}
             aria-label="Filter subtes"
           >
             {SUBTESTS.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
             ))}
           </select>
 
@@ -188,7 +194,9 @@ export const LeaderboardView = () => {
             aria-label="Filter periode"
           >
             {PERIODS.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
             ))}
           </select>
 
@@ -211,7 +219,9 @@ export const LeaderboardView = () => {
         <div className="leaderboard-error font-mono">
           <AlertCircle size={16} />
           {error}
-          <button type="button" onClick={fetchLeaderboard}>Coba lagi</button>
+          <button type="button" onClick={fetchLeaderboard}>
+            Coba lagi
+          </button>
         </div>
       )}
 
@@ -219,8 +229,8 @@ export const LeaderboardView = () => {
       {filteredEntries.length > 0 && !error && (
         <div className="podium-trio-grid">
           {filteredEntries.slice(0, 3).map((candidate, idx) => {
-            const podiumRanks = ['RANK 01', 'RANK 02', 'RANK 03'];
-            const podiumAccents = ['gold', 'silver', 'brass'];
+            const podiumRanks = ["RANK 01", "RANK 02", "RANK 03"];
+            const podiumAccents = ["gold", "silver", "brass"];
 
             return (
               <div
@@ -239,7 +249,9 @@ export const LeaderboardView = () => {
 
                 <div className="podium-name-block">
                   <h3 className="podium-candidate-name font-serif">{candidate.name}</h3>
-                  <span className="podium-status-tag font-mono">{candidate.status || 'PESERTA'}</span>
+                  <span className="podium-status-tag font-mono">
+                    {candidate.status || "PESERTA"}
+                  </span>
                 </div>
 
                 <div className="podium-metrics-list font-mono">
@@ -249,15 +261,17 @@ export const LeaderboardView = () => {
                   </div>
                   <div className="p-metric-row">
                     <span className="text-muted">{metric.toUpperCase()}:</span>
-                    <span className="text-gold font-bold">{formatMetricValue(candidate.metricValue, metric)}</span>
+                    <span className="text-gold font-bold">
+                      {formatMetricValue(candidate.metricValue, metric)}
+                    </span>
                   </div>
-                  {metric !== 'streak' && candidate.accuracy !== undefined && (
+                  {metric !== "streak" && candidate.accuracy !== undefined && (
                     <div className="p-metric-row">
                       <span className="text-muted">AKURASI:</span>
                       <span className="text-sage">{candidate.accuracy}%</span>
                     </div>
                   )}
-                  {metric !== 'streak' && candidate.answered !== undefined && (
+                  {metric !== "streak" && candidate.answered !== undefined && (
                     <div className="p-metric-row">
                       <span className="text-muted">SOAL SELESAI:</span>
                       <span>{candidate.answered} Q</span>
@@ -272,84 +286,98 @@ export const LeaderboardView = () => {
 
       {/* Institutional Table Roster */}
       {filteredEntries.length === 0 && !loading && !error ? (
-        <div className="leaderboard-empty font-mono">
-          Belum ada peserta pada periode ini
-        </div>
-      ) : filteredEntries.length > 3 && (
-        <div className="roster-table-container motion-fade-up">
-          <table className="roster-table" aria-label="Tabel Peringkat Akademik">
-            <thead>
-              <tr className="font-mono">
-                <th className="th-rank">RANK</th>
-                <th className="th-candidate">KANDIDAT & IDENTITAS</th>
-                <th className="th-level">LEVEL</th>
-                <th className="th-xp">{metric === 'xp' ? 'XP' : metric === 'accuracy' ? 'AKURASI' : metric === 'streak' ? 'STREAK' : metric === 'correct' ? 'BENAR' : 'DIJAWAB'}</th>
-                {metric !== 'streak' && <th className="th-acc">AKURASI</th>}
-                {metric !== 'streak' && <th className="th-questions">SOAL</th>}
-                <th className="th-level">TOTAL XP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEntries.slice(3).map((cand) => {
-                const isUser = cand.isCurrentUser;
-                return (
-                  <tr
-                    key={cand.id}
-                    className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? 'user-highlight-row' : ''}`}
-                  >
-                    <td className="td-rank font-mono">
-                      <div className="rank-cell-wrapper">
-                        {cand.rank <= 3 ? (
-                          <span className="rank-crown-pill font-mono">#{cand.rank}</span>
-                        ) : (
-                          <span className="rank-num font-mono">#{cand.rank < 10 ? `0${cand.rank}` : cand.rank}</span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="td-candidate">
-                      <div className="candidate-cell">
-                        <div className="avatar-chip font-serif">
-                          {cand.name.charAt(0)}
+        <div className="leaderboard-empty font-mono">Belum ada peserta pada periode ini</div>
+      ) : (
+        filteredEntries.length > 3 && (
+          <div className="roster-table-container motion-fade-up">
+            <table className="roster-table" aria-label="Tabel Peringkat Akademik">
+              <thead>
+                <tr className="font-mono">
+                  <th className="th-rank">RANK</th>
+                  <th className="th-candidate">KANDIDAT & IDENTITAS</th>
+                  <th className="th-level">LEVEL</th>
+                  <th className="th-xp">
+                    {metric === "xp"
+                      ? "XP"
+                      : metric === "accuracy"
+                        ? "AKURASI"
+                        : metric === "streak"
+                          ? "STREAK"
+                          : metric === "correct"
+                            ? "BENAR"
+                            : "DIJAWAB"}
+                  </th>
+                  {metric !== "streak" && <th className="th-acc">AKURASI</th>}
+                  {metric !== "streak" && <th className="th-questions">SOAL</th>}
+                  <th className="th-level">TOTAL XP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEntries.slice(3).map((cand) => {
+                  const isUser = cand.isCurrentUser;
+                  return (
+                    <tr
+                      key={cand.id}
+                      className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? "user-highlight-row" : ""}`}
+                    >
+                      <td className="td-rank font-mono">
+                        <div className="rank-cell-wrapper">
+                          {cand.rank <= 3 ? (
+                            <span className="rank-crown-pill font-mono">#{cand.rank}</span>
+                          ) : (
+                            <span className="rank-num font-mono">
+                              #{cand.rank < 10 ? `0${cand.rank}` : cand.rank}
+                            </span>
+                          )}
                         </div>
-                        <div className="candidate-details">
-                          <div className="candidate-name font-sans">
-                            {cand.name}
-                            {isUser && <span className="you-pill font-mono">YOU</span>}
+                      </td>
+
+                      <td className="td-candidate">
+                        <div className="candidate-cell">
+                          <div className="avatar-chip font-serif">{cand.name.charAt(0)}</div>
+                          <div className="candidate-details">
+                            <div className="candidate-name font-sans">
+                              {cand.name}
+                              {isUser && <span className="you-pill font-mono">YOU</span>}
+                            </div>
+                            <div className="candidate-id font-mono text-muted">{cand.id}</div>
                           </div>
-                          <div className="candidate-id font-mono text-muted">{cand.id}</div>
                         </div>
-                      </div>
-                    </td>
-
-                    <td className="td-level font-mono">
-                      <span className="level-badge">LVL {cand.level < 10 ? `0${cand.level}` : cand.level}</span>
-                    </td>
-
-                    <td className="td-xp font-mono">
-                      <span className="text-gold font-bold">{formatMetricValue(cand.metricValue, metric)}</span>
-                    </td>
-
-                    {metric !== 'streak' && (
-                      <td className="td-acc font-mono">
-                        <span className="text-sage font-bold">{cand.accuracy ?? '-'}%</span>
                       </td>
-                    )}
-                    {metric !== 'streak' && (
-                      <td className="td-questions font-mono">
-                        <span>{cand.answered ?? 0} Q</span>
-                      </td>
-                    )}
 
-                    <td className="td-level font-mono">
-                      <span className="text-muted">{cand.totalXP?.toLocaleString() || 0} XP</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <td className="td-level font-mono">
+                        <span className="level-badge">
+                          LVL {cand.level < 10 ? `0${cand.level}` : cand.level}
+                        </span>
+                      </td>
+
+                      <td className="td-xp font-mono">
+                        <span className="text-gold font-bold">
+                          {formatMetricValue(cand.metricValue, metric)}
+                        </span>
+                      </td>
+
+                      {metric !== "streak" && (
+                        <td className="td-acc font-mono">
+                          <span className="text-sage font-bold">{cand.accuracy ?? "-"}%</span>
+                        </td>
+                      )}
+                      {metric !== "streak" && (
+                        <td className="td-questions font-mono">
+                          <span>{cand.answered ?? 0} Q</span>
+                        </td>
+                      )}
+
+                      <td className="td-level font-mono">
+                        <span className="text-muted">{cand.totalXP?.toLocaleString() || 0} XP</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
 
       {/* Current User Position (if outside top N) */}
@@ -364,7 +392,9 @@ export const LeaderboardView = () => {
               <span className="user-position-id font-mono">{user.id}</span>
             </div>
             <div className="user-position-metrics font-mono">
-              <span className="metric-value text-gold">{formatMetricValue(data.me.metricValue, metric)}</span>
+              <span className="metric-value text-gold">
+                {formatMetricValue(data.me.metricValue, metric)}
+              </span>
               {data.me.needsMore && (
                 <span className="needs-more font-mono">
                   Butuh {data.me.needsMore} soal lagi untuk masuk peringkat

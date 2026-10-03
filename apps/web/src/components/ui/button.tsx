@@ -9,14 +9,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "btn-latveria-primary shadow-sm hover:shadow",
-        outline:
-          "btn-latveria-secondary",
-        ghost:
-          "text-[var(--soft-ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]",
-        link:
-          "text-[var(--emerald)] underline-offset-4 hover:underline hover:scale-100",
+        default: "btn-latveria-primary shadow-sm hover:shadow",
+        outline: "btn-latveria-secondary",
+        ghost: "text-[var(--soft-ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]",
+        link: "text-[var(--emerald)] underline-offset-4 hover:underline hover:scale-100",
       },
       size: {
         default: "min-h-10 px-4 py-2",
@@ -25,12 +21,11 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: { variant: "default", size: "default" },
-  }
+  },
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
   loadingText?: string;

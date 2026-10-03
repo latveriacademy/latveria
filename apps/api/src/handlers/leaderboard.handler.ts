@@ -14,7 +14,9 @@ leaderboardHandler.get("/api/leaderboard", async (c) => {
     limit: c.req.query("limit"),
   });
   if (!parsed.success) {
-    throw new HTTPException(400, { message: `Parameter tidak valid: ${parsed.error.issues[0]?.message}` });
+    throw new HTTPException(400, {
+      message: `Parameter tidak valid: ${parsed.error.issues[0]?.message}`,
+    });
   }
 
   const result = await getLeaderboard(c.get("user").id, parsed.data);
@@ -24,6 +26,6 @@ leaderboardHandler.get("/api/leaderboard", async (c) => {
 leaderboardHandler.get("/api/learner/leaderboard", (c) => {
   const period = c.req.query("period") ?? "weekly";
   return c.redirect(
-    `/api/leaderboard?metric=xp&subtest=all&period=${encodeURIComponent(period === "all-time" ? "all" : period)}`
+    `/api/leaderboard?metric=xp&subtest=all&period=${encodeURIComponent(period === "all-time" ? "all" : period)}`,
   );
 });

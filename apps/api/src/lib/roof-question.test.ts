@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, questionImportSchema, utbkSubtests } from "@latveria/shared";
-import { geometryQuestionData, isLegacyCylinderTankQuestion, isLegacyOpenCuboidQuestion, isLegacyRoofQuestion } from "./roof-question";
+import {
+  cylinderTankQuestion,
+  openCuboidQuestion,
+  pyramidQuestion,
+  questionImportSchema,
+  utbkSubtests,
+} from "@latveria/shared";
+import {
+  geometryQuestionData,
+  isLegacyCylinderTankQuestion,
+  isLegacyOpenCuboidQuestion,
+  isLegacyRoofQuestion,
+} from "./roof-question";
 
 describe("seeded geometry questions", () => {
   it("matches only the three legacy diagrams to their replacements", () => {
@@ -13,12 +24,20 @@ describe("seeded geometry questions", () => {
     expect(geometryQuestionData(oldPyramid)).toBe(pyramidQuestion);
     expect(geometryQuestionData(oldBox)).toBe(openCuboidQuestion);
     expect(geometryQuestionData(oldTank)).toBe(cylinderTankQuestion);
-    expect(geometryQuestionData("Tangki air 154 liter" )).toBeNull();
+    expect(geometryQuestionData("Tangki air 154 liter")).toBeNull();
   });
 
   it("keeps every replacement renderer-compatible and import-valid under prompt limits", () => {
     const questions = [pyramidQuestion, openCuboidQuestion, cylinderTankQuestion];
-    const parsed = questionImportSchema.safeParse({ groups: [{ subtes: utbkSubtests.find((subtest) => subtest.slug === "penalaran-matematika")!.slug, category: "Bangun ruang", questions }] });
+    const parsed = questionImportSchema.safeParse({
+      groups: [
+        {
+          subtes: utbkSubtests.find((subtest) => subtest.slug === "penalaran-matematika")!.slug,
+          category: "Bangun ruang",
+          questions,
+        },
+      ],
+    });
     expect(parsed.success).toBe(true);
     for (const question of questions) {
       expect(question.prompt.length).toBeLessThanOrEqual(1000);

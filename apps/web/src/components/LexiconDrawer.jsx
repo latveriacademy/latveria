@@ -1,7 +1,7 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
-import { BookOpen, X, Sparkles, Volume2, Bookmark, Check } from 'lucide-react';
-import { sound } from '../utils/audioFeedback';
+import React from "react";
+import { useApp } from "../context/AppContext";
+import { BookOpen, X, Sparkles, Volume2, Bookmark, Check } from "lucide-react";
+import { sound } from "../utils/audioFeedback";
 
 export const LexiconDrawer = () => {
   const { lexiconState, closeLexicon, showToast } = useApp();
@@ -13,8 +13,8 @@ export const LexiconDrawer = () => {
     sound.playSelect();
     showToast(
       `KOSAKATA DIARSIPKAN: "${wordData.word.toUpperCase()}"`,
-      'Tersimpan dalam Arsip Glosarium Pribadi Latveria',
-      'info'
+      "Tersimpan dalam Arsip Glosarium Pribadi Latveria",
+      "info",
     );
   };
 
@@ -62,9 +62,7 @@ export const LexiconDrawer = () => {
         {/* Indonesian Definition Card */}
         <div className="lexicon-section definition-box">
           <div className="section-label-mono">INDONESIAN DEFINITION / DEFINISI</div>
-          <p className="lexicon-def-text font-serif">
-            {wordData.indonesianDefinition}
-          </p>
+          <p className="lexicon-def-text font-serif">{wordData.indonesianDefinition}</p>
         </div>
 
         {/* Academic Context Sentence */}
@@ -114,19 +112,11 @@ export const LexiconDrawer = () => {
 
         {/* Action Bar */}
         <div className="lexicon-actions">
-          <button
-            type="button"
-            className="btn-archive-vocab"
-            onClick={handleSaveToVocab}
-          >
+          <button type="button" className="btn-archive-vocab" onClick={handleSaveToVocab}>
             <Bookmark size={15} />
             <span>SIMPAN KE ARSIP KOSAKATA</span>
           </button>
-          <button
-            type="button"
-            className="btn-dismiss-vocab"
-            onClick={closeLexicon}
-          >
+          <button type="button" className="btn-dismiss-vocab" onClick={closeLexicon}>
             <span>KEMBALI KE SOAL</span>
           </button>
         </div>

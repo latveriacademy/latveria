@@ -1,4 +1,9 @@
-import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, type QuestionImport } from "@latveria/shared";
+import {
+  cylinderTankQuestion,
+  openCuboidQuestion,
+  pyramidQuestion,
+  type QuestionImport,
+} from "@latveria/shared";
 
 export const tikzExamples = [
   {
@@ -55,17 +60,29 @@ export const tikzExamples = [
 ];
 
 export const tikzPyramidImportExample: QuestionImport = {
-  groups: [{
-    subtes: "pengetahuan-kuantitatif",
-    category: "Bangun ruang",
-    questions: [{
-      ...pyramidQuestion, options: [...pyramidQuestion.options],
-    }],
-  }],
+  groups: [
+    {
+      subtes: "pengetahuan-kuantitatif",
+      category: "Bangun ruang",
+      questions: [
+        {
+          ...pyramidQuestion,
+          options: [...pyramidQuestion.options],
+        },
+      ],
+    },
+  ],
 };
 
 export const geometryImportExample: QuestionImport = {
   groups: [
-    { subtes: "penalaran-matematika", category: "Bangun ruang", questions: [pyramidQuestion, openCuboidQuestion, cylinderTankQuestion].map((question) => ({ ...question, options: [...question.options] })) },
+    {
+      subtes: "penalaran-matematika",
+      category: "Bangun ruang",
+      questions: [pyramidQuestion, openCuboidQuestion, cylinderTankQuestion].map((question) => ({
+        ...question,
+        options: [...question.options],
+      })),
+    },
   ],
 };

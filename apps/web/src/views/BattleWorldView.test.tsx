@@ -7,9 +7,21 @@ import { BattleWorldView } from "./BattleWorldView";
 it("offers Drilling and Battle World navigation and an empty state backed by live package data", async () => {
   expect(learnerNavigation.find((item) => item.id === "practice")?.label).toBe("Drilling");
   expect(learnerNavigation.find((item) => item.id === "tryout")?.label).toBe("Battle World");
-  expect(learnerMobileNavigation.map((item) => item.id)).toEqual(["dashboard", "practice", "library", "tryout", "leaderboard", "profile", "settings"]);
+  expect(learnerMobileNavigation.map((item) => item.id)).toEqual([
+    "dashboard",
+    "practice",
+    "library",
+    "tryout",
+    "leaderboard",
+    "profile",
+    "settings",
+  ]);
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
-  const html = renderToStaticMarkup(<MemoryRouter><BattleWorldView /></MemoryRouter>);
+  const html = renderToStaticMarkup(
+    <MemoryRouter>
+      <BattleWorldView />
+    </MemoryRouter>,
+  );
   expect(html).toContain("Battle World");
   expect(html).toContain("Belum ada tryout siap dimainkan");
   expect(html).toContain('href="/dashboard?tab=practice"');

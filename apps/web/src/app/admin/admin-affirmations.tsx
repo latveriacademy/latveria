@@ -122,13 +122,17 @@ export function AdminAffirmations() {
 
       <Panel>
         <PanelHeader title="Daftar Afirmasi Aktif">
-          <span style={{ fontSize: 13, color: "var(--soft-ink)" }}>{affirmations.length} pesan</span>
+          <span style={{ fontSize: 13, color: "var(--soft-ink)" }}>
+            {affirmations.length} pesan
+          </span>
         </PanelHeader>
 
         {loading ? (
           <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>Memuat…</div>
         ) : affirmations.length === 0 ? (
-          <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>Belum ada pesan afirmasi.</div>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>
+            Belum ada pesan afirmasi.
+          </div>
         ) : (
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {affirmations.map((a) => (
@@ -144,17 +148,38 @@ export function AdminAffirmations() {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <MessageSquareQuote size={18} style={{ color: "var(--accent-gold)", marginTop: 2, flexShrink: 0 }} />
+                  <MessageSquareQuote
+                    size={18}
+                    style={{ color: "var(--accent-gold)", marginTop: 2, flexShrink: 0 }}
+                  />
                   <div>
-                    <p style={{ margin: "0 0 4px 0", fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
+                    <p
+                      style={{
+                        margin: "0 0 4px 0",
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: "var(--ink)",
+                      }}
+                    >
                       "{a.affirmation}"
                     </p>
-                    <span style={{ fontSize: 12, color: "var(--soft-ink)", fontFamily: "var(--font-mono)" }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--soft-ink)",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    >
                       — {a.author || "Anonim"}
                     </span>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)} title="Hapus afirmasi">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(a.id)}
+                  title="Hapus afirmasi"
+                >
                   <Trash2 size={15} style={{ color: "#ef4444" }} />
                 </Button>
               </li>

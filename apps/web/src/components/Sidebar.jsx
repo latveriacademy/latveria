@@ -1,14 +1,23 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { useLocation, useNavigate } from 'react-router';
-import { useApp } from '../context/AppContext';
-import { DashboardSidebar, DashboardNavigation } from './ui/dashboard-shell';
-import { learnerNavigation } from './learner-navigation';
-import { UserRound, Settings, ChevronUp, Flame } from 'lucide-react';
-import { LogoutButton } from './logout-button';
-import { ProgressBar } from './ui/dashboard';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { useLocation, useNavigate } from "react-router";
+import { useApp } from "../context/AppContext";
+import { DashboardSidebar, DashboardNavigation } from "./ui/dashboard-shell";
+import { learnerNavigation } from "./learner-navigation";
+import { UserRound, Settings, ChevronUp, Flame } from "lucide-react";
+import { LogoutButton } from "./logout-button";
+import { ProgressBar } from "./ui/dashboard";
 
-const ProfilePopup = ({ user, xpPercentage, isOpen, onClose, onNavigate, isProfileActive, isSettingsActive, anchorRef }) => {
+const ProfilePopup = ({
+  user,
+  xpPercentage,
+  isOpen,
+  onClose,
+  onNavigate,
+  isProfileActive,
+  isSettingsActive,
+  anchorRef,
+}) => {
   const popupRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
 
@@ -37,35 +46,46 @@ const ProfilePopup = ({ user, xpPercentage, isOpen, onClose, onNavigate, isProfi
       setPosition({ top, left });
     };
     updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => { window.removeEventListener('resize', updatePosition); window.removeEventListener('scroll', updatePosition, true); };
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
   }, [isOpen, anchorRef]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (popupRef.current && !popupRef.current.contains(e.target) && anchorRef?.current && !anchorRef.current.contains(e.target)) {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(e.target) &&
+        anchorRef?.current &&
+        !anchorRef.current.contains(e.target)
+      ) {
         onClose();
       }
     };
     const handleEsc = (e) => {
-      if (e.key === 'Escape') { onClose(); anchorRef.current?.querySelector('button')?.focus(); }
+      if (e.key === "Escape") {
+        onClose();
+        anchorRef.current?.querySelector("button")?.focus();
+      }
     };
     if (isOpen) {
-      popupRef.current?.querySelector('button')?.focus();
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEsc);
+      popupRef.current?.querySelector("button")?.focus();
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEsc);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
     };
   }, [isOpen, onClose, anchorRef]);
 
   const popup = (
     <div
       ref={popupRef}
-      className={`profile-popup-menu ${isOpen ? 'is-open' : ''}`}
+      className={`profile-popup-menu ${isOpen ? "is-open" : ""}`}
       role="dialog"
       aria-label="Menu profil"
       style={{
@@ -78,19 +98,33 @@ const ProfilePopup = ({ user, xpPercentage, isOpen, onClose, onNavigate, isProfi
         <div className="popup-id-row">
           <span className="popup-code font-mono">{user.id}</span>
           <span className="popup-badge">LVL {user.level < 10 ? `0${user.level}` : user.level}</span>
-          <span className="popup-status"><span className="status-blink-dot" /></span>
+          <span className="popup-status">
+            <span className="status-blink-dot" />
+          </span>
         </div>
         <div className="popup-name">{user.name}</div>
         <div className="popup-xp-container">
           <div className="popup-xp-labels font-mono">
-            <span>{user.currentXP.toLocaleString()} / {user.nextLevelXP.toLocaleString()} EXP</span>
+            <span>
+              {user.currentXP.toLocaleString()} / {user.nextLevelXP.toLocaleString()} EXP
+            </span>
             <span>{xpPercentage}%</span>
           </div>
-          <ProgressBar value={xpPercentage} label="Progres level" className="popup-progress-track" fillClassName="popup-progress-fill" />
+          <ProgressBar
+            value={xpPercentage}
+            label="Progres level"
+            className="popup-progress-track"
+            fillClassName="popup-progress-fill"
+          />
         </div>
         <div className="popup-streak-row">
-          <Flame size={12} className={`popup-streak-icon ${user.streakDays === 0 ? 'streak-zero' : ''}`} />
-          <span className={`popup-streak-text font-mono ${user.streakDays === 0 ? 'streak-zero' : ''}`}>
+          <Flame
+            size={12}
+            className={`popup-streak-icon ${user.streakDays === 0 ? "streak-zero" : ""}`}
+          />
+          <span
+            className={`popup-streak-text font-mono ${user.streakDays === 0 ? "streak-zero" : ""}`}
+          >
             {user.streakDays} DAY STREAK
           </span>
         </div>
@@ -100,16 +134,16 @@ const ProfilePopup = ({ user, xpPercentage, isOpen, onClose, onNavigate, isProfi
       <div className="popup-menu-items">
         <button
           type="button"
-          className={`popup-menu-item ${isProfileActive ? 'is-active' : ''}`}
-          onClick={() => onNavigate('/dashboard?tab=profile')}
+          className={`popup-menu-item ${isProfileActive ? "is-active" : ""}`}
+          onClick={() => onNavigate("/dashboard?tab=profile")}
         >
           <UserRound size={16} />
           <span>Profil</span>
         </button>
         <button
           type="button"
-          className={`popup-menu-item ${isSettingsActive ? 'is-active' : ''}`}
-          onClick={() => onNavigate('/dashboard?tab=settings')}
+          className={`popup-menu-item ${isSettingsActive ? "is-active" : ""}`}
+          onClick={() => onNavigate("/dashboard?tab=settings")}
         >
           <Settings size={16} />
           <span>Setelan</span>
@@ -122,20 +156,33 @@ const ProfilePopup = ({ user, xpPercentage, isOpen, onClose, onNavigate, isProfi
   return createPortal(popup, document.body);
 };
 
-const CompactProfileCard = ({ user, xpPercentage, isPopupOpen, onToggle, onClose, onNavigate, isProfileActive, isSettingsActive, isCollapsed }) => {
+const CompactProfileCard = ({
+  user,
+  xpPercentage,
+  isPopupOpen,
+  onToggle,
+  onClose,
+  onNavigate,
+  isProfileActive,
+  isSettingsActive,
+  isCollapsed,
+}) => {
   const cardRef = useRef(null);
 
-  const handleNavigate = useCallback((path) => {
-    onNavigate(path);
-    onClose();
-  }, [onNavigate, onClose]);
+  const handleNavigate = useCallback(
+    (path) => {
+      onNavigate(path);
+      onClose();
+    },
+    [onNavigate, onClose],
+  );
 
   if (isCollapsed) {
     return (
       <div className="compact-profile-collapsed" ref={cardRef}>
         <button
           type="button"
-          className={`compact-avatar-btn ${isProfileActive || isSettingsActive ? 'is-active' : ''}`}
+          className={`compact-avatar-btn ${isProfileActive || isSettingsActive ? "is-active" : ""}`}
           onClick={onToggle}
           aria-haspopup="dialog"
           aria-expanded={isPopupOpen}
@@ -163,7 +210,10 @@ const CompactProfileCard = ({ user, xpPercentage, isPopupOpen, onToggle, onClose
   }
 
   return (
-    <div className={`compact-profile-card ${isProfileActive || isSettingsActive ? 'is-active' : ''}`} ref={cardRef}>
+    <div
+      className={`compact-profile-card ${isProfileActive || isSettingsActive ? "is-active" : ""}`}
+      ref={cardRef}
+    >
       <button
         type="button"
         className="compact-profile-trigger"
@@ -181,17 +231,28 @@ const CompactProfileCard = ({ user, xpPercentage, isPopupOpen, onToggle, onClose
         <div className="compact-info">
           <span className="compact-name">{user.name}</span>
           <span className="compact-level font-mono">
-            <span className="compact-level-text">LVL {user.level < 10 ? `0${user.level}` : user.level} · {user.currentXP}/{user.nextLevelXP} EXP</span>
+            <span className="compact-level-text">
+              LVL {user.level < 10 ? `0${user.level}` : user.level} · {user.currentXP}/
+              {user.nextLevelXP} EXP
+            </span>
             <span className="compact-streak-indicator">
-              <Flame size={10} className={`compact-streak-icon ${user.streakDays === 0 ? 'streak-zero' : ''}`} />
-              <span className={user.streakDays === 0 ? 'streak-zero' : ''}>{user.streakDays}</span>
+              <Flame
+                size={10}
+                className={`compact-streak-icon ${user.streakDays === 0 ? "streak-zero" : ""}`}
+              />
+              <span className={user.streakDays === 0 ? "streak-zero" : ""}>{user.streakDays}</span>
             </span>
           </span>
         </div>
-        <ChevronUp size={14} className={`compact-chevron ${isPopupOpen ? 'is-open' : ''}`} />
+        <ChevronUp size={14} className={`compact-chevron ${isPopupOpen ? "is-open" : ""}`} />
       </button>
       <div className="compact-xp-bar">
-        <ProgressBar value={xpPercentage} label="Progres level" className="popup-progress-track" fillClassName="popup-progress-fill" />
+        <ProgressBar
+          value={xpPercentage}
+          label="Progres level"
+          className="popup-progress-track"
+          fillClassName="popup-progress-fill"
+        />
       </div>
 
       {isPopupOpen && (
@@ -216,16 +277,27 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const [profilePopupOpen, setProfilePopupOpen] = useState(false);
 
-  const xpPercentage = Math.min(100, Math.round(user.currentXP / user.nextLevelXP * 100));
-  const isProfileActive = currentTab === 'profile';
-  const isSettingsActive = currentTab === 'settings';
+  const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
+  const isProfileActive = currentTab === "profile";
+  const isSettingsActive = currentTab === "settings";
 
-  const toggleProfilePopup = () => setProfilePopupOpen(prev => !prev);
+  const toggleProfilePopup = () => setProfilePopupOpen((prev) => !prev);
   const closeProfilePopup = useCallback(() => setProfilePopupOpen(false), []);
-  useEffect(() => { closeProfilePopup(); }, [sidebarOpen, location.key, closeProfilePopup]);
-  const closeMobileSidebar = () => { if (window.innerWidth <= 768 && sidebarOpen) toggleSidebar(); };
-  const handleProfileNavigate = (path) => { navigate(path); closeMobileSidebar(); };
-  const handleSelect = (tab) => { setCurrentTab(tab); closeProfilePopup(); closeMobileSidebar(); };
+  useEffect(() => {
+    closeProfilePopup();
+  }, [sidebarOpen, location.key, closeProfilePopup]);
+  const closeMobileSidebar = () => {
+    if (window.innerWidth <= 768 && sidebarOpen) toggleSidebar();
+  };
+  const handleProfileNavigate = (path) => {
+    navigate(path);
+    closeMobileSidebar();
+  };
+  const handleSelect = (tab) => {
+    setCurrentTab(tab);
+    closeProfilePopup();
+    closeMobileSidebar();
+  };
 
   return (
     <DashboardSidebar home="/dashboard" collapsed={!sidebarOpen}>
