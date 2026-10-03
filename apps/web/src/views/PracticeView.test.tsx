@@ -65,8 +65,27 @@ it("keeps Drilling as question discovery and exposes non-tryout destinations sep
       <PracticeView />
     </MemoryRouter>,
   );
-  expect(html).toContain('placeholder="Cari subtes atau area materi"');
+  expect(html).toContain('placeholder="Cari paket soal, subtes, topik…"');
+  expect(html).toContain('aria-label="Filter paket"');
+  expect(html).toContain('aria-pressed="true"');
   expect(html).toContain("TKA &amp; Mandiri");
   expect(html).toContain("Drilling");
   expect(html).not.toContain("Materi belum tersedia");
+});
+
+it("preserves a subtest deep link as the selected package filter", () => {
+  vi.mocked(useApp).mockReturnValue({
+    topics: [
+      { id: "PU", slug: "penalaran-umum", name: "Penalaran Umum", category: "Tes Skolastik" },
+    ],
+    topicsLoading: false,
+    topicsError: "",
+  } as ReturnType<typeof useApp>);
+  const html = renderToStaticMarkup(
+    <MemoryRouter initialEntries={["/dashboard?tab=practice&subtes=penalaran-umum"]}>
+      <PracticeView />
+    </MemoryRouter>,
+  );
+  expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>Penalaran Umum/);
+  expect(html).toContain('<option value="penalaran-umum" selected="">');
 });
