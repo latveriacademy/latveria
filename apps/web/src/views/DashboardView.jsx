@@ -50,7 +50,7 @@ export const DashboardView = () => {
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
-              <h1 className="hero-headline font-serif">Selamat datang, {user.name}.</h1>
+              <h1 className="hero-headline font-serif">Selamat datang, Warrior {user.name}.</h1>
             </div>
 
             {/* Quick Metrics Bar */}
