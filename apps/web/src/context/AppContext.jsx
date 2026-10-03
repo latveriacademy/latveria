@@ -85,7 +85,7 @@ export const AppProvider = ({ children }) => {
   const [params] = useSearchParams();
   const tab = params.get('tab') || 'dashboard';
   const practiceSubtest = params.get('subtes');
-  const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
+  const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'tryout', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
   const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}${next === 'practice' && practiceSubtest ? `&subtes=${encodeURIComponent(practiceSubtest)}` : ''}`), [navigate, practiceSubtest]);
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
@@ -501,7 +501,7 @@ export const AppProvider = ({ children }) => {
 
       // Refresh summary and history in background
       refreshSummary().then((data) => {
-        if (data.level > user.level) showToast(`Naik ke level ${data.level}`, `Total ${data.totalXP} EXP dari latihan.`, 'level-up');
+        if (data.level > user.level) showToast(`Level ${data.level} unlocked!`, `Total ${data.totalXP} EXP dari drilling.`, 'level-up');
       }).catch(() => showToast('Progres belum dapat dimuat', 'Progres latihan sudah tersimpan. Muat ulang halaman untuk mencoba lagi.', 'error'));
 
       fetch('/api/learner/history').then((r) => r.ok ? r.json() : []).then((data) => {

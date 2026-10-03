@@ -284,7 +284,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
               className="btn-exit-minimal"
               disabled={submitting}
               onClick={exitPractice}
-              title={isEvaluated ? 'Kembali ke daftar latihan' : 'Keluar dari sesi'}
+              title={isEvaluated ? 'Kembali ke Drilling' : 'Keluar dari sesi'}
             >
               <ChevronLeft size={16} />
               <span className="font-mono">{isEvaluated ? 'KEMBALI' : 'KELUAR'}</span>
@@ -389,7 +389,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                 }}
               >
                 <RotateCcw size={14} />
-                <span>{onReviewStart ? 'Latihan lagi' : 'Ulangi latihan'}</span>
+                <span>Drilling lagi</span>
               </button>
             )}
 
@@ -836,7 +836,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
               aria-labelledby="modal-submit-title"
             >
               <div className="modal-header">
-                <h2 id="modal-submit-title" className="modal-title font-serif">Kumpulkan latihan?</h2>
+                <h2 id="modal-submit-title" className="modal-title font-serif">Kumpulkan jawaban?</h2>
                 <p className="modal-desc">Jawaban tidak dapat diubah setelah dikumpulkan.</p>
               </div>
 
@@ -894,7 +894,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           earnedXP={activeSession.results.earnedXP}
           onClose={() => setShowSummaryModal(false)}
           onExit={() => { setShowSummaryModal(false); exitPractice(); }}
-          exitLabel={reviewSession ? 'Kembali ke riwayat' : 'Kembali ke latihan'}
+          exitLabel={reviewSession ? 'Kembali ke Drill Log' : 'Kembali ke Drilling'}
         />}
       </div>
     );
@@ -907,7 +907,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
     <div className="latveria-view-container practice-catalog-view">
       {selectedSubtest ? (
         <>
-          <nav aria-label="Lokasi latihan" className={styles.breadcrumb}>
+          <nav aria-label="Lokasi drilling" className={styles.breadcrumb}>
             <Link to="/dashboard?tab=practice"><ChevronLeft size={16} />Semua subtes</Link>
             <span aria-hidden="true">/</span>
             <span aria-current="page">{selectedSubtest.name}</span>
@@ -919,7 +919,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
               <Button asChild variant="outline">
                 <Link to="/dashboard/riwayat">
                   <History className="size-4" />
-                  Riwayat
+                  Drill Log
                 </Link>
               </Button>
             }
@@ -963,10 +963,10 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                       disabled={pkg.questionCount === 0 || loading}
                       aria-expanded={selectedPackage?.id === pkg.id}
                       aria-controls={`setup-${pkg.id}`}
-                      aria-label={pkg.questionCount === 0 ? `${pkg.name} belum tersedia` : `${selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan latihan'} ${pkg.name}`}
+                      aria-label={pkg.questionCount === 0 ? `${pkg.name} belum tersedia` : `${selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan drilling'} ${pkg.name}`}
                       onClick={() => setSelectedPackage(selectedPackage?.id === pkg.id ? null : pkg)}
                     >
-                      {pkg.questionCount === 0 ? 'Belum tersedia' : selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan latihan'}
+                      {pkg.questionCount === 0 ? 'Belum tersedia' : selectedPackage?.id === pkg.id ? 'Tutup pengaturan' : 'Siapkan drilling'}
                       <ChevronRight size={16} />
                     </Button>
                   </div>
@@ -991,7 +991,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                       </fieldset>
                       <div className={styles.setupFooter}>
                         <p>Semua {pkg.questionCount} soal dalam paket akan dikerjakan.</p>
-                        <Button type="submit" disabled={loading}><Play size={16} />{loading ? 'Menyiapkan soal…' : 'Mulai latihan'}</Button>
+                        <Button type="submit" disabled={loading}><Play size={16} />{loading ? 'Menyiapkan soal…' : 'Gas drilling'}</Button>
                       </div>
                     </form>
                   )}
@@ -1005,13 +1005,13 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
         /* Subtests Catalog View */
         <>
           <PageHeading
-            title="Latihan"
-            description="Pilih subtes, lalu pilih paket soal yang ingin kamu kerjakan."
+            title="Drilling"
+            description="Pilih subtes, ambil paket, lalu asah skill-mu satu soal demi satu soal."
             actions={
               <Button asChild variant="outline">
                 <Link to="/dashboard/riwayat">
                   <History className="size-4" />
-                  Riwayat
+                  Drill Log
                 </Link>
               </Button>
             }

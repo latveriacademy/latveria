@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void; onExit: () => void; exitLabel?: string;
 };
 
-export function PracticeResultsDialog({ open, subject, packageName, correct, total, unanswered, earnedXP, onClose, onExit, exitLabel = "Kembali ke latihan" }: Props) {
+export function PracticeResultsDialog({ open, subject, packageName, correct, total, unanswered, earnedXP, onClose, onExit, exitLabel = "Kembali ke Drilling" }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (open && !dialog.current?.open) dialog.current?.showModal();
@@ -20,8 +20,8 @@ export function PracticeResultsDialog({ open, subject, packageName, correct, tot
   return <dialog ref={dialog} className={styles.dialog} aria-labelledby="practice-results-title" aria-describedby="practice-results-context" onCancel={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <div className={styles.content}>
       <header className={styles.header}>
-        <div><h2 id="practice-results-title">Hasil latihan</h2><p id="practice-results-context">{subject}{packageName ? ` · ${packageName}` : ""}</p></div>
-        <Button variant="ghost" size="icon" aria-label="Tutup hasil latihan" onClick={onClose}><X /></Button>
+        <div><h2 id="practice-results-title">Drilling selesai!</h2><p id="practice-results-context">{subject}{packageName ? ` · ${packageName}` : ""}</p></div>
+        <Button variant="ghost" size="icon" aria-label="Tutup hasil drilling" onClick={onClose}><X /></Button>
       </header>
       <div className={styles.accuracy}>
         <p>Ketepatan jawaban</p>

@@ -9,7 +9,7 @@ import styles from "./history.module.css";
 export function HistoryView() {
   const history = useLoaderData<HistoryItem[]>();
   return <div className="latveria-view-container motion-page-enter">
-    <PageHeading title="Riwayat latihan" description={`${history.length} sesi`} actions={<Button asChild variant="outline"><Link to="/dashboard?tab=practice"><ArrowLeft />Latihan</Link></Button>} />
+    <PageHeading title="Drill Log" description={`${history.length} sesi drilling tersimpan`} actions={<Button asChild variant="outline"><Link to="/dashboard?tab=practice"><ArrowLeft />Drilling</Link></Button>} />
     <Panel>
       {history.length ? <ul className={styles.list} aria-label="Sesi latihan yang sudah dikumpulkan">
         {history.map((attempt, idx) => (
@@ -26,7 +26,7 @@ export function HistoryView() {
             <Button asChild variant="outline" size="sm"><Link to={`/dashboard/riwayat/${attempt.id}`} aria-label={`Lihat hasil ${attempt.topic} pada ${new Date(attempt.submittedAt).toLocaleDateString("id-ID")}`}>Lihat hasil<ChevronRight /></Link></Button>
           </li>
         ))}
-      </ul> : <div className={`${styles.empty} motion-fade-up`}><p>Belum ada latihan yang dikumpulkan.</p><Button asChild><Link to="/dashboard?tab=practice">Mulai latihan</Link></Button></div>}
+      </ul> : <div className={`${styles.empty} motion-fade-up`}><p>Drill Log masih kosong. Gas selesaikan sesi pertamamu.</p><Button asChild><Link to="/dashboard?tab=practice">Gas drilling</Link></Button></div>}
     </Panel>
   </div>;
 }
@@ -40,8 +40,8 @@ export function HistoryErrorView() {
     <Panel><div className={styles.empty}>
       {!missing && <p role="alert">{error instanceof Error ? error.message : "Coba lagi."}</p>}
       {!missing && <Button disabled={revalidator.state !== "idle"} onClick={() => revalidator.revalidate()}>Coba lagi</Button>}
-      <Button asChild variant="outline"><Link to="/dashboard/riwayat">Riwayat latihan</Link></Button>
-      <Link to="/dashboard?tab=practice">Kembali ke latihan</Link>
+      <Button asChild variant="outline"><Link to="/dashboard/riwayat">Drill Log</Link></Button>
+      <Link to="/dashboard?tab=practice">Kembali ke Drilling</Link>
     </div></Panel>
   </div>;
 }

@@ -10,6 +10,8 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 
 Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau.
 
+Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (latihan), dan **Drill Log** (riwayat). Menu **Battle World** membuka halaman tryout pada `/dashboard?tab=tryout`; saat ini halaman tersebut menampilkan status belum tersedia karena engine tryout lintas subtes belum dibangun. Drilling tetap memakai route/API latihan yang sudah ada.
+
 ## Pengembangan lokal
 
 Node.js 22 (minimal 22.12), Bun 1.3.14, Docker Compose. Bun mengelola dependensi dan script; Node tetap menjalankan Vite, Vitest, dan Hono melalui CLI masing-masing. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.

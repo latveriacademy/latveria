@@ -93,7 +93,7 @@ export const DashboardView = () => {
               <div className="cta-crest-center">
                 <LatveriaSeal size={48} />
               </div>
-              <h2 className="cta-heading font-serif">Latihan UTBK</h2>
+              <h2 className="cta-heading font-serif">Drilling</h2>
               <Button
                 type="button"
                 id="btn-quick-training"
@@ -101,7 +101,7 @@ export const DashboardView = () => {
                 onClick={() => handleLaunchTraining('PU')}
               >
                 <Play size={16} fill="currentColor" />
-                <span>Mulai latihan</span>
+                <span>Gas drilling</span>
               </Button>
               <Button
                 variant="outline"
@@ -110,7 +110,7 @@ export const DashboardView = () => {
                 className="btn-latveria-secondary w-full"
                 onClick={() => setCurrentTab('practice')}
               >
-                <span>BUKA SEMUA SUBTES (7)</span>
+                <span>Pilih subtes</span>
                 <ArrowUpRight size={15} />
               </Button>
             </div>
@@ -122,14 +122,14 @@ export const DashboardView = () => {
       <div className="dashboard-grid-dual">
         {/* Left Column: Today's Training */}
         <Panel className="training-panel">
-          <PanelHeader title="Latihan hari ini">
+          <PanelHeader title="Drilling hari ini">
             <div className="training-counter-badge font-mono">
-              <span>{user.practicedToday ? 'Sudah latihan' : 'Belum latihan'}</span>
+              <span>{user.practicedToday ? 'Sudah drilling' : 'Belum drilling'}</span>
             </div>
           </PanelHeader>
 
           <div className="training-tasks-list">
-            {!user.todayTraining.length && <p className="text-muted">{user.practicedToday ? 'Latihan hari ini sudah tercatat. Kamu bisa berlatih lagi.' : 'Selesaikan satu latihan untuk memulai atau menjaga streak hari ini.'}</p>}
+            {!user.todayTraining.length && <p className="text-muted">{user.practicedToday ? 'Streak hari ini aman. Mau push skill lagi? Gas drilling.' : 'Gas satu sesi drilling buat mulai atau jaga streak hari ini.'}</p>}
             {user.todayTraining.map((task) => (
               <div
                 key={task.id}
@@ -184,7 +184,7 @@ export const DashboardView = () => {
               className="btn-latveria-primary w-full"
               onClick={() => handleLaunchTraining('PU')}
             >
-              <span>LANJUTKAN TRAINING HARIAN</span>
+              <span>Gas drilling hari ini</span>
               <ArrowUpRight size={16} />
             </button>
           </div>
@@ -304,7 +304,7 @@ export const DashboardView = () => {
 
         {/* Recent Activity Stream */}
         <Panel>
-          <PanelHeader title="Riwayat latihan">
+          <PanelHeader title="Drill Log">
             <span className="meta-tag-id font-mono">LOG.HIST-0824</span>
           </PanelHeader>
 

@@ -10,6 +10,8 @@ import { PracticeView } from './views/PracticeView';
 import { LeaderboardView } from './views/LeaderboardView';
 import { ProfileView } from './views/ProfileView';
 import { SettingsView } from './views/SettingsView';
+import { BattleWorldView } from './views/BattleWorldView';
+import './learner-copy.css';
 import { useMatch, useNavigation, useOutlet } from 'react-router';
 import { DashboardShell } from './components/ui/dashboard-shell';
 
@@ -26,6 +28,8 @@ function AppShell() {
         return <DashboardView />;
       case 'practice':
         return <PracticeView />;
+      case 'tryout':
+        return <BattleWorldView />;
       case 'leaderboard':
         return <LeaderboardView />;
       case 'profile':
@@ -39,6 +43,7 @@ function AppShell() {
 
   return (
     <DashboardShell
+      className="learner-shell"
       immersive={immersive}
       sidebarOpen={sidebarOpen}
       onCloseSidebar={toggleSidebar}

@@ -26,7 +26,7 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
 }
 
 export function DashboardSidebar({ home, identity, children, collapsed = false }: { home: string; identity: ReactNode; children: ReactNode; collapsed?: boolean }) {
-  return <aside className={`latveria-sidebar motion-slide-in-left${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama">
+  return <aside className={`latveria-sidebar motion-slide-in-left${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama" aria-hidden={collapsed} inert={collapsed}>
     <div className="sidebar-brand-wrapper"><Brand to={home} /></div>
     <div className="sidebar-scrollable-content">{identity}{children}</div>
     <div className="sidebar-footer"><LogoutButton className="nav-button transition-transform duration-150 hover:scale-[1.015] active:scale-[0.98]" /></div>

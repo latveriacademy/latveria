@@ -50,7 +50,7 @@ export const SettingsView = () => {
       <LatveriaWatermark size={360} opacity={0.03} />
 
       {/* Header */}
-      <PageHeading title="Pengaturan" />
+      <PageHeading title="Setelan" />
 
       <div className="settings-sections-wrapper motion-fade-up">
         <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
