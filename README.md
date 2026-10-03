@@ -12,6 +12,8 @@ Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan n
 
 Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (latihan), dan **Drill Log** (riwayat). Menu **Battle World** membuka halaman tryout pada `/dashboard?tab=tryout`; saat ini halaman tersebut menampilkan status belum tersedia karena engine tryout lintas subtes belum dibangun. Drilling tetap memakai route/API latihan yang sudah ada.
 
+Sidebar memakai kartu profil ringkas di bagian bawah; klik untuk membuka Profil/Setelan serta melihat level, EXP, dan streak. Pada mobile, Profil dan Setelan tetap tersedia langsung di navigasi bawah. Logout peserta/admin memakai penanganan pending/error yang sama.
+
 ## Pengembangan lokal
 
 Node.js 22 (minimal 22.12), Bun 1.3.14, Docker Compose. Bun mengelola dependensi dan script; Node tetap menjalankan Vite, Vitest, dan Hono melalui CLI masing-masing. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.

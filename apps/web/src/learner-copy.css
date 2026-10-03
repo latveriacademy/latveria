@@ -1,6 +1,7 @@
 .learner-shell .app-page-heading h1,
 .learner-shell .hero-headline { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.035em; }
 .learner-shell .bottom-nav-btn { min-width: 0; min-height: 44px; }
+.profile-popup-menu { width: min(260px, calc(100vw - 20px)); max-height: calc(100dvh - 20px); overflow-y: auto; }
 .learner-shell .bottom-label { max-width: 100%; white-space: normal; overflow-wrap: normal; text-align: center; line-height: 1.2; }
 .battle-world-empty { align-items: flex-start; gap: 20px; padding: 32px; box-shadow: none; }
 .battle-world-empty > svg { color: var(--accent-gold); }

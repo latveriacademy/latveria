@@ -18,6 +18,7 @@ export function AdminLayout() {
 
   // Sidebar toggle state - default terbuka di desktop (>768px), tertutup di mobile
   const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (window.innerWidth <= 768) return false;
     const saved = localStorage.getItem("latveria_admin_sidebar");
     if (saved !== null) return saved === "true";
     return window.innerWidth > 768;
@@ -51,6 +52,7 @@ export function AdminLayout() {
               <span className="dossier-badge">Admin</span>
             </div>
             <p className="admin-identity-email">{user.email}</p>
+            <LogoutButton className="nav-button sidebar-logout-btn" />
           </div>
         </DashboardSidebar>
       }
