@@ -241,7 +241,7 @@ export const AppProvider = ({ children }) => {
 
     // Fetch learner history
     fetch("/api/learner/history")
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => (res.ok ? res.json().catch(() => []) : []))
       .then((data) => {
         if (Array.isArray(data)) {
           setHistory(data);
@@ -590,7 +590,7 @@ export const AppProvider = ({ children }) => {
         );
 
       fetch("/api/learner/history")
-        .then((r) => (r.ok ? r.json() : []))
+        .then((r) => (r.ok ? r.json().catch(() => []) : []))
         .then((data) => {
           if (Array.isArray(data)) {
             setHistory(data);

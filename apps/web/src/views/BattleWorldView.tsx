@@ -63,9 +63,7 @@ export function BattleWorldView() {
   const loadSession = async (sessionId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/learner/tryouts/${sessionId}`);
-      if (!res.ok) throw new Error("Gagal memuat sesi tryout.");
-      const data: TryoutSessionState = await res.json();
+      const data: TryoutSessionState = await api(`/learner/tryouts/${sessionId}`);
       setActiveSessionData(data);
       setAnswers(data.session.answers || {});
       setFlags(data.session.flags || {});

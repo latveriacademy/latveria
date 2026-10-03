@@ -14,7 +14,7 @@ function useUtbkCountdown() {
 
   useEffect(() => {
     fetch("/api/learner/config")
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.json().catch(() => null) : null))
       .then((cfg) => {
         if (cfg?.utbk_target_date) {
           setTargetDate(new Date(cfg.utbk_target_date));
@@ -54,7 +54,7 @@ function useAffirmation() {
 
   useEffect(() => {
     fetch("/api/learner/affirmations")
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => (res.ok ? res.json().catch(() => []) : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setPool(data);
