@@ -1500,6 +1500,90 @@ body::after {
   color: #06110B;
 }
 
+/* UTBK Countdown Panel */
+.utbk-countdown-panel {}
+
+.utbk-countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 4px 16px;
+}
+
+.countdown-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px 8px;
+}
+
+.countdown-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Affirmation Panel */
+.affirmation-panel {}
+
+.affirmation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 16px;
+}
+
+.affirmation-quote-icon {
+  color: var(--accent-gold);
+  opacity: 0.6;
+}
+
+.affirmation-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin: 0;
+  font-style: italic;
+}
+
+.affirmation-author {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+}
+
+/* Minimal icon button used in panel headers */
+.btn-icon-minimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-minimal:hover {
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
 /* Weekly Chart Styles */
 .chart-metric-switch {
   display: flex;
@@ -3146,6 +3230,199 @@ body::after {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
   width: 280px;
+}
+
+/* Filter row with metric tabs */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.metric-tabs {
+  display: flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.metric-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: var(--bg-card);
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.metric-tab:last-child {
+  border-right: none;
+}
+
+.metric-tab:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.metric-tab.active {
+  background: var(--accent-gold-dim);
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.metric-tab svg {
+  flex-shrink: 0;
+}
+
+/* Filter select dropdowns */
+.filter-select {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-select:hover {
+  border-color: var(--border-medium);
+}
+
+.filter-select:focus {
+  border-color: var(--accent-gold);
+}
+
+.filter-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Accuracy minimum note */
+.accuracy-min-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--accent-gold-dim);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--accent-gold);
+  font-size: 11px;
+  margin-bottom: 16px;
+}
+
+/* Loading state */
+.leaderboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Error state */
+.leaderboard-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--accent-crimson-dim);
+  border: 1px solid var(--accent-crimson);
+  border-radius: var(--radius-xs);
+  color: var(--accent-crimson);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+/* Empty state */
+.leaderboard-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Period info */
+.leaderboard-period-info {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: 12px;
+}
+
+/* User position card (outside top N) */
+.user-position-card {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-top: 20px;
+}
+
+.user-position-header {
+  margin-bottom: 12px;
+}
+
+.you-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.user-position-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-position-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-position-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-position-id {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.user-position-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.user-position-metrics .metric-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.needs-more {
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 .search-input {

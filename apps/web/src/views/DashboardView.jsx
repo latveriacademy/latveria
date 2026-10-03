@@ -1,33 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import {
   Flame,
   Award,
   Target,
-  Clock,
   TrendingUp,
-  CheckCircle2,
-  Circle,
-  Play,
   ArrowUpRight,
   BookOpen,
   Calendar,
   Sparkles,
   BarChart3,
-  Compass
+  Compass,
+  Play,
+  Quote,
+  Clock,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react';
 import { sound } from '../utils/audioFeedback';
 import { Panel, PanelHeader, ProgressBar, StatTile } from '../components/ui/dashboard';
 import { Button } from '../components/ui/button';
 import { AnimatedNumber, FadeUp, StaggerContainer } from '../lib/motion';
 
-export const DashboardView = () => {
-  const { user, topics, setCurrentTab, startPractice, completeDailyTraining } = useApp();
-  const [chartMetric, setChartMetric] = useState('questions'); // 'questions' | 'xp' | 'accuracy'
+// --- UTBK Countdown Hook ---
+function useUtbkCountdown() {
+  const [targetDate, setTargetDate] = useState(null);
+  const [countdown, setCountdown] = useState(null);
 
-  const completedTrainingCount = user.todayTraining.filter((t) => t.completed).length;
-  const totalTrainingCount = user.todayTraining.length;
+  useEffect(() => {
+    fetch('/api/learner/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cfg) => {
+        if (cfg?.utbk_target_date) {
+          setTargetDate(new Date(cfg.utbk_target_date));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!targetDate) return;
+    const update = () => {
+      const now = new Date();
+      const diff = targetDate.getTime() - now.getTime();
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, passed: true });
+        return;
+      }
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setCountdown({ days, hours, minutes, seconds, passed: false });
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [targetDate]);
+
+  return countdown;
+}
+
+// --- Affirmation Hook ---
+function useAffirmation() {
+  const [affirmation, setAffirmation] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const [pool, setPool] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/learner/affirmations')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPool(data);
+          setAffirmation(data[Math.floor(Math.random() * data.length)]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const rotate = useCallback(() => {
+    if (pool.length < 2) return;
+    const next = (idx + 1) % pool.length;
+    setIdx(next);
+    setAffirmation(pool[next]);
+  }, [pool, idx]);
+
+  return { affirmation, rotate, hasPool: pool.length > 0 };
+}
+
+export const DashboardView = () => {
+  const { user, topics, setCurrentTab, startPractice } = useApp();
+  const [chartMetric, setChartMetric] = useState('questions'); // 'questions' | 'xp' | 'accuracy'
+  const countdown = useUtbkCountdown();
+  const { affirmation, rotate, hasPool } = useAffirmation();
+
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
 
   // Determine max values for weekly chart scaling
@@ -38,6 +106,9 @@ export const DashboardView = () => {
     const targetId = subjectId || (topics[0]?.id ?? 'PU');
     startPractice(targetId, 'Practice', 10, 'Latverian Elite');
   };
+
+  // Format countdown segment
+  const pad = (n) => String(n).padStart(2, '0');
 
   return (
     <div className="latveria-view-container dashboard-view">
@@ -118,77 +189,73 @@ export const DashboardView = () => {
         </div>
       </section>
 
-      {/* Main Grid: Today's Training & Weekly Analytics */}
+      {/* Main Grid: Affirmation + UTBK Countdown & Weekly Analytics */}
       <div className="dashboard-grid-dual">
-        {/* Left Column: Today's Training */}
-        <Panel className="training-panel">
-          <PanelHeader title="Drilling hari ini">
-            <div className="training-counter-badge font-mono">
-              <span>{user.practicedToday ? 'Sudah drilling' : 'Belum drilling'}</span>
-            </div>
-          </PanelHeader>
+        {/* Left Column: Affirmation + UTBK Countdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-          <div className="training-tasks-list">
-            {!user.todayTraining.length && <p className="text-muted">{user.practicedToday ? 'Streak hari ini aman. Mau push skill lagi? Gas drilling.' : 'Gas satu sesi drilling buat mulai atau jaga streak hari ini.'}</p>}
-            {user.todayTraining.map((task) => (
-              <div
-                key={task.id}
-                className={`task-row-card transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01] hover:border-[var(--edge-strong)] ${task.completed ? 'task-done' : ''}`}
-              >
-                <div className="task-status-btn-wrap">
-                  <button
-                    type="button"
-                    className="task-check-button"
-                    onClick={() => completeDailyTraining(task.id)}
-                    title={task.completed ? 'Selesai diverifikasi' : 'Tandai selesai'}
-                  >
-                    {task.completed ? (
-                      <CheckCircle2 size={20} className="text-sage" />
-                    ) : (
-                      <Circle size={20} className="text-muted" />
-                    )}
-                  </button>
+          {/* UTBK Countdown Panel */}
+          <Panel className="utbk-countdown-panel">
+            <PanelHeader title="Hitung mundur UTBK">
+              <span className="meta-tag-id font-mono">SNPMB 2027</span>
+            </PanelHeader>
+            {countdown ? (
+              countdown.passed ? (
+                <p className="font-mono text-sm text-[var(--soft-ink)] px-4 pb-4">UTBK telah berlangsung. Semoga berhasil!</p>
+              ) : (
+                <div className="utbk-countdown-grid font-mono">
+                  {[
+                    { label: 'HARI', value: countdown.days },
+                    { label: 'JAM', value: pad(countdown.hours) },
+                    { label: 'MENIT', value: pad(countdown.minutes) },
+                    { label: 'DETIK', value: pad(countdown.seconds) },
+                  ].map((seg) => (
+                    <div key={seg.label} className="countdown-seg">
+                      <span className="countdown-num font-serif">{seg.value}</span>
+                      <span className="countdown-label">{seg.label}</span>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="task-info">
-                  <div className="task-subject-name font-sans">{task.subject}</div>
-                  <div className="task-metadata font-mono">
-                    <span>{task.count} QUESTIONS</span>
-                    <span className="meta-dot">•</span>
-                    <span className="text-gold">+{task.xp} XP</span>
-                  </div>
-                </div>
-
-                <div className="task-action">
-                  {task.completed ? (
-                    <span className="badge-verified font-mono">VERIFIED</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-task-start font-mono"
-                      onClick={() => handleLaunchTraining(task.subjectId)}
-                    >
-                      <span>TRAIN</span>
-                      <ArrowUpRight size={13} />
-                    </button>
-                  )}
-                </div>
+              )
+            ) : (
+              <div className="flex items-center gap-2 px-4 pb-4 text-[var(--soft-ink)]">
+                <span className="inline-block size-4 animate-spin rounded-full border-2 border-[var(--emerald)] border-t-transparent" />
+                <span className="font-mono text-xs">Memuat…</span>
               </div>
-            ))}
-          </div>
+            )}
+          </Panel>
 
-          <div className="panel-footer-action">
-            <button
-              type="button"
-              id="btn-start-daily-full"
-              className="btn-latveria-primary w-full"
-              onClick={() => handleLaunchTraining('PU')}
-            >
-              <span>Gas drilling hari ini</span>
-              <ArrowUpRight size={16} />
-            </button>
-          </div>
-        </Panel>
+          {/* Affirmation Panel */}
+          <Panel className="affirmation-panel">
+            <PanelHeader title="Afirmasi harian">
+              {hasPool && (
+                <button
+                  type="button"
+                  className="btn-icon-minimal font-mono"
+                  onClick={() => { sound.playClick(); rotate(); }}
+                  title="Afirmasi berikutnya"
+                >
+                  <RotateCcw size={14} />
+                </button>
+              )}
+            </PanelHeader>
+            <div className="affirmation-body">
+              {affirmation ? (
+                <>
+                  <Quote size={20} className="affirmation-quote-icon" />
+                  <p className="affirmation-text font-serif">{affirmation.affirmation}</p>
+                  {affirmation.author && (
+                    <span className="affirmation-author font-mono">— {affirmation.author}</span>
+                  )}
+                </>
+              ) : (
+                <p className="font-mono text-sm text-[var(--soft-ink)] py-2">
+                  Tetap konsisten. Setiap soal yang dikerjakan adalah langkah menuju tujuanmu.
+                </p>
+              )}
+            </div>
+          </Panel>
+        </div>
 
         {/* Right Column: Weekly Academic Progress */}
         <Panel className="analytics-panel">
@@ -309,20 +376,24 @@ export const DashboardView = () => {
           </PanelHeader>
 
           <div className="activity-stream-list">
-            {user.recentActivities.map((act) => (
-              <div key={act.id} className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]">
-                <div className="activity-sub-badge font-mono">{act.code}</div>
-                <div className="activity-body">
-                  <div className="activity-title-text font-sans">{act.title}</div>
-                  <div className="activity-meta font-mono">
-                    <span className="text-muted">{act.time}</span>
-                    <span className="meta-dot">•</span>
-                    <span className="text-sage">Akurasi {act.accuracy}</span>
+            {user.recentActivities.length === 0 ? (
+              <p className="text-muted font-sans text-sm px-1 py-3">Belum ada riwayat latihan. Gas drilling pertamamu!</p>
+            ) : (
+              user.recentActivities.map((act) => (
+                <div key={act.id} className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]">
+                  <div className="activity-sub-badge font-mono">{act.code}</div>
+                  <div className="activity-body">
+                    <div className="activity-title-text font-sans">{act.title}</div>
+                    <div className="activity-meta font-mono">
+                      <span className="text-muted">{act.time}</span>
+                      <span className="meta-dot">•</span>
+                      <span className="text-sage">Akurasi {act.accuracy}</span>
+                    </div>
                   </div>
+                  <div className="activity-xp-pill font-mono">+{act.xp} XP</div>
                 </div>
-                <div className="activity-xp-pill font-mono">+{act.xp} XP</div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Panel>
       </div>

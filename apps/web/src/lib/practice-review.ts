@@ -18,7 +18,7 @@ export function reviewResultToSession(result: Result) {
   const accuracy = Math.round(result.attempt.correct / result.attempt.total * 100);
   const results = {
     attemptId: result.attempt.id,
-    score: accuracy,
+    score: (result.attempt as any).score ?? accuracy,
     accuracy,
     correctCount: result.attempt.correct,
     incorrectCount: result.attempt.total - result.attempt.correct,

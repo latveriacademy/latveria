@@ -37,7 +37,8 @@ import {
   X,
   FileCheck,
   BarChart2,
-  Maximize2
+  Maximize2,
+  AlertCircle
 } from 'lucide-react';
 
 export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}) => {
@@ -103,6 +104,14 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   // Submission Confirmation Modal State
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+  // Question Report Modal State
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDesc, setReportDesc] = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
+  const [reportError, setReportError] = useState('');
+
   // In-Session Timer Countdown
   const [timeLeft, setTimeLeft] = useState(null);
   const [timerPaused, setTimerPaused] = useState(false);
@@ -111,7 +120,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   // Subject Icon Map
-  const getSubjectIcon = (id) => {
+  const getSubjectIcon = (id, slug) => {
     switch (id) {
       case 'PU': return Brain;
       case 'PPU': return BookOpen;
@@ -120,7 +129,11 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
       case 'LBI': return FileText;
       case 'LBE': return Globe;
       case 'PM': return Compass;
-      default: return Layers;
+      default:
+        if (slug === 'matematika-dasar' || slug === 'kalkulus') return Calculator;
+        if (slug === 'fisika-dasar') return Compass;
+        if (slug === 'ekonomi') return BarChart2;
+        return Layers;
     }
   };
 
@@ -363,6 +376,17 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                   <span className="font-mono">{isFlagged ? 'Ditandai' : 'Tandai'}</span>
                 </button>
 
+                <button
+                  type="button"
+                  id="btn-report-question"
+                  className="tool-action-btn"
+                  onClick={() => { sound.playClick(); setReportSent(false); setReportError(''); setReportReason(''); setReportDesc(''); setShowReportModal(true); }}
+                  title="Laporkan soal bermasalah"
+                >
+                  <AlertCircle size={15} />
+                  <span className="font-mono">Laporkan</span>
+                </button>
+
                 {currIdx < totalQ - 1 && <button
                   type="button"
                   id="btn-open-submit-modal"
@@ -384,7 +408,8 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                     activeSession.subjectId,
                     activeSession.mode,
                     activeSession.totalQuestions,
-                    activeSession.difficulty
+                    '',
+                    activeSession.packageId || null
                   );
                 }}
               >
@@ -882,6 +907,96 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
         )}
 
         {/* ========================================================
+            QUESTION REPORT MODAL
+            ======================================================== */}
+        {showReportModal && (
+          <div className="modal-backdrop motion-fade-in" onClick={() => setShowReportModal(false)}>
+            <div
+              className="config-modal-card submit-dialog-card motion-scale-in"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-labelledby="modal-report-title"
+            >
+              <div className="modal-header">
+                <h2 id="modal-report-title" className="modal-title font-serif">Laporkan soal</h2>
+                <p className="modal-desc">Bantu kami meningkatkan kualitas soal dengan melaporkan masalah yang kamu temukan.</p>
+              </div>
+
+              {reportSent ? (
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <CheckCircle2 size={32} className="text-sage" />
+                  <p className="font-sans text-sm text-[var(--text-primary)]">Laporan terkirim. Terima kasih!</p>
+                  <button type="button" className="btn-latveria-secondary font-mono" onClick={() => setShowReportModal(false)}>Tutup</button>
+                </div>
+              ) : (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!reportReason) return;
+                  setReportSending(true);
+                  setReportError('');
+                  try {
+                    const qId = currentQ.id;
+                    const res = await fetch('/api/learner/reports', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+                      body: JSON.stringify({ questionId: qId, packageId: activeSession.packageId || undefined, reason: reportReason, description: reportDesc }),
+                    });
+                    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+                    setReportSent(true);
+                  } catch (err) {
+                    setReportError(err.message || 'Laporan gagal terkirim. Coba lagi.');
+                  } finally {
+                    setReportSending(false);
+                  }
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0 0 16px' }}>
+                    <fieldset style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '10px 14px' }}>
+                      <legend style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', padding: '0 4px' }}>ALASAN LAPORAN</legend>
+                      {[
+                        'Soal/jawaban tidak jelas atau ambigu',
+                        'Kunci jawaban salah',
+                        'Soal mengandung kesalahan faktual',
+                        'Gambar atau formula tidak tampil dengan benar',
+                        'Lainnya',
+                      ].map((reason) => (
+                        <label key={reason} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', cursor: 'pointer', fontSize: '13px' }}>
+                          <input
+                            type="radio"
+                            name="report-reason"
+                            value={reason}
+                            checked={reportReason === reason}
+                            onChange={() => setReportReason(reason)}
+                          />
+                          {reason}
+                        </label>
+                      ))}
+                    </fieldset>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      KETERANGAN TAMBAHAN (OPSIONAL)
+                      <textarea
+                        value={reportDesc}
+                        onChange={(e) => setReportDesc(e.target.value)}
+                        placeholder="Jelaskan masalah lebih detail..."
+                        maxLength={500}
+                        rows={3}
+                        style={{ resize: 'vertical', fontFamily: 'var(--font-sans)', fontSize: '13px', padding: '8px 10px', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', background: 'var(--bg-app)', color: 'var(--text-primary)' }}
+                      />
+                    </label>
+                    {reportError && <p role="alert" style={{ fontSize: '12px', color: 'var(--accent-crimson)' }}>{reportError}</p>}
+                  </div>
+                  <div className="modal-actions-footer">
+                    <button type="button" className="btn-latveria-secondary font-mono" onClick={() => setShowReportModal(false)}>Batal</button>
+                    <button type="submit" className="btn-latveria-primary font-mono" disabled={!reportReason || reportSending}>
+                      {reportSending ? 'Mengirim…' : 'Kirim laporan'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
             EVALUATION SUMMARY DOSSIER MODAL (OPSIONAL VIEW)
             ======================================================== */}
         {activeSession.results && <PracticeResultsDialog
@@ -892,6 +1007,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           total={activeSession.totalQuestions}
           unanswered={activeSession.results.unansweredCount}
           earnedXP={activeSession.results.earnedXP}
+          score={activeSession.results.score}
           onClose={() => setShowSummaryModal(false)}
           onExit={() => { setShowSummaryModal(false); exitPractice(); }}
           exitLabel={reviewSession ? 'Kembali ke Drill Log' : 'Kembali ke Drilling'}
@@ -1029,28 +1145,67 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
           ) : topics.length === 0 ? (
             <Panel className={styles.state} role="status"><BookOpen size={28} aria-hidden="true" /><h2>Belum ada subtes latihan</h2><p>Daftar subtes akan muncul di sini setelah tersedia.</p></Panel>
           ) : <div className={styles.groups}>
-            {['Tes Skolastik', 'Tes Literasi'].map((category) => <Panel key={category} className={styles.subjectPanel}>
-              <PanelHeader title={category === 'Tes Skolastik' ? 'Tes Potensi Skolastik' : category} />
-              <ul className={styles.subjectList} aria-label={`Subtes ${category}`}>
-            {topics.filter((subject) => subject.category === category).map((subject, idx) => {
-              const Icon = getSubjectIcon(subject.id);
+            {[
+              {
+                id: 'tps',
+                title: 'TES POTENSI SKOLASTIK',
+                slugs: ['penalaran-umum', 'pengetahuan-pemahaman-umum', 'pemahaman-bacaan-menulis', 'pengetahuan-kuantitatif'],
+              },
+              {
+                id: 'literasi',
+                title: 'TES LITERASI',
+                slugs: ['literasi-bahasa-indonesia', 'literasi-bahasa-inggris', 'penalaran-matematika'],
+              },
+              {
+                id: 'tka-mandiri',
+                title: 'TES KEMAMPUAN AKADEMIK & UJIAN MANDIRI',
+                slugs: ['matematika-dasar', 'fisika-dasar', 'ekonomi', 'kalkulus'],
+              },
+            ].map((section) => {
+              const sectionTopics = section.slugs
+                .map((slug) => topics.find((t) => t.slug === slug))
+                .filter(Boolean);
+              const otherTopics = topics.filter((t) => {
+                if (section.id === 'tps') return t.category === 'Tes Skolastik' && !section.slugs.includes(t.slug);
+                if (section.id === 'literasi') return t.category === 'Tes Literasi' && !section.slugs.includes(t.slug);
+                if (section.id === 'tka-mandiri') {
+                  const isExtra = t.category === 'tka' || t.category === 'ujian-mandiri' || t.category === 'mata-kuliah' ||
+                    t.category === 'Tes Kemampuan Akademik' || t.category === 'Ujian Mandiri' || t.category === 'Mata Kuliah';
+                  return isExtra && !section.slugs.includes(t.slug);
+                }
+                return false;
+              });
+              const allSectionTopics = [...sectionTopics, ...otherTopics];
+              if (allSectionTopics.length === 0) return null;
 
               return (
-                <li
-                  key={subject.id}
-                  className="motion-fade-up"
-                  style={{ animationDelay: `${idx * 40}ms` }}
-                >
-                  <Link className={styles.subject} to={`/dashboard?tab=practice&subtes=${encodeURIComponent(subject.slug)}`}>
-                    <Icon size={22} aria-hidden="true" />
-                    <span><span className={styles.subjectName}>{subject.name}</span><span className={styles.subjectMeta}>{subject.packageCount ?? 0} paket · {subject.questionsCount} soal</span></span>
-                    <ChevronRight size={18} aria-hidden="true" />
-                  </Link>
-                </li>
+                <Panel key={section.id} className={styles.subjectPanel}>
+                  <PanelHeader title={section.title} />
+                  <ul className={styles.subjectList} aria-label={section.title}>
+                    {allSectionTopics.map((subject, idx) => {
+                      const Icon = getSubjectIcon(subject.id, subject.slug);
+
+                      return (
+                        <li
+                          key={subject.id}
+                          className="motion-fade-up"
+                          style={{ animationDelay: `${idx * 30}ms` }}
+                        >
+                          <Link className={styles.subject} to={`/dashboard?tab=practice&subtes=${encodeURIComponent(subject.slug)}`}>
+                            <Icon size={22} aria-hidden="true" />
+                            <div>
+                              <span className={styles.subjectName}>{subject.name}</span>
+                              <span className={styles.subjectMeta}>{subject.packageCount ?? 0} paket · {subject.questionsCount} soal</span>
+                            </div>
+                            <ChevronRight size={18} aria-hidden="true" />
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Panel>
               );
             })}
-              </ul>
-            </Panel>)}
           </div>}
         </>
       )}

@@ -2,7 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
-import { practiceAnswers, questionPackages, questions, topics } from "../src/lib/db/schema";
+import { affirmations, practiceAnswers, questionPackages, questions, systemConfig, topics } from "../src/lib/db/schema";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, utbkSubtests } from "@latveria/shared";
 import { geometryQuestionData } from "../src/lib/roof-question";
 
@@ -41,6 +41,19 @@ async function main() {
           isActive: true,
         }))
       ).onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
+      const [firstTopic] = storedTopics;
+      if (firstTopic) {
+        await tx.insert(questionPackages).values({
+          topicId: firstTopic.id,
+          name: "Tryout Akbar UTBK-SNBT 2027",
+          description: "Simulasi terpadu seluruh subtes SNPMB 2027 dengan sistem timer resmi dan jeda istirahat antar-subtes.",
+          packageType: "Simulasi Akbar",
+          duration: 195,
+          order: 99,
+          isFullTryout: true,
+          isActive: true,
+        }).onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
+      }
       const storedPackages = await tx.select({ id: questionPackages.id, topicId: questionPackages.topicId }).from(questionPackages).where(eq(questionPackages.name, "Paket 1"));
       const defaultPackageByTopic = Object.fromEntries(storedPackages.map((p) => [p.topicId, p.id]));
 
@@ -92,6 +105,78 @@ async function main() {
         }
         if (matches.length) await tx.delete(questions).where(inArray(questions.id, matches.map((item) => item.id)));
         await tx.insert(questions).values(question(15 + index, topicId["penalaran-matematika"], defaultPackageByTopic[topicId["penalaran-matematika"]], geometryQuestion.prompt, [...geometryQuestion.options], geometryQuestion.correctAnswer, geometryQuestion.explanation)).onConflictDoUpdate({ target: questions.id, set: { topicId: topicId["penalaran-matematika"], packageId: defaultPackageByTopic[topicId["penalaran-matematika"]], prompt: geometryQuestion.prompt, options: [...geometryQuestion.options], correctAnswer: geometryQuestion.correctAnswer, explanation: geometryQuestion.explanation, source: geometryQuestion.source } });
+      }
+
+      // Seed System Configs
+      await tx.insert(systemConfig).values([
+        { key: "utbk_target_date", value: "2027-04-17", description: "Tanggal pelaksanaan UTBK SNBT" },
+        { key: "utbk_timezone", value: "Asia/Jakarta", description: "Timezone perhitungan countdown" },
+        { key: "break_duration_minutes", value: "15", description: "Durasi istirahat antar subtes dalam menit" },
+        { key: "score_max", value: "1000", description: "Skor maksimum Latveria Score" },
+      ]).onConflictDoUpdate({ target: systemConfig.key, set: { value: sql`excluded.value`, description: sql`excluded.description` } });
+
+      // Seed Affirmations
+      const defaultAffirmations = [
+        { affirmation: "Pelan-pelan tidak apa-apa. Yang penting terus bergerak.", author: "Latveria Academic Archive" },
+        { affirmation: "Sedikit progres tetaplah progres.", author: "Catatan Pembina" },
+        { affirmation: "Kerjakan satu soal. Pahami satu konsep.", author: "Protokol Belajar" },
+        { affirmation: "Targetmu besar. Hari ini cukup maju sedikit.", author: "Latveria Academic Archive" },
+        { affirmation: "Konsistensi kecil hari ini adalah fondasi lonjakan skormu.", author: "Catatan Pembina" },
+        { affirmation: "Fokus pada pemahaman esensial, bukan sekadar kecepatan semu.", author: "Direktori Evaluasi" },
+        { affirmation: "Setiap kesalahan latihan adalah peluang pembenahan konsep terbaik.", author: "Protokol Belajar" },
+      ];
+      for (const item of defaultAffirmations) {
+        const [existing] = await tx.select({ id: affirmations.id }).from(affirmations).where(eq(affirmations.affirmation, item.affirmation));
+        if (!existing) {
+          await tx.insert(affirmations).values({ ...item, active: true });
+        }
+      }
+
+      // Seed Non-UTBK Subjects: Ujian Mandiri, TKA, Mata Kuliah
+      const extraSubjects = [
+        { slug: "matematika-dasar", name: "Matematika Dasar", description: "Materi aljabar, persamaan kuadrat, dan fungsi untuk ujian mandiri perguruan tinggi.", category: "ujian-mandiri", section: "mandiri" },
+        { slug: "kalkulus", name: "Kalkulus", description: "Konsep limit, turunan, dan integral dasar perguruan tinggi.", category: "mata-kuliah", section: "matkul" },
+        { slug: "fisika-dasar", name: "Fisika Dasar", description: "Kinematika, dinamika partikel, dan mekanika benda tegar.", category: "tka", section: "tka" },
+        { slug: "ekonomi", name: "Ekonomi", description: "Konsep dasar mikro dan makro ekonomi, elastisitas, dan pasar.", category: "tka", section: "tka" },
+      ];
+      for (const subj of extraSubjects) {
+        await tx.insert(topics).values(subj).onConflictDoUpdate({
+          target: topics.slug,
+          set: { name: subj.name, description: subj.description, category: subj.category, section: subj.section }
+        });
+        const [insertedSubj] = await tx.select().from(topics).where(eq(topics.slug, subj.slug));
+        if (insertedSubj) {
+          const pkgName = `Paket Latihan ${subj.name} #01`;
+          await tx.insert(questionPackages).values({
+            topicId: insertedSubj.id,
+            name: pkgName,
+            description: `Paket soal terstruktur untuk materi ${subj.name}`,
+            packageType: "Airdrop Fundamental",
+            category: subj.category,
+            duration: 25,
+            order: 1,
+            isActive: true,
+          }).onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
+
+          const [pkg] = await tx.select().from(questionPackages).where(eq(questionPackages.name, pkgName));
+          if (pkg) {
+            // Seed a question for this topic
+            const qPrompt = `Contoh soal evaluasi konsep untuk ${subj.name}. Manakah pernyataan berikut yang paling tepat sesuai kaidah keilmuan?`;
+            const [existingQ] = await tx.select().from(questions).where(eq(questions.prompt, qPrompt));
+            if (!existingQ) {
+              await tx.insert(questions).values({
+                topicId: insertedSubj.id,
+                packageId: pkg.id,
+                prompt: qPrompt,
+                options: ["Konsep terverifikasi secara matematis dan analitis", "Variabel tidak terdefinisi secara independen", "Hukum termodinamika tidak berlaku secara mutlak", "Asumsi model mengabaikan seluruh relasi"],
+                correctAnswer: 0,
+                explanation: `Analisis konsep ${subj.name} mengutamakan verifikasi matematis dan keteraturan relasi antar premis.`,
+                source: "Arsip Latveria Ujian Mandiri & TKA",
+                category: "Fundamental",
+              });
+            }
+          }
+        }
       }
     });
     console.info("Seed selesai: 7 subtes dan 17 soal dummy tersedia. ID topik lama dan soal admin tetap dipertahankan.");
