@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { X, Delete, Minimize2 } from "lucide-react";
+import { X, Delete } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
 export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
   const [display, setDisplay] = useState("0");
@@ -134,134 +135,148 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
   const calculatorActive = isAllowed || forceEnabled;
 
   return (
-    <div className="latveria-calculator-floating" role="dialog" aria-label="Latveria Calculator">
-      <div className="calc-header-drag">
-        <div className="calc-brand font-mono">
-          <span className="calc-dot" />
-          <span>LATVERIA // CALC-01 ANALYTICAL</span>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      modal={false}
+    >
+      <DialogContent
+        className="latveria-calculator-floating"
+        showCloseButton={false}
+        aria-describedby={undefined}
+        style={{ top: "auto", left: "auto", transform: "none", padding: 0 }}
+        onInteractOutside={(event) => event.preventDefault()}
+      >
+        <div className="calc-header-drag">
+          <DialogTitle className="calc-brand font-mono">
+            <span className="calc-dot" />
+            <span>LATVERIA // CALC-01 ANALYTICAL</span>
+          </DialogTitle>
+          <div className="calc-controls">
+            <button
+              type="button"
+              className="calc-btn-close"
+              onClick={onClose}
+              title="Tutup Kalkulator"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
-        <div className="calc-controls">
-          <button
-            type="button"
-            className="calc-btn-close"
-            onClick={onClose}
-            title="Tutup Kalkulator"
-          >
-            <X size={15} />
-          </button>
-        </div>
-      </div>
 
-      {!calculatorActive ? (
-        <div className="calc-disabled-notice font-sans">
-          <div className="calc-notice-badge font-mono">STANDARDIZED PROTOCOL</div>
-          <h4 className="font-serif">CALCULATOR UNAVAILABLE FOR THIS SESSION</h4>
-          <p className="notice-sub">
-            Subtes ini menguji penalaran verbal/logika murni tanpa bantuan komputasi numerik.
-          </p>
-          <button
-            type="button"
-            className="btn-latveria-secondary btn-override font-mono"
-            onClick={() => setForceEnabled(true)}
-          >
-            AKTIFKAN UNTUK LATIHAN BEBAS
-          </button>
-        </div>
-      ) : (
-        <div className="calc-body">
-          {/* LCD Digital Display */}
-          <div className="calc-display-box font-mono">
-            <div className="calc-display-equation">
-              {prevValue !== null && `${prevValue} ${operation || ""}`}
+        {!calculatorActive ? (
+          <div className="calc-disabled-notice font-sans">
+            <div className="calc-notice-badge font-mono">STANDARDIZED PROTOCOL</div>
+            <h4 className="font-serif">CALCULATOR UNAVAILABLE FOR THIS SESSION</h4>
+            <p className="notice-sub">
+              Subtes ini menguji penalaran verbal/logika murni tanpa bantuan komputasi numerik.
+            </p>
+            <button
+              type="button"
+              className="btn-latveria-secondary btn-override font-mono"
+              onClick={() => setForceEnabled(true)}
+            >
+              AKTIFKAN UNTUK LATIHAN BEBAS
+            </button>
+          </div>
+        ) : (
+          <div className="calc-body">
+            {/* LCD Digital Display */}
+            <div className="calc-display-box font-mono">
+              <div className="calc-display-equation">
+                {prevValue !== null && `${prevValue} ${operation || ""}`}
+              </div>
+              <div className="calc-display-main">{display}</div>
             </div>
-            <div className="calc-display-main">{display}</div>
+
+            {/* Keypad Grid */}
+            <div className="calc-keypad-grid font-mono">
+              <button type="button" className="calc-key op-key" onClick={handleClear}>
+                C
+              </button>
+              <button type="button" className="calc-key op-key" onClick={handleSign}>
+                ±
+              </button>
+              <button type="button" className="calc-key op-key" onClick={handlePercent}>
+                %
+              </button>
+              <button
+                type="button"
+                className="calc-key op-key math-key"
+                onClick={() => performOperation("÷")}
+              >
+                ÷
+              </button>
+
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(7)}>
+                7
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(8)}>
+                8
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(9)}>
+                9
+              </button>
+              <button
+                type="button"
+                className="calc-key op-key math-key"
+                onClick={() => performOperation("×")}
+              >
+                ×
+              </button>
+
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(4)}>
+                4
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(5)}>
+                5
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(6)}>
+                6
+              </button>
+              <button
+                type="button"
+                className="calc-key op-key math-key"
+                onClick={() => performOperation("-")}
+              >
+                -
+              </button>
+
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(1)}>
+                1
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(2)}>
+                2
+              </button>
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(3)}>
+                3
+              </button>
+              <button
+                type="button"
+                className="calc-key op-key math-key"
+                onClick={() => performOperation("+")}
+              >
+                +
+              </button>
+
+              <button type="button" className="calc-key num-key" onClick={() => handleDigit(0)}>
+                0
+              </button>
+              <button type="button" className="calc-key num-key" onClick={handleDecimal}>
+                .
+              </button>
+              <button type="button" className="calc-key op-key" onClick={handleBackspace}>
+                <Delete size={14} />
+              </button>
+              <button type="button" className="calc-key eq-key" onClick={handleEquals}>
+                =
+              </button>
+            </div>
           </div>
-
-          {/* Keypad Grid */}
-          <div className="calc-keypad-grid font-mono">
-            <button type="button" className="calc-key op-key" onClick={handleClear}>
-              C
-            </button>
-            <button type="button" className="calc-key op-key" onClick={handleSign}>
-              ±
-            </button>
-            <button type="button" className="calc-key op-key" onClick={handlePercent}>
-              %
-            </button>
-            <button
-              type="button"
-              className="calc-key op-key math-key"
-              onClick={() => performOperation("÷")}
-            >
-              ÷
-            </button>
-
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(7)}>
-              7
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(8)}>
-              8
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(9)}>
-              9
-            </button>
-            <button
-              type="button"
-              className="calc-key op-key math-key"
-              onClick={() => performOperation("×")}
-            >
-              ×
-            </button>
-
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(4)}>
-              4
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(5)}>
-              5
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(6)}>
-              6
-            </button>
-            <button
-              type="button"
-              className="calc-key op-key math-key"
-              onClick={() => performOperation("-")}
-            >
-              -
-            </button>
-
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(1)}>
-              1
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(2)}>
-              2
-            </button>
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(3)}>
-              3
-            </button>
-            <button
-              type="button"
-              className="calc-key op-key math-key"
-              onClick={() => performOperation("+")}
-            >
-              +
-            </button>
-
-            <button type="button" className="calc-key num-key" onClick={() => handleDigit(0)}>
-              0
-            </button>
-            <button type="button" className="calc-key num-key" onClick={handleDecimal}>
-              .
-            </button>
-            <button type="button" className="calc-key op-key" onClick={handleBackspace}>
-              <Delete size={14} />
-            </button>
-            <button type="button" className="calc-key eq-key" onClick={handleEquals}>
-              =
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
