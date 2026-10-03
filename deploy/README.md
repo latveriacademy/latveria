@@ -7,11 +7,11 @@ GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQ
 
 Tag `latest` mengikuti `main`; `sha-<SHA lengkap>` menunjuk commit tertentu; tag Git seperti `v1.0.0` dipakai pada kedua image. Publish memakai `GITHUB_TOKEN` bawaan Actions dengan izin `packages: write`.
 
-Frontend Nginx melayani SPA pada port 8080 dan meneruskan `/api/*` ke backend Node.js 22 pada port 3001. Browser memakai satu origin; tidak diperlukan URL API pada build frontend. Image backend berisi dependency runtime, shared, CLI, dan migrasi, tanpa frontend dist atau Bun. Build/start tidak menerapkan migrasi secara otomatis.
+Frontend Nginx melayani SPA pada port 8080 dan meneruskan `/api/*` ke backend Bun 1.3.14 pada port 3001. Browser memakai satu origin; tidak diperlukan URL API pada build frontend. Image backend berisi Bun, dependency runtime, shared, CLI, dan migrasi, tanpa frontend dist. Build frontend juga memakai Bun. Build/start tidak menerapkan migrasi secara otomatis.
 
 ## Penyiapan server
 
-Server hanya memerlukan Docker Engine dan Compose v2, `compose.production.yaml`, serta `apps/api/.env.local`. Tidak perlu checkout source, memasang Bun/Node, atau build di server. Unduh Compose dan contoh env dari commit/release yang akan digunakan, lalu:
+Server hanya memerlukan Docker Engine dan Compose v2, `compose.production.yaml`, serta `apps/api/.env.local`. Tidak perlu checkout source, memasang runtime JavaScript di host, atau build di server. Unduh Compose dan contoh env dari commit/release yang akan digunakan, lalu:
 
 ```sh
 mkdir -p apps/api
@@ -30,14 +30,14 @@ Untuk deployment yang dapat diulang, isi `IMAGE_TAG=sha-<SHA lengkap>` dari work
 ```sh
 docker compose --env-file apps/api/.env.local -f compose.production.yaml pull
 docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait postgres
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend node --import tsx scripts/migrate-db.ts
+docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
 docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait
 ```
 
 Untuk database baru yang membutuhkan katalog dan soal contoh, jalankan seed sekali setelah migrasi:
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend node --import tsx scripts/seed-db.ts
+docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/seed-db.ts
 ```
 
 Seed idempoten tetapi berisi soal dummy; ia tidak membuat akun. Signup produksi tetap nonaktif, sehingga akun yang dipakai berasal dari penyiapan database sebelumnya. Perintah promosi admin yang sudah ada tetap dibatasi ke DB localhost.
@@ -50,7 +50,7 @@ Untuk update, ubah `IMAGE_TAG` ke tag dari workflow sukses, lalu jalankan pull, 
 
 ```sh
 docker compose --env-file apps/api/.env.local -f compose.production.yaml pull
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend node --import tsx scripts/migrate-db.ts
+docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
 docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait
 docker compose --env-file apps/api/.env.local -f compose.production.yaml ps
 ```

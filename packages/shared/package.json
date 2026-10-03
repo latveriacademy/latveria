@@ -7,8 +7,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "bun run --bun tsc --noEmit",
+    "test": "bun run --bun vitest run"
   },
   "dependencies": {
     "zod": "^4.6.5"

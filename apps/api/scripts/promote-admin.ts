@@ -1,11 +1,10 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
+import { getDatabaseUrl } from "../src/lib/env";
 import { user } from "../src/lib/db/auth-schema";
 
 async function main() {
-  loadLocalEnv();
   const email = process.argv[2]?.toLowerCase();
   if (!email) throw new Error("Gunakan: bun run db:admin email@contoh.test");
   const url = getDatabaseUrl("DATABASE_URL");

@@ -1,9 +1,8 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
-import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
+import { getDatabaseUrl } from "../src/lib/env";
 
-loadLocalEnv();
 const client = postgres(getDatabaseUrl("DATABASE_MIGRATION_URL"), {
   max: 1,
   prepare: false,

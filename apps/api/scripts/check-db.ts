@@ -1,8 +1,7 @@
 import postgres from "postgres";
-import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
+import { getDatabaseUrl } from "../src/lib/env";
 
 async function main() {
-  loadLocalEnv();
   const sql = postgres(getDatabaseUrl("DATABASE_URL"), {
     prepare: false,
     max: 1,

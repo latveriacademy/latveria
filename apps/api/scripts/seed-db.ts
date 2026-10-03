@@ -1,7 +1,7 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
+import { getDatabaseUrl } from "../src/lib/env";
 import {
   affirmations,
   practiceAnswers,
@@ -27,7 +27,6 @@ const legacySlugs = [
 ] as const;
 
 async function main() {
-  loadLocalEnv();
   const client = postgres(getDatabaseUrl("DATABASE_URL"), {
     max: 1,
     prepare: false,

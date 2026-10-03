@@ -1,5 +1,4 @@
-FROM node:22-bookworm-slim AS build
-COPY --from=oven/bun:1.3.14-slim /usr/local/bin/bun /usr/local/bin/bun
+FROM oven/bun:1.3.14-slim AS build
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/api/package.json ./apps/api/package.json

@@ -11,21 +11,20 @@
     "esbuild"
   ],
   "engines": {
-    "node": ">=22.12.0 <23",
     "bun": ">=1.3.14"
   },
   "scripts": {
-    "format": "oxfmt --write .",
-    "format:check": "oxfmt --check .",
+    "format": "bun run --bun oxfmt --write .",
+    "format:check": "bun run --bun oxfmt --check .",
     "dev": "bun run --parallel --filter '@latveria/web' --filter '@latveria/api' dev",
     "build": "bun run --filter '@latveria/*' --if-present build",
     "start": "bun run --filter @latveria/api start",
-    "lint": "eslint apps/*/src apps/api/scripts packages/shared/src",
+    "lint": "bun run --bun eslint apps/*/src apps/api/scripts packages/shared/src",
     "typecheck": "bun run --filter '@latveria/*' typecheck",
     "test": "bun run --filter '@latveria/*' test",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
     "test:integration": "bun run --filter @latveria/api test:integration",
-    "test:containers": "node scripts/verify-containers.mjs",
+    "test:containers": "bun scripts/verify-containers.mjs",
     "db:generate": "bun run --filter @latveria/api db:generate",
     "db:migrate": "bun run --filter @latveria/api db:migrate",
     "db:check": "bun run --filter @latveria/api db:check",
