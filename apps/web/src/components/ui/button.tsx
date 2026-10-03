@@ -11,6 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "btn-latveria-primary shadow-sm hover:shadow",
         outline: "btn-latveria-secondary",
+        destructive: "btn-latveria-primary btn-crimson-solid",
         ghost: "text-[var(--soft-ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)]",
         link: "text-[var(--emerald)] underline-offset-4 hover:underline hover:scale-100",
       },
