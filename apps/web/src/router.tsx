@@ -22,6 +22,8 @@ import { QuestionBankTable } from "./app/admin/question-bank-table";
 const HistoryResultView = lazy(() => import("./views/HistoryResultView").then((module) => ({ default: module.HistoryResultView })));
 const AdminSubtestPackages = lazy(() => import("./app/admin/admin-subtest-packages").then((module) => ({ default: module.AdminSubtestPackages })));
 const AdminPackageDetail = lazy(() => import("./app/admin/admin-package-detail").then((module) => ({ default: module.AdminPackageDetail })));
+const AdminReports = lazy(() => import("./app/admin/admin-reports").then((module) => ({ default: module.AdminReports })));
+const AdminAffirmations = lazy(() => import("./app/admin/admin-affirmations").then((module) => ({ default: module.AdminAffirmations })));
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -326,6 +328,7 @@ export const router = createBrowserRouter([
     { path: "riwayat/:id", loader: ({ params }) => api<Result>(`/learner/results/${encodeURIComponent(params.id ?? "")}`), element: <HistoryResultView />, errorElement: <HistoryErrorView /> },
   ] },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
+  { path: "/library", element: <Navigate to="/dashboard?tab=library" replace /> },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
   { path: "/profile", element: <Navigate to="/dashboard?tab=profile" replace /> },
   { path: "/settings", element: <Navigate to="/dashboard?tab=settings" replace /> },
@@ -357,6 +360,8 @@ export const router = createBrowserRouter([
       return { item, topics };
     }, element: <EditQuestion /> },
     { path: "soal/:id", loader: ({ params }) => api<QuestionDetail>(`/admin/questions/${params.id}`), element: <Preview /> },
+    { path: "laporan", element: <AdminReports /> },
+    { path: "afirmasi", element: <AdminAffirmations /> },
   ] },
   { path: "*", element: <NotFound /> },
 ]);

@@ -6,10 +6,11 @@ import styles from "./practice-results-dialog.module.css";
 type Props = {
   open: boolean; subject: string; packageName?: string | null;
   correct: number; total: number; unanswered: number; earnedXP?: number | null;
+  score?: number | null;
   onClose: () => void; onExit: () => void; exitLabel?: string;
 };
 
-export function PracticeResultsDialog({ open, subject, packageName, correct, total, unanswered, earnedXP, onClose, onExit, exitLabel = "Kembali ke Drilling" }: Props) {
+export function PracticeResultsDialog({ open, subject, packageName, correct, total, unanswered, earnedXP, score, onClose, onExit, exitLabel = "Kembali ke Drilling" }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (open && !dialog.current?.open) dialog.current?.showModal();
@@ -28,6 +29,16 @@ export function PracticeResultsDialog({ open, subject, packageName, correct, tot
         <div><strong>{accuracy}</strong><span>%</span></div>
         <p>{correct} dari {total} soal dijawab benar.</p>
       </div>
+      {score != null && (
+        <div style={{ textAlign: "center", marginBottom: 12, padding: "10px 14px", background: "var(--surface-muted, rgba(0,0,0,0.03))", borderRadius: "4px", border: "1px solid var(--border-subtle, rgba(0,0,0,0.08))" }}>
+          <span style={{ fontSize: "11px", fontFamily: "var(--font-mono, monospace)", color: "var(--text-muted, #888)", letterSpacing: "0.08em", display: "block", textTransform: "uppercase" }}>
+            Latveria Standard Score (Skala 1000)
+          </span>
+          <span style={{ fontSize: "28px", fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--accent-gold, #c5a059)" }}>
+            {score}
+          </span>
+        </div>
+      )}
       <dl className={styles.stats}>
         <div><dt>Benar</dt><dd className={styles.correct}>{correct}</dd></div>
         <div><dt>Salah</dt><dd className={styles.incorrect}>{Math.max(0, total - correct - unanswered)}</dd></div>

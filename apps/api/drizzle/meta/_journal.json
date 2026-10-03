@@ -64,6 +64,13 @@
       "when": 1727942400000,
       "tag": "0008_fuzzy_leaderboard",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791025802843,
+      "tag": "0009_shallow_hercules",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import { LexiconDrawer } from './components/LexiconDrawer';
 import { ToastNotification } from './components/ToastNotification';
 import { DashboardView } from './views/DashboardView';
 import { PracticeView } from './views/PracticeView';
+import { LibraryView } from './views/LibraryView';
 import { LeaderboardView } from './views/LeaderboardView';
 import { ProfileView } from './views/ProfileView';
 import { SettingsView } from './views/SettingsView';
@@ -23,11 +24,16 @@ function AppShell() {
   const immersive = !!activeSession || !!historyResult;
 
   const renderActiveView = () => {
+    if (activeSession) {
+      return <PracticeView />;
+    }
     switch (currentTab) {
       case 'dashboard':
         return <DashboardView />;
       case 'practice':
         return <PracticeView />;
+      case 'library':
+        return <LibraryView />;
       case 'tryout':
         return <BattleWorldView />;
       case 'leaderboard':

@@ -1,7 +1,9 @@
 import { z } from "zod";
+import type { LatveriaScoreResult } from "./scoring";
 export { utbkSubtests } from "./utbk-subtests";
 export { practiceXP, levelProgress, practiceDay, practiceStreak, learnerSummary, type LearnerSummary } from "./progression";
 export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
+export { calculateLatveriaScore, type LatveriaScoreResult, type ScoringItemInput, type ItemScoreBreakdown } from "./scoring";
 
 // Leaderboard query parameters schema
 export const leaderboardQuerySchema = z.object({
@@ -65,20 +67,80 @@ export const profileSchema = z.object({
 }).strict();
 export type Profile = z.infer<typeof profileSchema>;
 
+export const affirmationSchema = z.object({
+  affirmation: z.string().trim().min(3, "Afirmasi minimal 3 karakter.").max(300, "Afirmasi maksimal 300 karakter."),
+  author: z.string().trim().max(100).optional().nullable(),
+  active: z.boolean().default(true),
+});
+export type AffirmationInput = z.infer<typeof affirmationSchema>;
+export type Affirmation = {
+  id: string;
+  affirmation: string;
+  author: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const questionReportReasons = [
+  "Soal bermasalah",
+  "Jawaban tidak sesuai",
+  "Pembahasan bermasalah",
+  "Soal ambigu",
+  "Typo",
+  "Gambar tidak tampil",
+  "Pilihan jawaban bermasalah",
+  "Lainnya",
+] as const;
+
+export const questionReportSchema = z.object({
+  questionId: z.uuid("ID soal tidak valid."),
+  packageId: z.uuid().optional().nullable(),
+  reason: z.enum(questionReportReasons),
+  description: z.string().trim().max(1000).default(""),
+});
+export type QuestionReportInput = z.infer<typeof questionReportSchema>;
+
+export type QuestionReportItem = {
+  id: string;
+  questionId: string;
+  packageId?: string | null;
+  packageName?: string | null;
+  userId: string;
+  userName?: string;
+  reason: string;
+  description: string;
+  status: "open" | "reviewing" | "resolved" | "rejected";
+  questionPrompt?: string;
+  questionOptions?: string[];
+  correctAnswer?: number;
+  explanation?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SystemConfigItem = {
+  key: string;
+  value: string;
+  description?: string | null;
+  updatedAt: string;
+};
+
 export const createPackageSchema = z.object({
   name: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100, "Nama paket maksimal 100 karakter."),
   description: z.string().trim().max(500, "Deskripsi maksimal 500 karakter.").optional().nullable(),
   order: z.coerce.number().int().min(0, "Urutan harus berupa bilangan bulat positif.").default(0),
   isActive: z.boolean().default(true),
+  packageType: z.enum(["Tryout", "Airdrop Fundamental", "Airdrop Akselerasi"]).default("Tryout"),
+  category: z.enum(["utbk", "ujian-mandiri", "tka", "mata-kuliah"]).default("utbk"),
+  duration: z.coerce.number().int().min(5).max(300).default(30),
+  isFullTryout: z.boolean().default(false),
+  targetQuestions: z.coerce.number().int().min(1).max(300).default(30),
+  published: z.boolean().default(true),
 });
 export type CreatePackageInput = z.infer<typeof createPackageSchema>;
 
-export const updatePackageSchema = z.object({
-  name: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100, "Nama paket maksimal 100 karakter.").optional(),
-  description: z.string().trim().max(500, "Deskripsi maksimal 500 karakter.").optional().nullable(),
-  order: z.coerce.number().int().min(0, "Urutan harus berupa bilangan bulat positif.").optional(),
-  isActive: z.boolean().optional(),
-});
+export const updatePackageSchema = createPackageSchema.partial();
 export type UpdatePackageInput = z.infer<typeof updatePackageSchema>;
 
 export const assignQuestionToPackageSchema = z.object({
@@ -96,8 +158,12 @@ export const questionSchema = z.object({
   packageId: z.uuid("ID paket tidak valid.").optional().nullable(),
   prompt: z.string().trim().min(5).max(1000),
   options: z.array(z.string().trim().min(1).max(300)).length(4).refine((items) => new Set(items).size === 4, "Opsi harus berbeda."),
-  correctAnswer: z.number().int().min(0).max(3), explanation: z.string().trim().min(5).max(2000),
-  source: z.string().trim().min(3).max(300), category: z.string().trim().max(120).optional(),
+  correctAnswer: z.number().int().min(0).max(3),
+  explanation: z.string().trim().min(5).max(2000),
+  source: z.string().trim().min(3).max(300),
+  category: z.string().trim().max(120).optional(),
+  itemWeight: z.number().int().min(10).max(300).optional(),
+  calculatorAllowed: z.boolean().optional(),
 });
 export const questionImportSchema = z.object({
   groups: z.array(z.object({
@@ -105,13 +171,16 @@ export const questionImportSchema = z.object({
     category: z.string().trim().min(1).max(120),
     packageId: z.uuid("ID paket tidak valid.").optional(),
     packageName: z.string().trim().min(1, "Nama paket tidak boleh kosong.").max(100).optional(),
-    questions: z.array(questionSchema.omit({ topicId: true, category: true }).refine((question) => !question.packageId, { message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.", path: ["packageId"] })).min(1).max(100),
-  }).refine((group) => !(group.packageId && group.packageName), { message: "Gunakan packageId atau packageName, jangan keduanya.", path: ["packageName"] })).min(1).max(20),
-}).refine((input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 100, "Maksimal 100 soal per impor.");
+    questions: z.array(questionSchema.omit({ topicId: true, category: true }).refine((question) => !question.packageId, { message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.", path: ["packageId"] })).min(1).max(160),
+  }).refine((group) => !(group.packageId && group.packageName), { message: "Gunakan packageId atau packageName, jangan keduanya.", path: ["packageName"] })).min(1).max(30),
+}).refine((input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 200, "Maksimal 200 soal per impor.");
+
 export const submissionSchema = z.object({
   submissionId: z.uuid().optional(),
   answers: z.record(z.uuid(), z.number().int().min(0).max(3)),
   packageId: z.uuid().optional().nullable(),
+  timeSpentSeconds: z.number().int().min(0).optional(),
+  questionTimes: z.record(z.uuid(), z.number().int().min(0)).optional(),
 });
 export const bankQuerySchema = z.object({
   subtes: z.string().max(100).optional(),
@@ -125,10 +194,24 @@ export type NewQuestion = z.infer<typeof questionSchema>;
 export type QuestionImport = z.infer<typeof questionImportSchema>;
 export type Submission = z.infer<typeof submissionSchema>;
 export type User = { id: string; name: string; email: string; role: string };
-export type Topic = { id: string; slug: string; name: string; description: string; short: string; section: "tps" | "literasi"; questionCount: number; packageCount?: number };
+export type Topic = { id: string; slug: string; name: string; description: string; short: string; section: string; category?: string; questionCount: number; packageCount?: number };
 export type PracticeQuestion = { id: string; prompt: string; options: string[] };
 export type ReviewQuestion = PracticeQuestion & { selectedAnswer: number; correctAnswer: number; isCorrect: number; explanation: string };
-export type HistoryItem = { id: string; topic: string; slug: string; packageId?: string | null; packageName?: string | null; correct: number; total: number; submittedAt: string; earnedXP?: number };
+export type HistoryItem = {
+  id: string;
+  topic: string;
+  slug: string;
+  packageId?: string | null;
+  packageName?: string | null;
+  correct: number;
+  total: number;
+  submittedAt: string;
+  earnedXP?: number;
+  score?: number | null;
+  rawScore?: number | null;
+  timeSpentSeconds?: number | null;
+  scoreBreakdown?: LatveriaScoreResult | null;
+};
 export type Result = { attempt: HistoryItem; answers: ReviewQuestion[] };
 export type QuestionDetail = NewQuestion & { id: string; topic: string; slug: string; packageName?: string | null; usage: number };
 export type Bank = {
@@ -148,6 +231,12 @@ export type QuestionPackage = {
   description: string | null;
   order: number;
   isActive: boolean;
+  packageType: "Tryout" | "Airdrop Fundamental" | "Airdrop Akselerasi" | string;
+  category: "utbk" | "ujian-mandiri" | "tka" | "mata-kuliah" | string;
+  duration: number;
+  isFullTryout: boolean;
+  targetQuestions: number;
+  published: boolean;
   questionCount: number;
   createdAt: string;
   updatedAt: string;
@@ -159,6 +248,10 @@ export type LearnerPackage = {
   description: string | null;
   order: number;
   questionCount: number;
+  packageType?: "Tryout" | "Airdrop Fundamental" | "Airdrop Akselerasi";
+  category?: string;
+  duration?: number;
+  isFullTryout?: boolean;
 };
 
 export type PackageDetail = QuestionPackage & {

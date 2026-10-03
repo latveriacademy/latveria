@@ -1500,6 +1500,90 @@ body::after {
   color: #06110B;
 }
 
+/* UTBK Countdown Panel */
+.utbk-countdown-panel {}
+
+.utbk-countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 4px 16px;
+}
+
+.countdown-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px 8px;
+}
+
+.countdown-num {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Affirmation Panel */
+.affirmation-panel {}
+
+.affirmation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 16px;
+}
+
+.affirmation-quote-icon {
+  color: var(--accent-gold);
+  opacity: 0.6;
+}
+
+.affirmation-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  margin: 0;
+  font-style: italic;
+}
+
+.affirmation-author {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+}
+
+/* Minimal icon button used in panel headers */
+.btn-icon-minimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-minimal:hover {
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
 /* Weekly Chart Styles */
 .chart-metric-switch {
   display: flex;

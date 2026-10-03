@@ -11,7 +11,7 @@ import { tikzExamples } from "../../lib/tikz-examples";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../../components/ui/select";
 import styles from "./admin.module.css";
 
-export function QuestionForm({ topics, initialTopicId, initialPackageId, question }: { topics: { id: string; name: string; section: "tps" | "literasi" }[]; initialTopicId?: string; initialPackageId?: string; question?: QuestionDetail }) {
+export function QuestionForm({ topics, initialTopicId, initialPackageId, question }: { topics: { id: string; name: string; section: string }[]; initialTopicId?: string; initialPackageId?: string; question?: QuestionDetail }) {
   const navigate = useNavigate();
   const [selectedTopicId, setSelectedTopicId] = useState(question?.topicId ?? initialTopicId ?? topics[0]?.id);
   const [packages, setPackages] = useState<QuestionPackage[]>([]);

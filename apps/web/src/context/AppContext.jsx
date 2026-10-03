@@ -33,17 +33,24 @@ const SECTION_MAP = {
 
 /** Convert API topic to the shape UTBK_SUBJECTS expects */
 function topicToSubject(topic) {
-  const short = SLUG_TO_SHORT[topic.slug] || topic.slug;
+  const short = SLUG_TO_SHORT[topic.slug] || topic.short || topic.slug;
+  const category =
+    topic.category === 'tka'
+      ? 'Tes Kemampuan Akademik'
+      : topic.category === 'ujian-mandiri'
+      ? 'Ujian Mandiri'
+      : topic.category === 'mata-kuliah'
+      ? 'Mata Kuliah'
+      : SECTION_MAP[short] || (topic.section === 'literasi' ? 'Tes Literasi' : 'Tes Skolastik');
   return {
     id: short,
     slug: topic.slug,
     topicId: topic.id,
     name: topic.name,
-    code: `SNBT-${short}`,
-    category: SECTION_MAP[short] || 'Tes Skolastik',
+    code: short.startsWith('SNBT-') ? short : `LTV-${short.toUpperCase()}`,
+    category,
     questionsCount: topic.questionCount,
     packageCount: Number(topic.packageCount ?? 0),
-    // ponytail: no per-user progress/accuracy from API yet, show question count only
     progress: null,
     accuracy: null,
     description: topic.description,
@@ -85,7 +92,7 @@ export const AppProvider = ({ children }) => {
   const [params] = useSearchParams();
   const tab = params.get('tab') || 'dashboard';
   const practiceSubtest = params.get('subtes');
-  const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'tryout', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
+  const currentTab = pathname.startsWith('/dashboard/riwayat') ? 'practice' : ['dashboard', 'practice', 'library', 'tryout', 'leaderboard', 'profile', 'settings'].includes(tab) ? tab : 'dashboard';
   const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}${next === 'practice' && practiceSubtest ? `&subtes=${encodeURIComponent(practiceSubtest)}` : ''}`), [navigate, practiceSubtest]);
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
