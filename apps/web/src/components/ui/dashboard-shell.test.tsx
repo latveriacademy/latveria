@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
-import { BookOpen, Plus } from "lucide-react";
+import { Dumbbell, BookOpen,Plus } from "lucide-react";
 import { expect, it } from "vitest";
 import { DashboardNavigation } from "./dashboard-shell";
 
@@ -17,7 +17,7 @@ it.each([false, true])("keeps admin navigation as links with the active page ide
 
 it("keeps learner tabs as buttons rather than route links", () => {
   const html = renderToStaticMarkup(<DashboardNavigation active="practice" onSelect={() => {}} items={[
-    { id: "practice", label: "Latihan", icon: BookOpen },
+    { id: "practice", label: "Latihan", icon: Dumbbell },
   ]} />);
   expect(html).toContain('type="button"');
   expect(html).toContain('aria-current="page"');

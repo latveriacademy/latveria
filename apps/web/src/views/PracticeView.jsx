@@ -36,9 +36,10 @@ import {
   Check,
   X,
   FileCheck,
-  BarChart2,
-  Maximize2,
-  AlertCircle
+   BarChart2,
+   Maximize2,
+   AlertCircle,
+   Search
 } from 'lucide-react';
 
 export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}) => {
@@ -68,7 +69,9 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
   const exitPractice = reviewSession ? onReviewExit : exitLivePractice;
 
   // Selection Screen State
-  const [selectedMode, setSelectedMode] = useState('Practice');
+   const [selectedMode, setSelectedMode] = useState('Practice');
+   const [catalogQuery, setCatalogQuery] = useState('');
+   const [catalogSection, setCatalogSection] = useState('semua');
 
   // Subtest Package Selection State
   const [params] = useSearchParams();
@@ -1122,7 +1125,7 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
         <>
           <PageHeading
             title="Drilling"
-            description="Pilih subtes, ambil paket, lalu asah skill-mu satu soal demi satu soal."
+            description="Cari subtes, pilih paket, lalu asah skill-mu satu soal demi satu soal."
             actions={
               <Button asChild variant="outline">
                 <Link to="/dashboard/riwayat">
@@ -1144,7 +1147,24 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
             </Panel>
           ) : topics.length === 0 ? (
             <Panel className={styles.state} role="status"><BookOpen size={28} aria-hidden="true" /><h2>Belum ada subtes latihan</h2><p>Daftar subtes akan muncul di sini setelah tersedia.</p></Panel>
-          ) : <div className={styles.groups}>
+          ) : <>
+            <div className={styles.catalogControls}>
+              <label className={styles.search}>
+                <span className="sr-only">Cari subtes drilling</span>
+                <Search size={16} aria-hidden="true" />
+                <input value={catalogQuery} onChange={(event) => setCatalogQuery(event.target.value)} placeholder="Cari subtes atau area materi" />
+                {catalogQuery && <button type="button" onClick={() => setCatalogQuery('')} aria-label="Hapus pencarian"><X size={15} /></button>}
+              </label>
+              <div className={styles.filterTabs} role="tablist" aria-label="Area materi drilling">
+                {[
+                  ['semua', 'Semua'],
+                  ['tps', 'TPS'],
+                  ['literasi', 'Literasi'],
+                  ['tka-mandiri', 'TKA & Mandiri'],
+                ].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={catalogSection === id} className={catalogSection === id ? styles.filterActive : ''} onClick={() => setCatalogSection(id)}>{label}</button>)}
+              </div>
+            </div>
+            <div className={styles.groups}>
             {[
               {
                 id: 'tps',
@@ -1175,7 +1195,11 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                 }
                 return false;
               });
-              const allSectionTopics = [...sectionTopics, ...otherTopics];
+              const allSectionTopics = [...sectionTopics, ...otherTopics].filter((topic) => {
+                if (catalogSection !== 'semua' && catalogSection !== section.id) return false;
+                const query = catalogQuery.trim().toLowerCase();
+                return !query || `${topic.name} ${topic.description} ${topic.category}`.toLowerCase().includes(query);
+              });
               if (allSectionTopics.length === 0) return null;
 
               return (
@@ -1206,7 +1230,18 @@ export const PracticeView = ({ reviewSession, onReviewExit, onReviewStart } = {}
                 </Panel>
               );
             })}
-          </div>}
+            </div>
+            {!topics.some((topic) => {
+              const query = catalogQuery.trim().toLowerCase();
+              if (catalogSection !== 'semua') {
+                const extra = topic.category === 'tka' || topic.category === 'ujian-mandiri' || topic.category === 'mata-kuliah' || topic.category === 'Tes Kemampuan Akademik' || topic.category === 'Ujian Mandiri' || topic.category === 'Mata Kuliah';
+                if (catalogSection === 'tps' && topic.category !== 'Tes Skolastik') return false;
+                if (catalogSection === 'literasi' && topic.category !== 'Tes Literasi') return false;
+                if (catalogSection === 'tka-mandiri' && !extra) return false;
+              }
+              return !query || `${topic.name} ${topic.description} ${topic.category}`.toLowerCase().includes(query);
+            }) && <Panel className={styles.state}><BookOpen size={28} aria-hidden="true" /><h2>Subtes tidak ditemukan</h2><p>Coba kata kunci atau area materi lain.</p><Button variant="outline" onClick={() => { setCatalogQuery(''); setCatalogSection('semua'); }}>Reset filter</Button></Panel>}
+          </>}
         </>
       )}
 

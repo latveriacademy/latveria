@@ -2,7 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { getDatabaseUrl, loadLocalEnv } from "../src/lib/env";
-import { affirmations, practiceAnswers, questionPackages, questions, systemConfig, topics } from "../src/lib/db/schema";
+import { affirmations, practiceAnswers, questionPackages, questions, systemConfig, topics, tryoutPackageQuestions } from "../src/lib/db/schema";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion, utbkSubtests } from "@latveria/shared";
 import { geometryQuestionData } from "../src/lib/roof-question";
 
@@ -27,7 +27,8 @@ async function main() {
         const target = utbkSubtests.find((subtest) => subtest.slug === newSlug)!;
         await tx.update(topics).set({ slug: target.slug, name: target.name, description: target.description }).where(eq(topics.id, legacy.id));
       }
-      await tx.insert(topics).values(utbkSubtests.map(({ slug, name, description }) => ({ slug, name, description }))).onConflictDoNothing({ target: topics.slug });
+      await tx.insert(topics).values(utbkSubtests.map(({ slug, name, description, section }) => ({ slug, name, description, category: "utbk", section })))
+        .onConflictDoUpdate({ target: topics.slug, set: { name: sql`excluded.name`, description: sql`excluded.description`, category: sql`excluded.category`, section: sql`excluded.section` } });
       const storedTopics = await tx.select({ id: topics.id, slug: topics.slug }).from(topics).where(inArray(topics.slug, utbkSubtests.map((topic) => topic.slug)));
       const topicId = Object.fromEntries(storedTopics.map((topic) => [topic.slug, topic.id]));
       if (storedTopics.length !== utbkSubtests.length) throw new Error("Sebagian subtes tidak tersedia.");
@@ -51,10 +52,19 @@ async function main() {
           duration: 195,
           order: 99,
           isFullTryout: true,
+          targetQuestions: 30,
           isActive: true,
         }).onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
       }
-      const storedPackages = await tx.select({ id: questionPackages.id, topicId: questionPackages.topicId }).from(questionPackages).where(eq(questionPackages.name, "Paket 1"));
+       const [fullTryoutPackage] = await tx.select({ id: questionPackages.id }).from(questionPackages).where(eq(questionPackages.name, "Tryout Akbar UTBK-SNBT 2027"));
+       if (fullTryoutPackage) {
+         const fullTryoutQuestionRows = await tx.select({ id: questions.id }).from(questions)
+           .innerJoin(topics, eq(questions.topicId, topics.id))
+           .where(inArray(topics.slug, utbkSubtests.map((subtest) => subtest.slug)));
+         await tx.insert(tryoutPackageQuestions).values(fullTryoutQuestionRows.map((question, order) => ({ packageId: fullTryoutPackage.id, questionId: question.id, order }))).onConflictDoNothing();
+         await tx.update(questionPackages).set({ targetQuestions: fullTryoutQuestionRows.length }).where(eq(questionPackages.id, fullTryoutPackage.id));
+       }
+       const storedPackages = await tx.select({ id: questionPackages.id, topicId: questionPackages.topicId }).from(questionPackages).where(eq(questionPackages.name, "Paket 1"));
       const defaultPackageByTopic = Object.fromEntries(storedPackages.map((p) => [p.topicId, p.id]));
 
       await tx.insert(questions).values([

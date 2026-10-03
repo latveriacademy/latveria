@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   affirmationSchema,
@@ -46,10 +46,11 @@ import {
   questions,
   systemConfig,
   topics,
+  tryoutPackageQuestions,
   tryoutSessions,
 } from "./lib/db/schema";
 import { user as accounts } from "./lib/db/auth-schema";
-import { learnerSummary, levelProgress, practiceXP } from "@latveria/shared";
+import { learnerSummary, practiceXP } from "@latveria/shared";
 
 export const app = new Hono<{ Variables: { user: User } }>();
 app.get("/api/health", (c) => c.json({ status: "ok" }));
@@ -413,7 +414,8 @@ async function getLearnerPackages(c: { req: { param: (key: string) => string }; 
 app.get("/api/learner/subtests/:subtestId/packages", getLearnerPackages as never);
 app.get("/api/learner/topics/:slug/packages", getLearnerPackages as never);
 app.get("/api/learner/packages", async (c) => {
-  const rows = await getDb()
+  const db = getDb();
+  const [rows, pinned] = await Promise.all([db
     .select({
       id: questionPackages.id,
       name: questionPackages.name,
@@ -432,13 +434,16 @@ app.get("/api/learner/packages", async (c) => {
     .from(questionPackages)
     .innerJoin(topics, eq(questionPackages.topicId, topics.id))
     .leftJoin(questions, eq(questions.packageId, questionPackages.id))
-    .where(eq(questionPackages.isActive, true))
+    .where(and(eq(questionPackages.isActive, true), eq(questionPackages.published, true)))
     .groupBy(questionPackages.id, topics.id)
-    .orderBy(questionPackages.order, questionPackages.createdAt);
+    .orderBy(questionPackages.order, questionPackages.createdAt),
+    db.select({ packageId: tryoutPackageQuestions.packageId, questionCount: count() }).from(tryoutPackageQuestions).groupBy(tryoutPackageQuestions.packageId),
+  ]);
+  const pinnedCounts = new Map(pinned.map((item) => [item.packageId, Number(item.questionCount)]));
 
   return c.json(rows.map((row) => ({
     ...row,
-    questionCount: Number(row.questionCount ?? 0),
+    questionCount: row.isFullTryout ? (pinnedCounts.get(row.id) ?? 0) : Number(row.questionCount ?? 0),
   })));
 });
 
@@ -452,8 +457,8 @@ app.get("/api/learner/summary", async (c) => {
 const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
 const CACHE_TTL_MS = 60_000; // 1 minute cache
 
-function getCacheKey(metric: Metric, subtest: Subtest, period: Period, limit: number): string {
-  return `${metric}:${subtest}:${period}:${limit}`;
+function getCacheKey(userId: string, metric: Metric, subtest: Subtest, period: Period, limit: number): string {
+  return `${userId}:${metric}:${subtest}:${period}:${limit}`;
 }
 
 app.get("/api/leaderboard", async (c) => {
@@ -468,7 +473,7 @@ app.get("/api/leaderboard", async (c) => {
   }
 
   const { metric, subtest, period, limit } = parsed.data;
-  const cacheKey = getCacheKey(metric, subtest, period, limit);
+  const cacheKey = getCacheKey(c.get("user").id, metric, subtest, period, limit);
   const cached = leaderboardCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return c.json(cached.data);
@@ -560,72 +565,55 @@ app.get("/api/leaderboard", async (c) => {
       data.metricValue = streakDays;
     }
   } else {
-    // Build base query conditions
-    const conditions = [];
-    if (period !== 'all') {
-      conditions.push(gte(practiceAnswers.submittedAt, periodRange.start));
-      conditions.push(lte(practiceAnswers.submittedAt, periodRange.end));
+    const periodConditions = [
+      ...(topicSlug ? [eq(topics.slug, topicSlug)] : []),
+      ...(period === 'all' ? [] : [gte(practiceAttempts.submittedAt, periodRange.start), lte(practiceAttempts.submittedAt, periodRange.end)]),
+    ];
+    const periodAttempts = await db.select({ userId: practiceAttempts.userId, id: practiceAttempts.id, correctCount: practiceAttempts.correctCount, totalCount: practiceAttempts.totalCount, score: practiceAttempts.score, submittedAt: practiceAttempts.submittedAt })
+      .from(practiceAttempts).innerJoin(topics, eq(practiceAttempts.topicId, topics.id)).where(periodConditions.length ? and(...periodConditions) : undefined);
+    const answerConditions = [eq(practiceAnswers.isFirstAttempt, true), ...(topicSlug ? [eq(topics.slug, topicSlug)] : []), ...(period === 'all' ? [] : [gte(practiceAnswers.submittedAt, periodRange.start), lte(practiceAnswers.submittedAt, periodRange.end)])];
+    const answers = await db.select({ userId: practiceAttempts.userId, questionId: practiceAnswers.questionId, isCorrect: practiceAnswers.isCorrect, submittedAt: practiceAnswers.submittedAt })
+      .from(practiceAnswers).innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id)).innerJoin(topics, eq(practiceAttempts.topicId, topics.id)).where(and(...answerConditions));
+    const statsByUser = new Map<string, { answerIds: Set<string>; correctIds: Set<string>; firstAnswerCorrect: number; attempts: number; periodCorrect: number; scoreTotal: number; scoreCount: number; lastAt: Date }>();
+    for (const userId of userMetrics.keys()) statsByUser.set(userId, { answerIds: new Set(), correctIds: new Set(), firstAnswerCorrect: 0, attempts: 0, periodCorrect: 0, scoreTotal: 0, scoreCount: 0, lastAt: new Date(0) });
+    for (const attempt of periodAttempts) {
+      const stats = statsByUser.get(attempt.userId);
+      if (!stats) continue;
+      stats.attempts++;
+      stats.periodCorrect += attempt.correctCount;
+      stats.lastAt = attempt.submittedAt > stats.lastAt ? attempt.submittedAt : stats.lastAt;
+      stats.scoreTotal += attempt.score ?? Math.round(attempt.correctCount / Math.max(1, attempt.totalCount) * 1000);
+      stats.scoreCount++;
     }
-
-    // Get all first attempts with topic info
-    const answersQuery = db
-      .select({
-        userId: practiceAttempts.userId,
-        questionId: practiceAnswers.questionId,
-        topicSlug: topics.slug,
-        isCorrect: practiceAnswers.isCorrect,
-        submittedAt: practiceAnswers.submittedAt,
-      })
-      .from(practiceAnswers)
-      .innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id))
-      .innerJoin(topics, eq(practiceAttempts.topicId, topics.id))
-      .where(and(
-        eq(practiceAnswers.isFirstAttempt, true),
-        ...(topicSlug ? [eq(topics.slug, topicSlug)] : []),
-        ...conditions
-      ));
-
-    const answers = await answersQuery;
-
-    // Aggregate per user
-    const userStats: Map<string, { answered: Set<string>; correct: Set<string>; lastAnswerAt: Date }> = new Map();
-    for (const ans of answers) {
-      if (!userMetrics.has(ans.userId)) continue; // Skip demo users
-
-      if (!userStats.has(ans.userId)) {
-        userStats.set(ans.userId, { answered: new Set(), correct: new Set(), lastAnswerAt: new Date(0) });
-      }
-      const stats = userStats.get(ans.userId)!;
-      stats.answered.add(ans.questionId);
-      if (ans.isCorrect) stats.correct.add(ans.questionId);
-      if (ans.submittedAt > stats.lastAnswerAt) {
-        stats.lastAnswerAt = ans.submittedAt;
-      }
+    for (const answer of answers) {
+      const stats = statsByUser.get(answer.userId);
+      if (!stats) continue;
+      stats.answerIds.add(answer.questionId);
+      if (answer.isCorrect) { stats.correctIds.add(answer.questionId); stats.firstAnswerCorrect++; }
+      stats.lastAt = answer.submittedAt > stats.lastAt ? answer.submittedAt : stats.lastAt;
     }
-
-    // Calculate XP from answers (for period-based XP)
-    for (const [userId, stats] of userStats) {
-      const data = userMetrics.get(userId)!;
-      data.answered = stats.answered.size;
-      data.correct = stats.correct.size;
-      data.accuracy = data.answered > 0 ? Math.round((data.correct / data.answered) * 10000) / 100 : 0;
-      data.lastAnswerAt = stats.lastAnswerAt;
-
-      // XP calculation: 30 base + 15 per correct
-      data.metricValue = 30 + data.correct * 15;
-
-      // Total XP for level calculation (all time for display, but metric is period-based)
-      const allUserAnswers = await db
-        .select({ isCorrect: practiceAnswers.isCorrect })
-        .from(practiceAnswers)
-        .innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id))
-        .where(and(
-          eq(practiceAttempts.userId, userId),
-          eq(practiceAnswers.isFirstAttempt, true)
-        ));
-      const totalCorrect = allUserAnswers.filter((a) => a.isCorrect).length;
-      data.totalXP = 30 + totalCorrect * 15;
-      data.level = calculateLevel(data.totalXP);
+    const lifetimeAttempts = await db.select({ userId: practiceAttempts.userId, topicId: practiceAttempts.topicId, correctCount: practiceAttempts.correctCount, totalCount: practiceAttempts.totalCount, submittedAt: practiceAttempts.submittedAt }).from(practiceAttempts);
+    const lifetimeByUser = new Map<string, { attempts: number; correct: number }>();
+    for (const attempt of lifetimeAttempts) {
+      const stats = lifetimeByUser.get(attempt.userId) ?? { attempts: 0, correct: 0 };
+      stats.attempts++;
+      stats.correct += attempt.correctCount;
+      lifetimeByUser.set(attempt.userId, stats);
+    }
+    for (const [userId, data] of userMetrics) {
+      const stats = statsByUser.get(userId)!;
+      const lifetime = lifetimeByUser.get(userId) ?? { attempts: 0, correct: 0 };
+      data.answered = stats.answerIds.size;
+      data.correct = stats.correctIds.size;
+      data.accuracy = data.answered ? Math.round(data.correct / data.answered * 10000) / 100 : 0;
+      data.lastAnswerAt = stats.lastAt;
+      data.totalXP = lifetime.attempts * 30 + lifetime.correct * 15;
+      data.level = learnerSummary(lifetimeAttempts.filter((attempt) => attempt.userId === userId)).level;
+      data.metricValue = metric === 'xp' ? stats.attempts * 30 + stats.periodCorrect * 15
+        : metric === 'answered' ? data.answered
+        : metric === 'correct' ? data.correct
+        : metric === 'accuracy' ? data.accuracy
+        : stats.scoreCount ? Math.round(stats.scoreTotal / stats.scoreCount) : 0;
     }
   }
 
@@ -650,6 +638,7 @@ app.get("/api/leaderboard", async (c) => {
     return {
       rank,
       id: `LTV-${u.id.slice(0, 4).toUpperCase()}`,
+      userId: u.id,
       name: u.name,
       metricValue: u.metricValue,
       level: u.level,
@@ -701,18 +690,6 @@ app.get("/api/leaderboard", async (c) => {
 
   return c.json(response);
 });
-
-function calculateLevel(totalXP: number): number {
-  let level = 1;
-  let nextLevelXP = 300;
-  let currentXP = totalXP;
-  while (currentXP >= nextLevelXP) {
-    currentXP -= nextLevelXP;
-    level++;
-    nextLevelXP = Math.round(nextLevelXP * 1.35);
-  }
-  return level;
-}
 
 app.get("/api/learner/history", async (c) => {
   const rows = await getDb().select({
@@ -1101,110 +1078,55 @@ app.put("/api/admin/reports/:id", async (c) => {
 
 // --- Real Database Leaderboard ---
 app.get("/api/learner/leaderboard", async (c) => {
-  const period = c.req.query("period") || "all-time";
-  let dateFilter = undefined;
-  const now = new Date();
-  if (period === "weekly") {
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    dateFilter = gte(practiceAttempts.submittedAt, weekAgo);
-  } else if (period === "monthly") {
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    dateFilter = gte(practiceAttempts.submittedAt, monthAgo);
-  }
-
-  const allUsers = await getDb().select({
-    id: accounts.id,
-    name: accounts.name,
-    codename: accounts.codename,
-  }).from(accounts);
-
-  const attemptsRows = await getDb().select({
-    userId: practiceAttempts.userId,
-    correctCount: practiceAttempts.correctCount,
-    totalCount: practiceAttempts.totalCount,
-    score: practiceAttempts.score,
-  }).from(practiceAttempts).where(dateFilter);
-
-  const userStats = new Map<string, { totalCorrect: number; totalCount: number; scores: number[]; attemptsCount: number }>();
-  for (const a of attemptsRows) {
-    const current = userStats.get(a.userId) || { totalCorrect: 0, totalCount: 0, scores: [], attemptsCount: 0 };
-    current.totalCorrect += a.correctCount;
-    current.totalCount += a.totalCount;
-    if (a.score !== null && a.score !== undefined) {
-      current.scores.push(a.score);
-    } else if (a.totalCount > 0) {
-      current.scores.push(Math.round((a.correctCount / a.totalCount) * 1000));
-    }
-    current.attemptsCount += 1;
-    userStats.set(a.userId, current);
-  }
-
-  const entries = [];
-  for (const u of allUsers) {
-    const stats = userStats.get(u.id);
-    const totalCorrect = stats?.totalCorrect ?? 0;
-    const totalAnswered = stats?.totalCount ?? 0;
-    const attemptsCount = stats?.attemptsCount ?? 0;
-    const earnedXP = attemptsCount * 30 + totalCorrect * 15;
-    const progress = levelProgress(earnedXP);
-    const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 1000) / 10 : 0;
-    const avgScore = stats && stats.scores.length > 0
-      ? Math.round(stats.scores.reduce((sum, s) => sum + s, 0) / stats.scores.length)
-      : Math.round(accuracy * 10);
-
-    entries.push({
-      rank: 0,
-      userId: u.id,
-      name: u.name || "Peserta Latveria",
-      codename: u.codename || null,
-      level: progress.level,
-      xp: earnedXP,
-      score: avgScore,
-      accuracy,
-      attemptsCount,
-      totalAnswered,
-    });
-  }
-
-  entries.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (b.xp !== a.xp) return b.xp - a.xp;
-    return b.accuracy - a.accuracy;
-  });
-
-  entries.forEach((e, idx) => {
-    e.rank = idx + 1;
-  });
-
-  return c.json(entries);
+  const period = c.req.query("period") ?? "weekly";
+  return c.redirect(`/api/leaderboard?metric=xp&subtest=all&period=${encodeURIComponent(period === "all-time" ? "all" : period)}`);
 });
 
 // --- Tryout Sessions Engine (Multi-Subtest & Break & Timer & Persistence) ---
 app.post("/api/learner/tryouts/start/:packageId", async (c) => {
   const pkgId = idSchema.safeParse(c.req.param("packageId"));
   if (!pkgId.success) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
+  const db = getDb();
+  const officialSubtests = (await catalog(true)).filter((topic) => utbkSubtests.some((subtest) => subtest.slug === topic.slug));
+  const result = await db.transaction(async (tx) => {
+    const [pkg] = await tx.select().from(questionPackages).where(and(eq(questionPackages.id, pkgId.data), eq(questionPackages.isActive, true), eq(questionPackages.published, true), or(eq(questionPackages.isFullTryout, true), eq(questionPackages.packageType, "Simulasi"), eq(questionPackages.packageType, "Simulasi Akbar"))));
+    if (!pkg) throw new HTTPException(404, { message: "Tryout tidak tersedia." });
+    const tryoutTopics = pkg.isFullTryout ? officialSubtests : officialSubtests.filter((topic) => topic.id === pkg.topicId);
+    if (!tryoutTopics.length) throw new HTTPException(409, { message: "Tryout belum memiliki subtes aktif." });
 
-  const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, pkgId.data));
-  if (!pkg) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
+    const [existingSession] = await tx.select().from(tryoutSessions).where(and(eq(tryoutSessions.userId, c.get("user").id), eq(tryoutSessions.packageId, pkg.id), inArray(tryoutSessions.state, ["active", "break"])));
+    if (existingSession && existingSession.questionSets !== "{}") return { session: existingSession, status: 200 as const };
 
-  const [existingSession] = await getDb().select().from(tryoutSessions)
-    .where(and(eq(tryoutSessions.userId, c.get("user").id), eq(tryoutSessions.packageId, pkg.id), eq(tryoutSessions.state, "active")));
-
-  if (existingSession) {
-    return c.json(existingSession);
-  }
-
-  const [newSession] = await getDb().insert(tryoutSessions).values({
-    userId: c.get("user").id,
-    packageId: pkg.id,
-    currentSubtestIndex: 0,
-    state: "active",
-    answers: "{}",
-    flags: "{}",
-    currentQuestionIndex: 0,
-  }).returning();
-
-  return c.json(newSession, 201);
+    const questionSets: Record<string, string[]> = {};
+    const baseCount = Math.floor(pkg.targetQuestions / tryoutTopics.length);
+    const extraCount = pkg.targetQuestions % tryoutTopics.length;
+    for (const [topicIndex, topic] of tryoutTopics.entries()) {
+      const targetPerSubtest = Math.max(1, baseCount + (topicIndex < extraCount ? 1 : 0));
+      const tryoutQuestions = await tx.select({ id: questions.id }).from(tryoutPackageQuestions)
+        .innerJoin(questions, eq(tryoutPackageQuestions.questionId, questions.id))
+        .where(and(eq(tryoutPackageQuestions.packageId, pkg.id), eq(questions.topicId, topic.id)))
+        .orderBy(tryoutPackageQuestions.order, questions.order, questions.id);
+      let pool = tryoutQuestions;
+      if (!pool.length) pool = await tx.select({ id: questions.id }).from(questions).where(and(eq(questions.topicId, topic.id), eq(questions.category, pkg.category))).orderBy(questions.order, questions.id);
+      if (!pool.length) pool = await tx.select({ id: questions.id }).from(questions).where(eq(questions.topicId, topic.id)).orderBy(questions.order, questions.id);
+      for (let index = pool.length - 1; index > 0; index--) {
+        const swap = Math.floor(Math.random() * (index + 1));
+        [pool[index], pool[swap]] = [pool[swap], pool[index]];
+      }
+      questionSets[topic.id] = pool.slice(0, targetPerSubtest).map((question) => question.id);
+    }
+    if (existingSession) {
+      const [session] = await tx.update(tryoutSessions).set({ questionSets: JSON.stringify(questionSets), currentQuestionIndex: 0, subtestStartedAt: new Date() }).where(eq(tryoutSessions.id, existingSession.id)).returning();
+      return { session, status: 200 as const };
+    }
+    const [session] = await tx.insert(tryoutSessions).values({
+      userId: c.get("user").id, packageId: pkg.id, currentSubtestIndex: 0, state: "active",
+      answers: "{}", flags: "{}", questionSets: JSON.stringify(questionSets), questionTimes: "{}", scoreBreakdown: "[]",
+      currentQuestionIndex: 0, subtestStartedAt: new Date(),
+    }).returning();
+    return { session, status: 201 as const };
+  });
+  return c.json({ id: result.session.id }, result.status);
 });
 
 app.get("/api/learner/tryouts/:sessionId", async (c) => {
@@ -1216,7 +1138,10 @@ app.get("/api/learner/tryouts/:sessionId", async (c) => {
   if (!session) throw new HTTPException(404, { message: "Sesi tidak ditemukan." });
 
   const [pkg] = await getDb().select().from(questionPackages).where(eq(questionPackages.id, session.packageId));
-  const subtests = await catalog(true);
+  if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
+  const available = (await catalog(true)).filter((topic) => utbkSubtests.some((subtest) => subtest.slug === topic.slug));
+  const subtests = pkg.isFullTryout ? available : available.filter((topic) => topic.id === pkg.topicId);
+  const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
 
   let state = session.state;
   let currentSubtestIndex = session.currentSubtestIndex;
@@ -1227,17 +1152,28 @@ app.get("/api/learner/tryouts/:sessionId", async (c) => {
       state: "active",
       currentSubtestIndex,
       breakEndsAt: null,
-    }).where(eq(tryoutSessions.id, session.id));
+      currentQuestionIndex: 0,
+      subtestStartedAt: new Date(),
+    }).where(and(eq(tryoutSessions.id, session.id), eq(tryoutSessions.userId, c.get("user").id), eq(tryoutSessions.state, "break")));
   }
 
   const currentSubtest = subtests[currentSubtestIndex] || subtests[0];
+  if (!currentSubtest) throw new HTTPException(409, { message: "Subtes tryout tidak tersedia." });
+  const selectedQuestionIds = questionSets[currentSubtest.id] ?? [];
   const qList = await getDb().select({
     id: questions.id,
     prompt: questions.prompt,
     options: questions.options,
     itemWeight: questions.itemWeight,
     calculatorAllowed: questions.calculatorAllowed,
-  }).from(questions).where(eq(questions.topicId, currentSubtest.id)).orderBy(questions.order, questions.id);
+  }).from(questions).where(selectedQuestionIds.length ? and(eq(questions.topicId, currentSubtest.id), inArray(questions.id, selectedQuestionIds)) : sql`false`).orderBy(questions.order, questions.id);
+  const score = session.state === "completed" ? (() => {
+    const items = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<typeof calculateLatveriaScore>["itemBreakdowns"];
+    return calculateLatveriaScore(items.map((item) => ({ questionId: item.questionId, isCorrect: item.isCorrect, itemWeight: item.itemWeight, timeSpentSeconds: item.timeSpentSeconds })));
+  })() : null;
+  const currentSubtestDuration = pkg.isFullTryout ? [30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30 : pkg.duration;
+  const elapsed = Math.max(0, Math.floor((Date.now() - session.subtestStartedAt.getTime()) / 1000));
+  const activeTimeRemaining = Math.max(0, currentSubtestDuration * 60 - elapsed);
 
   return c.json({
     session: {
@@ -1247,62 +1183,99 @@ app.get("/api/learner/tryouts/:sessionId", async (c) => {
       breakEndsAt: session.breakEndsAt?.toISOString() ?? null,
       answers: JSON.parse(session.answers || "{}"),
       flags: JSON.parse(session.flags || "{}"),
+      questionTimes: JSON.parse(session.questionTimes || "{}"),
+      totalScore: session.totalScore,
+      completedAt: session.completedAt?.toISOString() ?? null,
+      secondsRemaining: session.state === "break" && session.breakEndsAt ? Math.max(0, Math.ceil((session.breakEndsAt.getTime() - Date.now()) / 1000)) : activeTimeRemaining,
     },
     package: pkg,
     currentSubtest,
     totalSubtests: subtests.length,
     questions: qList,
+    score,
   });
 });
 
 app.post("/api/learner/tryouts/:sessionId/autosave", async (c) => {
   const sId = idSchema.safeParse(c.req.param("sessionId"));
   if (!sId.success) throw new HTTPException(404);
-  const body = await c.req.json().catch(() => ({}));
-  await getDb().update(tryoutSessions).set({
-    answers: JSON.stringify(body.answers ?? {}),
-    flags: JSON.stringify(body.flags ?? {}),
-    currentQuestionIndex: Number(body.currentQuestionIndex ?? 0),
-  }).where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, c.get("user").id)));
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body.answers !== "object" || Array.isArray(body.answers) || typeof body.flags !== "object" || Array.isArray(body.flags) || typeof body.questionTimes !== "object" || Array.isArray(body.questionTimes) || !Number.isInteger(body.currentQuestionIndex) || body.currentQuestionIndex < 0) throw new HTTPException(400, { message: "Data simpan tryout tidak valid." });
+  const [session] = await getDb().select().from(tryoutSessions).where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, c.get("user").id), eq(tryoutSessions.state, "active")));
+  if (!session) throw new HTTPException(404, { message: "Sesi tryout aktif tidak ditemukan." });
+  const [packageInfo] = await getDb().select({ topicId: questionPackages.topicId, isFullTryout: questionPackages.isFullTryout }).from(questionPackages).where(eq(questionPackages.id, session.packageId));
+  if (!packageInfo) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
+  const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
+  const availableSubtests = (await catalog(true)).filter((topic) => utbkSubtests.some((subtest) => subtest.slug === topic.slug));
+  const activeSubtest = (packageInfo.isFullTryout ? availableSubtests : availableSubtests.filter((topic) => topic.id === packageInfo.topicId))[session.currentSubtestIndex];
+  const allowed = new Set(activeSubtest ? questionSets[activeSubtest.id] ?? [] : []);
+  const answers = body.answers as Record<string, unknown>;
+  const flags = body.flags as Record<string, unknown>;
+  const times = body.questionTimes as Record<string, unknown>;
+    const previouslyAllowed = new Set(Object.entries(questionSets).slice(0, session.currentSubtestIndex + 1).flatMap(([, ids]) => ids));
+    if (Object.entries(answers).some(([id, value]) => !previouslyAllowed.has(id) || !Number.isInteger(Number(value)) || Number(value) < 0 || Number(value) > 3)
+      || Object.entries(flags).some(([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean")
+      || Object.entries(times).some(([id, value]) => !previouslyAllowed.has(id) || !Number.isInteger(value) || Number(value) < 0 || Number(value) > 3600)
+    || body.currentQuestionIndex >= Math.max(1, allowed.size)) throw new HTTPException(400, { message: "Jawaban atau posisi soal tidak sesuai dengan sesi tryout." });
+  const updated = await getDb().update(tryoutSessions).set({
+    answers: JSON.stringify(answers),
+    flags: JSON.stringify(flags),
+    questionTimes: JSON.stringify(times),
+    currentQuestionIndex: body.currentQuestionIndex,
+  }).where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, c.get("user").id), eq(tryoutSessions.state, "active"))).returning({ id: tryoutSessions.id });
+  if (!updated.length) throw new HTTPException(409, { message: "Sesi berubah. Muat ulang tryout." });
   return c.json({ saved: true });
 });
 
 app.post("/api/learner/tryouts/:sessionId/subtest-submit", async (c) => {
   const sId = idSchema.safeParse(c.req.param("sessionId"));
   if (!sId.success) throw new HTTPException(404);
-  const body = await c.req.json().catch(() => ({}));
-
-  const [session] = await getDb().select().from(tryoutSessions).where(eq(tryoutSessions.id, sId.data));
-  if (!session) throw new HTTPException(404);
-
-  const subtests = await catalog(true);
-  const isLast = session.currentSubtestIndex >= subtests.length - 1;
-
-  if (isLast) {
-    await getDb().update(tryoutSessions).set({
-      state: "completed",
-      completedAt: new Date(),
-      answers: JSON.stringify(body.answers ?? {}),
-    }).where(eq(tryoutSessions.id, session.id));
-    return c.json({ status: "completed" });
-  }
-
-  const [cfg] = await getDb().select().from(systemConfig).where(eq(systemConfig.key, "break_duration_minutes"));
-  const breakMinutes = Number(cfg?.value || 15);
-  const breakEndsAt = new Date(Date.now() + breakMinutes * 60 * 1000);
-
-  await getDb().update(tryoutSessions).set({
-    state: "break",
-    breakEndsAt,
-    answers: JSON.stringify(body.answers ?? {}),
-  }).where(eq(tryoutSessions.id, session.id));
-
-  return c.json({
-    status: "break",
-    breakEndsAt: breakEndsAt.toISOString(),
-    breakMinutes,
-    nextSubtestIndex: session.currentSubtestIndex + 1,
+  const body = await c.req.json().catch(() => null);
+  if (!body || typeof body.answers !== "object" || Array.isArray(body.answers) || typeof body.timeSpentByQuestion !== "object" || Array.isArray(body.timeSpentByQuestion)) throw new HTTPException(400, { message: "Jawaban tryout tidak valid." });
+  const response = await getDb().transaction(async (tx) => {
+    const [session] = await tx.select().from(tryoutSessions).where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, c.get("user").id))).for("update");
+    if (!session || session.state !== "active") throw new HTTPException(409, { message: "Subtes ini sudah dikumpulkan atau sesi tidak aktif." });
+    const [pkg] = await tx.select().from(questionPackages).where(eq(questionPackages.id, session.packageId));
+    if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
+    const all = (await catalog(true)).filter((topic) => utbkSubtests.some((subtest) => subtest.slug === topic.slug));
+    const subtests = pkg.isFullTryout ? all : all.filter((topic) => topic.id === pkg.topicId);
+    const current = subtests[session.currentSubtestIndex];
+    if (!current) throw new HTTPException(409, { message: "Urutan subtes tryout tidak valid." });
+    const sets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
+    const ids = sets[current.id] ?? [];
+    const bodyAnswers = body.answers as Record<string, unknown>;
+    const times = body.timeSpentByQuestion as Record<string, unknown>;
+    const savedAnswers = JSON.parse(session.answers || "{}") as Record<string, string>;
+    const previouslySubmittedIds = new Set(Object.entries(sets).slice(0, session.currentSubtestIndex + 1).flatMap(([, questionIds]) => questionIds));
+    const currentAnswers = Object.fromEntries(ids.filter((id) => Object.hasOwn(bodyAnswers, id)).map((id) => [id, bodyAnswers[id]]));
+    const allAnswers = { ...savedAnswers, ...currentAnswers };
+    if (Object.keys(currentAnswers).length !== ids.length || ids.some((id) => !Number.isInteger(Number(currentAnswers[id])) || Number(currentAnswers[id]) < 0 || Number(currentAnswers[id]) > 3)
+      || Object.keys(bodyAnswers).some((id) => !previouslySubmittedIds.has(id))
+      || Object.entries(times).some(([id, value]) => !previouslySubmittedIds.has(id) || !Number.isInteger(value) || Number(value) < 0 || Number(value) > 3600)) throw new HTTPException(400, { message: "Jawab semua soal subtes ini sebelum mengumpulkan." });
+    const questionRows = ids.length ? await tx.select({ id: questions.id, correctAnswer: questions.correctAnswer, itemWeight: questions.itemWeight }).from(questions).where(and(eq(questions.topicId, current.id), inArray(questions.id, ids))) : [];
+    if (questionRows.length !== ids.length) throw new HTTPException(409, { message: "Soal tryout berubah. Muat ulang sesi." });
+    const result = calculateLatveriaScore(questionRows.map((question) => ({
+      questionId: question.id,
+      isCorrect: Number(currentAnswers[question.id]) === question.correctAnswer,
+      itemWeight: question.itemWeight,
+      timeSpentSeconds: Number.isInteger(times[question.id]) ? Number(times[question.id]) : 60,
+    })));
+    const prior = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<typeof calculateLatveriaScore>["itemBreakdowns"];
+    const scoreBreakdown = [...prior, ...result.itemBreakdowns];
+    const aggregate = calculateLatveriaScore(scoreBreakdown.map((item) => ({ questionId: item.questionId, isCorrect: item.isCorrect, itemWeight: item.itemWeight, timeSpentSeconds: item.timeSpentSeconds })));
+    const answers = allAnswers;
+    const isLast = session.currentSubtestIndex >= subtests.length - 1;
+    if (isLast) {
+      await tx.update(tryoutSessions).set({ state: "completed", completedAt: new Date(), answers: JSON.stringify(answers), scoreBreakdown: JSON.stringify(scoreBreakdown), totalScore: aggregate.score }).where(and(eq(tryoutSessions.id, session.id), eq(tryoutSessions.state, "active")));
+      return { status: "completed" as const, score: aggregate };
+    }
+    const [cfg] = await tx.select().from(systemConfig).where(eq(systemConfig.key, "break_duration_minutes"));
+    const breakMinutes = Math.max(0, Number(cfg?.value || 15));
+    const breakEndsAt = new Date(Date.now() + breakMinutes * 60 * 1000);
+    await tx.update(tryoutSessions).set({ state: "break", breakEndsAt, answers: JSON.stringify(answers), scoreBreakdown: JSON.stringify(scoreBreakdown), totalScore: aggregate.score }).where(and(eq(tryoutSessions.id, session.id), eq(tryoutSessions.state, "active")));
+    return { status: "break" as const, breakEndsAt: breakEndsAt.toISOString(), breakMinutes, nextSubtestIndex: session.currentSubtestIndex + 1 };
   });
+  return c.json(response);
 });
 
 app.get("/api/admin/questions", async (c) => {

@@ -137,8 +137,18 @@ export const tryoutSessions = pgTable("tryout_sessions", {
   breakEndsAt: timestamp("break_ends_at", { withTimezone: true }),
   answers: text("answers").notNull().default("{}"),
   flags: text("flags").notNull().default("{}"),
+  questionSets: text("question_sets").notNull().default("{}"),
+  questionTimes: text("question_times").notNull().default("{}"),
+  scoreBreakdown: text("score_breakdown").notNull().default("[]"),
   currentQuestionIndex: integer("current_question_index").notNull().default(0),
+  subtestStartedAt: timestamp("subtest_started_at", { withTimezone: true }).defaultNow().notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   totalScore: integer("total_score"),
 }).enableRLS();
+
+export const tryoutPackageQuestions = pgTable("tryout_package_questions", {
+  packageId: uuid("package_id").notNull().references(() => questionPackages.id, { onDelete: "cascade" }),
+  questionId: uuid("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
+  order: integer("order").notNull().default(0),
+}, (table) => [unique("tryout_package_questions_unique").on(table.packageId, table.questionId)]).enableRLS();

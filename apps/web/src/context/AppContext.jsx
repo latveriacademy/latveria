@@ -183,7 +183,7 @@ export const AppProvider = ({ children }) => {
     setTopicsLoading(true);
     setTopicsError('');
     try {
-      const data = await api('/learner/topics');
+      const data = await api('/learner/topics?all=true');
       if (!Array.isArray(data)) throw new Error('Respons subtes tidak valid.');
       setTopics(data.map(topicToSubject));
     } catch {

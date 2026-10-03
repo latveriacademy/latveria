@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   ArrowRight,
   Swords,
@@ -15,15 +15,19 @@ import {
 import { Button } from "../components/ui/button";
 import { PageHeading, Panel } from "../components/ui/dashboard";
 import { MathText } from "../components/math-text";
+import { api } from "../lib/api";
 
 interface TryoutPackage {
   id: string;
   name: string;
   description: string;
+  durationMinutes?: number;
   duration?: number;
   isFullTryout?: boolean;
   packageType?: string;
   questionCount: number;
+  targetQuestions?: number;
+  published?: boolean;
 }
 
 interface TryoutQuestion {
@@ -41,6 +45,10 @@ interface TryoutSessionState {
     answers: Record<string, string>;
     flags: Record<string, boolean>;
     currentQuestionIndex: number;
+    totalScore: number | null;
+    completedAt: string | null;
+    questionTimes: Record<string, number>;
+    secondsRemaining: number;
   };
   package: {
     id: string;
@@ -53,20 +61,21 @@ interface TryoutSessionState {
   };
   totalSubtests: number;
   questions: TryoutQuestion[];
+  score?: { score: number; correctCount: number; totalCount: number; accuracy: number; rawScore: number; performanceIndex: number; averageTime: number } | null;
 }
 
-const SUBTEST_SCHEDULE = [
+const SUBTEST_SCHEDULE: { name: string; duration: number; isBreak?: boolean }[] = [
   { name: "Penalaran Umum", duration: 30 },
   { name: "Pengetahuan & Pemahaman Umum", duration: 15 },
   { name: "Pemahaman Bacaan & Menulis", duration: 25 },
   { name: "Pengetahuan Kuantitatif", duration: 20 },
-  { name: "Jeda Istirahat Terjadwal", duration: 15, isBreak: true },
   { name: "Literasi dalam Bahasa Indonesia", duration: 45 },
   { name: "Literasi dalam Bahasa Inggris", duration: 30 },
   { name: "Penalaran Matematika", duration: 30 },
-];
+].flatMap((subtest, index) => index === 4 ? [{ name: "Jeda Istirahat Terjadwal", duration: 15, isBreak: true }, subtest] : [subtest]);
 
 export function BattleWorldView() {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<TryoutPackage[]>([]);
   const [activeSessionData, setActiveSessionData] = useState<TryoutSessionState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,31 +87,24 @@ export function BattleWorldView() {
   const [breakTimer, setBreakTimer] = useState<number>(15 * 60);
   const [showSubmitSubtestModal, setShowSubmitSubtestModal] = useState(false);
   const [submittingSubtest, setSubmittingSubtest] = useState(false);
-
-  // Autosave debouncer
-  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [catalogError, setCatalogError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [result, setResult] = useState<TryoutSessionState["score"]>(null);
+  const [timeSpentByQuestion, setTimeSpentByQuestion] = useState<Record<string, number>>({});
+  const questionEnteredAt = useRef(Date.now());
+  const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestDraftRef = useRef({ answers: {} as Record<string, string>, flags: {} as Record<string, boolean>, questionTimes: {} as Record<string, number>, currentQuestionIndex: 0 });
 
   useEffect(() => {
-    // 1. Fetch available packages from API
-    fetch("/api/learner/packages")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: TryoutPackage[]) => {
-        if (Array.isArray(data)) {
-          const tryouts = data.filter(
-            (p) => p.isFullTryout || p.packageType?.includes("Simulasi") || p.name.includes("Tryout")
-          );
-          if (tryouts.length > 0) {
-            setPackages(tryouts);
-          }
-        }
-      })
-      .catch(() => {});
-
-    // 2. Check if user already had an active tryout session in localStorage
+    const controller = new AbortController();
+    api<TryoutPackage[]>("/learner/packages", { signal: controller.signal })
+      .then((data) => setPackages(data.filter((pkg) => pkg.published && pkg.questionCount > 0 && (pkg.isFullTryout || pkg.packageType?.includes("Simulasi")))))
+      .catch((error) => { if (!controller.signal.aborted) setCatalogError(error instanceof Error ? error.message : "Gagal memuat tryout."); });
     const savedSessionId = localStorage.getItem("latveria_tryout_session_id");
     if (savedSessionId) {
-      loadSession(savedSessionId);
+      void loadSession(savedSessionId);
     }
+    return () => controller.abort();
   }, []);
 
   const loadSession = async (sessionId: string) => {
@@ -114,18 +116,17 @@ export function BattleWorldView() {
       setActiveSessionData(data);
       setAnswers(data.session.answers || {});
       setFlags(data.session.flags || {});
+      setTimeSpentByQuestion(data.session.questionTimes || {});
       setCurrentQIndex(data.session.currentQuestionIndex || 0);
+      latestDraftRef.current = { answers: data.session.answers || {}, flags: data.session.flags || {}, questionTimes: data.session.questionTimes || {}, currentQuestionIndex: data.session.currentQuestionIndex || 0 };
+      if (data.session.state === "completed") setResult(data.score ?? null);
 
-      if (data.session.state === "break" && data.session.breakEndsAt) {
-        const remaining = Math.max(0, Math.floor((new Date(data.session.breakEndsAt).getTime() - Date.now()) / 1000));
-        setBreakTimer(remaining);
-      } else {
-        // Standard subtest duration in seconds
-        const subSchedule = SUBTEST_SCHEDULE.find((s) => s.name === data.currentSubtest.name);
-        setSubtestTimer((subSchedule?.duration || 30) * 60);
-      }
-    } catch {
+      if (data.session.state === "break") setBreakTimer(data.session.secondsRemaining);
+      else setSubtestTimer(data.session.secondsRemaining);
+    } catch (error) {
       localStorage.removeItem("latveria_tryout_session_id");
+      setActiveSessionData(null);
+      setActionError(error instanceof Error ? error.message : "Sesi tryout tidak dapat dipulihkan.");
     } finally {
       setLoading(false);
     }
@@ -136,6 +137,10 @@ export function BattleWorldView() {
     if (!activeSessionData) return;
 
     if (activeSessionData.session.state === "active") {
+      if (subtestTimer === 0) {
+        setShowSubmitSubtestModal(true);
+        return;
+      }
       const interval = setInterval(() => {
         setSubtestTimer((prev) => {
           if (prev <= 1) {
@@ -160,67 +165,80 @@ export function BattleWorldView() {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [activeSessionData]);
+  }, [activeSessionData?.session.state, activeSessionData?.session.id, activeSessionData?.session.currentSubtestIndex]);
 
   // Handle start new tryout
   const handleStartTryout = async (packageId: string) => {
     setStarting(true);
     try {
-      const res = await fetch(`/api/learner/tryouts/start/${packageId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Origin: window.location.origin },
-      });
-      if (!res.ok) throw new Error("Gagal memulai tryout.");
-      const newSession = await res.json();
+      const newSession = await api<{ id: string }>(`/learner/tryouts/start/${packageId}`, { method: "POST", body: JSON.stringify({}) });
       localStorage.setItem("latveria_tryout_session_id", newSession.id);
+      setActionError("");
       await loadSession(newSession.id);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal memulai tryout.");
+      setActionError(err instanceof Error ? err.message : "Gagal memulai tryout.");
     } finally {
       setStarting(false);
     }
   };
 
-  // Autosave on answers/flags change
-  const triggerAutosave = (newAnswers: Record<string, string>, newFlags: Record<string, boolean>, qIdx: number) => {
+  // Autosave the latest draft atomically so rapid edits do not discard answer or flag changes.
+  const triggerAutosave = (draft: typeof latestDraftRef.current = latestDraftRef.current) => {
     if (!activeSessionData) return;
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(() => {
-      fetch(`/api/learner/tryouts/${activeSessionData.session.id}/autosave`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Origin: window.location.origin },
-        body: JSON.stringify({ answers: newAnswers, flags: newFlags, currentQuestionIndex: qIdx }),
-      }).catch(() => {});
+    latestDraftRef.current = draft;
+    if (autosaveRef.current) clearTimeout(autosaveRef.current);
+    autosaveRef.current = setTimeout(() => {
+      void api(`/learner/tryouts/${activeSessionData.session.id}/autosave`, { method: "POST", body: JSON.stringify(draft) })
+        .then(() => setActionError(""))
+        .catch(() => setActionError("Autosave tertunda. Periksa koneksi sebelum lanjut."));
     }, 400);
   };
 
   const handleSelectAnswer = (qId: string, optIdx: number) => {
+    const questionTime = (timeSpentByQuestion[qId] ?? 0) + Math.max(0, Math.round((Date.now() - questionEnteredAt.current) / 1000));
+    const nextTimes = { ...timeSpentByQuestion, [qId]: questionTime };
+    setTimeSpentByQuestion(nextTimes);
     const nextAnswers = { ...answers, [qId]: String(optIdx) };
     setAnswers(nextAnswers);
-    triggerAutosave(nextAnswers, flags, currentQIndex);
+    questionEnteredAt.current = Date.now();
+    triggerAutosave({ ...latestDraftRef.current, answers: nextAnswers, questionTimes: nextTimes });
   };
 
   const handleToggleFlag = (qId: string) => {
     const nextFlags = { ...flags, [qId]: !flags[qId] };
     setFlags(nextFlags);
-    triggerAutosave(answers, nextFlags, currentQIndex);
+    triggerAutosave({ ...latestDraftRef.current, flags: nextFlags });
   };
+
+  const navigateQuestion = (index: number) => {
+    const questionId = activeSessionData?.questions[currentQIndex]?.id;
+    const nextTimes = questionId ? { ...timeSpentByQuestion, [questionId]: (timeSpentByQuestion[questionId] ?? 0) + Math.max(0, Math.round((Date.now() - questionEnteredAt.current) / 1000)) } : timeSpentByQuestion;
+    setTimeSpentByQuestion(nextTimes);
+    setCurrentQIndex(index);
+    questionEnteredAt.current = Date.now();
+    triggerAutosave({ ...latestDraftRef.current, questionTimes: nextTimes, currentQuestionIndex: index });
+  };
+
+  useEffect(() => { questionEnteredAt.current = Date.now(); }, [currentQIndex, activeSessionData?.session.currentSubtestIndex]);
 
   // Submit current subtest
   const handleSubmitSubtest = async () => {
     if (!activeSessionData) return;
     setSubmittingSubtest(true);
     try {
-      const res = await fetch(`/api/learner/tryouts/${activeSessionData.session.id}/subtest-submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Origin: window.location.origin },
-        body: JSON.stringify({ answers }),
+      const questionId = activeSessionData.questions[currentQIndex]?.id;
+      const finalTimes = questionId ? { ...timeSpentByQuestion, [questionId]: (timeSpentByQuestion[questionId] ?? 0) + Math.max(0, Math.round((Date.now() - questionEnteredAt.current) / 1000)) } : timeSpentByQuestion;
+      if (autosaveRef.current) { clearTimeout(autosaveRef.current); autosaveRef.current = null; }
+      latestDraftRef.current = { ...latestDraftRef.current, answers, questionTimes: finalTimes };
+      const response = await api<{ status: "break" | "completed"; breakEndsAt?: string; score?: NonNullable<TryoutSessionState["score"]> }>(`/learner/tryouts/${activeSessionData.session.id}/subtest-submit`, {
+        method: "POST", body: JSON.stringify({ answers, timeSpentByQuestion: finalTimes }),
       });
-      if (!res.ok) throw new Error("Gagal mengumpulkan subtes.");
+      if (response.status === "completed") setResult(response.score ?? null);
       setShowSubmitSubtestModal(false);
+      setActionError("");
       await loadSession(activeSessionData.session.id);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal mengumpulkan subtes.");
+      setActionError(err instanceof Error ? err.message : "Gagal mengumpulkan subtes.");
     } finally {
       setSubmittingSubtest(false);
     }
@@ -237,8 +255,9 @@ export function BattleWorldView() {
   };
 
   const handleExitTryout = () => {
-    if (confirm("Apakah kamu yakin ingin keluar dari tryout? Progresmu tersimpan dan dapat dilanjutkan nanti.")) {
+    if (window.confirm("Keluar dari Battle World? Progres sesi aktif tersimpan dan bisa dilanjutkan nanti.")) {
       setActiveSessionData(null);
+      if (window.innerWidth <= 768) window.history.replaceState(null, "", "/dashboard?tab=tryout");
     }
   };
 
@@ -293,19 +312,17 @@ export function BattleWorldView() {
           <Panel style={{ textAlign: "center", padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
             <CheckCircle2 size={48} style={{ color: "#10b981" }} />
             <span className="font-mono text-xs uppercase tracking-widest text-[var(--gold)]">
-              Simulasi Selesai
+              Battle World selesai
             </span>
             <h2 className="font-serif text-3xl font-semibold text-[var(--ink)]">
               Selamat! Kamu Telah Menuntaskan Tryout
             </h2>
             <p className="text-[var(--text-secondary)] text-sm max-w-lg leading-relaxed">
-              Seluruh 7 subtes SNPMB telah kamu kerjakan secara terpadu. Jawaban dan analisismu telah tersimpan di direktori akademik Latveria.
+              {result ? `Skor Latveria ${result.score}/1.000 · Akurasi ${result.accuracy}% · ${result.correctCount}/${result.totalCount} benar.` : "Jawabanmu sudah tersimpan."}
             </p>
 
             <Button asChild>
-              <Link to="/dashboard/riwayat" onClick={() => localStorage.removeItem("latveria_tryout_session_id")}>
-                Buka Riwayat & Evaluasi <ArrowRight size={16} />
-              </Link>
+              <Button onClick={() => { localStorage.removeItem("latveria_tryout_session_id"); setActiveSessionData(null); navigate("/dashboard?tab=tryout"); }}>Kembali ke Battle World <ArrowRight size={16} /></Button>
             </Button>
           </Panel>
         </div>
@@ -402,7 +419,7 @@ export function BattleWorldView() {
                 type="button"
                 className="btn-latveria-secondary"
                 disabled={currentQIndex === 0}
-                onClick={() => setCurrentQIndex((prev) => prev - 1)}
+                  onClick={() => navigateQuestion(currentQIndex - 1)}
               >
                 <ChevronLeft size={16} /> SEBELUMNYA
               </button>
@@ -411,7 +428,7 @@ export function BattleWorldView() {
                 <button
                   type="button"
                   className="btn-latveria-primary"
-                  onClick={() => setCurrentQIndex((prev) => prev + 1)}
+                  onClick={() => navigateQuestion(currentQIndex + 1)}
                 >
                   BERIKUTNYA <ChevronRight size={16} />
                 </button>
@@ -450,7 +467,7 @@ export function BattleWorldView() {
                         key={q.id}
                         type="button"
                         className={`nav-number-tile font-mono ${cls}`}
-                        onClick={() => setCurrentQIndex(idx)}
+                        onClick={() => navigateQuestion(idx)}
                       >
                         <span className="tile-num-text">{idx + 1 < 10 ? `0${idx + 1}` : idx + 1}</span>
                         {isFlagged && <span className="tile-flag-pip" />}
@@ -513,12 +530,12 @@ export function BattleWorldView() {
   if (packages.length === 0) {
     return (
       <div className="latveria-view-container">
-        <PageHeading title="Battle World" description="Ruang tryout UTBK-SNBT." />
+        <PageHeading title="Battle World" description="Tryout full dan simulasi berwaktu." />
         <Panel className="battle-world-empty">
           <Swords size={32} aria-hidden="true" />
-          <h2>Tryout belum tersedia</h2>
-          <p>Belum ada tryout yang bisa kamu mulai di sini. Sambil menunggu, asah skill per subtes lewat Drilling.</p>
-          <Button asChild><Link to="/dashboard?tab=practice">Gas drilling<ArrowRight /></Link></Button>
+          <h2>{catalogError ? "Tryout belum dapat dimuat" : "Belum ada tryout siap dimainkan"}</h2>
+          <p>{actionError || catalogError || "Tryout full yang sudah diterbitkan akan muncul di sini. Sambil menunggu, asah skill per subtes lewat Drilling."}</p>
+          {catalogError ? <Button variant="outline" onClick={() => window.location.reload()}>Coba lagi</Button> : <Button asChild><Link to="/dashboard?tab=practice">Gas drilling<ArrowRight /></Link></Button>}
         </Panel>
       </div>
     );
@@ -528,7 +545,7 @@ export function BattleWorldView() {
     <div className="latveria-view-container motion-page-enter">
       <PageHeading
         title="Battle World"
-        description="Simulasi penuh kondisi ujian UTBK-SNBT 2027 dengan sistem alur multi-subtes, timer terstandar, dan sesi jeda resmi."
+        description="Kerjakan rangkaian subtes, pantau waktu, dan lanjutkan sesi dari perangkat yang sama."
       />
 
       <div style={{ display: "grid", gap: 24, marginTop: 24 }}>
@@ -537,20 +554,20 @@ export function BattleWorldView() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 280 }}>
                 <span className="font-mono text-xs text-[var(--gold)] uppercase tracking-wider block mb-1">
-                  SIMULASI RESMI UTBK-SNBT
+                  {pkg.isFullTryout ? "TRYOUT FULL" : "TRYOUT SUBTES"}
                 </span>
                 <h3 className="font-serif text-2xl font-bold text-[var(--ink)] mb-2">{pkg.name}</h3>
                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mb-4">
                   {pkg.description}
                 </p>
 
-                {/* Subtests Roadmap */}
+                {/* Tryout structure */}
                 <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 16, marginTop: 16 }}>
                   <span className="font-mono text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-3">
-                    ALUR PELAKSANAAN SUBTES (195 MENIT):
+                    {pkg.isFullTryout ? 'ALUR SUBTES DAN JEDA:' : 'FORMAT SESI:'}
                   </span>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {SUBTEST_SCHEDULE.map((sub, sIdx) => (
+                    {(pkg.isFullTryout ? SUBTEST_SCHEDULE : [{ name: `${pkg.questionCount} soal`, duration: pkg.duration ?? 30 }]).map((sub, sIdx) => (
                       <span
                         key={sIdx}
                         className="font-mono text-xs px-2.5 py-1 rounded"
@@ -569,7 +586,7 @@ export function BattleWorldView() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-end" }}>
                 <div className="font-mono text-right text-xs text-[var(--text-muted)]">
-                  <span>FORMAT SNPMB 2027</span>
+                  <span>{pkg.questionCount} SOAL · {pkg.duration ?? 30} MENIT</span>
                 </div>
                 <Button
                   size="default"
@@ -577,7 +594,7 @@ export function BattleWorldView() {
                   onClick={() => handleStartTryout(pkg.id)}
                   style={{ background: "var(--accent-gold)", color: "var(--bg-card)", fontWeight: 700 }}
                 >
-                  <Play size={16} /> {starting ? "Menyiapkan Tryout…" : "Gas Simulasi UTBK"}
+                  <Play size={16} /> {starting ? "Menyiapkan tryout…" : "Mulai tryout"}
                 </Button>
               </div>
             </div>

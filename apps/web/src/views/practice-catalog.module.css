@@ -1,4 +1,13 @@
 .groups { display: flex; flex-direction: column; gap: 32px; width: 100%; }
+.catalogControls { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.search { display: flex; align-items: center; gap: 10px; min-width: min(100%, 320px); flex: 1; max-width: 420px; height: 44px; padding: 0 12px; border: 1px solid var(--border-medium); border-radius: var(--radius-xs); background: var(--bg-input); color: var(--text-secondary); }
+.search input { min-width: 0; flex: 1; border: 0; outline: 0; color: var(--text-primary); background: transparent; font: inherit; }
+.search:focus-within { outline: 2px solid var(--accent-gold); outline-offset: 2px; }
+.search button { display: grid; place-items: center; padding: 4px; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.filterTabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.filterTabs button { min-height: 36px; padding: 6px 12px; border: 1px solid transparent; border-radius: var(--radius-xs); background: transparent; color: var(--text-secondary); font: 600 12px var(--font-mono); cursor: pointer; }
+.filterTabs button:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.filterTabs .filterActive { color: var(--accent-gold); border-color: var(--accent-gold); background: var(--accent-gold-dim); }
 .subjectPanel, .packagePanel { box-shadow: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-card); overflow: hidden; }
 .subjectPanel :global(.panel-header), .packagePanel :global(.panel-header) { margin-bottom: 0; padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-card-header, var(--bg-card)); font-family: var(--font-serif); letter-spacing: 0.06em; font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); align-items: center; gap: 12px; }
 .subjectList, .packageList { list-style: none; margin: 0; padding: 0; }
@@ -47,6 +56,8 @@
 .spinner { width: 24px; height: 24px; border: 2px solid var(--border-medium); border-top-color: var(--accent-gold); border-radius: 50%; animation: spin 900ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 640px) {
+  .catalogControls { align-items: stretch; }
+  .search { max-width: none; flex-basis: 100%; }
   .subjectPanel, .packagePanel { padding: 18px; }
   .subjectList, .modes { grid-template-columns: 1fr; }
   .subject { padding: 18px 0; gap: 12px; min-height: 82px; }

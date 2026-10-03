@@ -33,6 +33,7 @@ export function reviewResultToSession(result: Result) {
     subjectCode: short ? `SNBT-${subjectId}` : "",
     packageId: result.attempt.packageId ?? null,
     packageName: result.attempt.packageName ?? null,
+    scoreBreakdown: result.attempt.scoreBreakdown ?? null,
     mode: "Review",
     difficulty: "",
     totalQuestions: result.attempt.total,

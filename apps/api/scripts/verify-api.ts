@@ -4,7 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
-import { questions, questionPackages, practiceAttempts } from "../src/lib/db/schema";
+import { questions, questionPackages, practiceAttempts, tryoutPackageQuestions, tryoutSessions } from "../src/lib/db/schema";
 import { pyramidQuestion } from "@latveria/shared";
 
 loadLocalEnv();
@@ -13,6 +13,7 @@ const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const users: string[] = [];
 const questionIds: string[] = [];
 const packageIds: string[] = [];
+const tryoutSessionIds: string[] = [];
 async function request(path: string, cookie = "", body?: unknown, method = body ? "POST" : "GET") {
   return app.request(`${origin}/api${path}`, { method, headers: { Origin: origin, Cookie: cookie, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
 }
@@ -130,6 +131,45 @@ try {
   assert.equal(expired.streakDays, 0);
   assert.equal(expired.totalXP, afterRetries.totalXP);
   await getDb().update(practiceAttempts).set({ submittedAt: new Date() }).where(eq(practiceAttempts.userId, learner.id));
+  const beforeTryoutSummary = await (await request("/learner/summary", learner.cookie)).json();
+  const [fullTryout] = await getDb().select().from(questionPackages).where(eq(questionPackages.name, "Tryout Akbar UTBK-SNBT 2027"));
+  assert.ok(fullTryout?.isFullTryout);
+  const pinnedCount = await getDb().select({ id: tryoutPackageQuestions.questionId }).from(tryoutPackageQuestions).where(eq(tryoutPackageQuestions.packageId, fullTryout.id));
+  assert.ok(pinnedCount.length > 0, "Seed should pin questions to the full tryout.");
+  const existingDrillingPackages = await getDb().select({ id: questions.id }).from(questions).where(inArray(questions.id, pinnedCount.map((question) => question.id)));
+  assert.equal(existingDrillingPackages.length, pinnedCount.length, "Pinning tryout questions must not remove them from Drilling.");
+  const learnerPackageCatalog = await (await request("/learner/packages", learner.cookie)).json();
+  assert.equal(learnerPackageCatalog.find((item: { id: string }) => item.id === fullTryout.id)?.questionCount, pinnedCount.length);
+  const startedTryout = await request(`/learner/tryouts/start/${fullTryout.id}`, learner.cookie, {});
+  assert.equal(startedTryout.status, 201);
+  const tryoutSession = await startedTryout.json();
+  tryoutSessionIds.push(tryoutSession.id);
+  assert.equal((await request(`/learner/tryouts/${tryoutSession.id}`, other.cookie)).status, 404);
+  let completedSubtests = 0;
+  let finalScore: number | null = null;
+  while (completedSubtests < 7) {
+    const state = await (await request(`/learner/tryouts/${tryoutSession.id}`, learner.cookie)).json();
+    assert.equal(state.totalSubtests, 7);
+    assert.ok(state.questions.length > 0, `Subtest ${completedSubtests + 1} should contain pinned questions.`);
+    const answers = { ...state.session.answers, ...Object.fromEntries(state.questions.map((question: { id: string }) => [question.id, "0"])) };
+    const timeSpentByQuestion = Object.fromEntries(state.questions.map((question: { id: string }) => [question.id, 12]));
+    const submission = await request(`/learner/tryouts/${tryoutSession.id}/subtest-submit`, learner.cookie, { answers, timeSpentByQuestion });
+    assert.equal(submission.status, 200);
+    const outcome = await submission.json();
+    completedSubtests++;
+    if (outcome.status === "break") {
+      await getDb().update(tryoutSessions).set({ breakEndsAt: new Date(Date.now() - 1000) }).where(eq(tryoutSessions.id, tryoutSession.id));
+    } else {
+      assert.equal(outcome.status, "completed");
+      assert.equal(outcome.score.totalCount, Object.keys(answers).length);
+      assert.ok(Number.isInteger(outcome.score.score) && outcome.score.score >= 0 && outcome.score.score <= 1000);
+      finalScore = outcome.score.score;
+    }
+  }
+  const completedState = await (await request(`/learner/tryouts/${tryoutSession.id}`, learner.cookie)).json();
+  assert.equal(completedState.session.state, "completed");
+  assert.equal(completedState.score.score, finalScore);
+  assert.deepEqual(await (await request("/learner/summary", learner.cookie)).json(), beforeTryoutSummary, "Tryouts do not grant practice EXP.");
   await getDb().update(user).set({ role: "admin" }).where(eq(user.id, other.id));
   assert.equal((await request("/learner/topics", other.cookie)).status, 403);
   assert.equal((await request("/learner/profile", other.cookie)).status, 403);
@@ -324,6 +364,7 @@ try {
   assert.equal((await request("/learner/topics", learner.cookie)).status, 401);
   console.info("API integration: auth, roles, key secrecy, ownership, submission, admin edit/delete, atomic import, packages, logout PASSED.");
 } finally {
+  if (tryoutSessionIds.length) await getDb().delete(tryoutSessions).where(inArray(tryoutSessions.id, tryoutSessionIds));
   if (users.length) await getDb().delete(user).where(inArray(user.id, users));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));
   if (packageIds.length) await getDb().delete(questionPackages).where(inArray(questionPackages.id, packageIds));

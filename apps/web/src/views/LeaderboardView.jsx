@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { LEADERBOARD_DATA } from '../data/leaderboardData';
 import { LatveriaSeal, LatveriaWatermark } from '../components/LatveriaSeal';
 import { api } from '../lib/api';
 import {
@@ -49,8 +48,8 @@ const ACCURACY_MIN_SUBTEST = 20;
 const cache = new Map();
 const CACHE_TTL = 30_000; // 30 seconds
 
-function getCacheKey(metric, subtest, period) {
-  return `${metric}:${subtest}:${period}`;
+function getCacheKey(userId, metric, subtest, period) {
+  return `${userId}:${metric}:${subtest}:${period}`;
 }
 
 export const LeaderboardView = () => {
@@ -65,7 +64,7 @@ export const LeaderboardView = () => {
   const [data, setData] = useState(null);
 
   const fetchLeaderboard = useCallback(async () => {
-    const cacheKey = getCacheKey(metric, subtest, period);
+    const cacheKey = getCacheKey(user.id, metric, subtest, period);
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setData(cached.data);
@@ -81,40 +80,11 @@ export const LeaderboardView = () => {
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat papan peringkat.');
-      // Fallback to mock data
-      setData({
-        entries: LEADERBOARD_DATA[period === 'weekly' ? 'weekly' : period === 'monthly' ? 'monthly' : 'allTime'].map((e) => ({
-          rank: e.rank,
-          id: e.id,
-          name: e.name,
-          metricValue: e.xp,
-          level: e.level,
-          totalXP: e.xp,
-          answered: e.questions,
-          correct: Math.round(e.questions * e.accuracy / 100),
-          accuracy: e.accuracy,
-          isCurrentUser: e.isCurrentUser,
-        })),
-        me: {
-          rank: 14,
-          metricValue: 1240,
-          answered: 118,
-          correct: 100,
-          accuracy: 84.7,
-        },
-        meta: {
-          metric,
-          subtest,
-          period,
-          periodStart: '-',
-          periodEnd: '-',
-          generatedAt: new Date().toISOString(),
-        },
-      });
+      setData(null);
     } finally {
       setLoading(false);
     }
-  }, [metric, subtest, period]);
+  }, [metric, subtest, period, user.id]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -241,6 +211,7 @@ export const LeaderboardView = () => {
         <div className="leaderboard-error font-mono">
           <AlertCircle size={16} />
           {error}
+          <button type="button" onClick={fetchLeaderboard}>Coba lagi</button>
         </div>
       )}
 

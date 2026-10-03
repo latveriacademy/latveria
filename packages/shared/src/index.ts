@@ -18,10 +18,14 @@ export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
 export const leaderboardEntrySchema = z.object({
   rank: z.number(),
   id: z.string(),
+  userId: z.string().optional(),
   name: z.string(),
   metricValue: z.number(),
   level: z.number(),
   totalXP: z.number(),
+  score: z.number().optional(),
+  attemptsCount: z.number().optional(),
+  totalAnswered: z.number().optional(),
   answered: z.number().optional(),
   correct: z.number().optional(),
   accuracy: z.number().optional(),
@@ -44,7 +48,7 @@ export const leaderboardResponseSchema = z.object({
     accuracy: z.number().nullable(),
     streak: z.number().nullable(),
     needsMore: z.number().nullable().optional(), // questions needed to appear on leaderboard
-  }),
+  }).nullable(),
   meta: z.object({
     metric: z.string(),
     subtest: z.string(),
@@ -55,6 +59,10 @@ export const leaderboardResponseSchema = z.object({
   }),
 });
 export type LeaderboardResponse = z.infer<typeof leaderboardResponseSchema>;
+export type LegacyLeaderboardEntry = {
+  rank: number; id: string; name: string; codename: string | null; level: number;
+  xp: number; score: number; accuracy: number; attemptsCount: number; totalAnswered: number;
+};
 
 export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
 export const signupSchema = credentialsSchema.extend({ name: z.string().trim().min(1).max(100) });

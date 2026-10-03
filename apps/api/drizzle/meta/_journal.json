@@ -78,6 +78,20 @@
       "when": 1791047767672,
       "tag": "0010_hesitant_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791049651741,
+      "tag": "0011_spooky_steel_serpent",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791054290935,
+      "tag": "0012_nosy_tempest",
+      "breakpoints": true
     }
   ]
 }
