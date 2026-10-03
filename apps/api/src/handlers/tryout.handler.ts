@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../types";
+import { createAdminTryout } from "../services/admin-tryout.service";
 import {
+  advanceTryoutSubtest,
   autosaveTryout,
-  createAdminTryout,
   getTryoutSession,
   startTryout,
   submitTryoutSubtest,
@@ -30,6 +31,11 @@ tryoutHandler.post("/api/learner/tryouts/:sessionId/autosave", async (c) => {
 tryoutHandler.post("/api/learner/tryouts/:sessionId/subtest-submit", async (c) => {
   const body = await c.req.json().catch(() => null);
   const result = await submitTryoutSubtest(c.get("user").id, c.req.param("sessionId"), body);
+  return c.json(result);
+});
+
+tryoutHandler.post("/api/learner/tryouts/:sessionId/advance", async (c) => {
+  const result = await advanceTryoutSubtest(c.get("user").id, c.req.param("sessionId"));
   return c.json(result);
 });
 

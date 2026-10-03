@@ -35,13 +35,17 @@ export function BattleWorldCatalog({
   catalogError,
   actionError,
   starting,
+  activeSessionId,
   onStart,
+  onResume,
 }: {
   packages: TryoutPackage[];
   catalogError: string;
   actionError: string;
   starting: boolean;
+  activeSessionId: string | null;
   onStart: (id: string) => void;
+  onResume: (sessionId: string) => void;
 }) {
   if (!packages.length)
     return (
@@ -118,15 +122,26 @@ export function BattleWorldCatalog({
                 <span className="font-mono text-xs text-[var(--text-muted)]">
                   {pkg.questionCount} SOAL · {pkg.duration ?? 30} MENIT
                 </span>
-                <Button
-                  className="btn-gold-solid"
-                  loading={starting}
-                  loadingText="Menyiapkan tryout…"
-                  onClick={() => onStart(pkg.id)}
-                >
-                  <Play size={16} />
-                  Mulai tryout
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  {activeSessionId && (
+                    <Button
+                      variant="outline"
+                      className="border-[var(--accent-gold)] text-[var(--accent-gold)]"
+                      onClick={() => onResume(activeSessionId)}
+                    >
+                      Lanjutkan sesi
+                    </Button>
+                  )}
+                  <Button
+                    className="btn-gold-solid"
+                    loading={starting}
+                    loadingText="Menyiapkan tryout…"
+                    onClick={() => onStart(pkg.id)}
+                  >
+                    <Play size={16} />
+                    {activeSessionId ? "Mulai ulang" : "Mulai tryout"}
+                  </Button>
+                </div>
               </div>
             </div>
           </Panel>

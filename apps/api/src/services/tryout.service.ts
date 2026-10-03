@@ -6,11 +6,10 @@ import {
   questionPackages,
   questions,
   systemConfig,
-  topics,
   tryoutPackageQuestions,
   tryoutSessions,
 } from "../lib/db/schema";
-import { catalog, invalidateCatalogCache } from "./topic.service";
+import { catalog } from "./topic.service";
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);
@@ -395,12 +394,12 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
     const allAnswers = { ...savedAnswers, ...currentAnswers };
 
     if (
-      Object.keys(currentAnswers).length !== ids.length ||
       ids.some(
         (id) =>
-          !Number.isInteger(Number(currentAnswers[id])) ||
-          Number(currentAnswers[id]) < 0 ||
-          Number(currentAnswers[id]) > 3,
+          Object.hasOwn(currentAnswers, id) &&
+          (!Number.isInteger(Number(currentAnswers[id])) ||
+            Number(currentAnswers[id]) < 0 ||
+            Number(currentAnswers[id]) > 3),
       ) ||
       Object.keys(bodyAnswers).some((id) => !previouslySubmittedIds.has(id)) ||
       Object.entries(times).some(
@@ -412,7 +411,7 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       )
     )
       throw new HTTPException(400, {
-        message: "Jawab semua soal subtes ini sebelum mengumpulkan.",
+        message: "Format jawaban atau waktu tryout tidak valid.",
       });
 
     const questionRows = ids.length
@@ -429,12 +428,17 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       throw new HTTPException(409, { message: "Soal tryout berubah. Muat ulang sesi." });
 
     const result = calculateLatveriaScore(
-      questionRows.map((question) => ({
-        questionId: question.id,
-        isCorrect: Number(currentAnswers[question.id]) === question.correctAnswer,
-        itemWeight: question.itemWeight,
-        timeSpentSeconds: Number.isInteger(times[question.id]) ? Number(times[question.id]) : 60,
-      })),
+      questionRows.map((question) => {
+        const hasAnswer = Object.hasOwn(currentAnswers, question.id);
+        const isCorrect =
+          hasAnswer && Number(currentAnswers[question.id]) === question.correctAnswer;
+        return {
+          questionId: question.id,
+          isCorrect,
+          itemWeight: question.itemWeight,
+          timeSpentSeconds: Number.isInteger(times[question.id]) ? Number(times[question.id]) : 60,
+        };
+      }),
     );
 
     const prior = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<
@@ -491,91 +495,54 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
   });
 }
 
-export async function createAdminTryout(body: unknown) {
-  const b = body as {
-    name?: string;
-    topicId?: string;
-    isFullTryout?: boolean;
-    targetQuestions?: number;
-    questions?: unknown[];
-    description?: string;
-    category?: string;
-    duration?: number;
-    published?: boolean;
-    order?: number;
-  };
-  if (!b || !b.name || !b.topicId) {
-    throw new HTTPException(400, { message: "Nama tryout dan subtes wajib diisi." });
+export async function advanceTryoutSubtest(userId: string, sessionId: string) {
+  const sId = idSchema.safeParse(sessionId);
+  if (!sId.success) throw new HTTPException(404, { message: "Sesi tidak ditemukan." });
+
+  const [session] = await getDb()
+    .select()
+    .from(tryoutSessions)
+    .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId)));
+  if (!session) throw new HTTPException(404, { message: "Sesi tidak ditemukan." });
+
+  if (session.state === "completed") {
+    return { status: "completed" as const, session };
   }
 
-  const [topic] = await getDb().select().from(topics).where(eq(topics.id, b.topicId));
-  if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+  if (session.state === "break") {
+    const [pkg] = await getDb()
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, session.packageId));
+    if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
-  const isFullTryout = Boolean(b.isFullTryout);
-  const targetQuestions = Number(b.targetQuestions || (isFullTryout ? 160 : 30));
+    const available = (await catalog(true)).filter((topic) =>
+      utbkSubtests.some((subtest) => subtest.slug === topic.slug),
+    );
+    const subtests = pkg.isFullTryout
+      ? available
+      : available.filter((topic) => topic.id === pkg.topicId);
 
-  const questionsList = Array.isArray(b.questions) ? b.questions : [];
-  if (isFullTryout && questionsList.length > 0 && questionsList.length !== targetQuestions) {
-    throw new HTTPException(400, {
-      message: `Full Tryout memerlukan tepat ${targetQuestions} soal (saat ini ${questionsList.length} soal).`,
-    });
+    const nextIndex = Math.min(subtests.length - 1, session.currentSubtestIndex + 1);
+    const [updated] = await getDb()
+      .update(tryoutSessions)
+      .set({
+        state: "active",
+        currentSubtestIndex: nextIndex,
+        breakEndsAt: null,
+        currentQuestionIndex: 0,
+        subtestStartedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(tryoutSessions.id, session.id),
+          eq(tryoutSessions.userId, userId),
+          eq(tryoutSessions.state, "break"),
+        ),
+      )
+      .returning();
+    return { status: "active" as const, session: updated ?? session };
   }
 
-  const [pkg] = await getDb()
-    .insert(questionPackages)
-    .values({
-      topicId: topic.id,
-      name: b.name,
-      description: b.description ?? "Tryout Standar SNPMB / Ujian Mandiri",
-      packageType: "Tryout",
-      category: b.category || "utbk",
-      duration: Number(b.duration || (isFullTryout ? 195 : 30)),
-      isFullTryout,
-      targetQuestions,
-      published: b.published !== false,
-      order: Number(b.order || 1),
-      isActive: true,
-    })
-    .returning();
-
-  if (questionsList.length > 0) {
-    type QuestionInput = {
-      prompt: string;
-      options: string[];
-      correctAnswer: number;
-      explanation: string;
-      source?: string;
-      category?: string;
-      itemWeight?: number;
-      calculatorAllowed?: boolean;
-      order?: number;
-      subtestOrder?: number;
-    };
-    await getDb()
-      .insert(questions)
-      .values(
-        (questionsList as QuestionInput[]).map((q, idx: number) => ({
-          topicId: topic.id,
-          packageId: pkg.id,
-          prompt: q.prompt,
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation || "Pembahasan terstandar.",
-          source: q.source || "Tryout Latveria",
-          category: q.category || topic.name,
-          itemWeight: q.itemWeight ?? 100,
-          calculatorAllowed: Boolean(q.calculatorAllowed),
-          order: q.order ?? idx + 1,
-          subtestOrder: q.subtestOrder ?? 1,
-        })),
-      );
-  }
-
-  invalidateCatalogCache();
-  return {
-    ...pkg,
-    questionCount: questionsList.length,
-    createdAt: pkg.createdAt.toISOString(),
-    updatedAt: pkg.updatedAt.toISOString(),
-  };
+  return { status: session.state as "active" | "break" | "completed", session };
 }

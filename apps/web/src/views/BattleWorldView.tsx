@@ -13,6 +13,9 @@ export function BattleWorldView() {
   const navigate = useNavigate();
   const [packages, setPackages] = useState<TryoutPackage[]>([]);
   const [activeSessionData, setActiveSessionData] = useState<TryoutSessionState | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() =>
+    typeof localStorage !== "undefined" ? localStorage.getItem("latveria_tryout_session_id") : null,
+  );
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -65,6 +68,7 @@ export function BattleWorldView() {
     try {
       const data: TryoutSessionState = await api(`/learner/tryouts/${sessionId}`);
       setActiveSessionData(data);
+      setActiveSessionId(sessionId);
       setAnswers(data.session.answers || {});
       setFlags(data.session.flags || {});
       setTimeSpentByQuestion(data.session.questionTimes || {});
@@ -82,6 +86,7 @@ export function BattleWorldView() {
     } catch (error) {
       localStorage.removeItem("latveria_tryout_session_id");
       setActiveSessionData(null);
+      setActiveSessionId(null);
       setActionError(
         error instanceof Error ? error.message : "Sesi tryout tidak dapat dipulihkan.",
       );
@@ -138,6 +143,7 @@ export function BattleWorldView() {
         body: JSON.stringify({}),
       });
       localStorage.setItem("latveria_tryout_session_id", newSession.id);
+      setActiveSessionId(newSession.id);
       setActionError("");
       await loadSession(newSession.id);
     } catch (err) {
@@ -246,7 +252,14 @@ export function BattleWorldView() {
     if (!activeSessionData) return;
     setLoading(true);
     try {
+      await api(`/learner/tryouts/${activeSessionData.session.id}/advance`, {
+        method: "POST",
+      });
       await loadSession(activeSessionData.session.id);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Gagal melanjutkan ke subtes berikutnya.",
+      );
     } finally {
       setLoading(false);
     }
@@ -373,16 +386,15 @@ export function BattleWorldView() {
                 : "Jawabanmu sudah tersimpan."}
             </p>
 
-            <Button asChild>
-              <Button
-                onClick={() => {
-                  localStorage.removeItem("latveria_tryout_session_id");
-                  setActiveSessionData(null);
-                  navigate("/dashboard?tab=tryout");
-                }}
-              >
-                Kembali ke Battle World <ArrowRight size={16} />
-              </Button>
+            <Button
+              onClick={() => {
+                localStorage.removeItem("latveria_tryout_session_id");
+                setActiveSessionData(null);
+                setActiveSessionId(null);
+                navigate("/dashboard?tab=tryout");
+              }}
+            >
+              Kembali ke Battle World <ArrowRight size={16} />
             </Button>
           </Panel>
         </div>
@@ -434,7 +446,9 @@ export function BattleWorldView() {
       catalogError={catalogError}
       actionError={actionError}
       starting={starting}
+      activeSessionId={activeSessionId}
       onStart={handleStartTryout}
+      onResume={loadSession}
     />
   );
 }
