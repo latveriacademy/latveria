@@ -21,6 +21,7 @@ export function AdminReports() {
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusError, setStatusError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const loadReports = async () => {
@@ -42,6 +43,7 @@ export function AdminReports() {
 
   const handleUpdateStatus = async (id: string, status: ReportItem["status"]) => {
     setUpdatingId(id);
+    setStatusError("");
     try {
       await api(`/admin/reports/${id}`, {
         method: "PUT",
@@ -49,8 +51,8 @@ export function AdminReports() {
         body: JSON.stringify({ status }),
       });
       setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    } catch {
-      alert("Gagal memperbarui status laporan.");
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : "Gagal memperbarui status laporan.");
     } finally {
       setUpdatingId(null);
     }
@@ -64,6 +66,11 @@ export function AdminReports() {
       />
 
       <Panel>
+        {statusError && (
+          <p role="alert" className="text-crimson">
+            {statusError}
+          </p>
+        )}
         <PanelHeader title="Daftar Masuk">
           <span style={{ fontSize: 13, color: "var(--soft-ink)" }}>{reports.length} laporan</span>
         </PanelHeader>

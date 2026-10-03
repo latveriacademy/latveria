@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Eye, Loader2, Trash2, X } from "lucide-react";
+import { Eye, Trash2, X } from "lucide-react";
+import { ConfirmDialog } from "../../components/confirm-dialog";
 import { bulkDeleteSchema, type Bank } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
@@ -47,62 +48,40 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
           </Button>
         </div>
       )}
-      {confirm && (
-        <section className={styles.deleteConfirmation} aria-label="Konfirmasi penghapusan">
-          <h2>Hapus {selected.length} soal terpilih?</h2>
-          <p>
-            Tindakan ini tidak dapat dibatalkan. Jika ada soal yang sudah dipakai peserta, seluruh
-            penghapusan dibatalkan.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => setConfirm(false)}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={async () => {
-                setPending(true);
-                setError("");
-                try {
-                  const input = bulkDeleteSchema.parse({ ids: selected });
-                  const result = await api<{ count: number }>("/admin/questions/bulk-delete", {
-                    method: "POST",
-                    body: JSON.stringify(input),
-                  });
-                  setSelected([]);
-                  setConfirm(false);
-                  const next = new URLSearchParams(params);
-                  next.delete("created");
-                  next.delete("imported");
-                  next.delete("updated");
-                  next.set("deleted", String(result.count));
-                  setParams(next);
-                } catch (error) {
-                  setError(
-                    error instanceof Error ? error.message : "Penghapusan gagal. Coba lagi.",
-                  );
-                } finally {
-                  setPending(false);
-                }
-              }}
-            >
-              {pending ? <Loader2 className="animate-spin" /> : <Trash2 aria-hidden="true" />}
-              {pending ? "Menghapus..." : "Ya, hapus"}
-            </Button>
-          </div>
-        </section>
-      )}
-      {error && (
-        <p className={styles.formError} role="alert">
-          {error}
-        </p>
-      )}
+      <ConfirmDialog
+        open={confirm}
+        onOpenChange={setConfirm}
+        title={`Hapus ${selected.length} soal terpilih?`}
+        description="Tindakan ini tidak dapat dibatalkan. Jika ada soal yang sudah dipakai peserta, seluruh penghapusan dibatalkan."
+        confirmLabel="Ya, hapus"
+        pendingLabel="Menghapus…"
+        destructive
+        pending={pending}
+        error={error}
+        onConfirm={async () => {
+          setPending(true);
+          setError("");
+          try {
+            const input = bulkDeleteSchema.parse({ ids: selected });
+            const result = await api<{ count: number }>("/admin/questions/bulk-delete", {
+              method: "POST",
+              body: JSON.stringify(input),
+            });
+            setSelected([]);
+            setConfirm(false);
+            const next = new URLSearchParams(params);
+            next.delete("created");
+            next.delete("imported");
+            next.delete("updated");
+            next.set("deleted", String(result.count));
+            setParams(next);
+          } catch (error) {
+            setError(error instanceof Error ? error.message : "Penghapusan gagal. Coba lagi.");
+          } finally {
+            setPending(false);
+          }
+        }}
+      />
       <Table className={styles.questionTable}>
         <caption className="sr-only">Daftar soal sesuai filter, {bank.total} soal.</caption>
         <TableHeader>

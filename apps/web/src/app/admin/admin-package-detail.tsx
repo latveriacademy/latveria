@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Save, Upload } from "lucide-react";
 import type { Bank, PackageDetail, QuestionPackage } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
+import { ConfirmDialog } from "../../components/confirm-dialog";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 import { MathText } from "../../components/math-text";
 import formStyles from "./admin.module.css";
@@ -419,41 +420,43 @@ export function AdminPackageDetail() {
                 ? "Pindahkan atau keluarkan semua soal sebelum menghapus paket. Paket dapat dinonaktifkan tanpa menghapus soal."
                 : "Paket kosong dapat dihapus. Soal dan hasil latihan yang sudah tersimpan tidak ikut dihapus."}
             </p>
-            {confirmDelete ? (
-              <div className={styles.toolbar}>
-                <span>Hapus paket {pkg.name}?</span>
-                <Button variant="outline" disabled={!!busy} onClick={() => setConfirmDelete(false)}>
-                  Batal
-                </Button>
-                <Button
-                  disabled={!!busy}
-                  onClick={async () => {
-                    setBusy("delete");
-                    try {
-                      await api(`/admin/packages/${pkg.id}`, { method: "DELETE" });
-                      navigate(`/admin/subtes/${pkg.topicSlug}`);
-                    } catch (error) {
-                      setMessage({
-                        error: true,
-                        text: error instanceof Error ? error.message : "Gagal menghapus paket.",
-                      });
-                    } finally {
-                      setBusy("");
-                    }
-                  }}
-                >
-                  Ya, hapus paket
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                disabled={pkg.questionCount > 0 || !!busy}
-                onClick={() => setConfirmDelete(true)}
-              >
-                Hapus paket kosong
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              disabled={pkg.questionCount > 0 || !!busy}
+              onClick={() => {
+                setMessage(null);
+                setConfirmDelete(true);
+              }}
+            >
+              Hapus paket kosong
+            </Button>
+            <ConfirmDialog
+              open={confirmDelete}
+              onOpenChange={setConfirmDelete}
+              title={`Hapus paket ${pkg.name}?`}
+              description="Paket kosong akan dihapus. Soal dan hasil latihan yang sudah tersimpan tidak ikut dihapus."
+              destructive
+              confirmLabel="Ya, hapus paket"
+              pending={!!busy}
+              pendingLabel="Menghapus…"
+              error={message?.error ? message.text : undefined}
+              onConfirm={async () => {
+                setBusy("delete");
+                setMessage(null);
+                try {
+                  await api(`/admin/packages/${pkg.id}`, { method: "DELETE" });
+                  setConfirmDelete(false);
+                  navigate(`/admin/subtes/${pkg.topicSlug}`);
+                } catch (error) {
+                  setMessage({
+                    error: true,
+                    text: error instanceof Error ? error.message : "Gagal menghapus paket.",
+                  });
+                } finally {
+                  setBusy("");
+                }
+              }}
+            />
           </div>
         </details>
       </Panel>

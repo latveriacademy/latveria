@@ -14,7 +14,7 @@ export function AdminSubtestPackages() {
   }>();
   const navigate = useNavigate();
   const packages = initialPackages;
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [order, setOrder] = useState(Math.max(0, ...packages.map((pkg) => pkg.order)) + 1);
@@ -67,7 +67,7 @@ export function AdminSubtestPackages() {
             <Button asChild variant="outline">
               <Link to={`/admin/soal/impor?subtes=${topic.slug}`}>Impor JSON</Link>
             </Button>
-            <Button onClick={() => setShowAddModal(true)}>
+            <Button onClick={() => setShowCreateForm(true)}>
               <Plus className="size-4" />
               Tambah Paket
             </Button>
@@ -81,7 +81,7 @@ export function AdminSubtestPackages() {
         <StatTile label="Paket Aktif" value={packages.filter((p) => p.isActive).length} />
       </div>
 
-      {showAddModal && (
+      {showCreateForm && (
         <Panel className="p-6 border-[var(--emerald)]">
           <PanelHeader title="Buat Paket Soal Baru" />
           <form onSubmit={handleCreatePackage} className={styles.settingsForm}>
@@ -142,7 +142,7 @@ export function AdminSubtestPackages() {
                 <Button type="submit" disabled={pending}>
                   {pending ? "Membuat…" : "Buat paket dan isi soal"}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => setShowAddModal(false)}>
+                <Button type="button" variant="ghost" onClick={() => setShowCreateForm(false)}>
                   Batal
                 </Button>
               </div>
@@ -156,7 +156,7 @@ export function AdminSubtestPackages() {
         {packages.length === 0 ? (
           <div className="p-8 text-center text-[var(--soft-ink)]">
             <p>Belum ada paket soal pada subtes ini.</p>
-            <Button className="mt-4" onClick={() => setShowAddModal(true)}>
+            <Button className="mt-4" onClick={() => setShowCreateForm(true)}>
               <Plus className="size-4" />
               Buat Paket Pertama
             </Button>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, MessageSquareQuote } from "lucide-react";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
+import { ConfirmDialog } from "../../components/confirm-dialog";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 
 interface AffirmationItem {
@@ -17,6 +18,10 @@ export function AdminAffirmations() {
   const [text, setText] = useState("");
   const [author, setAuthor] = useState("");
   const [adding, setAdding] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const [addError, setAddError] = useState("");
 
   const loadAffirmations = async () => {
     setLoading(true);
@@ -38,34 +43,33 @@ export function AdminAffirmations() {
     e.preventDefault();
     if (!text.trim()) return;
     setAdding(true);
+    setAddError("");
     try {
-      const res = await fetch("/api/admin/affirmations", {
+      await api("/admin/affirmations", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Origin: window.location.origin },
         body: JSON.stringify({ affirmation: text.trim(), author: author.trim() || undefined }),
       });
-      if (res.ok) {
-        setText("");
-        setAuthor("");
-        await loadAffirmations();
-      }
-    } catch {
-      alert("Gagal menambahkan afirmasi.");
+      setText("");
+      setAuthor("");
+      await loadAffirmations();
+    } catch (error) {
+      setAddError(error instanceof Error ? error.message : "Gagal menambahkan afirmasi.");
     } finally {
       setAdding(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus afirmasi ini?")) return;
+    setDeleting(true);
+    setError("");
     try {
-      await fetch(`/api/admin/affirmations/${id}`, {
-        method: "DELETE",
-        headers: { Origin: window.location.origin },
-      });
+      await api(`/admin/affirmations/${id}`, { method: "DELETE" });
       setAffirmations((prev) => prev.filter((a) => a.id !== id));
-    } catch {
-      alert("Gagal menghapus.");
+      setDeleteTarget(null);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Gagal menghapus.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -113,6 +117,11 @@ export function AdminAffirmations() {
             />
           </label>
           <div>
+            {addError && (
+              <p role="alert" className="text-crimson">
+                {addError}
+              </p>
+            )}
             <Button disabled={adding} type="submit">
               <Plus size={15} /> {adding ? "Menyimpan…" : "Simpan Afirmasi"}
             </Button>
@@ -177,8 +186,11 @@ export function AdminAffirmations() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(a.id)}
-                  title="Hapus afirmasi"
+                  onClick={() => {
+                    setError("");
+                    setDeleteTarget(a.id);
+                  }}
+                  aria-label="Hapus afirmasi"
                 >
                   <Trash2 size={15} style={{ color: "#ef4444" }} />
                 </Button>
@@ -187,6 +199,22 @@ export function AdminAffirmations() {
           </ul>
         )}
       </Panel>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Hapus afirmasi ini?"
+        description="Pesan ini akan dihapus dari daftar afirmasi peserta."
+        destructive
+        confirmLabel="Ya, hapus"
+        pending={deleting}
+        pendingLabel="Menghapus…"
+        error={error}
+        onConfirm={() => {
+          if (deleteTarget) return handleDelete(deleteTarget);
+        }}
+      />
     </div>
   );
 }
