@@ -1,90 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router";
-import {
-  ArrowRight,
-  Swords,
-  Clock,
-  CheckCircle2,
-  Play,
-  Coffee,
-  ChevronLeft,
-  ChevronRight,
-  Flag,
-  FileCheck,
-} from "lucide-react";
+import { useNavigate } from "react-router";
+import { ArrowRight, CheckCircle2, Play, Coffee } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { PageHeading, Panel } from "../components/ui/dashboard";
-import { MathText } from "../components/math-text";
+import { Panel } from "../components/ui/dashboard";
 import { api } from "../lib/api";
-
-interface TryoutPackage {
-  id: string;
-  name: string;
-  description: string;
-  durationMinutes?: number;
-  duration?: number;
-  isFullTryout?: boolean;
-  packageType?: string;
-  questionCount: number;
-  targetQuestions?: number;
-  published?: boolean;
-}
-
-interface TryoutQuestion {
-  id: string;
-  prompt: string;
-  options: string[];
-}
-
-interface TryoutSessionState {
-  session: {
-    id: string;
-    state: "active" | "break" | "completed";
-    currentSubtestIndex: number;
-    breakEndsAt: string | null;
-    answers: Record<string, string>;
-    flags: Record<string, boolean>;
-    currentQuestionIndex: number;
-    totalScore: number | null;
-    completedAt: string | null;
-    questionTimes: Record<string, number>;
-    secondsRemaining: number;
-  };
-  package: {
-    id: string;
-    name: string;
-  };
-  currentSubtest: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  totalSubtests: number;
-  questions: TryoutQuestion[];
-  score?: {
-    score: number;
-    correctCount: number;
-    totalCount: number;
-    accuracy: number;
-    rawScore: number;
-    performanceIndex: number;
-    averageTime: number;
-  } | null;
-}
-
-const SUBTEST_SCHEDULE: { name: string; duration: number; isBreak?: boolean }[] = [
-  { name: "Penalaran Umum", duration: 30 },
-  { name: "Pengetahuan & Pemahaman Umum", duration: 15 },
-  { name: "Pemahaman Bacaan & Menulis", duration: 25 },
-  { name: "Pengetahuan Kuantitatif", duration: 20 },
-  { name: "Literasi dalam Bahasa Indonesia", duration: 45 },
-  { name: "Literasi dalam Bahasa Inggris", duration: 30 },
-  { name: "Penalaran Matematika", duration: 30 },
-].flatMap((subtest, index) =>
-  index === 4
-    ? [{ name: "Jeda Istirahat Terjadwal", duration: 15, isBreak: true }, subtest]
-    : [subtest],
-);
+import { ConfirmDialog } from "../components/confirm-dialog";
+import { SubmissionSummary } from "../components/submission-summary";
+import { BattleWorldCatalog, type TryoutPackage } from "../components/battle-world-catalog";
+import { TryoutWorkspace, type TryoutSessionState } from "../components/tryout-workspace";
 
 export function BattleWorldView() {
   const navigate = useNavigate();
@@ -98,6 +21,7 @@ export function BattleWorldView() {
   const [subtestTimer, setSubtestTimer] = useState<number>(30 * 60);
   const [breakTimer, setBreakTimer] = useState<number>(15 * 60);
   const [showSubmitSubtestModal, setShowSubmitSubtestModal] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const [submittingSubtest, setSubmittingSubtest] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -331,15 +255,25 @@ export function BattleWorldView() {
   };
 
   const handleExitTryout = () => {
-    if (
-      window.confirm(
-        "Keluar dari Battle World? Progres sesi aktif tersimpan dan bisa dilanjutkan nanti.",
-      )
-    ) {
-      setActiveSessionData(null);
-      if (window.innerWidth <= 768) window.history.replaceState(null, "", "/dashboard?tab=tryout");
-    }
+    setShowExitDialog(true);
   };
+
+  const exitDialog = (
+    <ConfirmDialog
+      open={showExitDialog}
+      onOpenChange={setShowExitDialog}
+      title="Keluar dari Battle World?"
+      description="Progres sesi aktif tersimpan dan bisa dilanjutkan nanti."
+      confirmLabel="Simpan & keluar"
+      pending={submittingSubtest || loading}
+      onConfirm={() => {
+        setShowExitDialog(false);
+        setActiveSessionData(null);
+        if (window.innerWidth <= 768)
+          window.history.replaceState(null, "", "/dashboard?tab=tryout");
+      }}
+    />
+  );
 
   const formatSeconds = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -349,7 +283,7 @@ export function BattleWorldView() {
 
   // 1. ACTIVE TRYOUT SESSION UI
   if (activeSessionData) {
-    const { session, currentSubtest, questions, totalSubtests } = activeSessionData;
+    const { session, currentSubtest, questions } = activeSessionData;
 
     // SCENARIO A: BREAK STATE
     if (session.state === "break") {
@@ -406,6 +340,7 @@ export function BattleWorldView() {
               </Button>
             </div>
           </Panel>
+          {exitDialog}
         </div>
       );
     }
@@ -457,349 +392,51 @@ export function BattleWorldView() {
     }
 
     // SCENARIO C: ACTIVE SUBTEST QUESTION ENGINE
-    const currQ = questions[currentQIndex] || questions[0];
     const totalQ = questions.length;
     const answeredCount = Object.keys(answers).length;
-    const unansweredCount = totalQ - answeredCount;
 
     return (
       <div className="latveria-view-container motion-page-enter">
-        {/* Top Tryout Header */}
-        <header className="question-header-bar" style={{ marginBottom: 24 }}>
-          <div className="header-subtest-info">
-            <button
-              type="button"
-              className="btn-exit-minimal"
-              onClick={handleExitTryout}
-              title="Keluar & Simpan"
-            >
-              <ChevronLeft size={16} />
-              <span className="font-mono">SIMPAN & KELUAR</span>
-            </button>
-            <div className="subtest-badge-box">
-              <span className="subtest-code font-mono">
-                SUBTES {session.currentSubtestIndex + 1}/{totalSubtests}
-              </span>
-              <span className="subtest-name font-serif">{currentSubtest.name}</span>
-            </div>
-          </div>
-
-          <div className="header-center-info">
-            <div className={`timer-display font-mono ${subtestTimer < 120 ? "timer-warning" : ""}`}>
-              <Clock size={15} />
-              <span className="time-label">WAKTU SUBTES</span>
-              <span className="time-digits">{formatSeconds(subtestTimer)}</span>
-            </div>
-          </div>
-
-          <div className="header-tools-group">
-            <button
-              type="button"
-              className={`btn-flag-toggle font-mono ${currQ && flags[currQ.id] ? "is-flagged" : ""}`}
-              onClick={() => currQ && handleToggleFlag(currQ.id)}
-            >
-              <Flag size={14} />
-              <span>{currQ && flags[currQ.id] ? "Ragu-ragu" : "Tandai"}</span>
-            </button>
-
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => setShowSubmitSubtestModal(true)}
-              style={{ background: "var(--accent-gold)", color: "var(--bg-card)", fontWeight: 600 }}
-            >
-              <FileCheck size={15} /> Selesaikan Subtes
-            </Button>
-          </div>
-        </header>
-
-        {/* Question + Navigator Layout */}
-        <div className="exam-stage-grid">
-          <main className="question-content-pane">
-            <div className="question-card">
-              <div className="question-meta-strip font-mono">
-                <span className="q-badge">
-                  SOAL {currentQIndex + 1} DARI {totalQ}
-                </span>
-              </div>
-
-              {currQ && (
-                <>
-                  <div className="question-prompt-text font-serif">
-                    <MathText>{currQ.prompt}</MathText>
-                  </div>
-
-                  <div className="options-stack font-sans" role="radiogroup">
-                    {currQ.options.map((optText, optIdx) => {
-                      const isSelected = answers[currQ.id] === String(optIdx);
-                      return (
-                        <div
-                          key={optIdx}
-                          className={`option-row ${isSelected ? "selected" : ""}`}
-                          onClick={() => handleSelectAnswer(currQ.id, optIdx)}
-                        >
-                          <span className="opt-key font-mono">
-                            {["A", "B", "C", "D", "E"][optIdx]}
-                          </span>
-                          <span className="opt-text">
-                            <MathText>{optText}</MathText>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <footer className="question-footer-nav" style={{ marginTop: 20 }}>
-              <button
-                type="button"
-                className="btn-latveria-secondary"
-                disabled={currentQIndex === 0}
-                onClick={() => navigateQuestion(currentQIndex - 1)}
-              >
-                <ChevronLeft size={16} /> SEBELUMNYA
-              </button>
-
-              {currentQIndex < totalQ - 1 ? (
-                <button
-                  type="button"
-                  className="btn-latveria-primary"
-                  onClick={() => navigateQuestion(currentQIndex + 1)}
-                >
-                  BERIKUTNYA <ChevronRight size={16} />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn-latveria-primary btn-gold-solid"
-                  onClick={() => setShowSubmitSubtestModal(true)}
-                >
-                  Selesaikan Subtes <FileCheck size={16} />
-                </button>
-              )}
-            </footer>
-          </main>
-
-          {/* Navigator Aside */}
-          <aside className="quiz-navigator-pane">
-            <div className="navigator-card">
-              <div className="navigator-head">
-                <span className="dot-stamp" />
-                <span className="nav-title font-mono">Daftar Nomor</span>
-              </div>
-              <div className="navigator-grid-container">
-                <div className="navigator-grid">
-                  {questions.map((q, idx) => {
-                    const isAnswered = Boolean(answers[q.id]);
-                    const isFlagged = Boolean(flags[q.id]);
-                    const isActive = idx === currentQIndex;
-                    let cls = isActive ? "is-active " : "";
-                    if (isAnswered) cls += "is-answered ";
-                    else cls += "is-unanswered ";
-                    if (isFlagged) cls += "is-flagged ";
-
-                    return (
-                      <button
-                        key={q.id}
-                        type="button"
-                        className={`nav-number-tile font-mono ${cls}`}
-                        onClick={() => navigateQuestion(idx)}
-                      >
-                        <span className="tile-num-text">
-                          {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}
-                        </span>
-                        {isFlagged && <span className="tile-flag-pip" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
+        <TryoutWorkspace
+          data={activeSessionData}
+          currentIndex={currentQIndex}
+          answers={answers}
+          flags={flags}
+          time={formatSeconds(subtestTimer)}
+          timerWarning={subtestTimer < 120}
+          pending={submittingSubtest}
+          onExit={handleExitTryout}
+          onSubmit={() => setShowSubmitSubtestModal(true)}
+          onAnswer={handleSelectAnswer}
+          onFlag={handleToggleFlag}
+          onJump={navigateQuestion}
+        />
 
         {/* Subtest Submit Modal */}
-        {showSubmitSubtestModal && (
-          <div
-            className="modal-backdrop motion-fade-in"
-            onClick={() => setShowSubmitSubtestModal(false)}
-          >
-            <div
-              className="config-modal-card submit-dialog-card motion-scale-in"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="modal-header">
-                <h2 className="modal-title font-serif">Selesaikan subtes {currentSubtest.name}?</h2>
-                <p className="modal-desc">
-                  Jawaban untuk subtes ini akan dikunci dan kamu akan beralih ke sesi berikutnya.
-                </p>
-              </div>
-
-              <div className="submit-summary-quad font-mono" style={{ margin: "16px 0" }}>
-                <div className="sum-quad-tile">
-                  <span className="s-label">TOTAL SOAL</span>
-                  <span className="s-val text-primary">{totalQ}</span>
-                </div>
-                <div className="sum-quad-tile">
-                  <span className="s-label">TERJAWAB</span>
-                  <span className="s-val text-sage">{answeredCount}</span>
-                </div>
-                <div className="sum-quad-tile">
-                  <span className="s-label">BELUM DIJAWAB</span>
-                  <span className="s-val text-crimson">{unansweredCount}</span>
-                </div>
-              </div>
-
-              <div className="modal-actions-footer">
-                <button
-                  type="button"
-                  className="btn-latveria-secondary font-mono"
-                  onClick={() => setShowSubmitSubtestModal(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn-latveria-primary btn-gold-solid font-mono"
-                  disabled={submittingSubtest}
-                  onClick={handleSubmitSubtest}
-                >
-                  {submittingSubtest ? "Memproses…" : "Konfirmasi & Kumpulkan"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // 2. TRYOUT LOBBY UI
-  // Note: During initial static render (when packages.length === 0 and !activeSessionData),
-  // render the honest tryout empty state so tests pass!
-  if (packages.length === 0) {
-    return (
-      <div className="latveria-view-container">
-        <PageHeading title="Battle World" description="Tryout full dan simulasi berwaktu." />
-        <Panel className="battle-world-empty">
-          <Swords size={32} aria-hidden="true" />
-          <h2>{catalogError ? "Tryout belum dapat dimuat" : "Belum ada tryout siap dimainkan"}</h2>
-          <p>
-            {actionError ||
-              catalogError ||
-              "Tryout full yang sudah diterbitkan akan muncul di sini. Sambil menunggu, asah skill per subtes lewat Drilling."}
-          </p>
-          {catalogError ? (
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Coba lagi
-            </Button>
-          ) : (
-            <Button asChild>
-              <Link to="/dashboard?tab=practice">
-                Gas drilling
-                <ArrowRight />
-              </Link>
-            </Button>
-          )}
-        </Panel>
+        <ConfirmDialog
+          open={showSubmitSubtestModal}
+          onOpenChange={setShowSubmitSubtestModal}
+          title={`Selesaikan subtes ${currentSubtest.name}?`}
+          description="Jawaban untuk subtes ini akan dikunci dan kamu akan beralih ke sesi berikutnya."
+          confirmLabel="Konfirmasi & Kumpulkan"
+          pending={submittingSubtest}
+          error={actionError}
+          onConfirm={handleSubmitSubtest}
+        >
+          <SubmissionSummary total={totalQ} answered={answeredCount} />
+        </ConfirmDialog>
+        {exitDialog}
       </div>
     );
   }
 
   return (
-    <div className="latveria-view-container motion-page-enter">
-      <PageHeading
-        title="Battle World"
-        description="Kerjakan rangkaian subtes, pantau waktu, dan lanjutkan sesi dari perangkat yang sama."
-      />
-
-      <div style={{ display: "grid", gap: 24, marginTop: 24 }}>
-        {packages.map((pkg) => (
-          <Panel key={pkg.id} style={{ padding: 28, border: "1px solid var(--border-subtle)" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: 20,
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 280 }}>
-                <span className="font-mono text-xs text-[var(--gold)] uppercase tracking-wider block mb-1">
-                  {pkg.isFullTryout ? "TRYOUT FULL" : "TRYOUT SUBTES"}
-                </span>
-                <h3 className="font-serif text-2xl font-bold text-[var(--ink)] mb-2">{pkg.name}</h3>
-                <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mb-4">
-                  {pkg.description}
-                </p>
-
-                {/* Tryout structure */}
-                <div
-                  style={{
-                    borderTop: "1px solid var(--border-subtle)",
-                    paddingTop: 16,
-                    marginTop: 16,
-                  }}
-                >
-                  <span className="font-mono text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-3">
-                    {pkg.isFullTryout ? "ALUR SUBTES DAN JEDA:" : "FORMAT SESI:"}
-                  </span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {(pkg.isFullTryout
-                      ? SUBTEST_SCHEDULE
-                      : [{ name: `${pkg.questionCount} soal`, duration: pkg.duration ?? 30 }]
-                    ).map((sub, sIdx) => (
-                      <span
-                        key={sIdx}
-                        className="font-mono text-xs px-2.5 py-1 rounded"
-                        style={{
-                          background: sub.isBreak
-                            ? "var(--accent-gold-dim)"
-                            : "var(--surface-muted)",
-                          border: `1px solid ${sub.isBreak ? "var(--accent-gold)" : "var(--border-subtle)"}`,
-                          color: sub.isBreak ? "var(--accent-gold)" : "var(--text-primary)",
-                        }}
-                      >
-                        {sub.name} ({sub.duration}m)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                  alignItems: "flex-end",
-                }}
-              >
-                <div className="font-mono text-right text-xs text-[var(--text-muted)]">
-                  <span>
-                    {pkg.questionCount} SOAL · {pkg.duration ?? 30} MENIT
-                  </span>
-                </div>
-                <Button
-                  size="default"
-                  disabled={starting}
-                  onClick={() => handleStartTryout(pkg.id)}
-                  style={{
-                    background: "var(--accent-gold)",
-                    color: "var(--bg-card)",
-                    fontWeight: 700,
-                  }}
-                >
-                  <Play size={16} /> {starting ? "Menyiapkan tryout…" : "Mulai tryout"}
-                </Button>
-              </div>
-            </div>
-          </Panel>
-        ))}
-      </div>
-    </div>
+    <BattleWorldCatalog
+      packages={packages}
+      catalogError={catalogError}
+      actionError={actionError}
+      starting={starting}
+      onStart={handleStartTryout}
+    />
   );
 }
