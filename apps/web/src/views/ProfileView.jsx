@@ -1,26 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { profileSchema } from "@latveria/shared";
-import { api } from "../lib/api";
+import React, { useState } from "react";
+import { ProfileEditorDialog } from "../components/profile-editor-dialog";
 import { useApp } from "../context/AppContext";
 import { ACHIEVEMENTS_LIST } from "../data/achievementsData";
-import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
-import {
-  Award,
-  Flame,
-  Target,
-  Clock,
-  ShieldCheck,
-  Edit3,
-  Check,
-  BookOpen,
-  Crosshair,
-  Moon,
-  Archive,
-  Layers,
-  GraduationCap,
-  Sparkles,
-  FileBadge,
-} from "lucide-react";
+import { Award, Flame, ShieldCheck, Edit3, Crosshair, Moon, Archive, Layers } from "lucide-react";
 import { UserRound } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { PageHeading, ProgressBar } from "../components/ui/dashboard";
@@ -30,47 +12,8 @@ export const ProfileView = () => {
 
   // Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [saveError, setSaveError] = useState("");
-  const dialog = useRef(null);
-  useEffect(() => {
-    if (isEditing) dialog.current?.showModal();
-  }, [isEditing]);
-  const [formData, setFormData] = useState({
-    name: user.name,
-    codename: user.codename,
-    bio: user.bio,
-    motto: user.motto,
-    targetUniversity: user.targetUniversity,
-  });
 
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    if (pending) return;
-    setSaveError("");
-    const parsed = profileSchema.safeParse(formData);
-    if (!parsed.success) {
-      setSaveError(parsed.error.issues[0].message);
-      return;
-    }
-    setPending(true);
-    try {
-      const profile = await api("/learner/profile", {
-        method: "PUT",
-        body: JSON.stringify(parsed.data),
-      });
-      setUser((prev) => ({ ...prev, ...profile }));
-      sound.playSelect();
-      setIsEditing(false);
-      showToast("Profil disimpan", "", "success");
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Gagal menyimpan profil. Coba lagi.");
-    } finally {
-      setPending(false);
-    }
-  };
 
   if (!profileLoaded || profileError)
     return (
@@ -133,17 +76,7 @@ export const ProfileView = () => {
             <button
               type="button"
               className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95"
-              onClick={() => {
-                setFormData({
-                  name: user.name,
-                  codename: user.codename,
-                  targetUniversity: user.targetUniversity,
-                  motto: user.motto,
-                  bio: user.bio,
-                });
-                setSaveError("");
-                setIsEditing(true);
-              }}
+              onClick={() => setIsEditing(true)}
             >
               <Edit3 size={13} />
               <span>Edit profil</span>
@@ -290,123 +223,16 @@ export const ProfileView = () => {
 
       {/* Edit Profile Modal */}
       {isEditing && (
-        <dialog
-          ref={dialog}
-          className="profile-edit-dialog"
-          aria-labelledby="edit-profile-title"
-          onCancel={(event) => {
-            if (pending) event.preventDefault();
-            else setIsEditing(false);
+        <ProfileEditorDialog
+          profile={user}
+          onOpenChange={setIsEditing}
+          onSaved={(profile) => {
+            setUser((previous) => ({ ...previous, ...profile }));
+            sound.playSelect();
+            setIsEditing(false);
+            showToast("Profil disimpan", "", "success");
           }}
-        >
-          <div className="config-modal-card">
-            <div className="modal-header">
-              <h2 id="edit-profile-title" className="modal-title font-serif">
-                Edit profil
-              </h2>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="modal-body-form">
-              <div className="form-group">
-                <label htmlFor="profile-name" className="form-label-mono font-mono">
-                  Nama
-                </label>
-                <input
-                  type="text"
-                  id="profile-name"
-                  autoComplete="name"
-                  maxLength={100}
-                  disabled={pending}
-                  className="latveria-input font-sans"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="profile-codename" className="form-label-mono font-mono">
-                  Nama panggilan
-                </label>
-                <input
-                  type="text"
-                  id="profile-codename"
-                  autoComplete="nickname"
-                  maxLength={100}
-                  disabled={pending}
-                  className="latveria-input font-sans"
-                  value={formData.codename}
-                  onChange={(e) => setFormData({ ...formData, codename: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="profile-target" className="form-label-mono font-mono">
-                  Target PTN dan program studi
-                </label>
-                <input
-                  type="text"
-                  id="profile-target"
-                  maxLength={200}
-                  disabled={pending}
-                  className="latveria-input font-sans"
-                  value={formData.targetUniversity}
-                  onChange={(e) => setFormData({ ...formData, targetUniversity: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="profile-motto" className="form-label-mono font-mono">
-                  Motto
-                </label>
-                <input
-                  type="text"
-                  id="profile-motto"
-                  maxLength={200}
-                  disabled={pending}
-                  className="latveria-input font-serif"
-                  value={formData.motto}
-                  onChange={(e) => setFormData({ ...formData, motto: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="profile-bio" className="form-label-mono font-mono">
-                  Bio
-                </label>
-                <textarea
-                  rows="3"
-                  id="profile-bio"
-                  maxLength={500}
-                  disabled={pending}
-                  className="latveria-input font-sans"
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                />
-              </div>
-
-              {saveError && <p role="alert">{saveError}</p>}
-              <div className="modal-actions-footer">
-                <button
-                  type="button"
-                  disabled={pending}
-                  className="btn-latveria-secondary"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="btn-latveria-primary btn-gold-solid font-mono"
-                >
-                  <Check size={16} />
-                  <span>{pending ? "Menyimpan…" : "Simpan perubahan"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </dialog>
+        />
       )}
     </div>
   );

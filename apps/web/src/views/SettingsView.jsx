@@ -1,30 +1,17 @@
 import React, { useState } from "react";
 import { LogoutButton } from "../components/logout-button";
 import { PageHeading } from "../components/ui/dashboard";
+import { ConfirmDialog } from "../components/confirm-dialog";
 import { useApp } from "../context/AppContext";
 import { LatveriaWatermark } from "../components/LatveriaSeal";
-import {
-  Settings,
-  Sun,
-  Moon,
-  Volume2,
-  VolumeX,
-  Clock,
-  Shield,
-  RotateCcw,
-  CheckCircle2,
-  Sliders,
-  Bell,
-  Sparkles,
-} from "lucide-react";
+import { Sun, Moon, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 
 export const SettingsView = () => {
-  const { theme, setTheme, soundEnabled, setSoundEnabled, user, setUser, showToast } = useApp();
+  const { theme, setTheme, soundEnabled, setSoundEnabled, showToast } = useApp();
 
   // Settings local state
   const [timerDuration, setTimerDuration] = useState(90);
-  const [instantFeedback, setInstantFeedback] = useState(false);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
 
   const handleResetData = () => {
@@ -32,7 +19,6 @@ export const SettingsView = () => {
     setTheme("dark");
     setSoundEnabled(true);
     setTimerDuration(90);
-    setInstantFeedback(false);
     setShowConfirmReset(false);
     showToast("Preferensi direset", "Tema dan pengaturan lokal kembali ke nilai awal.", "info");
   };
@@ -201,36 +187,15 @@ export const SettingsView = () => {
         </section>
       </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmReset && (
-        <div className="modal-backdrop" onClick={() => setShowConfirmReset(false)}>
-          <div className="config-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title font-serif text-crimson">Reset preferensi lokal?</h2>
-            </div>
-            <p className="modal-prompt-text font-serif">
-              Tema, suara, dan pengaturan latihan lokal akan kembali ke nilai awal. Progres latihan
-              tetap berasal dari data server.
-            </p>
-            <div className="modal-actions-footer">
-              <button
-                type="button"
-                className="btn-latveria-secondary"
-                onClick={() => setShowConfirmReset(false)}
-              >
-                BATALKAN
-              </button>
-              <button
-                type="button"
-                className="btn-latveria-primary btn-crimson-solid font-mono"
-                onClick={handleResetData}
-              >
-                <span>Ya, reset preferensi</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showConfirmReset}
+        onOpenChange={setShowConfirmReset}
+        title="Reset preferensi lokal?"
+        description="Tema, suara, dan pengaturan latihan lokal akan kembali ke nilai awal. Progres latihan tetap berasal dari data server."
+        confirmLabel="Ya, reset preferensi"
+        destructive
+        onConfirm={handleResetData}
+      />
     </div>
   );
 };
