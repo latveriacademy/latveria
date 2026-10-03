@@ -35,15 +35,6 @@ export function AdminLayout() {
   // Responsive target pathname for instant tab highlight on click
   const targetPath = navigationState.location?.pathname ?? pathname;
   const active = [...navigation].reverse().find((item) => targetPath === item.to || (item.to !== "/admin" && targetPath.startsWith(`${item.to}/`)))?.id ?? "summary";
-  const identity = (
-    <div className="sidebar-user-dossier">
-      <div className="dossier-name-row">
-        <span className="dossier-name">{user.name}</span>
-        <span className="dossier-badge">Admin</span>
-      </div>
-      <p className="admin-identity-email">{user.email}</p>
-    </div>
-  );
 
   return (
     <DashboardShell
@@ -52,8 +43,15 @@ export function AdminLayout() {
       sidebarOpen={sidebarOpen}
       onCloseSidebar={toggleSidebar}
       sidebar={
-        <DashboardSidebar home="/admin" identity={identity} collapsed={!sidebarOpen}>
+        <DashboardSidebar home="/admin" collapsed={!sidebarOpen}>
           <DashboardNavigation items={navigation} active={active} />
+          <div className="sidebar-profile-section">
+            <div className="admin-user-info">
+              <span className="dossier-name">{user.name}</span>
+              <span className="dossier-badge">Admin</span>
+            </div>
+            <p className="admin-identity-email">{user.email}</p>
+          </div>
         </DashboardSidebar>
       }
       header={

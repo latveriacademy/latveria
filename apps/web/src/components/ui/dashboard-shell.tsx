@@ -2,7 +2,6 @@ import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
 import { Link } from "react-router";
 import { Clock, Menu, type LucideIcon } from "lucide-react";
 import { Brand } from "./dashboard";
-import { LogoutButton } from "../logout-button";
 import { cn } from "../../lib/utils";
 
 export function DashboardShell({ sidebar, header, bottomNav, children, overlays, className, immersive = false, sidebarOpen = true, onCloseSidebar, contentId = "main-content-scroll", ...props }: ComponentProps<"div"> & { sidebar?: ReactNode; header?: ReactNode; bottomNav?: ReactNode; overlays?: ReactNode; immersive?: boolean; sidebarOpen?: boolean; onCloseSidebar?: () => void; contentId?: string }) {
@@ -25,11 +24,10 @@ export function DashboardShell({ sidebar, header, bottomNav, children, overlays,
   </div>;
 }
 
-export function DashboardSidebar({ home, identity, children, collapsed = false }: { home: string; identity: ReactNode; children: ReactNode; collapsed?: boolean }) {
+export function DashboardSidebar({ home, children, collapsed = false }: { home: string; children: ReactNode; collapsed?: boolean }) {
   return <aside className={`latveria-sidebar motion-slide-in-left${collapsed ? " sidebar-is-collapsed" : ""}`} aria-label="Navigasi utama" aria-hidden={collapsed} inert={collapsed}>
     <div className="sidebar-brand-wrapper"><Brand to={home} /></div>
-    <div className="sidebar-scrollable-content">{identity}{children}</div>
-    <div className="sidebar-footer"><LogoutButton className="nav-button transition-transform duration-150 hover:scale-[1.015] active:scale-[0.98]" /></div>
+    <div className="sidebar-scrollable-content">{children}</div>
   </aside>;
 }
 
