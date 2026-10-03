@@ -119,36 +119,6 @@ async function main() {
           })
           .onConflictDoNothing({ target: [questionPackages.topicId, questionPackages.name] });
       }
-      const [fullTryoutPackage] = await tx
-        .select({ id: questionPackages.id })
-        .from(questionPackages)
-        .where(eq(questionPackages.name, "Tryout Akbar UTBK-SNBT 2027"));
-      if (fullTryoutPackage) {
-        const fullTryoutQuestionRows = await tx
-          .select({ id: questions.id })
-          .from(questions)
-          .innerJoin(topics, eq(questions.topicId, topics.id))
-          .where(
-            inArray(
-              topics.slug,
-              utbkSubtests.map((subtest) => subtest.slug),
-            ),
-          );
-        await tx
-          .insert(tryoutPackageQuestions)
-          .values(
-            fullTryoutQuestionRows.map((question, order) => ({
-              packageId: fullTryoutPackage.id,
-              questionId: question.id,
-              order,
-            })),
-          )
-          .onConflictDoNothing();
-        await tx
-          .update(questionPackages)
-          .set({ targetQuestions: fullTryoutQuestionRows.length })
-          .where(eq(questionPackages.id, fullTryoutPackage.id));
-      }
       const storedPackages = await tx
         .select({ id: questionPackages.id, topicId: questionPackages.topicId })
         .from(questionPackages)
@@ -403,6 +373,37 @@ async function main() {
               source: geometryQuestion.source,
             },
           });
+      }
+
+      const [fullTryoutPackage] = await tx
+        .select({ id: questionPackages.id })
+        .from(questionPackages)
+        .where(eq(questionPackages.name, "Tryout Akbar UTBK-SNBT 2027"));
+      if (fullTryoutPackage) {
+        const fullTryoutQuestionRows = await tx
+          .select({ id: questions.id })
+          .from(questions)
+          .innerJoin(topics, eq(questions.topicId, topics.id))
+          .where(
+            inArray(
+              topics.slug,
+              utbkSubtests.map((subtest) => subtest.slug),
+            ),
+          );
+        await tx
+          .insert(tryoutPackageQuestions)
+          .values(
+            fullTryoutQuestionRows.map((question, order) => ({
+              packageId: fullTryoutPackage.id,
+              questionId: question.id,
+              order,
+            })),
+          )
+          .onConflictDoNothing();
+        await tx
+          .update(questionPackages)
+          .set({ targetQuestions: fullTryoutQuestionRows.length })
+          .where(eq(questionPackages.id, fullTryoutPackage.id));
       }
 
       // Seed System Configs

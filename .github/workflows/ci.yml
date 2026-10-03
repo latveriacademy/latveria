@@ -46,6 +46,7 @@ jobs:
       - run: bun run db:migrate
       - run: bun run db:migrate
       - run: bun run db:seed
+      - run: bun run db:seed
       - run: bun run test:integration
 
   containers:
@@ -87,6 +88,7 @@ jobs:
       - run: docker compose -f compose.production.yaml up -d --wait postgres
       - run: docker compose -f compose.production.yaml run --rm backend node --import tsx scripts/migrate-db.ts
       - run: docker compose -f compose.production.yaml run --rm backend node --import tsx scripts/migrate-db.ts
+      - run: docker compose -f compose.production.yaml run --rm backend node --import tsx scripts/seed-db.ts
       - run: docker compose -f compose.production.yaml run --rm backend node --import tsx scripts/seed-db.ts
       - run: docker compose -f compose.production.yaml up -d --wait
       - run: node scripts/verify-containers.mjs
