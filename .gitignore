@@ -8,3 +8,5 @@ coverage/
 !.env.example
 .vercel/
 .playwright-mcp/
+AGENTS.md
+PLAN.md

@@ -5,18 +5,22 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 ## Struktur
 
 - `apps/web`: SPA React, React Router, komponen UI, dan renderer LaTeX. Tidak mengimpor database atau secret server.
-- `apps/api`: server Hono Node.js, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
+- `apps/api`: server Hono/Bun, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
 - `packages/shared`: skema Zod request, tipe response API, serta nama tujuh subtes SNPMB. Tidak mengimpor backend.
 
 Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau.
 
-Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (latihan), dan **Drill Log** (riwayat). **Battle World** membuka alur tryout pada `/dashboard?tab=tryout`, termasuk sesi lintas subtes dan jeda. **Library** menyediakan pilihan paket berdasarkan kategori UTBK/TKA/Mandiri. Ketersediaan paket mengikuti data server.
+Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (katalog paket latihan dengan pencarian, filter, dan paginasi), dan **Drill Log** (riwayat). **Battle World** membuka alur tryout pada `/dashboard?tab=tryout`, termasuk sesi lintas subtes dan jeda. **Library** diperuntukkan materi dan menampilkan empty state saat materi belum tersedia. Ketersediaan paket mengikuti data server.
+
+Gambaran sistem, batas paket, runtime Bun, atomic design, GSAP, dan alur data dijelaskan di [ARCHITECTURE.md](ARCHITECTURE.md).
+
+Aturan developer/AI agent, batas ukuran file dan commit, style, serta verifikasi ada di [CONTRIBUTING.md](CONTRIBUTING.md). ESLint memeriksa batas file; CI memeriksa format dan ukuran commit sejak aturan tersebut diadopsi.
 
 Sidebar memakai kartu profil ringkas di bagian bawah; klik untuk membuka Profil/Setelan serta melihat level, EXP, dan streak. Pada mobile, Profil dan Setelan tetap tersedia langsung di navigasi bawah. Logout peserta/admin memakai penanganan pending/error yang sama.
 
 ## Pengembangan lokal
 
-Node.js 22 (minimal 22.12), Bun 1.3.14, Docker Compose. Bun mengelola dependensi dan script; Node tetap menjalankan Vite, Vitest, dan Hono melalui CLI masing-masing. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.
+Bun 1.3.14 dan Docker Compose. Bun mengelola dependensi sekaligus menjadi runtime API, CLI database, Vite, Vitest, lint, typecheck, dan formatter. Script CLI memakai `bun run --bun` agar tidak mengikuti shebang Node. Node.js tidak perlu dipasang. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.
 
 ```sh
 bun install --frozen-lockfile
@@ -86,14 +90,18 @@ Untuk update Library/tryout/leaderboard, terapkan juga migrasi berikutnya. `0010
 
 PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
 
-Seed idempoten menyediakan tujuh subtes SNPMB 2026 dan 14 soal dummy. Empat slug topik lama dipindahkan tanpa mengganti ID sehingga riwayat dan soal admin tetap terhubung. Nama subtes mengikuti [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal bukan konten resmi. Supabase PostgreSQL tetap bisa dipakai dengan mengganti URL koneksi, tetapi belum diverifikasi.
+Seed idempoten menyediakan tujuh subtes SNPMB 2026 dan 17 soal dummy UTBK, serta empat contoh soal materi tambahan. Empat slug topik lama dipindahkan tanpa mengganti ID sehingga riwayat dan soal admin tetap terhubung. Nama subtes mengikuti [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal bukan konten resmi. Supabase PostgreSQL tetap bisa dipakai dengan mengganti URL koneksi, tetapi belum diverifikasi.
 
 KaTeX mendukung `$x^2$` inline dan `$$\frac{1}{2}$$` blok. Simpan source teks, bukan HTML. Renderer `trust: false` dan formula tidak valid fallback ke source. Rendering kini berlangsung di React, bukan Server Components.
 
 ## Pemeriksaan
 
+Formatter proyek adalah **oxfmt**. Aturan ada di `.oxfmtrc.json`: 2 spasi, lebar cetak 100, kutip ganda, titik koma, trailing comma, dan LF. Setelah mengubah kode, jalankan `bun run format`; CI memeriksa hasilnya melalui `bun run check`.
+
 ```sh
-bun run check                       # lint → semua tipe → semua tes → build
+bun run format                      # format kode dan dokumentasi
+bun run format:check                # periksa tanpa mengubah berkas
+bun run check                       # format check → lint → semua tipe → semua tes → build
 bun run --filter @latveria/web test src/components/math-text.test.tsx
 bun run --filter @latveria/api test src/lib/env.test.ts
 bun run test:integration            # API dan PostgreSQL lokal
@@ -111,13 +119,13 @@ Gunakan `bun run test`, bukan `bun test`: proyek memakai Vitest, termasuk mockin
 
 Frontend dan backend tersedia sebagai image terpisah di GHCR. `compose.production.yaml` menarik kedua image dan menjalankan PostgreSQL persisten; Nginx menyajikan SPA serta meneruskan `/api` ke backend. GitHub Actions memeriksa kode, integrasi database, dan smoke test container sebelum publish pada `main`/tag `v*`. Panduan env server, migrasi, pull/update, dan rollback ada di [deploy/README.md](deploy/README.md).
 
-### Menjalankan langsung dengan Node
+### Menjalankan langsung dengan Bun
 
 ```sh
 bun run build
 bun run start
 ```
 
-Frontend dibangun ke `apps/web/dist`. Hono produksi melayani API **dan** file SPA tersebut pada port 3000 (override `PORT` jika diperlukan), termasuk fallback untuk deep link React Router. Backend TypeScript dijalankan dengan `tsx`; skrip build backend memeriksa tipe, bukan menghasilkan bundle tambahan. Atur `BETTER_AUTH_URL` ke origin publik dan secret produksi berbeda. Tidak ada migrasi otomatis saat build/start.
+Frontend dibangun ke `apps/web/dist`. Hono melalui `Bun.serve` melayani API **dan** file SPA tersebut pada port 3000 (override `PORT` jika diperlukan), termasuk fallback untuk deep link React Router. Bun menjalankan TypeScript backend langsung; skrip build backend memeriksa tipe, bukan menghasilkan bundle tambahan. Bun memuat `.env.local` otomatis dari direktori API untuk server/CLI lokal; container memakai environment runtime. Atur `BETTER_AUTH_URL` ke origin publik dan secret produksi berbeda. Tidak ada migrasi otomatis saat build/start.
 
-Model hosting sekarang membutuhkan proses Node untuk Hono dan origin yang sama untuk cookie/API. Gunakan reverse proxy HTTPS pada deployment; bukan lagi deployment Next.js/Vercel otomatis. Database dev dan produksi tetap dipisah.
+Model hosting sekarang membutuhkan proses Bun untuk Hono dan origin yang sama untuk cookie/API. Gunakan reverse proxy HTTPS pada deployment; bukan lagi deployment Next.js/Vercel otomatis. Database dev dan produksi tetap dipisah.
