@@ -54,37 +54,37 @@ export function QuestionPreview() {
         </section>
       </Panel>
       <div className={styles.previewActions}>
-        {item.usage ? (
-          <p>
-            Soal sudah dipakai dalam {item.usage} jawaban peserta sehingga tidak dapat diedit atau
-            dihapus.
+        <Button asChild variant="outline">
+          <Link to={`/admin/soal/${item.id}/edit`}>
+            <Pencil />
+            Edit soal
+          </Link>
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError("");
+            setConfirmDelete(true);
+          }}
+        >
+          <Trash2 />
+          Hapus soal
+        </Button>
+        {Boolean(item.usage) && (
+          <p className="text-xs text-[var(--text-muted)] m-0 self-center">
+            Pernah dikerjakan {item.usage} kali oleh peserta.
           </p>
-        ) : (
-          <>
-            <Button asChild variant="outline">
-              <Link to={`/admin/soal/${item.id}/edit`}>
-                <Pencil />
-                Edit soal
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setError("");
-                setConfirmDelete(true);
-              }}
-            >
-              <Trash2 />
-              Hapus soal
-            </Button>
-          </>
         )}
       </div>
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title="Hapus soal ini?"
-        description="Tindakan ini tidak dapat dibatalkan. Soal yang sudah dipakai peserta tidak dapat dihapus."
+        description={
+          item.usage
+            ? `Soal ini pernah dikerjakan ${item.usage} kali. Menghapusnya akan membersihkan riwayat jawaban terkait dari sistem.`
+            : "Tindakan ini tidak dapat dibatalkan."
+        }
         destructive
         confirmLabel="Ya, hapus"
         pending={deleting}

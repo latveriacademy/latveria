@@ -52,7 +52,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
         open={confirm}
         onOpenChange={setConfirm}
         title={`Hapus ${selected.length} soal terpilih?`}
-        description="Tindakan ini tidak dapat dibatalkan. Jika ada soal yang sudah dipakai peserta, seluruh penghapusan dibatalkan."
+        description="Tindakan ini tidak dapat dibatalkan. Riwayat jawaban peserta yang terkait dengan soal-soal ini akan otomatis dibersihkan."
         confirmLabel="Ya, hapus"
         pendingLabel="Menghapus…"
         destructive

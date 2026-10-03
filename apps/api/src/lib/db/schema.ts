@@ -127,7 +127,7 @@ export const practiceAnswers = pgTable(
       .references(() => practiceAttempts.id, { onDelete: "cascade" }),
     questionId: uuid("question_id")
       .notNull()
-      .references(() => questions.id),
+      .references(() => questions.id, { onDelete: "cascade" }),
     selectedAnswer: integer("selected_answer").notNull(),
     isCorrect: integer("is_correct").notNull(),
     isFirstAttempt: boolean("is_first_attempt").default(true).notNull(),

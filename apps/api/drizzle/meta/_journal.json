@@ -92,6 +92,13 @@
       "when": 1791054290935,
       "tag": "0012_nosy_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791066750957,
+      "tag": "0013_amazing_golden_guardian",
+      "breakpoints": true
     }
   ]
 }

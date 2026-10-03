@@ -417,14 +417,10 @@ try {
   const edited = await (await request(`/admin/questions/${question.id}`, other.cookie)).json();
   assert.equal(edited.prompt, change.prompt);
   assert.equal(edited.category, change.category);
+  // Questions can be edited even after usage in attempts
   assert.equal(
     (await request(`/admin/questions/${practice.items[0].id}`, other.cookie, change, "PUT")).status,
-    409,
-  );
-  assert.equal(
-    (await request(`/admin/questions/${practice.items[0].id}`, other.cookie, undefined, "DELETE"))
-      .status,
-    409,
+    200,
   );
   const batch = {
     groups: [
@@ -712,10 +708,10 @@ try {
   assert.ok(histItem);
   assert.equal(histItem.packageName, testPkgName);
 
-  // 14. Question in pkg now has usage from attempt, so deleting is locked (409 Conflict)
+  // 14. Question in pkg can be deleted even if it has usage from attempt (cascade clean)
   assert.equal(
     (await request(`/admin/questions/${qInPkg.id}`, other.cookie, undefined, "DELETE")).status,
-    409,
+    200,
   );
 
   assert.equal((await request("/auth/sign-out", learner.cookie, {})).status, 200);

@@ -282,14 +282,6 @@ export async function updateQuestion(idParam: string, body: unknown) {
       .where(eq(questions.id, id.data))
       .for("update");
     if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
-    const [usage] = await tx
-      .select({ value: count() })
-      .from(practiceAnswers)
-      .where(eq(practiceAnswers.questionId, id.data));
-    if (usage.value)
-      throw new HTTPException(409, {
-        message: "Soal sudah digunakan dalam latihan dan tidak dapat diedit.",
-      });
     const [topic] = await tx
       .select({ slug: topics.slug })
       .from(topics)
@@ -338,15 +330,6 @@ export async function bulkDeleteQuestions(body: unknown) {
     if (rows.length !== ids.length)
       throw new HTTPException(404, {
         message: "Sebagian soal tidak ditemukan. Muat ulang bank soal.",
-      });
-    const [usage] = await tx
-      .select({ value: count() })
-      .from(practiceAnswers)
-      .where(inArray(practiceAnswers.questionId, ids));
-    if (usage.value)
-      throw new HTTPException(409, {
-        message:
-          "Penghapusan dibatalkan: ada soal terpilih yang sudah dipakai peserta. Tidak ada soal dihapus.",
       });
     return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
   });

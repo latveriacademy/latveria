@@ -236,8 +236,6 @@ export const router = createBrowserRouter([
             api<QuestionDetail>(`/admin/questions/${params.id}`),
             api<Topic[]>("/admin/topics"),
           ]);
-          if (item.usage)
-            throw new ApiError(409, "Soal yang sudah digunakan peserta tidak dapat diedit.");
           return { item, topics };
         },
         element: <EditQuestion />,
