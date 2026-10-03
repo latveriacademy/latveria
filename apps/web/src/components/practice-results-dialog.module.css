@@ -1,46 +1,3 @@
-.dialog {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: min(520px, calc(100vw - 32px));
-  max-width: none;
-  max-height: calc(100dvh - 32px);
-  padding: 0;
-  overflow-y: auto;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 25%);
-}
-.dialog::backdrop {
-  background: rgb(0 0 0 / 65%);
-}
-.content {
-  padding: 28px;
-}
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-.header h2 {
-  margin: 0;
-  font: 600 28px/1.2 var(--font-serif);
-}
-.header p {
-  margin: 8px 0 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-.header button {
-  flex-shrink: 0;
-  min-height: 44px;
-  min-width: 44px;
-}
 .accuracy {
   padding: 28px 0 24px;
 }
@@ -115,9 +72,6 @@
   min-height: 44px;
 }
 @media (max-width: 480px) {
-  .content {
-    padding: 22px;
-  }
   .footer {
     flex-direction: column;
   }

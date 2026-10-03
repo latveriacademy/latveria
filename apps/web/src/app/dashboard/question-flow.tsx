@@ -6,6 +6,7 @@ import { List } from "lucide-react";
 import { MathText } from "../../components/math-text";
 import type { PracticeQuestion, ReviewQuestion } from "@latveria/shared";
 import styles from "./dashboard.module.css";
+import { AppDialog } from "../../components/app-dialog";
 
 type Props =
   | {
@@ -293,52 +294,42 @@ function MobileQuestionPicker({
         <List />
         Pilih nomor soal
       </button>
-      {open && (
-        <div className={styles.pickerBackdrop} role="presentation" onClick={onClose}>
-          <section
-            className={styles.pickerSheet}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="question-picker-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className={styles.pickerHeader}>
-              <h2 id="question-picker-title">Soal</h2>
-              <button type="button" onClick={onClose}>
-                Tutup
+      <AppDialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) onClose();
+        }}
+        title="Soal"
+      >
+        <div className={styles.pickerGrid}>
+          {answered.map((isAnswered, index) => {
+            const result = reviewItems?.[index];
+            const state = result
+              ? result.isCorrect
+                ? styles.navCorrect
+                : styles.navIncorrect
+              : isAnswered
+                ? styles.navAnswered
+                : "";
+            return (
+              <button
+                className={`${styles.questionNumber} ${state} ${current === index ? styles.navActive : ""}`}
+                key={index}
+                type="button"
+                aria-label={`Soal ${index + 1}${isAnswered ? ", sudah dijawab" : ", belum dijawab"}`}
+                aria-current={current === index ? "step" : undefined}
+                onClick={() => onJump(index)}
+              >
+                {index + 1}
               </button>
-            </div>
-            <div className={styles.pickerGrid}>
-              {answered.map((isAnswered, index) => {
-                const result = reviewItems?.[index];
-                const state = result
-                  ? result.isCorrect
-                    ? styles.navCorrect
-                    : styles.navIncorrect
-                  : isAnswered
-                    ? styles.navAnswered
-                    : "";
-                return (
-                  <button
-                    className={`${styles.questionNumber} ${state} ${current === index ? styles.navActive : ""}`}
-                    key={index}
-                    type="button"
-                    aria-label={`Soal ${index + 1}${isAnswered ? ", sudah dijawab" : ", belum dijawab"}`}
-                    aria-current={current === index ? "step" : undefined}
-                    onClick={() => onJump(index)}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
-            <p className={styles.pickerLegend}>
-              <span className={styles.legendAnswered} /> Sudah dijawab{" "}
-              <span className={styles.legendActive} /> Sedang dibuka
-            </p>
-          </section>
+            );
+          })}
         </div>
-      )}
+        <p className={styles.pickerLegend}>
+          <span className={styles.legendAnswered} /> Sudah dijawab{" "}
+          <span className={styles.legendActive} /> Sedang dibuka
+        </p>
+      </AppDialog>
     </div>
   );
 }
