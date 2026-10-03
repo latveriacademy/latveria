@@ -246,7 +246,7 @@ export const AppProvider = ({ children }) => {
         if (Array.isArray(data)) {
           setHistory(data);
           // Map history to recentActivities format for dashboard
-          const recentActivities = data.slice(0, 6).map((h, i) => {
+          const recentActivities = data.slice(0, 6).map((h) => {
             const short = SLUG_TO_SHORT[h.slug] || h.slug;
             return {
               id: h.id,

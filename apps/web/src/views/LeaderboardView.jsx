@@ -9,7 +9,6 @@ import {
   Target,
   CheckCircle,
   Percent,
-  TrendingUp,
   AlertCircle,
   Loader2,
 } from "lucide-react";

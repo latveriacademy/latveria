@@ -1,27 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "../context/AppContext";
 import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
-import {
-  Flame,
-  Award,
-  Target,
-  TrendingUp,
-  ArrowUpRight,
-  BookOpen,
-  Calendar,
-  Sparkles,
-  BarChart3,
-  Compass,
-  Play,
-  Quote,
-  Clock,
-  ChevronRight,
-  RotateCcw,
-} from "lucide-react";
+import { Flame, Target, ArrowUpRight, Play, Quote, RotateCcw } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
 import { Button } from "../components/ui/button";
-import { AnimatedNumber, FadeUp, StaggerContainer } from "../lib/motion";
+import { AnimatedNumber } from "../lib/motion";
 
 // --- UTBK Countdown Hook ---
 function useUtbkCountdown() {
