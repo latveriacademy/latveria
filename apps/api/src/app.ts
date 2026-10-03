@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   affirmationSchema,
@@ -23,7 +23,6 @@ import {
   type Affirmation,
   type Bank,
   type HistoryItem,
-  type LeaderboardEntry,
   type LearnerPackage,
   type PackageDetail,
   type Profile,
@@ -1140,13 +1139,13 @@ app.get("/api/learner/leaderboard", async (c) => {
     userStats.set(a.userId, current);
   }
 
-  const entries: LeaderboardEntry[] = [];
+  const entries = [];
   for (const u of allUsers) {
     const stats = userStats.get(u.id);
     const totalCorrect = stats?.totalCorrect ?? 0;
     const totalAnswered = stats?.totalCount ?? 0;
     const attemptsCount = stats?.attemptsCount ?? 0;
-    const earnedXP = practiceXP(totalCorrect);
+    const earnedXP = attemptsCount * 30 + totalCorrect * 15;
     const progress = levelProgress(earnedXP);
     const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 1000) / 10 : 0;
     const avgScore = stats && stats.scores.length > 0

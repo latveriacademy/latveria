@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { AlertCircle, CheckCircle, Clock, ExternalLink } from "lucide-react";
+import { CheckCircle, ExternalLink } from "lucide-react";
 import { api } from "../../lib/api";
-import { Button } from "../../components/ui/button";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 
 interface ReportItem {
@@ -11,7 +10,7 @@ interface ReportItem {
   packageId?: string | null;
   reason: string;
   description?: string | null;
-  status: "pending" | "reviewed" | "resolved";
+  status: "open" | "reviewing" | "resolved" | "rejected";
   createdAt: string;
   userName?: string;
   userEmail?: string;
@@ -41,10 +40,10 @@ export function AdminReports() {
     loadReports();
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: "pending" | "reviewed" | "resolved") => {
+  const handleUpdateStatus = async (id: string, status: ReportItem["status"]) => {
     setUpdatingId(id);
     try {
-      await fetch(`/api/admin/reports/${id}`, {
+      await api(`/admin/reports/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Origin: window.location.origin },
         body: JSON.stringify({ status }),
@@ -120,7 +119,7 @@ export function AdminReports() {
                       <select
                         value={r.status}
                         disabled={updatingId === r.id}
-                        onChange={(e) => handleUpdateStatus(r.id, e.target.value as any)}
+                        onChange={(e) => handleUpdateStatus(r.id, e.target.value as ReportItem["status"])}
                         style={{
                           padding: "4px 8px",
                           borderRadius: 4,
@@ -130,9 +129,10 @@ export function AdminReports() {
                           color: "var(--ink)",
                         }}
                       >
-                        <option value="pending">Menunggu</option>
-                        <option value="reviewed">Ditinjau</option>
+                        <option value="open">Menunggu</option>
+                        <option value="reviewing">Ditinjau</option>
                         <option value="resolved">Selesai</option>
+                        <option value="rejected">Ditolak</option>
                       </select>
                     </td>
                   </tr>

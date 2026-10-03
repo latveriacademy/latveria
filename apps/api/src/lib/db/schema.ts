@@ -95,6 +95,7 @@ export const practiceAnswers = pgTable("practice_answers", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   unique("answer_attempt_question_unique").on(table.attemptId, table.questionId),
+  index("practice_answers_submitted_idx").on(table.submittedAt),
   check("answer_valid_selected", sql`${table.selectedAnswer} between 0 and 3`),
   check("answer_valid_correct", sql`${table.isCorrect} in (0, 1)`),
 ]).enableRLS();

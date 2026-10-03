@@ -71,6 +71,13 @@
       "when": 1791025802843,
       "tag": "0009_shallow_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791047767672,
+      "tag": "0010_hesitant_sheva_callister",
+      "breakpoints": true
     }
   ]
 }

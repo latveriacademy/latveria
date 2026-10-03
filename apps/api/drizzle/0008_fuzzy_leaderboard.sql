@@ -8,7 +8,9 @@ ALTER TABLE "user" ADD COLUMN "is_demo" boolean DEFAULT false NOT NULL;
 --> statement-breakpoint
 ALTER TABLE "user" ADD CONSTRAINT "user_is_demo_check" CHECK ("is_demo" IN (true, false));
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "practice_answers_submitted_at_user_idx" ON "practice_answers" ("submitted_at", "user_id");
+ALTER TABLE "practice_answers" ADD COLUMN "submitted_at" timestamp with time zone DEFAULT now() NOT NULL;
+--> statement-breakpoint
+UPDATE "practice_answers" a SET "submitted_at" = p."submitted_at" FROM "practice_attempts" p WHERE a."attempt_id" = p."id";
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "practice_attempts_submitted_at_idx" ON "practice_attempts" ("submitted_at");
 --> statement-breakpoint

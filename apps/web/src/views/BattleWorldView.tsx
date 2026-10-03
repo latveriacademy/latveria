@@ -5,9 +5,7 @@ import {
   Swords,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   Play,
-  RotateCcw,
   Coffee,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +13,7 @@ import {
   FileCheck
 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { PageHeading, Panel, PanelHeader } from "../components/ui/dashboard";
+import { PageHeading, Panel } from "../components/ui/dashboard";
 import { MathText } from "../components/math-text";
 
 interface TryoutPackage {
@@ -24,6 +22,7 @@ interface TryoutPackage {
   description: string;
   duration?: number;
   isFullTryout?: boolean;
+  packageType?: string;
   questionCount: number;
 }
 
@@ -87,7 +86,7 @@ export function BattleWorldView() {
     // 1. Fetch available packages from API
     fetch("/api/learner/packages")
       .then((res) => (res.ok ? res.json() : []))
-      .then((data: any[]) => {
+      .then((data: TryoutPackage[]) => {
         if (Array.isArray(data)) {
           const tryouts = data.filter(
             (p) => p.isFullTryout || p.packageType?.includes("Simulasi") || p.name.includes("Tryout")
@@ -175,8 +174,8 @@ export function BattleWorldView() {
       const newSession = await res.json();
       localStorage.setItem("latveria_tryout_session_id", newSession.id);
       await loadSession(newSession.id);
-    } catch (err: any) {
-      alert(err.message || "Gagal memulai tryout.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal memulai tryout.");
     } finally {
       setStarting(false);
     }
@@ -220,8 +219,8 @@ export function BattleWorldView() {
       if (!res.ok) throw new Error("Gagal mengumpulkan subtes.");
       setShowSubmitSubtestModal(false);
       await loadSession(activeSessionData.session.id);
-    } catch (err: any) {
-      alert(err.message || "Gagal mengumpulkan subtes.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal mengumpulkan subtes.");
     } finally {
       setSubmittingSubtest(false);
     }

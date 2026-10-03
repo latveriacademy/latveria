@@ -10,7 +10,7 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 
 Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau.
 
-Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (latihan), dan **Drill Log** (riwayat). Menu **Battle World** membuka halaman tryout pada `/dashboard?tab=tryout`; saat ini halaman tersebut menampilkan status belum tersedia karena engine tryout lintas subtes belum dibangun. Drilling tetap memakai route/API latihan yang sudah ada.
+Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (latihan), dan **Drill Log** (riwayat). **Battle World** membuka alur tryout pada `/dashboard?tab=tryout`, termasuk sesi lintas subtes dan jeda. **Library** menyediakan pilihan paket berdasarkan kategori UTBK/TKA/Mandiri. Ketersediaan paket mengikuti data server.
 
 Sidebar memakai kartu profil ringkas di bagian bawah; klik untuk membuka Profil/Setelan serta melihat level, EXP, dan streak. Pada mobile, Profil dan Setelan tetap tersedia langsung di navigasi bawah. Logout peserta/admin memakai penanganan pending/error yang sama.
 
@@ -81,6 +81,8 @@ Paket dapat dikelola dari subtes pada Ringkasan admin. Impor mendukung `packageN
 - Draft jawaban masih hanya selama sesi terbuka. UUID sesi dibuat saat mulai latihan dan dipakai ulang saat retry, termasuk bila respons POST hilang setelah server menyimpan. Payload berbeda dengan UUID yang sama ditolak; membuka riwayat tetap baca-saja.
 
 Migrasi `0007_wet_ma_gnuci.sql` menambah indeks peserta/tanggal untuk query progres; jalankan `bun run db:migrate` seperti biasa tanpa reset database.
+
+Untuk update Library/tryout/leaderboard, terapkan juga migrasi berikutnya. `0010_hesitant_sheva_callister.sql` memperbaiki kolom leaderboard yang dapat terlewati akibat timestamp lama pada jurnal `0008`, mengisi tanggal jawaban dari attempt, dan menandai jawaban pertama per peserta/soal. Migrasi ini mendukung database lama maupun instalasi baru; database tidak perlu di-reset.
 
 PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
 

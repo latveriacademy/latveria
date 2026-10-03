@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, CheckCircle2, MessageSquareQuote } from "lucide-react";
+import { Plus, Trash2, MessageSquareQuote } from "lucide-react";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
