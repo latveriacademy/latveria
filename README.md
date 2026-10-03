@@ -8,7 +8,7 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 - `apps/api`: server Hono Node.js, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
 - `packages/shared`: skema Zod request, tipe response API, serta nama tujuh subtes SNPMB. Tidak mengimpor backend.
 
-Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau. EXP belum dibuat.
+Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau.
 
 ## Pengembangan lokal
 
@@ -67,6 +67,16 @@ Untuk banyak soal, buka **Impor JSON** di panel admin dan unggah `.json` (maksim
 Paket dapat dikelola dari subtes pada Ringkasan admin. Impor mendukung `packageName` atau `packageId` pada setiap grup, atau memilih satu paket tujuan lewat form. Contoh sederhana/geometri dan unduhan JSON tersedia pada editor; panduan lengkap ada di [docs/impor-paket.md](docs/impor-paket.md).
 
 ## Database
+
+### EXP, level, dan streak
+
+- Satu latihan tersimpan menghasilkan **30 EXP + 15 EXP per jawaban benar**. Latihan baru boleh mendapat EXP lagi; retry pengumpulan sesi yang sama memakai `submissionId` UUID yang sama dan tidak membuat attempt kedua.
+- Level mulai dari **1**. Naik ke level 2 membutuhkan **300 EXP**; kebutuhan setiap level berikutnya dikalikan **1,35** dan dibulatkan. Progress bar menunjukkan EXP di dalam level saat ini; header menunjukkan total EXP.
+- Streak dihitung dari hari kalender **Asia/Jakarta (WIB)** saat latihan dikumpulkan. Beberapa latihan pada hari yang sama dihitung satu hari. Streak masih aktif bila terakhir latihan kemarin; setelah satu hari penuh terlewat, streak menjadi nol.
+- Progres dihitung dari `practice_attempts`, termasuk latihan lama, lalu dikirim melalui summary, hasil, dan riwayat. Login, membaca pembahasan, checklist lokal, dan reset preferensi tidak memberikan atau menghapus EXP. EXP dan persentase benar bukan skor resmi UTBK.
+- Draft jawaban masih hanya selama sesi terbuka. UUID sesi dibuat saat mulai latihan dan dipakai ulang saat retry, termasuk bila respons POST hilang setelah server menyimpan. Payload berbeda dengan UUID yang sama ditolak; membuka riwayat tetap baca-saja.
+
+Migrasi `0007_wet_ma_gnuci.sql` menambah indeks peserta/tanggal untuk query progres; jalankan `bun run db:migrate` seperti biasa tanpa reset database.
 
 PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
 

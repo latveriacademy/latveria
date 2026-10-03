@@ -1,5 +1,6 @@
 import { z } from "zod";
 export { utbkSubtests } from "./utbk-subtests";
+export { practiceXP, levelProgress, practiceDay, practiceStreak, learnerSummary, type LearnerSummary } from "./progression";
 export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
 
 export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
@@ -57,6 +58,7 @@ export const questionImportSchema = z.object({
   }).refine((group) => !(group.packageId && group.packageName), { message: "Gunakan packageId atau packageName, jangan keduanya.", path: ["packageName"] })).min(1).max(20),
 }).refine((input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 100, "Maksimal 100 soal per impor.");
 export const submissionSchema = z.object({
+  submissionId: z.uuid().optional(),
   answers: z.record(z.uuid(), z.number().int().min(0).max(3)),
   packageId: z.uuid().optional().nullable(),
 });
@@ -75,7 +77,7 @@ export type User = { id: string; name: string; email: string; role: string };
 export type Topic = { id: string; slug: string; name: string; description: string; short: string; section: "tps" | "literasi"; questionCount: number; packageCount?: number };
 export type PracticeQuestion = { id: string; prompt: string; options: string[] };
 export type ReviewQuestion = PracticeQuestion & { selectedAnswer: number; correctAnswer: number; isCorrect: number; explanation: string };
-export type HistoryItem = { id: string; topic: string; slug: string; packageId?: string | null; packageName?: string | null; correct: number; total: number; submittedAt: string };
+export type HistoryItem = { id: string; topic: string; slug: string; packageId?: string | null; packageName?: string | null; correct: number; total: number; submittedAt: string; earnedXP?: number };
 export type Result = { attempt: HistoryItem; answers: ReviewQuestion[] };
 export type QuestionDetail = NewQuestion & { id: string; topic: string; slug: string; packageName?: string | null; usage: number };
 export type Bank = {

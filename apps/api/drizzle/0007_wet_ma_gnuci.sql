@@ -1,0 +1,1 @@
+CREATE INDEX "practice_attempts_user_submitted_idx" ON "practice_attempts" USING btree ("user_id","submitted_at");

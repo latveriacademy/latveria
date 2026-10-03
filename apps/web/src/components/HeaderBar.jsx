@@ -26,7 +26,7 @@ export const HeaderBar = () => {
         {/* Streak Pill */}
         <div
           className="header-stat-pill transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] cursor-default"
-          title={`Streak: ${user.streakDays} Hari Belajar Berturut-turut`}
+          title={`Streak ${user.streakDays} hari. Selesaikan minimal satu latihan per hari WIB.${user.practicedToday ? ' Latihan hari ini sudah selesai.' : ' Belum latihan hari ini.'}`}
         >
           <Flame size={14} className="text-orange transition-transform duration-200 group-hover:scale-110" />
           <span className="stat-pill-val font-mono">
@@ -43,9 +43,9 @@ export const HeaderBar = () => {
         >
           <Award size={14} className="text-gold transition-transform duration-200 group-hover:scale-110" />
           <span className="stat-pill-val font-mono">
-            <AnimatedNumber value={user.currentXP} />
+            <AnimatedNumber value={user.totalXP} />
           </span>
-          <span className="stat-pill-label">XP</span>
+          <span className="stat-pill-label">EXP</span>
         </div>
 
         {/* Sound Toggle */}

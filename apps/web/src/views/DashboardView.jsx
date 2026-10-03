@@ -124,13 +124,12 @@ export const DashboardView = () => {
         <Panel className="training-panel">
           <PanelHeader title="Latihan hari ini">
             <div className="training-counter-badge font-mono">
-              <span className="counter-curr">{completedTrainingCount}</span>
-              <span className="counter-slash">/</span>
-              <span className="counter-total">{totalTrainingCount} COMPLETED</span>
+              <span>{user.practicedToday ? 'Sudah latihan' : 'Belum latihan'}</span>
             </div>
           </PanelHeader>
 
           <div className="training-tasks-list">
+            {!user.todayTraining.length && <p className="text-muted">{user.practicedToday ? 'Latihan hari ini sudah tercatat. Kamu bisa berlatih lagi.' : 'Selesaikan satu latihan untuk memulai atau menjaga streak hari ini.'}</p>}
             {user.todayTraining.map((task) => (
               <div
                 key={task.id}
@@ -226,7 +225,7 @@ export const DashboardView = () => {
             <div className="chart-bars-row">
               {user.weeklyChartData.map((item, idx) => {
                 const val = item[chartMetric];
-                const heightPercent = Math.max(12, Math.round((val / maxMetricVal) * 100));
+                const heightPercent = maxMetricVal > 0 ? Math.round((val / maxMetricVal) * 100) : 0;
 
                 return (
                   <div key={idx} className="chart-day-column" title={`${item.fullDay}: ${val} ${chartMetric}`}>
@@ -254,11 +253,11 @@ export const DashboardView = () => {
             </div>
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">RATA-RATA AKURASI</span>
-              <span className="stat-val font-serif text-sage">85.4%</span>
+              <span className="stat-val font-serif text-sage">{user.weeklyAccuracy}%</span>
             </div>
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">AKUMULASI XP</span>
-              <span className="stat-val font-serif text-gold">+2,690 XP</span>
+              <span className="stat-val font-serif text-gold">+{user.weeklyXP.toLocaleString()} EXP</span>
             </div>
           </div>
         </Panel>
@@ -280,17 +279,17 @@ export const DashboardView = () => {
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
-              <div className="quad-top font-mono">PRACTICE HOURS</div>
+              <div className="quad-top font-mono">TOTAL EXP</div>
               <div className="quad-number font-serif">
-                <AnimatedNumber value={user.practiceHours} />h
+                <AnimatedNumber value={user.totalXP} /> EXP
               </div>
-              <div className="quad-bottom font-mono text-gold">DEDIKASI TERVERIFIKASI</div>
+              <div className="quad-bottom font-mono text-gold">Hanya dari latihan selesai</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
-              <div className="quad-top font-mono">GLOBAL RANK</div>
-              <div className="quad-number font-serif">#{user.currentRank}</div>
-              <div className="quad-bottom font-mono text-sage">TOP 2% OF COHORT</div>
+              <div className="quad-top font-mono">LATIHAN SELESAI</div>
+              <div className="quad-number font-serif">{user.attempts}</div>
+              <div className="quad-bottom font-mono text-sage">Sesi yang sudah dikumpulkan</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
@@ -298,7 +297,7 @@ export const DashboardView = () => {
               <div className="quad-number font-serif">
                 <AnimatedNumber value={user.accuracy} formatter={(n) => `${n}%`} />
               </div>
-              <div className="quad-bottom font-mono text-gold">TIER-1 EXCELLENCE</div>
+              <div className="quad-bottom font-mono text-gold">Persentase jawaban benar</div>
             </div>
           </div>
         </Panel>

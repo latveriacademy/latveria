@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, count, countDistinct, desc, eq, inArray, sum } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   assignQuestionToPackageSchema,
@@ -32,6 +32,7 @@ import { getDb } from "./lib/db";
 import { allowedOrigins } from "./lib/origins";
 import { practiceAnswers, practiceAttempts, questionPackages, questions, topics } from "./lib/db/schema";
 import { user as accounts } from "./lib/db/auth-schema";
+import { learnerSummary, practiceXP } from "@latveria/shared";
 
 export const app = new Hono<{ Variables: { user: User } }>();
 app.get("/api/health", (c) => c.json({ status: "ok" }));
@@ -340,8 +341,8 @@ app.get("/api/learner/subtests/:subtestId/packages", getLearnerPackages as never
 app.get("/api/learner/topics/:slug/packages", getLearnerPackages as never);
 
 app.get("/api/learner/summary", async (c) => {
-  const [summary] = await getDb().select({ attempts: count(), tried: countDistinct(practiceAttempts.topicId), correct: sum(practiceAttempts.correctCount), answered: sum(practiceAttempts.totalCount) }).from(practiceAttempts).where(eq(practiceAttempts.userId, c.get("user").id));
-  return c.json({ ...summary, correct: Number(summary.correct ?? 0), answered: Number(summary.answered ?? 0) });
+  const attempts = await getDb().select({ topicId: practiceAttempts.topicId, correctCount: practiceAttempts.correctCount, totalCount: practiceAttempts.totalCount, submittedAt: practiceAttempts.submittedAt }).from(practiceAttempts).where(eq(practiceAttempts.userId, c.get("user").id));
+  return c.json(learnerSummary(attempts));
 });
 
 app.get("/api/learner/history", async (c) => {
@@ -360,7 +361,7 @@ app.get("/api/learner/history", async (c) => {
     .leftJoin(questionPackages, eq(practiceAttempts.packageId, questionPackages.id))
     .where(eq(practiceAttempts.userId, c.get("user").id))
     .orderBy(desc(practiceAttempts.submittedAt));
-  return c.json(rows.map((row) => ({ ...row, submittedAt: row.submittedAt.toISOString() })) satisfies HistoryItem[]);
+  return c.json(rows.map((row) => ({ ...row, submittedAt: row.submittedAt.toISOString(), earnedXP: practiceXP(row.correct) })) satisfies HistoryItem[]);
 });
 
 app.get("/api/learner/practice/:slug/:packageId", async (c) => {
@@ -395,6 +396,7 @@ app.get("/api/learner/practice/:slug", async (c) => {
 async function handlePracticeSubmit(c: { req: { param: (key: string) => string; json: () => Promise<unknown> }; get: (key: "user") => User; json: (data: unknown, status?: number) => Response }) {
   const parsed = submissionSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) throw new HTTPException(400, { message: "Jawaban tidak valid." });
+  const submission = parsed.data;
   const slug = c.req.param("slug");
   const rawPackageParam = c.req.param("packageId");
   const targetPackageId = rawPackageParam && idSchema.safeParse(rawPackageParam).success
@@ -404,6 +406,20 @@ async function handlePracticeSubmit(c: { req: { param: (key: string) => string; 
   const result = await getDb().transaction(async (tx) => {
     const [topic] = await tx.select().from(topics).where(eq(topics.slug, slug));
     if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+
+    async function replay() {
+      const [saved] = await tx.select().from(practiceAttempts).where(and(eq(practiceAttempts.id, submission.submissionId!), eq(practiceAttempts.userId, c.get("user").id)));
+      if (!saved) return null;
+      const answers = await tx.select().from(practiceAnswers).where(eq(practiceAnswers.attemptId, saved.id));
+      if (saved.topicId !== topic.id || saved.packageId !== (targetPackageId ?? null) || answers.length !== Object.keys(submission.answers).length || !answers.every((answer) => submission.answers[answer.questionId] === answer.selectedAnswer)) {
+        throw new HTTPException(409, { message: "Jawaban berbeda dari pengumpulan yang sudah tersimpan. Mulai latihan baru." });
+      }
+      return { id: saved.id, packageId: saved.packageId, earnedXP: practiceXP(saved.correctCount) };
+    }
+    if (parsed.data.submissionId) {
+      const saved = await replay();
+      if (saved) return saved;
+    }
 
     let validatedPackageId: string | null = null;
     if (targetPackageId) {
@@ -424,12 +440,18 @@ async function handlePracticeSubmit(c: { req: { param: (key: string) => string; 
     if (rows.length !== ids.length) throw new HTTPException(400, { message: "Soal tidak valid untuk subtes/paket ini. Muat ulang latihan." });
 
     const [attempt] = await tx.insert(practiceAttempts).values({
+      id: parsed.data.submissionId,
       userId: c.get("user").id,
       topicId: topic.id,
       packageId: validatedPackageId,
       totalCount: rows.length,
       correctCount: rows.filter((row) => row.answer === parsed.data.answers[row.id]).length,
-    }).returning({ id: practiceAttempts.id });
+    }).onConflictDoNothing({ target: practiceAttempts.id }).returning({ id: practiceAttempts.id });
+    if (!attempt) {
+      const saved = parsed.data.submissionId ? await replay() : null;
+      if (saved) return saved;
+      throw new HTTPException(409, { message: "ID pengumpulan sudah digunakan. Mulai latihan baru." });
+    }
 
     await tx.insert(practiceAnswers).values(rows.map((row) => ({
       attemptId: attempt.id,
@@ -438,7 +460,7 @@ async function handlePracticeSubmit(c: { req: { param: (key: string) => string; 
       isCorrect: row.answer === parsed.data.answers[row.id] ? 1 : 0,
     })));
 
-    return { id: attempt.id, packageId: validatedPackageId ?? null };
+    return { id: attempt.id, packageId: validatedPackageId ?? null, earnedXP: practiceXP(rows.filter((row) => row.answer === parsed.data.answers[row.id]).length) };
   });
   return c.json(result, 201);
 }
@@ -473,7 +495,7 @@ app.get("/api/learner/results/:id", async (c) => {
     isCorrect: practiceAnswers.isCorrect,
   })
     .from(practiceAnswers).innerJoin(questions, eq(practiceAnswers.questionId, questions.id)).where(eq(practiceAnswers.attemptId, attempt.id)).orderBy(questions.id);
-  return c.json({ attempt: { ...attempt, submittedAt: attempt.submittedAt.toISOString() }, answers } satisfies Result);
+  return c.json({ attempt: { ...attempt, submittedAt: attempt.submittedAt.toISOString(), earnedXP: practiceXP(attempt.correct) }, answers } satisfies Result);
 });
 
 app.get("/api/admin/questions", async (c) => {

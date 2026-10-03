@@ -18,7 +18,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import { sound } from '../utils/audioFeedback';
-import { DEFAULT_USER } from '../data/userData';
 
 export const SettingsView = () => {
   const {
@@ -38,16 +37,12 @@ export const SettingsView = () => {
 
   const handleResetData = () => {
     sound.playSelect();
-    setUser((prev) => ({
-      ...DEFAULT_USER,
-      id: prev.id, email: prev.email, role: prev.role,
-      name: prev.name, codename: prev.codename,
-      targetUniversity: prev.targetUniversity,
-      bio: prev.bio, motto: prev.motto,
-    }));
-    localStorage.removeItem('latveria_user');
+    setTheme('dark');
+    setSoundEnabled(true);
+    setTimerDuration(90);
+    setInstantFeedback(false);
     setShowConfirmReset(false);
-    showToast('DATA TERESET', 'Sistem Latveria telah dikembalikan ke kalibrasi awal.', 'info');
+    showToast('Preferensi direset', 'Tema dan pengaturan lokal kembali ke nilai awal.', 'info');
   };
 
   return (
@@ -185,16 +180,15 @@ export const SettingsView = () => {
         {/* Account & Archival Reset */}
         <section className="settings-group-panel danger-panel">
           <div className="group-header">
-            <span className="group-title font-serif text-crimson">Kalibrasi & Reset Arsip</span>
-            <span className="group-sub font-mono text-crimson">MAINTENANCE PROTOCOL</span>
+            <span className="group-title font-serif">Preferensi lokal</span>
           </div>
 
           <div className="settings-items-list">
             <div className="setting-row">
               <div className="setting-meta">
-                <span className="setting-name font-sans">Reset Rekam Jejak Belajar</span>
+                <span className="setting-name font-sans">Reset preferensi lokal</span>
                 <span className="setting-desc">
-                  Kembalikan nilai XP, streak, dan progres subtes ke kondisi awal kadet terdaftar.
+                  Reset tema, suara, dan pengaturan latihan lokal. EXP dan streak tersimpan di server.
                 </span>
               </div>
               <button
@@ -203,7 +197,7 @@ export const SettingsView = () => {
                 onClick={() => setShowConfirmReset(true)}
               >
                 <RotateCcw size={15} />
-                <span>RESET REKAM JEJAK</span>
+                <span>Reset preferensi</span>
               </button>
             </div>
           </div>
@@ -215,14 +209,10 @@ export const SettingsView = () => {
         <div className="modal-backdrop" onClick={() => setShowConfirmReset(false)}>
           <div className="config-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-stamp-mono font-mono text-crimson">
-                <span className="dot-stamp" style={{ background: '#b44343' }} />
-                <span>IRREVERSIBLE ACTION CONFIRMATION</span>
-              </div>
-              <h2 className="modal-title font-serif text-crimson">Konfirmasi Reset Arsip</h2>
+              <h2 className="modal-title font-serif text-crimson">Reset preferensi lokal?</h2>
             </div>
             <p className="modal-prompt-text font-serif">
-              Apakah Anda yakin ingin mengatur ulang data perkembangan belajar kadet #{user.id}? Tindakan ini akan mengembalikan XP dan statistik ke konfigurasi awal institusi.
+              Tema, suara, dan pengaturan latihan lokal akan kembali ke nilai awal. Progres latihan tetap berasal dari data server.
             </p>
             <div className="modal-actions-footer">
               <button
@@ -237,7 +227,7 @@ export const SettingsView = () => {
                 className="btn-latveria-primary btn-crimson-solid font-mono"
                 onClick={handleResetData}
               >
-                <span>YA, RESET ARSIP</span>
+                <span>Ya, reset preferensi</span>
               </button>
             </div>
           </div>

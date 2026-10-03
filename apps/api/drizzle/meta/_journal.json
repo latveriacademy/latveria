@@ -50,6 +50,13 @@
       "when": 1790939456122,
       "tag": "0006_lush_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790997401505,
+      "tag": "0007_wet_ma_gnuci",
+      "breakpoints": true
     }
   ]
 }

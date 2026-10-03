@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { api } from '../lib/api';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { DEFAULT_USER } from '../data/userData';
+import { practiceXP } from '@latveria/shared';
 import { LEXICON_DATABASE } from '../data/lexiconData';
 import { sound } from '../utils/audioFeedback';
 
@@ -115,13 +116,7 @@ export const AppProvider = ({ children }) => {
   });
 
   // User State
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('latveria_user');
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return DEFAULT_USER; }
-    }
-    return DEFAULT_USER;
-  });
+  const [user, setUser] = useState(DEFAULT_USER);
 
   // Real topics from API (replaces UTBK_SUBJECTS)
   const [topics, setTopics] = useState([]);
@@ -191,26 +186,28 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const refreshSummary = useCallback(async () => {
+    const data = await api('/learner/summary');
+    setSummary(data);
+    setUser((prev) => ({ ...prev,
+      totalXP: data.totalXP, level: data.level, currentXP: data.currentXP, nextLevelXP: data.nextLevelXP,
+      streakDays: data.streakDays, practicedToday: data.practicedToday,
+      questionsCompleted: data.answered,
+      attempts: data.attempts,
+      accuracy: data.answered ? Math.round(data.correct / data.answered * 1000) / 10 : 0,
+      weeklyChartData: data.weeklyChartData,
+      weeklyXP: data.weeklyXP, weeklyAccuracy: data.weeklyAccuracy,
+    }));
+    return data;
+  }, []);
+
   // Synchronize with backend authenticated user + fetch topics/summary/history
   useEffect(() => {
     loadProfile();
     refreshTopics();
 
     // Fetch learner summary
-    fetch('/api/learner/summary')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          setSummary(data);
-          // Update user stats from real data
-          setUser((prev) => ({
-            ...prev,
-            questionsCompleted: data.answered || prev.questionsCompleted,
-            accuracy: data.answered > 0 ? Math.round((data.correct / data.answered) * 100 * 10) / 10 : prev.accuracy,
-          }));
-        }
-      })
-      .catch(() => {});
+    refreshSummary().catch(() => {});
 
     // Fetch learner history
     fetch('/api/learner/history')
@@ -226,18 +223,24 @@ export const AppProvider = ({ children }) => {
               code: short,
               subject: h.topic,
               title: `Selesai ${h.total} Soal ${h.topic}`,
-              xp: h.correct * 15 + 30,
+               xp: h.earnedXP ?? practiceXP(h.correct),
               time: new Date(h.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
               accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : '0%',
             };
           });
-          if (recentActivities.length > 0) {
-            setUser((prev) => ({ ...prev, recentActivities }));
-          }
+          setUser((prev) => ({ ...prev, recentActivities }));
         }
       })
       .catch(() => {});
-  }, [loadProfile, refreshTopics]);
+  }, [loadProfile, refreshTopics, refreshSummary]);
+
+  useEffect(() => {
+    // Perbarui streak saat hari WIB berganti dan latihan diselesaikan di tab lain.
+    const refresh = () => { if (document.visibilityState === 'visible') refreshSummary().catch(() => {}); };
+    const timer = setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [refreshSummary]);
 
   // Synchronize Theme & Body Class
   useEffect(() => {
@@ -246,11 +249,6 @@ export const AppProvider = ({ children }) => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
-  // Synchronize User to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('latveria_user', JSON.stringify(user));
-  }, [user]);
-
   // Show Toast
   const showToast = (title, subtitle = '', type = 'info') => {
     const id = Date.now() + Math.random();
@@ -258,37 +256,6 @@ export const AppProvider = ({ children }) => {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
-  };
-
-  // Add XP Function with Institutional Protocol
-  // ponytail: XP is client-only until issue #8 adds backend XP
-  const addXP = (amount, reason = 'Aktivitas Akademik Selesai') => {
-    sound.playSuccess();
-    setUser((prev) => {
-      let newXP = prev.currentXP + amount;
-      let newLevel = prev.level;
-      let nextLevelXP = prev.nextLevelXP;
-
-      if (newXP >= nextLevelXP) {
-        newLevel += 1;
-        newXP = newXP - nextLevelXP;
-        nextLevelXP = Math.round(nextLevelXP * 1.35);
-        showToast(
-          `PROMOTED TO LEVEL ${newLevel < 10 ? '0' + newLevel : newLevel}`,
-          `Pangkat akademik diperbarui. Status: Otoritas Terverifikasi`,
-          'level-up'
-        );
-      } else {
-        showToast(`+${amount} XP REWARD`, `${reason} • Record tersimpan`, 'xp');
-      }
-
-      return {
-        ...prev,
-        currentXP: newXP,
-        nextLevelXP: nextLevelXP,
-        level: newLevel,
-      };
-    });
   };
 
   // Open Lexicon Dictionary Annotation
@@ -370,6 +337,7 @@ export const AppProvider = ({ children }) => {
       }
 
       const session = {
+        submissionId: crypto.randomUUID(),
         subjectId: subject.id,
         subjectSlug: slug,
         subjectName: subject.name,
@@ -465,7 +433,7 @@ export const AppProvider = ({ children }) => {
           ? `/learner/practice/${activeSession.subjectSlug}/${activeSession.packageId}`
           : `/learner/practice/${activeSession.subjectSlug}`;
         const saved = await api(endpoint, {
-          method: 'POST', body: JSON.stringify({ answers: apiAnswers, packageId: activeSession.packageId || undefined }),
+          method: 'POST', body: JSON.stringify({ submissionId: activeSession.submissionId, answers: apiAnswers, packageId: activeSession.packageId || undefined }),
         });
         attemptId = saved.id;
         setActiveSession((prev) => ({ ...prev, attemptId }));
@@ -497,7 +465,7 @@ export const AppProvider = ({ children }) => {
 
       const accuracy = Math.round((correctCount / activeSession.totalQuestions) * 100);
       const score = accuracy;
-      const earnedXP = correctCount * 15 + 30;
+      const earnedXP = reviewData.attempt.earnedXP;
 
       const results = {
         attemptId,
@@ -520,9 +488,7 @@ export const AppProvider = ({ children }) => {
         completedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       };
 
-      // Update local XP (client-only until backend XP exists)
       sound.playSuccess();
-      addXP(earnedXP, `Sesi ${activeSession.subjectName} Selesai`);
 
       setSessionResults(results);
       setActiveSession((prev) => ({
@@ -534,16 +500,9 @@ export const AppProvider = ({ children }) => {
       }));
 
       // Refresh summary and history in background
-      fetch('/api/learner/summary').then((r) => r.ok ? r.json() : null).then((d) => {
-        if (d) {
-          setSummary(d);
-          setUser((prev) => ({
-            ...prev,
-            questionsCompleted: d.answered || prev.questionsCompleted,
-            accuracy: d.answered > 0 ? Math.round((d.correct / d.answered) * 100 * 10) / 10 : prev.accuracy,
-          }));
-        }
-      }).catch(() => {});
+      refreshSummary().then((data) => {
+        if (data.level > user.level) showToast(`Naik ke level ${data.level}`, `Total ${data.totalXP} EXP dari latihan.`, 'level-up');
+      }).catch(() => showToast('Progres belum dapat dimuat', 'Progres latihan sudah tersimpan. Muat ulang halaman untuk mencoba lagi.', 'error'));
 
       fetch('/api/learner/history').then((r) => r.ok ? r.json() : []).then((data) => {
         if (Array.isArray(data)) {
@@ -555,7 +514,7 @@ export const AppProvider = ({ children }) => {
               code: short,
               subject: h.topic,
               title: `Selesai ${h.total} Soal ${h.topic}`,
-              xp: h.correct * 15 + 30,
+               xp: h.earnedXP ?? practiceXP(h.correct),
               time: new Date(h.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
               accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : '0%',
             };
@@ -572,7 +531,7 @@ export const AppProvider = ({ children }) => {
       submitLock.current = false;
       setSubmitting(false);
     }
-  }, [activeSession]);
+  }, [activeSession, refreshSummary, user.level]);
 
   // Exit Session
   const exitPractice = () => {
@@ -593,7 +552,6 @@ export const AppProvider = ({ children }) => {
         t.id === taskId ? { ...t, completed: true } : t
       )
     }));
-    addXP(40, 'Daily Training Task Completed');
   };
 
   return (
@@ -616,13 +574,13 @@ export const AppProvider = ({ children }) => {
         setTopics,
         refreshTopics,
         summary,
+        refreshSummary,
         history,
         loading,
         submitting,
         submissionError,
         toasts,
         showToast,
-        addXP,
         lexiconState,
         openLexicon,
         closeLexicon,

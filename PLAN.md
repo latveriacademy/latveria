@@ -36,6 +36,8 @@ Alur minimum lokal sudah tersedia untuk data dummy: pilih topik → jawab semua 
 
 ### 2. Penyimpanan perkembangan dan EXP
 
+Implementasi awal tersedia: EXP hanya dari attempt latihan tersimpan (30 + 15 per jawaban benar), level 1 dengan ambang awal 300 EXP dan kenaikan 35%, serta streak kalender WIB. Summary/hasil/riwayat server menjadi sumber progres, termasuk latihan lama. Retry sesi memakai UUID yang sama agar tidak menggandakan attempt/EXP; sesi latihan baru tetap boleh mendapat EXP. Membuka ulang hasil dan reset preferensi tidak mengubah progres.
+
 - Tambahkan identitas peserta, penyimpanan hasil sesi, riwayat per topik, dan tampilan EXP/level setelah alur latihan berjalan.
 - Tentukan besaran EXP, syarat perolehan EXP saat mengulang latihan, dan ambang kenaikan level sebelum implementasi. Berikan hadiah sekali untuk setiap sesi yang memenuhi syarat; memuat ulang halaman atau mengumpulkan ulang jawaban tidak boleh menggandakan hadiah.
 - Tampilkan persentase jawaban benar secara terpisah dari EXP. Jangan menyajikan keduanya sebagai nilai resmi atau prediksi nilai UTBK.

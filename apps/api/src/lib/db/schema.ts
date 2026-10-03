@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, foreignKey, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, foreignKey, index, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
 export const topics = pgTable("topics", {
@@ -54,6 +54,7 @@ export const practiceAttempts = pgTable("practice_attempts", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   check("attempt_valid_score", sql`${table.correctCount} >= 0 and ${table.correctCount} <= ${table.totalCount} and ${table.totalCount} > 0`),
+  index("practice_attempts_user_submitted_idx").on(table.userId, table.submittedAt),
   foreignKey({
     columns: [table.packageId, table.topicId],
     foreignColumns: [questionPackages.id, questionPackages.topicId],
