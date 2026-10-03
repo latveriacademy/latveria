@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   assignQuestionToPackageSchema,
@@ -8,6 +8,7 @@ import {
   createPackageSchema,
   credentialsSchema,
   idSchema,
+  leaderboardQuerySchema,
   moveQuestionPackageSchema,
   profileSchema,
   questionImportSchema,
@@ -33,6 +34,7 @@ import { allowedOrigins } from "./lib/origins";
 import { practiceAnswers, practiceAttempts, questionPackages, questions, topics } from "./lib/db/schema";
 import { user as accounts } from "./lib/db/auth-schema";
 import { learnerSummary, practiceXP } from "@latveria/shared";
+import { ACCURACY_MIN_ANSWERS, getPeriodRange, SUBTEST_TO_SLUG, type Metric, type Period, type Subtest } from "./lib/leaderboard-utils";
 
 export const app = new Hono<{ Variables: { user: User } }>();
 app.get("/api/health", (c) => c.json({ status: "ok" }));
@@ -345,6 +347,275 @@ app.get("/api/learner/summary", async (c) => {
   return c.json(learnerSummary(attempts));
 });
 
+// --- Leaderboard ---
+// Simple in-memory cache: Map of query hash to { data, expiresAt }
+const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
+const CACHE_TTL_MS = 60_000; // 1 minute cache
+
+function getCacheKey(metric: Metric, subtest: Subtest, period: Period, limit: number): string {
+  return `${metric}:${subtest}:${period}:${limit}`;
+}
+
+app.get("/api/leaderboard", async (c) => {
+  const parsed = leaderboardQuerySchema.safeParse({
+    metric: c.req.query("metric"),
+    subtest: c.req.query("subtest"),
+    period: c.req.query("period"),
+    limit: c.req.query("limit"),
+  });
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: `Parameter tidak valid: ${parsed.error.issues[0]?.message}` });
+  }
+
+  const { metric, subtest, period, limit } = parsed.data;
+  const cacheKey = getCacheKey(metric, subtest, period, limit);
+  const cached = leaderboardCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return c.json(cached.data);
+  }
+
+  const periodRange = getPeriodRange(period as Period);
+  const currentUserId = c.get("user").id;
+  const isStreakMetric = metric === 'streak';
+
+  // Get topic slug for subtest filter
+  const topicSlug = SUBTEST_TO_SLUG[subtest as Subtest] || '';
+  const minAnswers = ACCURACY_MIN_ANSWERS[subtest as Subtest] || 50;
+
+  // Query for leaderboard data
+  // For streak, we need to get streak from practice attempts (all time)
+  // For other metrics, we filter by period and subtest
+  const db = getDb();
+
+  // Get all non-demo users
+  const allUsers = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      codename: accounts.codename,
+      isDemo: accounts.isDemo,
+    })
+    .from(accounts)
+    .where(eq(accounts.isDemo, false));
+
+  // Calculate metrics for each user
+  const userMetrics: Map<string, {
+    id: string;
+    name: string;
+    codename: string;
+    metricValue: number;
+    answered: number;
+    correct: number;
+    accuracy: number;
+    streak: number;
+    lastAnswerAt: Date;
+    level: number;
+    totalXP: number;
+  }> = new Map();
+
+  // Initialize all users
+  for (const user of allUsers) {
+    userMetrics.set(user.id, {
+      id: user.id,
+      name: user.codename || user.name,
+      codename: user.codename,
+      metricValue: 0,
+      answered: 0,
+      correct: 0,
+      accuracy: 0,
+      streak: 0,
+      lastAnswerAt: new Date(0),
+      level: 1,
+      totalXP: 0,
+    });
+  }
+
+  if (isStreakMetric) {
+    // Calculate streak for each user (ignores period and subtest)
+    for (const [userId, data] of userMetrics) {
+      const userAttempts = await db
+        .select({ submittedAt: practiceAttempts.submittedAt })
+        .from(practiceAttempts)
+        .where(eq(practiceAttempts.userId, userId))
+        .orderBy(practiceAttempts.submittedAt);
+
+      const days = new Set(
+        userAttempts.map((a) => {
+          const wibDate = new Date(a.submittedAt.getTime() + 7 * 60 * 60 * 1000);
+          return `${wibDate.getUTCFullYear()}-${String(wibDate.getUTCMonth() + 1).padStart(2, '0')}-${String(wibDate.getUTCDate()).padStart(2, '0')}`;
+        })
+      );
+
+      const now = new Date();
+      const wibNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+      const today = `${wibNow.getUTCFullYear()}-${String(wibNow.getUTCMonth() + 1).padStart(2, '0')}-${String(wibNow.getUTCDate()).padStart(2, '0')}`;
+      const practicedToday = days.has(today);
+      let day = practicedToday ? today : new Date(wibNow.getTime() - 86_400_000).toISOString().slice(0, 10);
+      let streakDays = 0;
+
+      while (days.has(day)) {
+        streakDays++;
+        day = new Date(Date.parse(day + 'T00:00:00Z') - 86_400_000).toISOString().slice(0, 10);
+      }
+
+      data.streak = streakDays;
+      data.metricValue = streakDays;
+    }
+  } else {
+    // Build base query conditions
+    const conditions = [];
+    if (period !== 'all') {
+      conditions.push(gte(practiceAnswers.submittedAt, periodRange.start));
+      conditions.push(lte(practiceAnswers.submittedAt, periodRange.end));
+    }
+
+    // Get all first attempts with topic info
+    const answersQuery = db
+      .select({
+        userId: practiceAttempts.userId,
+        questionId: practiceAnswers.questionId,
+        topicSlug: topics.slug,
+        isCorrect: practiceAnswers.isCorrect,
+        submittedAt: practiceAnswers.submittedAt,
+      })
+      .from(practiceAnswers)
+      .innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id))
+      .innerJoin(topics, eq(practiceAttempts.topicId, topics.id))
+      .where(and(
+        eq(practiceAnswers.isFirstAttempt, true),
+        ...(topicSlug ? [eq(topics.slug, topicSlug)] : []),
+        ...conditions
+      ));
+
+    const answers = await answersQuery;
+
+    // Aggregate per user
+    const userStats: Map<string, { answered: Set<string>; correct: Set<string>; lastAnswerAt: Date }> = new Map();
+    for (const ans of answers) {
+      if (!userMetrics.has(ans.userId)) continue; // Skip demo users
+
+      if (!userStats.has(ans.userId)) {
+        userStats.set(ans.userId, { answered: new Set(), correct: new Set(), lastAnswerAt: new Date(0) });
+      }
+      const stats = userStats.get(ans.userId)!;
+      stats.answered.add(ans.questionId);
+      if (ans.isCorrect) stats.correct.add(ans.questionId);
+      if (ans.submittedAt > stats.lastAnswerAt) {
+        stats.lastAnswerAt = ans.submittedAt;
+      }
+    }
+
+    // Calculate XP from answers (for period-based XP)
+    for (const [userId, stats] of userStats) {
+      const data = userMetrics.get(userId)!;
+      data.answered = stats.answered.size;
+      data.correct = stats.correct.size;
+      data.accuracy = data.answered > 0 ? Math.round((data.correct / data.answered) * 10000) / 100 : 0;
+      data.lastAnswerAt = stats.lastAnswerAt;
+
+      // XP calculation: 30 base + 15 per correct
+      data.metricValue = 30 + data.correct * 15;
+
+      // Total XP for level calculation (all time for display, but metric is period-based)
+      const allUserAnswers = await db
+        .select({ isCorrect: practiceAnswers.isCorrect })
+        .from(practiceAnswers)
+        .innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id))
+        .where(and(
+          eq(practiceAttempts.userId, userId),
+          eq(practiceAnswers.isFirstAttempt, true)
+        ));
+      const totalCorrect = allUserAnswers.filter((a) => a.isCorrect).length;
+      data.totalXP = 30 + totalCorrect * 15;
+      data.level = calculateLevel(data.totalXP);
+    }
+  }
+
+  // Sort and rank
+  const sortedUsers = Array.from(userMetrics.values()).filter((u) => {
+    if (isStreakMetric) return u.metricValue > 0;
+    if (metric === 'accuracy') return u.answered >= minAnswers && u.metricValue > 0;
+    return u.metricValue > 0;
+  });
+
+  // Sort by metric value, then by last answer timestamp (earlier = higher), then by userId
+  sortedUsers.sort((a, b) => {
+    if (a.metricValue !== b.metricValue) return b.metricValue - a.metricValue;
+    if (a.lastAnswerAt.getTime() !== b.lastAnswerAt.getTime()) return a.lastAnswerAt.getTime() - b.lastAnswerAt.getTime();
+    return a.id.localeCompare(b.id);
+  });
+
+  // Build entries
+  const entries = sortedUsers.slice(0, limit).map((u, idx) => {
+    const rank = idx + 1;
+    const isCurrentUser = u.id === currentUserId;
+    return {
+      rank,
+      id: `LTV-${u.id.slice(0, 4).toUpperCase()}`,
+      name: u.name,
+      metricValue: u.metricValue,
+      level: u.level,
+      totalXP: u.totalXP,
+      answered: u.answered,
+      correct: u.correct,
+      accuracy: u.accuracy,
+      streak: u.streak,
+      isCurrentUser,
+    };
+  });
+
+  // Find current user's position (including outside top N)
+  let me = null;
+  const userRankIdx = sortedUsers.findIndex((u) => u.id === currentUserId);
+  const userData = userMetrics.get(currentUserId);
+
+  if (userData) {
+    const needsMore = metric === 'accuracy' && userData.answered < minAnswers
+      ? minAnswers - userData.answered
+      : null;
+
+    me = {
+      rank: userRankIdx >= 0 ? userRankIdx + 1 : null,
+      metricValue: userData.metricValue,
+      answered: userData.answered,
+      correct: userData.correct,
+      accuracy: userData.accuracy,
+      streak: userData.streak,
+      needsMore,
+    };
+  }
+
+  const response = {
+    entries,
+    me,
+    meta: {
+      metric,
+      subtest,
+      period,
+      periodStart: periodRange.startWIB,
+      periodEnd: periodRange.endWIB,
+      generatedAt: new Date().toISOString(),
+    },
+  };
+
+  // Cache the response
+  leaderboardCache.set(cacheKey, { data: response, expiresAt: Date.now() + CACHE_TTL_MS });
+
+  return c.json(response);
+});
+
+function calculateLevel(totalXP: number): number {
+  let level = 1;
+  let nextLevelXP = 300;
+  let currentXP = totalXP;
+  while (currentXP >= nextLevelXP) {
+    currentXP -= nextLevelXP;
+    level++;
+    nextLevelXP = Math.round(nextLevelXP * 1.35);
+  }
+  return level;
+}
+
 app.get("/api/learner/history", async (c) => {
   const rows = await getDb().select({
     id: practiceAttempts.id,
@@ -458,6 +729,8 @@ async function handlePracticeSubmit(c: { req: { param: (key: string) => string; 
       questionId: row.id,
       selectedAnswer: parsed.data.answers[row.id],
       isCorrect: row.answer === parsed.data.answers[row.id] ? 1 : 0,
+      isFirstAttempt: true,
+      submittedAt: new Date(),
     })));
 
     return { id: attempt.id, packageId: validatedPackageId ?? null, earnedXP: practiceXP(rows.filter((row) => row.answer === parsed.data.answers[row.id]).length) };

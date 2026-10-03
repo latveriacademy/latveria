@@ -55,6 +55,7 @@ export const practiceAttempts = pgTable("practice_attempts", {
 }, (table) => [
   check("attempt_valid_score", sql`${table.correctCount} >= 0 and ${table.correctCount} <= ${table.totalCount} and ${table.totalCount} > 0`),
   index("practice_attempts_user_submitted_idx").on(table.userId, table.submittedAt),
+  index("practice_attempts_submitted_idx").on(table.submittedAt),
   foreignKey({
     columns: [table.packageId, table.topicId],
     foreignColumns: [questionPackages.id, questionPackages.topicId],
@@ -68,6 +69,8 @@ export const practiceAnswers = pgTable("practice_answers", {
   questionId: uuid("question_id").notNull().references(() => questions.id),
   selectedAnswer: integer("selected_answer").notNull(),
   isCorrect: integer("is_correct").notNull(),
+  isFirstAttempt: boolean("is_first_attempt").default(true).notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   unique("answer_attempt_question_unique").on(table.attemptId, table.questionId),
   check("answer_valid_selected", sql`${table.selectedAnswer} between 0 and 3`),

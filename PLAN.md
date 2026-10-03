@@ -52,9 +52,15 @@ Implementasi awal tersedia: EXP hanya dari attempt latihan tersimpan (30 + 15 pe
 
 ### 4. Motivasi sosial dan personalisasi
 
-- Tambahkan papan peringkat harian, mingguan, bulanan, dan sepanjang waktu setelah syarat nilai yang dapat dihitung serta aturan pengulangan latihan ditetapkan. Tentukan dahulu dasar pemeringkatan, zona waktu, batas periode, dan penanganan nilai seri.
-- Tambahkan pengaturan nama pengguna, nama tampilan, foto profil, serta tampilan terang/gelap.
-- Papan peringkat bersama memerlukan perhitungan hadiah yang dikendalikan sistem, bukan perangkat peserta, serta pembatasan akses ke data peserta.
+- [x] Papan peringkat lengkap (harian, mingguan, bulanan, semua) dengan metrik XP, soal dijawab, soal benar, akurasi, dan streak.
+- [x] Filter subtes: semua, PU, PPU, PBM, PK, BI, EN, PM.
+- [x] Perhitungan metrik di server dari log jawaban per soal; hanya percobaan pertama yang dihitung.
+- [x] Akurasi membutuhkan minimal 50 soal (semua) atau 20 soal (subtes individual) untuk tampil.
+- [x] Zona waktu WIB untuk periode; tiebreaker berdasarkan timestamp jawaban terakhir.
+- [x] Pengecualian akun demo dari leaderboard publik.
+- [x] Frontend dengan filter tab metrik, dropdown subtes/periode, podium top 3, tampilan tabel, dan posisi user sendiri.
+- [ ] Pengaturan nama pengguna, nama tampilan, foto profil, serta tampilan terang/gelap.
+- [ ] Papan peringkat bersama memerlukan perhitungan hadiah yang dikendalikan sistem, bukan perangkat peserta, serta pembatasan akses ke peserta.
 - Kriteria selesai: peringkat menggunakan ukuran dan periode yang terdokumentasi secara konsisten; peserta tidak dapat mengubah hasil atau hadiah milik peserta lain.
 
 ### Ide lanjutan dari papan

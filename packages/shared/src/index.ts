@@ -3,6 +3,57 @@ export { utbkSubtests } from "./utbk-subtests";
 export { practiceXP, levelProgress, practiceDay, practiceStreak, learnerSummary, type LearnerSummary } from "./progression";
 export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
 
+// Leaderboard query parameters schema
+export const leaderboardQuerySchema = z.object({
+  metric: z.enum(['xp', 'answered', 'correct', 'accuracy', 'streak']).default('xp'),
+  subtest: z.enum(['all', 'PU', 'PPU', 'PBM', 'PK', 'BI', 'EN', 'PM']).default('all'),
+  period: z.enum(['daily', 'weekly', 'monthly', 'all']).default('weekly'),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type LeaderboardQuery = z.infer<typeof leaderboardQuerySchema>;
+
+// Leaderboard entry
+export const leaderboardEntrySchema = z.object({
+  rank: z.number(),
+  id: z.string(),
+  name: z.string(),
+  metricValue: z.number(),
+  level: z.number(),
+  totalXP: z.number(),
+  answered: z.number().optional(),
+  correct: z.number().optional(),
+  accuracy: z.number().optional(),
+  questions: z.number().optional(),
+  streak: z.number().optional(),
+  delta: z.string().optional(),
+  isCurrentUser: z.boolean().optional(),
+  status: z.string().optional(),
+});
+export type LeaderboardEntry = z.infer<typeof leaderboardEntrySchema>;
+
+// Leaderboard response
+export const leaderboardResponseSchema = z.object({
+  entries: z.array(leaderboardEntrySchema),
+  me: z.object({
+    rank: z.number().nullable(),
+    metricValue: z.number().nullable(),
+    answered: z.number().nullable(),
+    correct: z.number().nullable(),
+    accuracy: z.number().nullable(),
+    streak: z.number().nullable(),
+    needsMore: z.number().nullable().optional(), // questions needed to appear on leaderboard
+  }),
+  meta: z.object({
+    metric: z.string(),
+    subtest: z.string(),
+    period: z.string(),
+    periodStart: z.string(),
+    periodEnd: z.string(),
+    generatedAt: z.string(),
+  }),
+});
+export type LeaderboardResponse = z.infer<typeof leaderboardResponseSchema>;
+
 export const credentialsSchema = z.object({ email: z.email(), password: z.string().min(8).max(128) });
 export const signupSchema = credentialsSchema.extend({ name: z.string().trim().min(1).max(100) });
 export const profileSchema = z.object({
