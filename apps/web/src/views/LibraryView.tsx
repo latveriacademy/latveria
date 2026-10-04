@@ -8,7 +8,7 @@ import { VocabularyCollection } from "../components/vocabulary-collection";
 
 export function LibraryView() {
   return (
-    <div className={styles.container}>
+    <div className={`latveria-view-container motion-page-enter ${styles.container}`}>
       <PageHeading
         title="Library"
         description="Materi pendamping dan kosakata LBE yang kamu simpan."

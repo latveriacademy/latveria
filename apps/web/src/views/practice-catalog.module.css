@@ -32,10 +32,6 @@
 .filterToggle {
   display: none;
 }
-:global(.learner-shell) :global(.practice-catalog-view) > :global(.app-page-heading) h1 {
-  font: 600 32px/1.2 var(--font-serif);
-  letter-spacing: -0.025em;
-}
 .filters {
   padding: 20px 16px;
   border: 1px solid var(--border-subtle);
