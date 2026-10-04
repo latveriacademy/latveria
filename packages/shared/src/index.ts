@@ -358,6 +358,7 @@ export type Bank = {
     packageId?: string | null;
     packageName?: string | null;
     source: string;
+    annotationsCount?: number;
   }[];
   total: number;
   page: number;

@@ -152,6 +152,14 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                       <span>{row.category}</span>
                     </>
                   )}
+                  {Boolean(row.annotationsCount) && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono text-xs font-semibold text-[var(--accent-gold)]">
+                        {row.annotationsCount} kosakata
+                      </span>
+                    </>
+                  )}
                 </div>
               </TableCell>
               <TableCell>

@@ -78,6 +78,7 @@ export async function getAdminQuestions(
         packageName: questionPackages.name,
         topic: topics.name,
         source: questions.source,
+        annotations: questions.annotations,
       })
       .from(questions)
       .innerJoin(topics, eq(questions.topicId, topics.id))
@@ -89,7 +90,7 @@ export async function getAdminQuestions(
   ]);
   const pageCount = Math.max(1, Math.ceil(total.value / 15));
   const page = Math.min(pageParam, pageCount);
-  const rows =
+  const rows = (
     page === pageParam
       ? initialRows
       : await db
@@ -101,6 +102,7 @@ export async function getAdminQuestions(
             packageName: questionPackages.name,
             topic: topics.name,
             source: questions.source,
+            annotations: questions.annotations,
           })
           .from(questions)
           .innerJoin(topics, eq(questions.topicId, topics.id))
@@ -108,7 +110,11 @@ export async function getAdminQuestions(
           .where(where)
           .orderBy(topics.name, questions.id)
           .limit(15)
-          .offset((page - 1) * 15);
+          .offset((page - 1) * 15)
+  ).map(({ annotations, ...row }) => ({
+    ...row,
+    annotationsCount: annotations?.length || 0,
+  }));
 
   return {
     rows,
