@@ -7,7 +7,13 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: {
     allowedHosts: ["latveria.dorrit.dev"],
-    proxy: { "/api": "http://127.0.0.1:3001" },
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:3001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     rolldownOptions: {
