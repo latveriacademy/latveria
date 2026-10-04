@@ -12,6 +12,9 @@ import { tryoutHandler } from "./handlers/tryout.handler";
 import { questionHandler } from "./handlers/question.handler";
 import { systemHandler } from "./handlers/system.handler";
 import { vocabularyHandler } from "./handlers/vocabulary.handler";
+import { usersHandler } from "./handlers/users.handler";
+import { analyticsHandler } from "./handlers/analytics.handler";
+import { auditHandler } from "./handlers/audit.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -20,7 +23,20 @@ export const app = new Hono<AppEnv>();
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
-app.on(["POST", "GET"], "/api/auth/*", async (c) => {
+// CORS headers for Better Auth
+function setCorsHeaders(c: { header: (name: string, value: string) => void }, origin: string) {
+  c.header("Access-Control-Allow-Origin", origin);
+  c.header("Access-Control-Allow-Credentials", "true");
+  c.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
+  const origin = c.req.header("origin") ?? "";
+  if (c.req.method === "OPTIONS") {
+    setCorsHeaders(c, origin);
+    return c.body(null, 204);
+  }
   const schema =
     c.req.path === "/api/auth/sign-up/email"
       ? signupSchema
@@ -34,9 +50,23 @@ app.on(["POST", "GET"], "/api/auth/*", async (c) => {
         .json()
         .catch(() => null),
     );
-    if (!parsed.success) throw new HTTPException(400, { message: "Data akun tidak valid." });
+    if (!parsed.success) {
+      // Return 400 with CORS headers instead of throwing
+      setCorsHeaders(c, origin);
+      return c.json({ error: "Data akun tidak valid." }, 400);
+    }
   }
-  return getAuth().handler(c.req.raw);
+  const response = await getAuth().handler(c.req.raw);
+  // Extract body, status, and set-cookie headers from Better Auth response
+  const body = await response.text();
+  const status = response.status;
+  const setCookieHeaders = response.headers.getSetCookie();
+  // Return with CORS headers and preserve Set-Cookie
+  setCorsHeaders(c, origin);
+  for (const cookie of setCookieHeaders) {
+    c.header("Set-Cookie", cookie);
+  }
+  return c.body(body, status);
 });
 
 // Authentication and Origin verification middleware
@@ -81,6 +111,9 @@ app.route("/", tryoutHandler);
 app.route("/", questionHandler);
 app.route("/", systemHandler);
 app.route("/", vocabularyHandler);
+app.route("/", usersHandler);
+app.route("/", analyticsHandler);
+app.route("/", auditHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)
