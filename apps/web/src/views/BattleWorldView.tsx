@@ -8,6 +8,7 @@ import { ConfirmDialog } from "../components/confirm-dialog";
 import { SubmissionSummary } from "../components/submission-summary";
 import { BattleWorldCatalog, type TryoutPackage } from "../components/battle-world-catalog";
 import { TryoutWorkspace, type TryoutSessionState } from "../components/tryout-workspace";
+import { TryoutReview } from "../components/tryout-review";
 
 export function BattleWorldView() {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export function BattleWorldView() {
   const [catalogError, setCatalogError] = useState("");
   const [actionError, setActionError] = useState("");
   const [result, setResult] = useState<TryoutSessionState["score"]>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [timeSpentByQuestion, setTimeSpentByQuestion] = useState<Record<string, number>>({});
   const questionEnteredAt = useRef(Date.now());
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -358,6 +360,8 @@ export function BattleWorldView() {
 
     // SCENARIO B: COMPLETED STATE
     if (session.state === "completed") {
+      if (reviewing)
+        return <TryoutReview data={activeSessionData} onBack={() => setReviewing(false)} />;
       return (
         <div
           className="latveria-view-container motion-fade-in"
@@ -386,6 +390,9 @@ export function BattleWorldView() {
                 : "Jawabanmu sudah tersimpan."}
             </p>
 
+            {activeSessionData.reviewQuestions?.length ? (
+              <Button onClick={() => setReviewing(true)}>Tinjau soal</Button>
+            ) : null}
             <Button
               onClick={() => {
                 localStorage.removeItem("latveria_tryout_session_id");
@@ -406,7 +413,7 @@ export function BattleWorldView() {
     const answeredCount = Object.keys(answers).length;
 
     return (
-      <div className="latveria-view-container motion-page-enter">
+      <div className="latveria-view-container question-view-active mode-practice motion-page-enter">
         <TryoutWorkspace
           data={activeSessionData}
           currentIndex={currentQIndex}

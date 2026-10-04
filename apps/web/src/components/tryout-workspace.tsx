@@ -1,6 +1,10 @@
-import { ChevronLeft, ChevronRight, Clock, FileCheck, Flag } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Clock, FileCheck, Flag, Layers } from "lucide-react";
 import { Button } from "./ui/button";
-import { MathText } from "./math-text";
+import { PracticeQuestion } from "./practice-question";
+import { PracticeNavigator } from "./practice-navigator";
+import { ProgressBar } from "./ui/dashboard";
+import type { LexiconAnnotation } from "@latveria/shared";
 
 export interface TryoutSessionState {
   session: {
@@ -20,6 +24,16 @@ export interface TryoutSessionState {
   currentSubtest: { id: string; name: string; slug: string };
   totalSubtests: number;
   questions: { id: string; prompt: string; options: string[] }[];
+  reviewQuestions?: {
+    id: string;
+    prompt: string;
+    options: string[];
+    correctAnswer: number;
+    explanation: string;
+    annotations: LexiconAnnotation[];
+    topic: string;
+    slug: string;
+  }[];
   score?: {
     score: number;
     correctCount: number;
@@ -61,10 +75,19 @@ export function TryoutWorkspace({
   onJump,
 }: Props) {
   const { session, questions, currentSubtest, totalSubtests } = data;
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const question = questions[currentIndex] || questions[0];
+  const practiceQuestions = questions.map((item) => ({
+    id: item.id,
+    question: item.prompt,
+    options: item.options.map((text, index) => ({ key: String.fromCharCode(65 + index), text })),
+  }));
+  const practiceAnswers = questions.map((item) =>
+    answers[item.id] === undefined ? undefined : String.fromCharCode(65 + Number(answers[item.id])),
+  );
   return (
     <>
-      <header className="question-header-bar mb-6">
+      <header className="question-header-bar">
         <div className="header-subtest-info">
           <Button variant="ghost" className="btn-exit-minimal" onClick={onExit}>
             <ChevronLeft size={16} />
@@ -84,10 +107,11 @@ export function TryoutWorkspace({
             <span className="time-digits">{time}</span>
           </div>
         </div>
-        <div className="header-tools-group">
+        <div className="header-tools-group flex-wrap">
           <Button
             variant="ghost"
-            className={`btn-flag-toggle font-mono ${question && flags[question.id] ? "is-flagged" : ""}`}
+            className={`tool-action-btn ${question && flags[question.id] ? "flagged" : ""}`}
+            aria-pressed={Boolean(question && flags[question.id])}
             disabled={pending}
             onClick={() => question && onFlag(question.id)}
           >
@@ -98,47 +122,44 @@ export function TryoutWorkspace({
             <FileCheck size={15} />
             Selesaikan Subtes
           </Button>
+          <Button
+            variant="ghost"
+            className="btn-mobile-nav-toggle"
+            onClick={() => setMobileNavOpen(true)}
+          >
+            <Layers size={15} />
+            Navigasi
+          </Button>
         </div>
       </header>
-      <div className="exam-stage-grid">
-        <main className="question-content-pane">
-          <div className="question-card">
-            <div className="question-meta-strip font-mono">
-              <span className="q-badge">
-                SOAL {currentIndex + 1} DARI {questions.length}
-              </span>
-            </div>
-            {question && (
-              <>
-                <div className="question-prompt-text font-serif">
-                  <MathText>{question.prompt}</MathText>
-                </div>
-                <div
-                  className="options-stack font-sans"
-                  role="radiogroup"
-                  aria-label="Pilihan jawaban tryout"
-                >
-                  {question.options.map((text, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      role="radio"
-                      aria-checked={answers[question.id] === String(index)}
-                      disabled={pending}
-                      className={`option-row ${answers[question.id] === String(index) ? "selected" : ""}`}
-                      onClick={() => onAnswer(question.id, index)}
-                    >
-                      <span className="opt-key font-mono">{String.fromCharCode(65 + index)}</span>
-                      <span className="opt-text">
-                        <MathText>{text}</MathText>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <footer className="question-footer-nav mt-5">
+      <div className="quiz-progress-strip">
+        <div className="progress-info-left font-mono">
+          <span className="prog-step text-gold">Soal {currentIndex + 1}</span>
+          <span className="prog-total text-muted"> / {questions.length}</span>
+        </div>
+        <ProgressBar
+          value={currentIndex + 1}
+          max={questions.length}
+          label="Posisi soal"
+          className="progress-bar-track"
+          fillClassName="progress-bar-fill"
+        />
+      </div>
+      <div className="quiz-split-workspace">
+        <main className="quiz-question-pane">
+          {question && (
+            <PracticeQuestion
+              key={question.id}
+              question={practiceQuestions[currentIndex] || practiceQuestions[0]}
+              answer={practiceAnswers[currentIndex]}
+              evaluated={false}
+              disabled={pending}
+              englishLiteracy={false}
+              onAnswer={(key: string) => onAnswer(question.id, key.charCodeAt(0) - 65)}
+              onOpenLexicon={() => {}}
+            />
+          )}
+          <footer className="question-footer-nav">
             <Button
               variant="outline"
               disabled={currentIndex === 0 || pending}
@@ -160,32 +181,23 @@ export function TryoutWorkspace({
             )}
           </footer>
         </main>
-        <aside className="quiz-navigator-pane" aria-label="Navigasi soal tryout">
-          <div className="navigator-card">
-            <div className="navigator-head">
-              <span className="dot-stamp" />
-              <span className="nav-title font-mono">Daftar Nomor</span>
-            </div>
-            <div className="navigator-grid-container">
-              <div className="navigator-grid">
-                {questions.map((item, index) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={pending}
-                    aria-label={`Soal ${index + 1}`}
-                    aria-current={index === currentIndex ? "step" : undefined}
-                    className={`nav-number-tile font-mono ${index === currentIndex ? "is-active" : ""} ${answers[item.id] ? "is-answered" : "is-unanswered"} ${flags[item.id] ? "is-flagged" : ""}`}
-                    onClick={() => onJump(index)}
-                  >
-                    <span className="tile-num-text">{String(index + 1).padStart(2, "0")}</span>
-                    {flags[item.id] && <span className="tile-flag-pip" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
+        <PracticeNavigator
+          session={{
+            questions: practiceQuestions,
+            answers: practiceAnswers,
+            flagged: questions.map((item) => Boolean(flags[item.id])),
+            currentIndex,
+            isEvaluated: false,
+          }}
+          onJump={(index: number) => {
+            if (!pending) {
+              onJump(index);
+              setMobileNavOpen(false);
+            }
+          }}
+          mobileOpen={mobileNavOpen}
+          onMobileOpenChange={setMobileNavOpen}
+        />
       </div>
     </>
   );

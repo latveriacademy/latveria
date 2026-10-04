@@ -10,6 +10,7 @@ import {
   tryoutSessions,
 } from "../lib/db/schema";
 import { catalog } from "./topic.service";
+import { getCompletedTryoutQuestions } from "./tryout-review.service";
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);
@@ -232,6 +233,9 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     totalSubtests: subtests.length,
     questions: qList,
     score,
+    ...(state === "completed"
+      ? { reviewQuestions: await getCompletedTryoutQuestions(session.questionSets) }
+      : {}),
   };
 }
 
