@@ -11,6 +11,7 @@ it("reserves Library for learning material and directs question work elsewhere",
   );
 
   expect(html).toContain("Library");
+  expect(html).toContain("Kosakata LBE");
   expect(html).toContain("Materi belum tersedia");
   expect(html).toContain("Buka Drilling");
   expect(html).toContain("Buka Battle World");

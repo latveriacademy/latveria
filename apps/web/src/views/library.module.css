@@ -6,6 +6,16 @@
   margin: 0 auto;
   padding-bottom: 60px;
 }
+.container :global([role="tablist"]) {
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  max-width: 100%;
+}
+.container :global([role="tab"]) {
+  padding: 8px 14px;
+  min-height: 40px;
+}
 .empty {
   align-items: flex-start;
   gap: 20px;
