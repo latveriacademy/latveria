@@ -135,3 +135,28 @@ export const LEXICON_DATABASE = {
     synonyms: ["soundness", "wholeness", "probity", "rectitude"],
   },
 };
+
+export function lookupLexicon(term) {
+  if (!term || typeof term !== "string") return null;
+  const key = term.toLowerCase().replace(/[^a-z]/g, "");
+  return LEXICON_DATABASE[key] || null;
+}
+
+export function enrichAnnotation(annotation) {
+  if (!annotation) return annotation;
+  const preset = lookupLexicon(annotation.term);
+  if (!preset) return annotation;
+  return {
+    ...annotation,
+    phonetic: annotation.phonetic || preset.phonetic || "",
+    partOfSpeech: annotation.partOfSpeech || preset.partOfSpeech || "",
+    definition: annotation.definition || preset.indonesianDefinition || "",
+    context: annotation.context || preset.academicContext || "",
+    example: annotation.example || preset.example || "",
+    etymology: annotation.etymology || preset.etymology || "",
+    synonyms:
+      annotation.synonyms && annotation.synonyms.length > 0
+        ? annotation.synonyms
+        : preset.synonyms || [],
+  };
+}

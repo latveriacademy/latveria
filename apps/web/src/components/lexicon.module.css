@@ -1,0 +1,167 @@
+.word {
+  display: inline;
+  position: relative;
+  padding: 0 2px 1px;
+  margin: 0;
+  border: 0;
+  border-bottom: 2px dotted var(--accent-gold);
+  text-decoration: underline dotted var(--accent-gold);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--accent-gold);
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+  text-align: inherit;
+  transition: all 0.16s ease;
+}
+.word:hover,
+.word:focus-visible {
+  background: var(--accent-gold);
+  color: #0d1e13;
+  text-decoration: none;
+  border-bottom-color: transparent;
+  outline: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+}
+.overlay[data-state="open"] {
+  animation: lexiconFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.overlay[data-state="closed"] {
+  animation: lexiconFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  height: 100dvh;
+  z-index: 121;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-bright);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
+  outline: none;
+}
+.drawer[data-state="open"] {
+  animation: lexiconSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.drawer[data-state="closed"] {
+  animation: lexiconSlideOut 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.scrollBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding-right: 4px;
+}
+
+@keyframes lexiconSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes lexiconSlideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes lexiconFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lexiconFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer[data-state="open"],
+  .drawer[data-state="closed"],
+  .overlay[data-state="open"],
+  .overlay[data-state="closed"] {
+    animation: none;
+  }
+}
+
+.content {
+  display: grid;
+  gap: 20px;
+  color: var(--ink);
+}
+.content h3 {
+  margin: 0 0 8px;
+  font: 600 14px var(--font-sans);
+}
+.content p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.context {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.editor {
+  display: grid;
+  gap: 16px;
+}
+.entry {
+  border: 1px solid var(--edge);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: 12px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

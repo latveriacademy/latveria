@@ -1,96 +1,142 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Bookmark, Check, X } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { Bookmark } from "lucide-react";
-import { sound } from "../utils/audioFeedback";
-import { AppDialog } from "./app-dialog";
+import { api } from "../lib/api";
+import { LexiconContent } from "./lexicon-content";
+import styles from "./lexicon.module.css";
 
-export const LexiconDrawer = () => {
-  const { lexiconState, closeLexicon, showToast } = useApp();
-  const { isOpen, wordData } = lexiconState;
+export function LexiconDrawer() {
+  const { lexiconState, closeLexicon } = useApp();
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
 
-  if (!isOpen || !wordData) return null;
+  const lastRef = useRef({ annotation: null, questionId: null });
+  if (lexiconState.wordData) {
+    lastRef.current = {
+      annotation: lexiconState.wordData,
+      questionId: lexiconState.questionId,
+    };
+  }
 
-  const handleSaveToVocab = () => {
-    sound.playSelect();
-    showToast(
-      `KOSAKATA DIARSIPKAN: "${wordData.word.toUpperCase()}"`,
-      "Tersimpan dalam Arsip Glosarium Pribadi Latveria",
-      "info",
-    );
+  const activeAnnotation = lexiconState.wordData || lastRef.current.annotation;
+  const activeQuestionId = lexiconState.questionId || lastRef.current.questionId;
+
+  useEffect(() => {
+    if (!lexiconState.isOpen || !activeAnnotation) return;
+    const controller = new AbortController();
+    setSaved(false);
+    setLoading(true);
+    setError("");
+    api("/learner/vocabulary", { signal: controller.signal })
+      .then((entries) => {
+        if (!controller.signal.aborted) {
+          setSaved(
+            entries.some(
+              (entry) =>
+                entry.questionId === activeQuestionId && entry.annotationId === activeAnnotation.id,
+            ),
+          );
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError("Status kosakata belum dapat dimuat. Kamu tetap bisa menyimpannya.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [lexiconState.isOpen, activeAnnotation?.id, activeQuestionId]);
+
+  if (!activeAnnotation) return null;
+
+  const handleSave = async () => {
+    if (!activeQuestionId || !activeAnnotation || saved || pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await api("/learner/vocabulary", {
+        method: "POST",
+        body: JSON.stringify({
+          questionId: activeQuestionId,
+          annotationId: activeAnnotation.id,
+        }),
+      });
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kosakata gagal disimpan. Coba lagi.");
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
-    <AppDialog
-      open={isOpen}
-      onOpenChange={(next) => {
-        if (!next) closeLexicon();
+    <DialogPrimitive.Root
+      open={Boolean(lexiconState.isOpen)}
+      onOpenChange={(open) => {
+        if (!open) closeLexicon();
       }}
-      title={wordData.word}
-      description={`${wordData.phonetic ? `${wordData.phonetic} · ` : ""}${wordData.partOfSpeech}`}
-      className="lexicon-drawer-panel"
-      style={{ left: "auto", right: 0, top: 0, transform: "none", maxHeight: "100dvh" }}
     >
-      {/* Indonesian Definition Card */}
-      <div className="lexicon-section definition-box">
-        <div className="section-label-mono">INDONESIAN DEFINITION / DEFINISI</div>
-        <p className="lexicon-def-text font-serif">{wordData.indonesianDefinition}</p>
-      </div>
-
-      {/* Academic Context Sentence */}
-      {wordData.academicContext && (
-        <div className="lexicon-section">
-          <div className="section-label-mono">PASSAGE CONTEXT / KONTEKS KALIMAT</div>
-          <div className="lexicon-quote-card">
-            <span className="quote-mark">“</span>
-            <p className="quote-body">{wordData.academicContext}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Exemplar Usage */}
-      {wordData.example && (
-        <div className="lexicon-section">
-          <div className="section-label-mono">EXEMPLAR USAGE / CONTOH PENGGUNAAN</div>
-          <div className="lexicon-example-card">
-            <p className="example-text">{wordData.example}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Etymology & Synonyms */}
-      {(wordData.etymology || wordData.synonyms) && (
-        <div className="lexicon-meta-grid">
-          {wordData.etymology && (
-            <div className="meta-col">
-              <span className="meta-head-mono">ETYMOLOGY</span>
-              <span className="meta-content font-serif">{wordData.etymology}</span>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className={styles.overlay} />
+        <DialogPrimitive.Content className={styles.drawer} aria-describedby="lexicon-drawer-desc">
+          {/* Header bar */}
+          <div className="lexicon-header">
+            <div className="lexicon-stamp font-mono">
+              <span className="lexicon-dot" />
+              <span>GLOSARIUM AKADEMIK LATVERIA</span>
             </div>
-          )}
-          {wordData.synonyms && (
-            <div className="meta-col">
-              <span className="meta-head-mono">ACADEMIC SYNONYMS</span>
-              <div className="synonym-chips">
-                {wordData.synonyms.map((syn, idx) => (
-                  <span key={idx} className="synonym-chip font-mono">
-                    {syn}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            <DialogPrimitive.Close asChild>
+              <button type="button" className="lexicon-close-btn" aria-label="Tutup glosarium">
+                <X size={18} />
+              </button>
+            </DialogPrimitive.Close>
+          </div>
 
-      {/* Action Bar */}
-      <div className="lexicon-actions">
-        <button type="button" className="btn-archive-vocab" onClick={handleSaveToVocab}>
-          <Bookmark size={15} />
-          <span>SIMPAN KE ARSIP KOSAKATA</span>
-        </button>
-        <button type="button" className="btn-dismiss-vocab" onClick={closeLexicon}>
-          <span>KEMBALI KE SOAL</span>
-        </button>
-      </div>
-    </AppDialog>
+          <div id="lexicon-drawer-desc" className="sr-only">
+            Definisi akademik dan konteks kalimat untuk {activeAnnotation.term}
+          </div>
+
+          {/* Complete rich content */}
+          <div className={styles.scrollBody}>
+            <LexiconContent annotation={activeAnnotation} />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-sm text-[var(--crimson)] mt-3">
+              {error}
+            </p>
+          )}
+
+          {/* Action Footer */}
+          <div className="lexicon-actions">
+            <button
+              type="button"
+              className="btn-archive-vocab"
+              disabled={saved || loading || pending}
+              onClick={handleSave}
+            >
+              {saved ? <Check size={15} /> : <Bookmark size={15} />}
+              <span>
+                {saved
+                  ? "TERSIMPAN DI LIBRARY"
+                  : loading
+                    ? "MEMERIKSA STATUS…"
+                    : pending
+                      ? "MENYIMPAN…"
+                      : "SIMPAN KE ARSIP KOSAKATA"}
+              </span>
+            </button>
+            <button type="button" className="btn-dismiss-vocab" onClick={closeLexicon}>
+              <span>KEMBALI KE SOAL</span>
+            </button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
-};
+}
