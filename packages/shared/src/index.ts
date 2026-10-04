@@ -1,8 +1,15 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
-import { lexiconAnnotationSchema, validLexiconRanges, type LexiconAnnotation } from "./lexicon";
+import {
+  lexiconAnnotationInputSchema,
+  resolveLexiconAnnotations,
+  validLexiconRanges,
+  type LexiconAnnotation,
+} from "./lexicon";
 export {
+  lexiconAnnotationInputSchema,
   lexiconAnnotationSchema,
+  resolveLexiconAnnotations,
   validLexiconRanges,
   mathSourcePattern,
   saveVocabularySchema,
@@ -223,16 +230,18 @@ const questionFields = z.object({
   category: z.string().trim().max(120).optional(),
   itemWeight: z.number().int().min(10).max(300).optional(),
   calculatorAllowed: z.boolean().optional(),
-  annotations: z.array(lexiconAnnotationSchema).max(20).default([]),
+  annotations: z.array(lexiconAnnotationInputSchema).max(20).default([]),
 });
-export const questionSchema = questionFields.refine(
-  (question) => validLexiconRanges(question.prompt, question.annotations),
-  {
+export const questionSchema = questionFields
+  .transform((q) => ({
+    ...q,
+    annotations: resolveLexiconAnnotations(q.prompt, q.annotations),
+  }))
+  .refine((question) => validLexiconRanges(question.prompt, question.annotations), {
     message:
       "Anotasi harus sesuai dengan teks pertanyaan, tidak tumpang tindih, dan berada di luar rumus/diagram.",
     path: ["annotations"],
-  },
-);
+  });
 export const questionImportSchema = z
   .object({
     groups: z
@@ -252,6 +261,10 @@ export const questionImportSchema = z
               .array(
                 questionFields
                   .omit({ topicId: true, category: true })
+                  .transform((q) => ({
+                    ...q,
+                    annotations: resolveLexiconAnnotations(q.prompt, q.annotations),
+                  }))
                   .refine((question) => validLexiconRanges(question.prompt, question.annotations), {
                     message: "Anotasi tidak sesuai dengan teks pertanyaan.",
                     path: ["annotations"],

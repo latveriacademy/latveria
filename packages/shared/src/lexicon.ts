@@ -3,6 +3,20 @@ import { z } from "zod";
 export const mathSourcePattern =
   /(\\begin\{tikzpicture\}[\s\S]*?(?:\\end\{tikzpicture\}|$)|\$\$[\s\S]+?\$\$|\$(?!\s)[^$\n]+?\$)/g;
 
+export const lexiconAnnotationInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  term: z.string().trim().min(1).max(100),
+  start: z.number().int().min(0).max(1000).optional(),
+  end: z.number().int().min(1).max(1000).optional(),
+  definition: z.string().trim().min(1).max(500),
+  partOfSpeech: z.string().trim().min(1).max(50),
+  phonetic: z.string().trim().max(100).default(""),
+  context: z.string().trim().max(1000).default(""),
+  example: z.string().trim().max(500).default(""),
+  etymology: z.string().trim().max(500).default(""),
+  synonyms: z.array(z.string().trim().min(1).max(100)).max(10).default([]),
+});
+
 export const lexiconAnnotationSchema = z
   .object({
     id: z.uuid(),
@@ -19,6 +33,44 @@ export const lexiconAnnotationSchema = z
   })
   .strict();
 export type LexiconAnnotation = z.infer<typeof lexiconAnnotationSchema>;
+
+export function resolveLexiconAnnotations(
+  prompt: string,
+  annotations: z.input<typeof lexiconAnnotationInputSchema>[],
+): LexiconAnnotation[] {
+  let searchPos = 0;
+  return annotations.map((raw) => {
+    let start = raw.start ?? -1;
+    let end = raw.end ?? -1;
+    if (start === -1 || end === -1) {
+      const idx = prompt.indexOf(raw.term, searchPos);
+      if (idx !== -1) {
+        start = idx;
+        end = idx + raw.term.length;
+        searchPos = end;
+      } else {
+        const anyIdx = prompt.indexOf(raw.term);
+        if (anyIdx !== -1) {
+          start = anyIdx;
+          end = anyIdx + raw.term.length;
+        }
+      }
+    }
+    return {
+      id: raw.id || crypto.randomUUID(),
+      term: raw.term,
+      start,
+      end,
+      definition: raw.definition,
+      partOfSpeech: raw.partOfSpeech,
+      phonetic: raw.phonetic ?? "",
+      context: raw.context || prompt,
+      example: raw.example ?? "",
+      etymology: raw.etymology ?? "",
+      synonyms: Array.isArray(raw.synonyms) ? raw.synonyms : [],
+    };
+  });
+}
 
 export function validLexiconRanges(prompt: string, annotations: LexiconAnnotation[]) {
   let offset = 0;

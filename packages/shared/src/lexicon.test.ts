@@ -61,4 +61,45 @@ it("accepts annotated imports and preserves compatibility with existing question
   });
   expect(full.phonetic).toBe("/fraɪd/");
   expect(full.etymology).toBe("From Old English frygan");
+
+  // Auto-resolution when id, start, end, context are omitted in JSON import
+  const minimalImport = {
+    groups: [
+      {
+        subtes: "literasi-bahasa-inggris",
+        category: "Generated",
+        questions: [
+          {
+            prompt: "National sovereignty requires civic responsibility.",
+            options: ["A", "B", "C", "D"],
+            correctAnswer: 0,
+            explanation: "Pembahasan",
+            source: "AI Import",
+            annotations: [
+              {
+                term: "sovereignty",
+                definition: "Kedaulatan",
+                partOfSpeech: "noun",
+              },
+              {
+                term: "responsibility",
+                definition: "Tanggung jawab",
+                partOfSpeech: "noun",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const parsed = questionImportSchema.parse(minimalImport);
+  const q = parsed.groups[0].questions[0];
+  expect(q.annotations).toHaveLength(2);
+  expect(q.annotations[0].term).toBe("sovereignty");
+  expect(q.annotations[0].start).toBe(9);
+  expect(q.annotations[0].end).toBe(20);
+  expect(q.annotations[0].id).toBeDefined();
+  expect(q.annotations[1].term).toBe("responsibility");
+  expect(q.annotations[1].start).toBe(36);
+  expect(q.annotations[1].end).toBe(50);
 });

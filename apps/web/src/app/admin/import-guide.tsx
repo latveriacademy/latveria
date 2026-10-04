@@ -56,6 +56,14 @@ export function ImportGuide() {
               Daftar soal dengan <code>prompt</code>, empat <code>options</code> unik,{" "}
               <code>correctAnswer</code>, <code>explanation</code>, dan <code>source</code>.
             </dd>
+            <dt>
+              <code>annotations</code>
+            </dt>
+            <dd>
+              Opsional (khusus subtes LBE). Daftar kosakata: <code>term</code>,{" "}
+              <code>definition</code>, <code>partOfSpeech</code> (posisi karakter dan ID otomatis
+              dihitung dari teks soal).
+            </dd>
           </dl>
           <h4>Indeks jawaban benar</h4>
           <p>
