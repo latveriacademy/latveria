@@ -52,7 +52,14 @@ describe("parseQuestionImport", () => {
   });
   it("accepts the same JSON text whether pasted or read from a file", () => {
     const data = { groups: [group] };
-    expect(parseQuestionImport(JSON.stringify(data))).toEqual(data);
+    expect(parseQuestionImport(JSON.stringify(data))).toEqual({
+      groups: [
+        {
+          ...group,
+          questions: group.questions.map((question) => ({ ...question, annotations: [] })),
+        },
+      ],
+    });
   });
   it("ships a valid importable pyramid question with renderer-compatible TikZ under the prompt limit", () => {
     const batch = parseQuestionImport(JSON.stringify(geometryImportExample));

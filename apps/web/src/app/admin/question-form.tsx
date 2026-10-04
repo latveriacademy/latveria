@@ -2,7 +2,13 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { questionSchema, type QuestionDetail, type QuestionPackage } from "@latveria/shared";
+import {
+  questionSchema,
+  type QuestionDetail,
+  type QuestionPackage,
+  type LexiconAnnotation,
+} from "@latveria/shared";
+import { LexiconEditor } from "./lexicon-editor";
 import { api } from "../../lib/api";
 import { ArrowLeft, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -25,7 +31,7 @@ export function QuestionForm({
   initialPackageId,
   question,
 }: {
-  topics: { id: string; name: string; section: string }[];
+  topics: { id: string; name: string; section: string; slug?: string }[];
   initialTopicId?: string;
   initialPackageId?: string;
   question?: QuestionDetail;
@@ -47,6 +53,9 @@ export function QuestionForm({
   const [pkgError, setPkgError] = useState("");
   const [prompt, setPrompt] = useState(question?.prompt ?? "");
   const [diagramError, setDiagramError] = useState("");
+  const [annotations, setAnnotations] = useState<LexiconAnnotation[]>(question?.annotations ?? []);
+  const isLbe =
+    topics.find((topic) => topic.id === selectedTopicId)?.slug === "literasi-bahasa-inggris";
 
   useEffect(() => {
     if (!selectedTopicId) return;
@@ -106,6 +115,7 @@ export function QuestionForm({
       return "Paket tujuan belum dapat diperiksa. Coba muat kembali daftar paket.";
     if (initialPackageId && selectedTopicId === initialTopicId && !selectedPackageId)
       return "Pilih paket tujuan sebelum menyimpan soal.";
+    const leadingSpace = prompt.length - prompt.trimStart().length;
     const parsed = questionSchema.safeParse({
       topicId: selectedTopicId,
       packageId: selectedPackageId || undefined,
@@ -115,6 +125,20 @@ export function QuestionForm({
       explanation: form.get("explanation"),
       source: form.get("source"),
       category: String(form.get("category") ?? "").trim() || undefined,
+      annotations: isLbe
+        ? annotations.map((item) => ({
+            ...item,
+            start: item.start - leadingSpace,
+            end: item.end - leadingSpace,
+            phonetic: item.phonetic ?? "",
+            example: item.example ?? "",
+            etymology: item.etymology ?? "",
+            synonyms: String(form.get(`synonyms-${item.id}`) ?? "")
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+          }))
+        : [],
     });
     if (!parsed.success) return parsed.error.issues[0].message;
     try {
@@ -358,6 +382,17 @@ export function QuestionForm({
           </div>
         )}
       </fieldset>
+      {isLbe && (
+        <fieldset className={styles.formSection}>
+          <legend>Lexicon LBE</legend>
+          <LexiconEditor
+            prompt={prompt}
+            annotations={annotations}
+            onChange={setAnnotations}
+            disabled={pending}
+          />
+        </fieldset>
+      )}
       <fieldset className={styles.formSection}>
         <legend>Pilihan jawaban</legend>
         <div className={styles.options}>

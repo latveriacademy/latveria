@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { verifyBankSearch } from "./verify-bank-search";
+import { verifyLexicon } from "./verify-lexicon";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
@@ -45,6 +47,7 @@ async function signup() {
   return { cookie, id: data.user.id as string };
 }
 try {
+  await verifyLexicon();
   assert.equal((await request("/learner/topics")).status, 401);
   assert.equal((await request("/learner/profile")).status, 401);
   const learner = await signup();
@@ -399,6 +402,7 @@ try {
     )
   ).json();
   assert.equal(filtered.total, 1);
+  await verifyBankSearch((path) => request(path, other.cookie));
   assert.equal((await request(`/admin/questions/${question.id}`, learner.cookie)).status, 403);
   assert.equal((await request(`/admin/questions/${question.id}`, other.cookie)).status, 200);
   const change = {
@@ -465,10 +469,10 @@ try {
   assert.equal(
     (
       await request("/admin/questions/bulk-delete", other.cookie, {
-        ids: [practice.items[0].id, batchRows[0].id],
+        ids: [crypto.randomUUID(), batchRows[0].id],
       })
     ).status,
-    409,
+    404,
   );
   assert.equal((await request(`/admin/questions/${batchRows[0].id}`, other.cookie)).status, 200);
   const invalidBatch = {
