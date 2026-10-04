@@ -5,6 +5,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -12,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
+import type { LexiconAnnotation } from "@latveria/shared";
 
 export const topics = pgTable("topics", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -59,6 +61,7 @@ export const questions = pgTable(
       .references(() => topics.id),
     packageId: uuid("package_id").references(() => questionPackages.id, { onDelete: "set null" }),
     prompt: text("prompt").notNull(),
+    annotations: jsonb("annotations").$type<LexiconAnnotation[]>().notNull().default([]),
     options: text("options").array().notNull(),
     correctAnswer: integer("correct_answer").notNull(),
     explanation: text("explanation").notNull(),
@@ -81,6 +84,28 @@ export const questions = pgTable(
       foreignColumns: [questionPackages.id, questionPackages.topicId],
       name: "questions_package_topic_fk",
     }).onDelete("set null"),
+  ],
+).enableRLS();
+
+export const learnerVocabulary = pgTable(
+  "learner_vocabulary",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    questionId: uuid("question_id").references(() => questions.id, { onDelete: "set null" }),
+    annotationId: uuid("annotation_id").notNull(),
+    annotation: jsonb("annotation").$type<LexiconAnnotation>().notNull(),
+    source: text("source").notNull(),
+    savedAt: timestamp("saved_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("vocabulary_user_question_annotation_unique").on(
+      table.userId,
+      table.questionId,
+      table.annotationId,
+    ),
   ],
 ).enableRLS();
 

@@ -82,7 +82,12 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
     if (!pkg) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
     const items = await getDb()
-      .select({ id: questions.id, prompt: questions.prompt, options: questions.options })
+      .select({
+        id: questions.id,
+        prompt: questions.prompt,
+        options: questions.options,
+        annotations: questions.annotations,
+      })
       .from(questions)
       .where(and(eq(questions.topicId, topic.id), eq(questions.packageId, pkg.id)))
       .orderBy(questions.id);
@@ -98,7 +103,12 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
 
   // Backward compatibility: seleksi tanpa packageId
   const items = await getDb()
-    .select({ id: questions.id, prompt: questions.prompt, options: questions.options })
+    .select({
+      id: questions.id,
+      prompt: questions.prompt,
+      options: questions.options,
+      annotations: questions.annotations,
+    })
     .from(questions)
     .where(eq(questions.topicId, topic.id))
     .orderBy(questions.id);
@@ -300,6 +310,7 @@ export async function getResultDetail(userId: string, idParam: string): Promise<
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      annotations: questions.annotations,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
       explanation: questions.explanation,

@@ -11,6 +11,7 @@ import { leaderboardHandler } from "./handlers/leaderboard.handler";
 import { tryoutHandler } from "./handlers/tryout.handler";
 import { questionHandler } from "./handlers/question.handler";
 import { systemHandler } from "./handlers/system.handler";
+import { vocabularyHandler } from "./handlers/vocabulary.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -79,6 +80,7 @@ app.route("/", leaderboardHandler);
 app.route("/", tryoutHandler);
 app.route("/", questionHandler);
 app.route("/", systemHandler);
+app.route("/", vocabularyHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)

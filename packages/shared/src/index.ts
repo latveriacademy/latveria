@@ -1,5 +1,14 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+import { lexiconAnnotationSchema, validLexiconRanges, type LexiconAnnotation } from "./lexicon";
+export {
+  lexiconAnnotationSchema,
+  validLexiconRanges,
+  mathSourcePattern,
+  saveVocabularySchema,
+  type LexiconAnnotation,
+  type VocabularyEntry,
+} from "./lexicon";
 export { utbkSubtests } from "./utbk-subtests";
 export {
   practiceXP,
@@ -200,7 +209,7 @@ export const moveQuestionPackageSchema = z.object({
 });
 export type MoveQuestionPackageInput = z.infer<typeof moveQuestionPackageSchema>;
 
-export const questionSchema = z.object({
+const questionFields = z.object({
   topicId: z.uuid(),
   packageId: z.uuid("ID paket tidak valid.").optional().nullable(),
   prompt: z.string().trim().min(5).max(1000),
@@ -214,7 +223,16 @@ export const questionSchema = z.object({
   category: z.string().trim().max(120).optional(),
   itemWeight: z.number().int().min(10).max(300).optional(),
   calculatorAllowed: z.boolean().optional(),
+  annotations: z.array(lexiconAnnotationSchema).max(20).default([]),
 });
+export const questionSchema = questionFields.refine(
+  (question) => validLexiconRanges(question.prompt, question.annotations),
+  {
+    message:
+      "Anotasi harus sesuai dengan teks pertanyaan, tidak tumpang tindih, dan berada di luar rumus/diagram.",
+    path: ["annotations"],
+  },
+);
 export const questionImportSchema = z
   .object({
     groups: z
@@ -232,8 +250,12 @@ export const questionImportSchema = z
               .optional(),
             questions: z
               .array(
-                questionSchema
+                questionFields
                   .omit({ topicId: true, category: true })
+                  .refine((question) => validLexiconRanges(question.prompt, question.annotations), {
+                    message: "Anotasi tidak sesuai dengan teks pertanyaan.",
+                    path: ["annotations"],
+                  })
                   .refine((question) => !question.packageId, {
                     message: "Tentukan packageId atau packageName pada grup, bukan pada tiap soal.",
                     path: ["packageId"],
@@ -263,6 +285,7 @@ export const submissionSchema = z.object({
   questionTimes: z.record(z.uuid(), z.number().int().min(0)).optional(),
 });
 export const bankQuerySchema = z.object({
+  cari: z.string().trim().max(200).optional(),
   subtes: z.string().max(100).optional(),
   kategori: z.string().max(120).optional(),
   paket: z.string().max(100).optional(),
@@ -277,7 +300,7 @@ export const bulkDeleteSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, "ID soal tidak boleh berulang."),
 });
 export type NewQuestion = z.infer<typeof questionSchema>;
-export type QuestionImport = z.infer<typeof questionImportSchema>;
+export type QuestionImport = z.input<typeof questionImportSchema>;
 export type Submission = z.infer<typeof submissionSchema>;
 export type User = { id: string; name: string; email: string; role: string };
 export type Topic = {
@@ -291,7 +314,12 @@ export type Topic = {
   questionCount: number;
   packageCount?: number;
 };
-export type PracticeQuestion = { id: string; prompt: string; options: string[] };
+export type PracticeQuestion = {
+  id: string;
+  prompt: string;
+  options: string[];
+  annotations?: LexiconAnnotation[];
+};
 export type ReviewQuestion = PracticeQuestion & {
   selectedAnswer: number;
   correctAnswer: number;
