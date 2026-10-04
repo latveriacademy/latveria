@@ -9,8 +9,38 @@ import styles from "./import-guide.module.css";
 export function ImportGuide() {
   const [selected, setSelected] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
+  const [lexiconCopyStatus, setLexiconCopyStatus] = useState("");
   const example = mathNotationExamples[selected];
   const snippet = `"prompt": ${JSON.stringify(example.prompt)}`;
+  const lexiconSnippet = JSON.stringify(
+    {
+      prompt: "Economic hegemony must never supersede ethical inquiry and human discretion.",
+      options: [
+        "Dominance or authority",
+        "Equality and fairness",
+        "Financial collapse",
+        "International commerce",
+      ],
+      correctAnswer: 0,
+      explanation: "Hegemony mengacu pada kepemimpinan dominan suatu negara atau kelompok.",
+      source: "Arsip UTBK LBE 2026",
+      annotations: [
+        {
+          term: "hegemony",
+          definition: "Hegemoni; dominasi kepemimpinan atau pengaruh mutlak satu kelompok.",
+          partOfSpeech: "noun",
+          phonetic: "/hɪˈɡem.ə.ni/",
+        },
+        {
+          term: "discretion",
+          definition: "Kebijaksanaan dalam mengambil keputusan.",
+          partOfSpeech: "noun",
+        },
+      ],
+    },
+    null,
+    2,
+  );
 
   return (
     <section className={styles.guide} aria-labelledby="import-guide-title">
@@ -165,6 +195,44 @@ export function ImportGuide() {
             Diagram TikZ memakai blok{" "}
             <code>{String.raw`\begin{tikzpicture} ... \end{tikzpicture}`}</code> tanpa pembungkus{" "}
             <code>$$</code>. Gunakan contoh geometri pada editor sebagai acuan.
+          </p>
+        </div>
+      </details>
+
+      <details className={styles.section}>
+        <summary>Anotasi kosakata Lexicon (khusus subtes LBE)</summary>
+        <div className={styles.body}>
+          <p>
+            Untuk subtes <code>literasi-bahasa-inggris</code>, kamu dapat menyertakan field{" "}
+            <code>annotations</code> pada setiap soal. Posisi karakter (<code>start</code> &amp;{" "}
+            <code>end</code>), <code>context</code>, dan ID otomatis dihitung dari teks{" "}
+            <code>prompt</code> jika tidak ditentukan.
+          </p>
+          <div className={styles.codeHeader}>
+            <h4>Contoh JSON soal dengan Lexicon</h4>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(lexiconSnippet);
+                  setLexiconCopyStatus("Cuplikan JSON Lexicon disalin.");
+                } catch {
+                  setLexiconCopyStatus("Salin teks pada cuplikan di bawah secara manual.");
+                }
+              }}
+            >
+              <Copy />
+              Salin cuplikan Lexicon
+            </Button>
+          </div>
+          <pre className={styles.code}>
+            <code>{lexiconSnippet}</code>
+          </pre>
+          {lexiconCopyStatus && <p role="status">{lexiconCopyStatus}</p>}
+          <p>
+            Kamu juga dapat langsung mengklik tombol “Gunakan contoh Lexicon LBE” di editor impor
+            untuk memuat satu grup soal lengkap dengan kosakata.
           </p>
         </div>
       </details>

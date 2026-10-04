@@ -3,7 +3,11 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { utbkSubtests, type QuestionImport, type QuestionPackage } from "@latveria/shared";
 import { Download, FileCheck, Loader2, Upload } from "lucide-react";
 import { api } from "../../lib/api";
-import { packageImportExample, parseQuestionImport } from "../../lib/question-import";
+import {
+  lexiconImportExample,
+  packageImportExample,
+  parseQuestionImport,
+} from "../../lib/question-import";
 import { geometryImportExample } from "../../lib/tikz-examples";
 import { mathImportExample } from "../../lib/math-import-examples";
 import { ImportGuide } from "./import-guide";
@@ -63,7 +67,9 @@ export function ImportQuestions() {
         ? geometryImportExample
         : kind === "math"
           ? mathImportExample
-          : packageImportExample;
+          : kind === "lexicon"
+            ? lexiconImportExample
+            : packageImportExample;
     return {
       groups: source.groups.map((group) => ({
         ...group,
@@ -75,7 +81,9 @@ export function ImportQuestions() {
               ? "Paket Bangun Ruang"
               : kind === "math"
                 ? "Paket Rumus Matematika"
-                : "Paket Persentase",
+                : kind === "lexicon"
+                  ? "Paket Vocabulary LBE"
+                  : "Paket Persentase",
       })),
     };
   }
@@ -224,6 +232,7 @@ export function ImportQuestions() {
               { kind: "basic", label: "Gunakan contoh sederhana" },
               { kind: "math", label: "Gunakan contoh rumus" },
               { kind: "geometry", label: "Gunakan contoh geometri" },
+              { kind: "lexicon", label: "Gunakan contoh Lexicon LBE" },
             ].map(({ kind, label }) => (
               <Button
                 key={kind}

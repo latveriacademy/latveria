@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { packageImportExample, parseQuestionImport } from "./question-import";
+import { lexiconImportExample, packageImportExample, parseQuestionImport } from "./question-import";
 import { parseTikz } from "./tikz";
 import { geometryImportExample } from "./tikz-examples";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "@latveria/shared";
@@ -126,5 +126,14 @@ describe("parseQuestionImport", () => {
         }),
       ),
     ).toThrow("bukan pada tiap soal");
+  });
+  it("ships a valid importable lexicon example with auto-resolved annotations", () => {
+    const data = parseQuestionImport(JSON.stringify(lexiconImportExample));
+    expect(data.groups[0].subtes).toBe("literasi-bahasa-inggris");
+    const annotations = data.groups[0].questions[0].annotations!;
+    expect(annotations).toHaveLength(2);
+    expect(annotations[0].term).toBe("hegemony");
+    expect(annotations[0].start).toBe(9);
+    expect(annotations[0].end).toBe(17);
   });
 });

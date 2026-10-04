@@ -19,6 +19,46 @@ export const packageImportExample: QuestionImport = {
   ],
 };
 
+export const lexiconImportExample: QuestionImport = {
+  groups: [
+    {
+      subtes: "literasi-bahasa-inggris",
+      packageName: "Paket Vocabulary LBE",
+      category: "Academic Vocabulary",
+      questions: [
+        {
+          prompt: "Economic hegemony must never supersede ethical inquiry and human discretion.",
+          options: [
+            "Dominance or authority",
+            "Equality and fairness",
+            "Financial collapse",
+            "International commerce",
+          ],
+          correctAnswer: 0,
+          explanation:
+            "Hegemony mengacu pada kepemimpinan dominan atau pengaruh mutlak suatu negara atau kelompok terhadap pihak lain.",
+          source: "Soal contoh Lexicon buatan tim",
+          annotations: [
+            {
+              term: "hegemony",
+              definition:
+                "Hegemoni; dominasi kepemimpinan atau pengaruh mutlak satu kelompok terhadap yang lain.",
+              partOfSpeech: "noun",
+              phonetic: "/hɪˈɡem.ə.ni/",
+            },
+            {
+              term: "discretion",
+              definition:
+                "Kebijaksanaan dan kehati-hatian dalam mempertimbangkan atau memutuskan sesuatu.",
+              partOfSpeech: "noun",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 export function parseQuestionImport(text: string): QuestionImport {
   if (!text.trim()) throw new Error("Masukkan JSON atau pilih file terlebih dahulu.");
   if (new TextEncoder().encode(text).byteLength > 200_000)
