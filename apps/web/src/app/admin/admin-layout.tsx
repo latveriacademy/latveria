@@ -1,6 +1,17 @@
 import { useCallback, useState } from "react";
 import { Outlet, useLocation, useNavigation, useRouteLoaderData } from "react-router";
-import { LayoutDashboard, BookOpen, AlertCircle, MessageSquareQuote, Loader2 } from "lucide-react";
+import {
+  LayoutDashboard,
+  BookOpen,
+  AlertCircle,
+  MessageSquareQuote,
+  Loader2,
+  Users,
+  BarChart3,
+  FileText,
+  Activity,
+  Download,
+} from "lucide-react";
 import type { User } from "@latveria/shared";
 import {
   DashboardShell,
@@ -17,6 +28,11 @@ const navigation: NavigationItem[] = [
   { id: "questions", label: "Bank soal", icon: BookOpen, to: "/admin/soal" },
   { id: "reports", label: "Laporan soal", icon: AlertCircle, to: "/admin/laporan" },
   { id: "affirmations", label: "Afirmasi", icon: MessageSquareQuote, to: "/admin/afirmasi" },
+  { id: "users", label: "User", icon: Users, to: "/admin/users" },
+  { id: "analytics", label: "Analytics", icon: BarChart3, to: "/admin/analytics" },
+  { id: "audit", label: "Log Aktivitas", icon: FileText, to: "/admin/audit" },
+  { id: "export", label: "Ekspor", icon: Download, to: "/admin/export" },
+  { id: "system", label: "Sistem", icon: Activity, to: "/admin/system" },
 ];
 
 export function AdminLayout() {

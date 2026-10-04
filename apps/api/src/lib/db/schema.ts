@@ -238,3 +238,23 @@ export const tryoutPackageQuestions = pgTable(
   },
   (table) => [unique("tryout_package_questions_unique").on(table.packageId, table.questionId)],
 ).enableRLS();
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    adminId: text("admin_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id"),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("audit_logs_admin_idx").on(table.adminId),
+    index("audit_logs_action_idx").on(table.action),
+    index("audit_logs_created_idx").on(table.createdAt),
+  ],
+).enableRLS();

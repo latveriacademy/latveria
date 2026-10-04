@@ -18,6 +18,7 @@ export const user = pgTable("user", {
     .notNull(),
   role: text("role").default("user").notNull(),
   isDemo: boolean("is_demo").default(false).notNull(),
+  hideFromLeaderboard: boolean("hide_from_leaderboard").default(false).notNull(),
 }).enableRLS();
 
 export const session = pgTable(

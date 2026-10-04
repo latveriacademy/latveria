@@ -57,6 +57,23 @@ const AdminAffirmations = lazy(() =>
     default: module.AdminAffirmations,
   })),
 );
+const AdminUsers = lazy(() =>
+  import("./app/admin/admin-users").then((module) => ({ default: module.AdminUsers })),
+);
+const AdminAnalytics = lazy(() =>
+  import("./app/admin/admin-analytics").then((module) => ({ default: module.AdminAnalytics })),
+);
+const AdminAuditLog = lazy(() =>
+  import("./app/admin/admin-audit-log").then((module) => ({ default: module.AdminAuditLog })),
+);
+const AdminExport = lazy(() =>
+  import("./app/admin/admin-export").then((module) => ({ default: module.AdminExport })),
+);
+const AdminSystemHealth = lazy(() =>
+  import("./app/admin/admin-system-health").then((module) => ({
+    default: module.AdminSystemHealth,
+  })),
+);
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -247,6 +264,11 @@ export const router = createBrowserRouter([
       },
       { path: "laporan", element: <AdminReports /> },
       { path: "afirmasi", element: <AdminAffirmations /> },
+      { path: "users", element: <AdminUsers /> },
+      { path: "analytics", element: <AdminAnalytics /> },
+      { path: "audit", element: <AdminAuditLog /> },
+      { path: "export", element: <AdminExport /> },
+      { path: "system", element: <AdminSystemHealth /> },
     ],
   },
   { path: "*", element: <NotFound /> },
