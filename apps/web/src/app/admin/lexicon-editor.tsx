@@ -308,13 +308,21 @@ export function LexiconEditor({
           onOpenChange={(open) => {
             if (!open) setActiveEditing(null);
           }}
-          title={`Detail Kosakata: "${activeEditing.term}"`}
-          description="Sesuaikan arti, fonetik, dan konteks untuk siswa."
+          title={
+            <div className="flex items-center gap-2">
+              <span>Detail Kosakata:</span>
+              <span className="font-serif text-xl font-bold text-[var(--accent-gold)]">
+                "{activeEditing.term}"
+              </span>
+            </div>
+          }
+          description="Sesuaikan arti konteks dan informasi akademik untuk siswa."
+          className="max-w-[560px]"
         >
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1 text-xs">
+          <div className="space-y-3.5 max-h-[70vh] overflow-y-auto pr-1 text-sm">
             <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1">
-                Arti sesuai konteks *
+              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                Arti sesuai konteks soal *
               </label>
               <Textarea
                 value={activeEditing.definition}
@@ -325,9 +333,11 @@ export function LexiconEditor({
                 onChange={(e) => setActiveEditing({ ...activeEditing, definition: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-[var(--ink)] block mb-1">Kelas kata *</label>
+                <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                  Kelas kata *
+                </label>
                 <Input
                   value={activeEditing.partOfSpeech}
                   placeholder="noun, verb, adjective"
@@ -339,8 +349,8 @@ export function LexiconEditor({
                 />
               </div>
               <div>
-                <label className="font-semibold text-[var(--ink)] block mb-1">
-                  Fonetik (opsional)
+                <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                  Pelafalan / Fonetik (opsional)
                 </label>
                 <Input
                   value={activeEditing.phonetic ?? ""}
@@ -351,7 +361,9 @@ export function LexiconEditor({
               </div>
             </div>
             <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1">Kalimat asal *</label>
+              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                Kalimat asal dari teks soal *
+              </label>
               <Textarea
                 value={activeEditing.context}
                 maxLength={1000}
@@ -361,8 +373,8 @@ export function LexiconEditor({
               />
             </div>
             <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1">
-                Contoh penggunaan (opsional)
+              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                Contoh penggunaan lain (opsional)
               </label>
               <Textarea
                 value={activeEditing.example ?? ""}
@@ -373,20 +385,20 @@ export function LexiconEditor({
               />
             </div>
             <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1">
-                Etimologi (opsional)
+              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                Etimologi / Asal kata (opsional)
               </label>
               <Textarea
                 value={activeEditing.etymology ?? ""}
-                placeholder="Asal usul kata..."
+                placeholder="Contoh: From Latin super (above)..."
                 maxLength={500}
                 rows={2}
                 onChange={(e) => setActiveEditing({ ...activeEditing, etymology: e.target.value })}
               />
             </div>
             <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1">
-                Sinonim (opsional, koma)
+              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
+                Sinonim (opsional, pisahkan dengan koma)
               </label>
               <Input
                 value={activeEditing.synonyms?.join(", ") ?? ""}
@@ -402,12 +414,13 @@ export function LexiconEditor({
                 }
               />
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--edge)]">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--edge)]">
               <Button type="button" variant="outline" onClick={() => setActiveEditing(null)}>
                 Batal
               </Button>
               <Button
                 type="button"
+                className="btn-gold-solid"
                 disabled={!activeEditing.definition.trim() || !activeEditing.partOfSpeech.trim()}
                 onClick={() => saveEditing(activeEditing)}
               >

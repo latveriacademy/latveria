@@ -39,62 +39,66 @@
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
 }
 .overlay[data-state="open"] {
-  animation: lexiconFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: lexiconFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .overlay[data-state="closed"] {
-  animation: lexiconFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: lexiconFadeOut 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.drawer {
+.modal {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  max-width: 480px;
-  height: 100dvh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(88dvh, 720px);
   z-index: 121;
   background: var(--bg-card);
-  border-left: 1px solid var(--border-bright);
-  padding: 28px 24px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
   outline: none;
 }
-.drawer[data-state="open"] {
-  animation: lexiconSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.modal[data-state="open"] {
+  animation: lexiconModalIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.drawer[data-state="closed"] {
-  animation: lexiconSlideOut 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.modal[data-state="closed"] {
+  animation: lexiconModalOut 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .scrollBody {
   flex: 1 1 auto;
   overflow-y: auto;
-  margin-bottom: 20px;
-  padding-right: 4px;
+  margin: 12px 0 16px;
+  padding-right: 6px;
 }
 
-@keyframes lexiconSlideIn {
+@keyframes lexiconModalIn {
   from {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translate(-50%, -47%) scale(0.96);
   }
   to {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
-@keyframes lexiconSlideOut {
+@keyframes lexiconModalOut {
   from {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
   to {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translate(-50%, -47%) scale(0.96);
   }
 }
 
@@ -117,8 +121,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .drawer[data-state="open"],
-  .drawer[data-state="closed"],
+  .modal[data-state="open"],
+  .modal[data-state="closed"],
   .overlay[data-state="open"],
   .overlay[data-state="closed"] {
     animation: none;
@@ -127,50 +131,12 @@
 
 .content {
   display: grid;
-  gap: 20px;
+  gap: 16px;
   color: var(--ink);
-}
-.content h3 {
-  margin: 0 0 8px;
-  font: 600 14px var(--font-sans);
-}
-.content p {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.65;
-  overflow-wrap: anywhere;
-}
-.context {
-  padding: 14px;
-  background: var(--surface);
-  border: 1px solid var(--edge);
-  border-radius: var(--radius-sm);
 }
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 20px;
-}
-.editor {
-  display: grid;
-  gap: 16px;
-}
-.entry {
-  border: 1px solid var(--edge);
-  padding: 16px;
-  border-radius: var(--radius-sm);
-  display: grid;
-  gap: 12px;
-}
-.field {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  font-size: 13px;
-}
-.field input,
-.field textarea {
-  width: 100%;
-  box-sizing: border-box;
+  margin-top: 16px;
 }

@@ -106,10 +106,17 @@ export function QuestionPreview() {
           onOpenChange={(open) => {
             if (!open) setSelectedAnnotation(null);
           }}
-          title={selectedAnnotation.term}
-          description={selectedAnnotation.partOfSpeech}
+          title={
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--accent-gold)] flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-[var(--accent-gold)]" />
+              Glosarium Akademik Latveria
+            </span>
+          }
+          className="max-w-[560px]"
         >
-          <LexiconContent annotation={selectedAnnotation} />
+          <div className="max-h-[75vh] overflow-y-auto pr-1">
+            <LexiconContent annotation={selectedAnnotation} />
+          </div>
         </AppDialog>
       )}
       <div className={styles.previewActions}>

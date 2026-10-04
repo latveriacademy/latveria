@@ -116,11 +116,22 @@ export function VocabularyCollection() {
           onOpenChange={(open) => {
             if (!open) setSelected(null);
           }}
-          title={selected.annotation.term}
-          description={selected.annotation.partOfSpeech}
+          title={
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--accent-gold)] flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-[var(--accent-gold)]" />
+              Glosarium Akademik Latveria
+            </span>
+          }
+          className="max-w-[560px]"
         >
-          <LexiconContent annotation={selected.annotation} />
-          <p className={styles.meta}>Sumber: {selected.source}</p>
+          <div className="max-h-[75vh] overflow-y-auto pr-1">
+            <LexiconContent annotation={selected.annotation} />
+            {selected.source && (
+              <p className="text-xs text-[var(--soft-ink)] pt-3 border-t border-[var(--edge)] mt-3">
+                Sumber soal: {selected.source}
+              </p>
+            )}
+          </div>
         </AppDialog>
       )}
       <ConfirmDialog
