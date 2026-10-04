@@ -1,4 +1,4 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, ilike, inArray, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   bankQuerySchema,
@@ -23,7 +23,15 @@ export async function getAdminQuestions(
   if (query.subtes && !utbkSubtests.some((subtest) => subtest.slug === query.subtes))
     throw new HTTPException(404);
 
+  const searchPattern = `%${query.cari?.replace(/[\\%_]/g, "\\$&") ?? ""}%`;
   const where = and(
+    query.cari
+      ? or(
+          ilike(questions.prompt, searchPattern),
+          ilike(questions.source, searchPattern),
+          ilike(questionPackages.name, searchPattern),
+        )
+      : undefined,
     query.subtes ? eq(topics.slug, query.subtes) : undefined,
     query.kategori ? eq(questions.category, query.kategori) : undefined,
     query.paket
@@ -129,6 +137,8 @@ export async function createQuestion(body: unknown) {
     .from(topics)
     .where(eq(topics.id, parsed.data.topicId));
   if (!topic) throw new HTTPException(400, { message: "Subtes tidak ditemukan." });
+  if (parsed.data.annotations.length && topic.slug !== "literasi-bahasa-inggris")
+    throw new HTTPException(400, { message: "Anotasi Lexicon hanya tersedia untuk LBE." });
 
   if (parsed.data.packageId) {
     const [pkg] = await getDb()
@@ -192,6 +202,11 @@ export async function importQuestions(text: string) {
     >();
     let count = 0;
     for (const group of parsed.data.groups) {
+      if (
+        group.subtes !== "literasi-bahasa-inggris" &&
+        group.questions.some((item) => item.annotations.length)
+      )
+        throw new HTTPException(400, { message: "Anotasi Lexicon hanya tersedia untuk LBE." });
       const topicId = ids.get(group.subtes)!;
       let pkg;
       if (group.packageId) {
@@ -249,6 +264,7 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
       packageId: questions.packageId,
       packageName: questionPackages.name,
       prompt: questions.prompt,
+      annotations: questions.annotations,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
       explanation: questions.explanation,
@@ -287,6 +303,8 @@ export async function updateQuestion(idParam: string, body: unknown) {
       .from(topics)
       .where(eq(topics.id, parsed.data.topicId));
     if (!topic) throw new HTTPException(400, { message: "Subtes tidak ditemukan." });
+    if (parsed.data.annotations.length && topic.slug !== "literasi-bahasa-inggris")
+      throw new HTTPException(400, { message: "Anotasi Lexicon hanya tersedia untuk LBE." });
 
     if (parsed.data.packageId) {
       const [pkg] = await tx

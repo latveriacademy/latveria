@@ -1,7 +1,8 @@
 import { Link, useLoaderData, useNavigation, useSearchParams } from "react-router";
-import { Loader2, Plus, Upload } from "lucide-react";
+import { Loader2, Plus, Search, Upload } from "lucide-react";
 import type { Bank } from "@latveria/shared";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import {
   Select,
   SelectContent,
@@ -101,6 +102,51 @@ export function BankPage() {
               : "Soal tersimpan."}
         </p>
       )}
+      <form
+        role="search"
+        className={styles.bankSearch}
+        onSubmit={(event) => {
+          event.preventDefault();
+          const value = String(new FormData(event.currentTarget).get("cari") ?? "").trim();
+          const next = new URLSearchParams(params);
+          if (value) next.set("cari", value);
+          else next.delete("cari");
+          next.delete("halaman");
+          setParams(next);
+        }}
+      >
+        <div className={styles.bankSearchField}>
+          <label htmlFor="question-search">Cari soal</label>
+          <Input
+            key={params.get("cari") ?? ""}
+            id="question-search"
+            name="cari"
+            type="search"
+            maxLength={200}
+            defaultValue={params.get("cari") ?? ""}
+            placeholder="Pertanyaan, sumber, atau nama paket"
+          />
+        </div>
+        <Button type="submit" disabled={isNavigating}>
+          <Search size={16} />
+          Cari
+        </Button>
+        {params.has("cari") && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isNavigating}
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete("cari");
+              next.delete("halaman");
+              setParams(next);
+            }}
+          >
+            Hapus pencarian
+          </Button>
+        )}
+      </form>
       <div className={styles.bankFilters}>
         {filters.map((filter) => (
           <div key={filter.key} className={styles.bankFilterField}>

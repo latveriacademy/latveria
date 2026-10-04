@@ -137,6 +137,33 @@
   max-width: 860px;
   margin-bottom: 24px;
 }
+.bankPage .bankSearch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 0 20px;
+}
+.bankSearchField {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 320px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--soft-ink);
+}
+.bankPage .bankSearch input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.bankSearch > button {
+  min-height: 44px;
+  flex-shrink: 0;
+}
 .bankFilterField {
   display: grid;
   gap: 8px;

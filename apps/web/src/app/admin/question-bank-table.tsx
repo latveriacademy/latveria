@@ -170,7 +170,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
           {!bank.rows.length && (
             <TableRow>
               <TableCell colSpan={4} className={styles.emptyCell}>
-                Tidak ada soal pada filter ini. Coba ubah subtes, paket, atau kategori.
+                Tidak ada soal yang cocok. Coba kata kunci lain atau ubah filter.
               </TableCell>
             </TableRow>
           )}
