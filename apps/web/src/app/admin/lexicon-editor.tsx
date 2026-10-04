@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Plus, Pencil, Trash2, BookOpen } from "lucide-react";
 import type { LexiconAnnotation } from "@latveria/shared";
 import { Button } from "../../components/ui/button";
@@ -7,6 +7,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { AppDialog } from "../../components/app-dialog";
 import { AnnotatedText } from "../../components/annotated-text";
 import { lookupLexicon } from "../../data/lexiconData";
+import styles from "../../components/lexicon.module.css";
 
 export function LexiconEditor({
   prompt,
@@ -22,14 +23,71 @@ export function LexiconEditor({
   const [error, setError] = useState("");
   const [newTermInput, setNewTermInput] = useState("");
   const [activeEditing, setActiveEditing] = useState<LexiconAnnotation | null>(null);
+  const [selectedRange, setSelectedRange] = useState<{
+    term: string;
+    start: number;
+    end: number;
+  } | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
-  const startAddAnnotation = (termToAdd?: string) => {
+  const handlePreviewSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !previewRef.current) return;
+    if (!previewRef.current.contains(sel.anchorNode)) return;
+
+    const raw = sel.toString();
+    const term = raw.trim();
+    if (!term || term.length > 100) return;
+
+    try {
+      const range = sel.getRangeAt(0);
+      const preCaret = range.cloneRange();
+      preCaret.selectNodeContents(previewRef.current);
+      preCaret.setEnd(range.startContainer, range.startOffset);
+      const preText = preCaret.toString();
+      const relativeStart = preText.length + raw.indexOf(term);
+      const relativeEnd = relativeStart + term.length;
+
+      let start = relativeStart;
+      let end = relativeEnd;
+
+      if (prompt.slice(start, end) !== term) {
+        const nearest = prompt.indexOf(term, Math.max(0, relativeStart - 20));
+        if (nearest !== -1 && nearest < relativeStart + 40) {
+          start = nearest;
+          end = nearest + term.length;
+        } else {
+          start = prompt.indexOf(term);
+          end = start !== -1 ? start + term.length : -1;
+        }
+      }
+
+      if (start !== -1 && end !== -1 && prompt.slice(start, end) === term) {
+        setNewTermInput(term);
+        setSelectedRange({ term, start, end });
+        setError("");
+      }
+    } catch {
+      // Ignore range calculation errors
+    }
+  };
+
+  const startAddAnnotation = (termToAdd?: string, forceStart?: number, forceEnd?: number) => {
     let term = (termToAdd ?? newTermInput).trim();
-    let start = -1;
-    let end = -1;
+    let start =
+      forceStart ??
+      (selectedRange && selectedRange.term.toLowerCase() === term.toLowerCase()
+        ? selectedRange.start
+        : -1);
+    let end =
+      forceEnd ??
+      (selectedRange && selectedRange.term.toLowerCase() === term.toLowerCase()
+        ? selectedRange.end
+        : -1);
 
     const textarea = document.getElementById("prompt");
     if (
+      start === -1 &&
       textarea instanceof HTMLTextAreaElement &&
       textarea.selectionStart !== textarea.selectionEnd
     ) {
@@ -44,7 +102,7 @@ export function LexiconEditor({
     }
 
     if (!term || term.length > 100) {
-      setError("Ketik kata (maksimal 100 karakter) yang ada di dalam teks soal.");
+      setError("Sorot kata pada pratinjau teks atau ketik kata yang ada di dalam soal.");
       return;
     }
 
@@ -90,6 +148,7 @@ export function LexiconEditor({
       synonyms: preset?.synonyms ? [...preset.synonyms] : [],
     });
     setNewTermInput("");
+    setSelectedRange(null);
     setError("");
   };
 
@@ -109,16 +168,20 @@ export function LexiconEditor({
             Kosakata Lexicon ({annotations.length}/20 kata)
           </h3>
           <p className="text-xs text-[var(--soft-ink)]">
-            Tambahkan kata penting dari soal. Siswa dapat mengklik kata ini untuk melihat arti
-            kontekstual.
+            Sorot kata pada teks pratinjau di bawah ini untuk menambahkan anotasi kosakata.
           </p>
         </div>
       </div>
 
       {prompt.trim() && (
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-3">
-          <span className="font-mono text-[10px] uppercase text-[var(--text-muted)] block mb-1">
-            Pratinjau Kata Dianotasi pada Soal (klik kata untuk mengedit)
+        <div
+          ref={previewRef}
+          onMouseUp={handlePreviewSelection}
+          onKeyUp={handlePreviewSelection}
+          className={`rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-3.5 ${styles.previewHighlightable}`}
+        >
+          <span className="font-mono text-[10px] uppercase text-[var(--text-muted)] block mb-1.5 select-none">
+            Sorot teks pada pratinjau ini (atau klik dua kali kata) untuk membuat anotasi:
           </span>
           <div className="font-serif text-sm leading-relaxed text-[var(--ink)]">
             <AnnotatedText annotations={annotations} onOpen={(item) => setActiveEditing(item)}>
@@ -128,10 +191,29 @@ export function LexiconEditor({
         </div>
       )}
 
+      {selectedRange && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-[var(--accent-gold)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)]">
+          <span>
+            Teks disorot:{" "}
+            <strong className="text-[var(--accent-gold)]">"{selectedRange.term}"</strong>
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() =>
+              startAddAnnotation(selectedRange.term, selectedRange.start, selectedRange.end)
+            }
+          >
+            <Plus size={13} /> Anotasi Teks Ini
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <Input
           type="text"
-          placeholder="Ketik kata dari soal (mis. sovereignty, fried)..."
+          placeholder="Ketik kata atau sorot teks di atas..."
           value={newTermInput}
           disabled={disabled || annotations.length >= 20}
           onChange={(e) => {

@@ -26,6 +26,15 @@
   outline: none;
 }
 
+.previewHighlightable {
+  user-select: text;
+  cursor: text;
+}
+.previewHighlightable ::selection {
+  background: var(--accent-gold);
+  color: #0d1e13;
+}
+
 .overlay {
   position: fixed;
   inset: 0;
