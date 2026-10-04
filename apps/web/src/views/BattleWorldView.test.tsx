@@ -23,7 +23,10 @@ it("offers Drilling and Battle World navigation and an empty state backed by liv
     </MemoryRouter>,
   );
   expect(html).toContain("Battle World");
-  expect(html).toContain("Belum ada tryout siap dimainkan");
+  expect(html).toContain("Belum ada tryout UTBK");
+  expect(html).toContain('role="tab"');
+  expect(html).toContain("TKA");
+  expect(html).toContain("Ujian Mandiri");
   expect(html).toContain('href="/dashboard?tab=practice"');
   expect(html).not.toContain("Mulai tryout");
 });

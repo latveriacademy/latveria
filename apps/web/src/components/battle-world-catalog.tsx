@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Play, Swords } from "lucide-react";
+import { ArrowRight, Clock, FileText, Play, Swords } from "lucide-react";
 import { Button } from "./ui/button";
 import { PageHeading, Panel } from "./ui/dashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import styles from "./battle-world-catalog.module.css";
 
 export interface TryoutPackage {
   id: string;
@@ -14,21 +17,8 @@ export interface TryoutPackage {
   questionCount: number;
   targetQuestions?: number;
   published?: boolean;
+  category?: string;
 }
-
-const SUBTEST_SCHEDULE: { name: string; duration: number; isBreak?: boolean }[] = [
-  { name: "Penalaran Umum", duration: 30 },
-  { name: "Pengetahuan & Pemahaman Umum", duration: 15 },
-  { name: "Pemahaman Bacaan & Menulis", duration: 25 },
-  { name: "Pengetahuan Kuantitatif", duration: 20 },
-  { name: "Literasi dalam Bahasa Indonesia", duration: 45 },
-  { name: "Literasi dalam Bahasa Inggris", duration: 30 },
-  { name: "Penalaran Matematika", duration: 30 },
-].flatMap((subtest, index) =>
-  index === 4
-    ? [{ name: "Jeda Istirahat Terjadwal", duration: 15, isBreak: true }, subtest]
-    : [subtest],
-);
 
 export function BattleWorldCatalog({
   packages,
@@ -47,106 +37,109 @@ export function BattleWorldCatalog({
   onStart: (id: string) => void;
   onResume: (sessionId: string) => void;
 }) {
-  if (!packages.length)
-    return (
-      <div className="latveria-view-container">
-        <PageHeading title="Battle World" description="Tryout full dan simulasi berwaktu." />
-        <Panel className="battle-world-empty">
-          <Swords size={32} aria-hidden="true" />
-          <h2>{catalogError ? "Tryout belum dapat dimuat" : "Belum ada tryout siap dimainkan"}</h2>
-          <p>
-            {actionError ||
-              catalogError ||
-              "Tryout full yang sudah diterbitkan akan muncul di sini. Sambil menunggu, asah skill per subtes lewat Drilling."}
-          </p>
-          {catalogError ? (
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Coba lagi
-            </Button>
-          ) : (
-            <Button asChild>
-              <Link to="/dashboard?tab=practice">
-                Gas drilling
-                <ArrowRight />
-              </Link>
-            </Button>
-          )}
-        </Panel>
-      </div>
-    );
+  const categories = [
+    { value: "utbk", label: "UTBK" },
+    { value: "tka", label: "TKA" },
+    { value: "mandiri", label: "Ujian Mandiri" },
+  ];
+  const [category, setCategory] = useState("utbk");
+  const filteredPackages = packages.filter((pkg) => (pkg.category || "utbk") === category);
+  const categoryLabel = categories.find((item) => item.value === category)?.label;
   return (
-    <div className="latveria-view-container motion-page-enter">
+    <div className={`latveria-view-container motion-page-enter ${styles.catalog}`}>
       <PageHeading
         title="Battle World"
-        description="Kerjakan rangkaian subtes, pantau waktu, dan lanjutkan sesi dari perangkat yang sama."
+        description="Pilih jenis ujian dan kerjakan tryout berwaktu."
       />
-      <div className="grid gap-6 mt-6">
-        {packages.map((pkg) => (
-          <Panel key={pkg.id} className="p-7">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <div className="flex-1 min-w-0">
-                <span className="font-mono text-xs text-[var(--gold)] uppercase tracking-wider block mb-1">
-                  {pkg.isFullTryout ? "TRYOUT FULL" : "TRYOUT SUBTES"}
-                </span>
-                <h3 className="font-serif text-2xl font-bold mb-2">{pkg.name}</h3>
-                <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-2xl mb-4">
-                  {pkg.description}
-                </p>
-                <div className="border-t border-[var(--border-subtle)] pt-4 mt-4">
-                  <span className="font-mono text-xs text-[var(--text-muted)] uppercase tracking-wider block mb-3">
-                    {pkg.isFullTryout ? "ALUR SUBTES DAN JEDA:" : "FORMAT SESI:"}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {(pkg.isFullTryout
-                      ? SUBTEST_SCHEDULE
-                      : [{ name: `${pkg.questionCount} soal`, duration: pkg.duration ?? 30 }]
-                    ).map((sub, index) => (
-                      <span
-                        key={index}
-                        className="font-mono text-xs px-2.5 py-1 rounded"
-                        style={{
-                          background: sub.isBreak
-                            ? "var(--accent-gold-dim)"
-                            : "var(--surface-muted)",
-                          border: `1px solid ${sub.isBreak ? "var(--accent-gold)" : "var(--border-subtle)"}`,
-                          color: sub.isBreak ? "var(--accent-gold)" : "var(--text-primary)",
-                        }}
-                      >
-                        {sub.name} ({sub.duration}m)
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-3">
-                <span className="font-mono text-xs text-[var(--text-muted)]">
-                  {pkg.questionCount} SOAL · {pkg.duration ?? 30} MENIT
-                </span>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  {activeSessionId && (
-                    <Button
-                      variant="outline"
-                      className="border-[var(--accent-gold)] text-[var(--accent-gold)]"
-                      onClick={() => onResume(activeSessionId)}
-                    >
-                      Lanjutkan sesi
-                    </Button>
-                  )}
-                  <Button
-                    className="btn-gold-solid"
-                    loading={starting}
-                    loadingText="Menyiapkan tryout…"
-                    onClick={() => onStart(pkg.id)}
-                  >
-                    <Play size={16} />
-                    {activeSessionId ? "Mulai ulang" : "Mulai tryout"}
-                  </Button>
-                </div>
-              </div>
+      <Tabs value={category} onValueChange={setCategory}>
+        <TabsList aria-label="Jenis ujian" className="max-w-full">
+          {categories.map((item) => (
+            <TabsTrigger key={item.value} value={item.value}>
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value={category}>
+          {activeSessionId && (
+            <div
+              className={`${styles.resume} flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--edge)] bg-[var(--surface)]`}
+            >
+              <p className="m-0 text-sm text-[var(--soft-ink)]">Ada sesi tryout yang tersimpan.</p>
+              <Button
+                variant="outline"
+                disabled={starting}
+                onClick={() => onResume(activeSessionId)}
+              >
+                Lanjutkan sesi <ArrowRight size={16} />
+              </Button>
             </div>
-          </Panel>
-        ))}
-      </div>
+          )}
+          {actionError && filteredPackages.length > 0 && (
+            <p role="alert" className="mb-4 text-sm text-[var(--crimson)]">
+              {actionError}
+            </p>
+          )}
+          {!filteredPackages.length ? (
+            <Panel className="battle-world-empty">
+              <Swords size={32} aria-hidden="true" />
+              <h2>
+                {catalogError ? "Tryout belum dapat dimuat" : `Belum ada tryout ${categoryLabel}`}
+              </h2>
+              <p>
+                {actionError ||
+                  catalogError ||
+                  `Paket tryout ${categoryLabel} yang sudah diterbitkan akan muncul di sini. Sambil menunggu, latihan lewat Drilling.`}
+              </p>
+              {catalogError ? (
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Coba lagi
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link to="/dashboard?tab=practice">
+                    Gas drilling
+                    <ArrowRight />
+                  </Link>
+                </Button>
+              )}
+            </Panel>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filteredPackages.map((pkg) => (
+                <Panel key={pkg.id} className={`${styles.card} flex min-w-0 flex-col gap-5 p-5`}>
+                  <div>
+                    <h2 className={`${styles.title} font-serif text-[var(--ink)]`}>{pkg.name}</h2>
+                    <p className="mb-0 mt-2 text-sm leading-relaxed text-[var(--soft-ink)]">
+                      {pkg.description}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--soft-ink)]">
+                    <span className="inline-flex items-center gap-2">
+                      <FileText size={16} aria-hidden="true" />
+                      {pkg.questionCount} soal
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <Clock size={16} aria-hidden="true" />
+                      {pkg.durationMinutes ?? pkg.duration ?? 30} menit
+                    </span>
+                    <span>{pkg.isFullTryout ? "7 subtes" : "1 subtes"}</span>
+                  </div>
+                  <div className="mt-auto border-t border-[var(--edge)] pt-4">
+                    <Button
+                      className="w-full"
+                      loading={starting}
+                      loadingText="Menyiapkan tryout…"
+                      onClick={() => onStart(pkg.id)}
+                    >
+                      <Play size={16} /> Mulai tryout
+                    </Button>
+                  </div>
+                </Panel>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

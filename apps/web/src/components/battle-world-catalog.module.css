@@ -1,0 +1,23 @@
+.catalog [role="tablist"] {
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+}
+
+.catalog [role="tab"] {
+  padding: 8px 14px;
+  min-height: 40px;
+}
+
+.catalog .resume {
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.card .title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
