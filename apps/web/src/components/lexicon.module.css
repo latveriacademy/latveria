@@ -4,7 +4,6 @@
   padding: 0 2px 1px;
   margin: 0;
   border: 0;
-  border-bottom: 2px dotted var(--accent-gold);
   text-decoration: underline dotted var(--accent-gold);
   text-underline-offset: 4px;
   text-decoration-thickness: 2px;
