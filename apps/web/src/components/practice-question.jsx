@@ -1,13 +1,14 @@
 import React from "react";
 import { AlertTriangle, BookMarked, Check, CheckCircle2, X, XCircle } from "lucide-react";
 import { MathText } from "./math-text";
+import { AnnotatedText } from "./annotated-text";
 
 export function PracticeQuestion({
   question,
   answer,
   evaluated,
   disabled,
-  englishLiteracy,
+  englishLiteracy: _englishLiteracy,
   onAnswer,
   onOpenLexicon,
 }) {
@@ -40,33 +41,22 @@ export function PracticeQuestion({
         <section className="passage-section">
           <div className="passage-label font-mono">
             <span>Teks soal</span>
-            {englishLiteracy && (
-              <span className="text-gold">Klik kata bergaris bawah untuk melihat arti.</span>
-            )}
           </div>
           <div className="passage-body font-serif interactive-passage">
-            {question.passage.split(/(\s+)/).map((word, index) => {
-              const clean = word.toLowerCase().replace(/[^a-z]/g, "");
-              return question.interactiveWords?.includes(clean) ? (
-                <button
-                  type="button"
-                  className="interactive-word-token"
-                  key={index}
-                  onClick={() => onOpenLexicon(clean)}
-                >
-                  {word}
-                  <span className="token-indicator" />
-                </button>
-              ) : (
-                <span key={index}>{word}</span>
-              );
-            })}
+            <MathText>{question.passage}</MathText>
           </div>
         </section>
       )}
       <div className="question-prompt-box">
         <h2 className="question-prompt font-serif">
-          <MathText>{question.question}</MathText>
+          <AnnotatedText
+            annotations={question.annotations || []}
+            onOpen={
+              onOpenLexicon ? (annotation) => onOpenLexicon(annotation, question.id) : undefined
+            }
+          >
+            {question.question}
+          </AnnotatedText>
         </h2>
       </div>
       <div className="options-container" role="radiogroup" aria-label="Pilihan Jawaban">

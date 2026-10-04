@@ -14,6 +14,7 @@ export function reviewResultToSession(result: Result) {
     options: answer.options.map((text, index) => ({ key: letters[index], text })),
     correctAnswer: letters[answer.correctAnswer],
     explanation: answer.explanation,
+    annotations: answer.annotations ?? [],
   }));
   const answers = Object.fromEntries(
     result.answers.map((answer, index) => [index, letters[answer.selectedAnswer]]),

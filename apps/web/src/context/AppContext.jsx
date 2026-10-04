@@ -3,7 +3,6 @@ import { api } from "../lib/api";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { DEFAULT_USER } from "../data/userData";
 import { practiceXP } from "@latveria/shared";
-import { LEXICON_DATABASE } from "../data/lexiconData";
 import { sound } from "../utils/audioFeedback";
 
 const AppContext = createContext();
@@ -68,6 +67,7 @@ function apiQuestionToView(q) {
     id: q.id, // UUID
     question: q.prompt,
     passage: null, // API doesn't have passage field, prompt contains everything
+    annotations: q.annotations ?? [],
     options: q.options.map((text, i) => ({ key: INDEX_TO_KEY[i], text })),
     // correctAnswer and explanation not available during practice (API strips them)
     correctAnswer: null,
@@ -85,6 +85,7 @@ function mergeReviewData(sessionQuestions, reviewAnswers) {
       ...sq,
       correctAnswer: INDEX_TO_KEY[ra.correctAnswer],
       explanation: ra.explanation,
+      annotations: ra.annotations ?? sq.annotations ?? [],
       // keep original options from practice (same order)
     };
   });
@@ -298,27 +299,10 @@ export const AppProvider = ({ children }) => {
   };
 
   // Open Lexicon Dictionary Annotation
-  const openLexicon = (wordKey) => {
-    const normalizedKey = wordKey.toLowerCase().replace(/[^a-z]/g, "");
-    const entry = LEXICON_DATABASE[normalizedKey];
-    if (entry) {
-      sound.playClick();
-      setLexiconState({
-        isOpen: true,
-        wordData: entry,
-      });
-    } else {
-      setLexiconState({
-        isOpen: true,
-        wordData: {
-          word: wordKey,
-          partOfSpeech: "Term / Vocabulary",
-          indonesianDefinition: "Istilah akademik terpilih dalam teks evaluasi penalaran Latveria.",
-          example: `Critical analysis of "${wordKey}" within academic context.`,
-          academicContext: "Analyzed in Latveria Imperial Repository.",
-        },
-      });
-    }
+  const openLexicon = (annotation, questionId) => {
+    if (!annotation?.id || !questionId) return;
+    sound.playClick();
+    setLexiconState({ isOpen: true, wordData: annotation, questionId });
   };
 
   const closeLexicon = () => {

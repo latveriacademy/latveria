@@ -268,7 +268,11 @@ export function PracticeSession({
             answer={answer}
             evaluated={evaluated}
             disabled={locked}
-            englishLiteracy={session.subjectId === "LBE"}
+            englishLiteracy={
+              session.subjectSlug === "literasi-bahasa-inggris" ||
+              session.subjectId === "LBE" ||
+              Boolean(question?.annotations?.length)
+            }
             onAnswer={(key) => selectAnswer(index, key)}
             onOpenLexicon={openLexicon}
           />
