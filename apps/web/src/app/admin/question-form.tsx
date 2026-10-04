@@ -133,10 +133,7 @@ export function QuestionForm({
             phonetic: item.phonetic ?? "",
             example: item.example ?? "",
             etymology: item.etymology ?? "",
-            synonyms: String(form.get(`synonyms-${item.id}`) ?? "")
-              .split(",")
-              .map((value) => value.trim())
-              .filter(Boolean),
+            synonyms: Array.isArray(item.synonyms) ? item.synonyms : [],
           }))
         : [],
     });
