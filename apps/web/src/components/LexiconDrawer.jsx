@@ -3,7 +3,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Bookmark, Check, X } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { api } from "../lib/api";
-import { Button } from "./ui/button";
 import { LexiconContent } from "./lexicon-content";
 import styles from "./lexicon.module.css";
 
@@ -84,26 +83,21 @@ export function LexiconDrawer() {
     >
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={styles.overlay} />
-        <DialogPrimitive.Content className={styles.modal} aria-describedby="lexicon-modal-desc">
+        <DialogPrimitive.Content className={styles.drawer} aria-describedby="lexicon-drawer-desc">
           {/* Header Bar */}
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
-            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--accent-gold)] flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-[var(--accent-gold)]" />
-              Glosarium Akademik Latveria
-            </span>
+          <div className="lexicon-header">
+            <div className="lexicon-stamp font-mono">
+              <span className="lexicon-dot" />
+              <span>GLOSARIUM AKADEMIK LATVERIA</span>
+            </div>
             <DialogPrimitive.Close asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full text-[var(--text-muted)] hover:text-[var(--ink)]"
-                aria-label="Tutup glosarium"
-              >
-                <X size={16} />
-              </Button>
+              <button type="button" className="lexicon-close-btn" aria-label="Tutup glosarium">
+                <X size={18} />
+              </button>
             </DialogPrimitive.Close>
           </div>
 
-          <div id="lexicon-modal-desc" className="sr-only">
+          <div id="lexicon-drawer-desc" className="sr-only">
             Definisi akademik dan konteks kalimat untuk {activeAnnotation.term}
           </div>
 
@@ -119,9 +113,10 @@ export function LexiconDrawer() {
           )}
 
           {/* Action Footer */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-[var(--border-subtle)]">
-            <Button
-              className="btn-gold-solid flex-1 min-h-[40px] text-xs font-mono font-bold"
+          <div className="lexicon-actions">
+            <button
+              type="button"
+              className="btn-archive-vocab"
               disabled={saved || loading || pending}
               onClick={handleSave}
             >
@@ -133,16 +128,12 @@ export function LexiconDrawer() {
                     ? "MEMERIKSA…"
                     : pending
                       ? "MENYIMPAN…"
-                      : "SIMPAN KE KOSAKATA"}
+                      : "SIMPAN KE ARSIP KOSAKATA"}
               </span>
-            </Button>
-            <Button
-              variant="outline"
-              className="min-h-[40px] text-xs font-mono"
-              onClick={closeLexicon}
-            >
-              KEMBALI KE SOAL
-            </Button>
+            </button>
+            <button type="button" className="btn-dismiss-vocab" onClick={closeLexicon}>
+              <span>KEMBALI KE SOAL</span>
+            </button>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

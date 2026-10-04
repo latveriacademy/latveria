@@ -308,18 +308,42 @@ export function LexiconEditor({
           onOpenChange={(open) => {
             if (!open) setActiveEditing(null);
           }}
-          title={
-            <div className="flex items-center gap-2">
-              <span>Detail Kosakata:</span>
-              <span className="font-serif text-xl font-bold text-[var(--accent-gold)]">
-                "{activeEditing.term}"
-              </span>
-            </div>
+          title="Edit Kosakata Lexicon"
+          description="Atur arti kontekstual dan informasi akademik untuk kata ini."
+          style={{ width: "min(580px, calc(100vw - 32px))" }}
+          footer={
+            <>
+              <Button type="button" variant="outline" onClick={() => setActiveEditing(null)}>
+                Batal
+              </Button>
+              <Button
+                type="button"
+                className="btn-gold-solid min-w-[140px]"
+                disabled={!activeEditing.definition.trim() || !activeEditing.partOfSpeech.trim()}
+                onClick={() => saveEditing(activeEditing)}
+              >
+                Simpan Kosakata
+              </Button>
+            </>
           }
-          description="Sesuaikan arti konteks dan informasi akademik untuk siswa."
-          className="max-w-[560px]"
         >
-          <div className="space-y-3.5 max-h-[70vh] overflow-y-auto pr-1 text-sm">
+          <div className="space-y-3.5 text-sm">
+            {/* Term Callout */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)]">
+              <div>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)] block">
+                  KATA YANG DIANOTASI
+                </span>
+                <span className="font-serif text-2xl font-bold text-[var(--accent-gold)]">
+                  {activeEditing.term}
+                </span>
+              </div>
+              <div className="text-right font-mono text-xs text-[var(--text-muted)]">
+                <span>
+                  Posisi: {activeEditing.start + 1}–{activeEditing.end}
+                </span>
+              </div>
+            </div>
             <div>
               <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
                 Arti sesuai konteks soal *
@@ -372,61 +396,67 @@ export function LexiconEditor({
                 onChange={(e) => setActiveEditing({ ...activeEditing, context: e.target.value })}
               />
             </div>
-            <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
-                Contoh penggunaan lain (opsional)
-              </label>
-              <Textarea
-                value={activeEditing.example ?? ""}
-                placeholder="Contoh kalimat lain..."
-                maxLength={500}
-                rows={2}
-                onChange={(e) => setActiveEditing({ ...activeEditing, example: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
-                Etimologi / Asal kata (opsional)
-              </label>
-              <Textarea
-                value={activeEditing.etymology ?? ""}
-                placeholder="Contoh: From Latin super (above)..."
-                maxLength={500}
-                rows={2}
-                onChange={(e) => setActiveEditing({ ...activeEditing, etymology: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="font-semibold text-[var(--ink)] block mb-1 text-xs">
-                Sinonim (opsional, pisahkan dengan koma)
-              </label>
-              <Input
-                value={activeEditing.synonyms?.join(", ") ?? ""}
-                placeholder="autonomy, supremacy"
-                onChange={(e) =>
-                  setActiveEditing({
-                    ...activeEditing,
-                    synonyms: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </div>
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--edge)]">
-              <Button type="button" variant="outline" onClick={() => setActiveEditing(null)}>
-                Batal
-              </Button>
-              <Button
-                type="button"
-                className="btn-gold-solid"
-                disabled={!activeEditing.definition.trim() || !activeEditing.partOfSpeech.trim()}
-                onClick={() => saveEditing(activeEditing)}
-              >
-                Simpan Kosakata
-              </Button>
-            </div>
+            {/* Optional Academic Details Collapsible */}
+            <details
+              className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-3 text-xs"
+              open={Boolean(
+                activeEditing.example ||
+                activeEditing.etymology ||
+                (activeEditing.synonyms && activeEditing.synonyms.length > 0),
+              )}
+            >
+              <summary className="font-semibold text-[var(--ink)] cursor-pointer select-none font-mono uppercase tracking-wide">
+                Informasi Tambahan (Contoh, Etimologi, Sinonim)
+              </summary>
+              <div className="mt-3 space-y-3 pt-3 border-t border-[var(--edge)]">
+                <div>
+                  <label className="block font-medium text-[var(--ink)] mb-1">
+                    Contoh penggunaan lain (opsional)
+                  </label>
+                  <Textarea
+                    value={activeEditing.example ?? ""}
+                    placeholder="Contoh kalimat akademik lain..."
+                    maxLength={500}
+                    rows={2}
+                    onChange={(e) =>
+                      setActiveEditing({ ...activeEditing, example: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-[var(--ink)] mb-1">
+                    Etimologi / Asal kata (opsional)
+                  </label>
+                  <Textarea
+                    value={activeEditing.etymology ?? ""}
+                    placeholder="mis. From Latin super (above)..."
+                    maxLength={500}
+                    rows={2}
+                    onChange={(e) =>
+                      setActiveEditing({ ...activeEditing, etymology: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-[var(--ink)] mb-1">
+                    Sinonim akademik (opsional, pisahkan dengan koma)
+                  </label>
+                  <Input
+                    value={activeEditing.synonyms?.join(", ") ?? ""}
+                    placeholder="mis. autonomy, supremacy, independence"
+                    onChange={(e) =>
+                      setActiveEditing({
+                        ...activeEditing,
+                        synonyms: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </details>
           </div>
         </AppDialog>
       )}

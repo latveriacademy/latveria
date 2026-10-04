@@ -1,5 +1,12 @@
 import { useId, type CSSProperties, type ReactNode } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 type Props = {
   open: boolean;
@@ -7,6 +14,7 @@ type Props = {
   title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
+  footer?: ReactNode;
   pending?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -18,6 +26,7 @@ export function AppDialog({
   title,
   description,
   children,
+  footer,
   pending = false,
   className,
   style,
@@ -41,6 +50,7 @@ export function AppDialog({
           {description && <DialogDescription id={descriptionId}>{description}</DialogDescription>}
         </DialogHeader>
         {children}
+        {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>
     </Dialog>
   );
