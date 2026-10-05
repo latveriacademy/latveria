@@ -201,7 +201,7 @@ Migrasi dan metadata berada di `apps/api/drizzle`. Migrasi dijalankan eksplisit,
 
 ## 8. Development, produksi, dan CI
 
-Development memakai Vite pada port 3000 dan API pada port 3001. Vite mem-proxy `/api` ke backend, sehingga browser tetap memakai satu origin. PostgreSQL Compose lokal tersedia pada port 5433, dengan Adminer pada port 8080.
+Development memakai Vite pada port 3000 dan API pada port 3001. Vite mem-proxy `/api` ke backend, sehingga browser tetap memakai satu origin. PostgreSQL Compose lokal tersedia pada port 5433, dengan Adminer pada port 8080, serta MinIO (S3-compatible object storage) pada port 9002 (API) dan 9003 (Console) dengan bucket `latveria-avatars` untuk foto profil (batas disarankan 5 KB – 3 MB). Pada produksi, MinIO digantikan dengan Cloudflare R2 atau Amazon S3.
 
 Ada dua cara penyajian produksi yang didukung:
 
