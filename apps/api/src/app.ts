@@ -66,7 +66,7 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
   for (const cookie of setCookieHeaders) {
     c.header("Set-Cookie", cookie);
   }
-  return c.body(body, status);
+  return c.newResponse(body, status as Parameters<typeof c.newResponse>[1]);
 });
 
 // Authentication and Origin verification middleware
