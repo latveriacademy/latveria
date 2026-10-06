@@ -154,23 +154,25 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
 
   // Get topic names
   const topicIds = [...new Set(recentAttempts.map((a) => a.topicId).filter(Boolean))];
-  const topicsResult =
-    topicIds.length > 0
-      ? await db
-          .select({ id: topics.id, name: topics.name, slug: topics.slug })
-          .from(topics)
-          .where(sql`${topics.id} = ANY(${topicIds})`)
-      : [];
+  let topicsResult: { id: string; name: string; slug: string }[] = [];
+  if (topicIds.length > 0) {
+    const idList = topicIds.map((id) => `'${id}'`).join(",");
+    topicsResult = await db
+      .select({ id: topics.id, name: topics.name, slug: topics.slug })
+      .from(topics)
+      .where(sql`${topics.id} IN (${sql.raw(idList)})`);
+  }
   const topicMap = new Map(topicsResult.map((t) => [t.id, t]));
 
   // Get today's practice
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayStartStr = todayStart.toISOString();
   const todayAttempts = await db
     .select({ count: sql<number>`count(*)` })
     .from(practiceAttempts)
     .where(
-      and(eq(practiceAttempts.userId, userId), sql`${practiceAttempts.submittedAt} >= ${today}`),
+      and(eq(practiceAttempts.userId, userId), sql`${practiceAttempts.submittedAt} >= ${todayStartStr}::timestamp`),
     );
 
   // Get subtest stats
