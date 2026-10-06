@@ -134,6 +134,13 @@
       "when": 1791132500000,
       "tag": "0018_user_management_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791133000000,
+      "tag": "0019_tryout_sections_and_rich_questions",
+      "breakpoints": true
     }
   ]
 }

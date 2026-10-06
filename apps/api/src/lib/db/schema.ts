@@ -13,7 +13,12 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
-import type { LexiconAnnotation } from "@latveria/shared";
+import type {
+  LexiconAnnotation,
+  QuestionStimulus,
+  TrueFalseStatement,
+  ScoringConfig,
+} from "@latveria/shared";
 
 export const topics = pgTable("topics", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -60,7 +65,13 @@ export const questions = pgTable(
       .notNull()
       .references(() => topics.id),
     packageId: uuid("package_id").references(() => questionPackages.id, { onDelete: "set null" }),
+    questionType: text("question_type").notNull().default("single_choice"),
+    schemaVersion: integer("schema_version").notNull().default(1),
     prompt: text("prompt").notNull(),
+    stimulus: jsonb("stimulus").$type<QuestionStimulus>(),
+    passage: text("passage"),
+    statements: jsonb("statements").$type<TrueFalseStatement[]>(),
+    scoringConfig: jsonb("scoring_config").$type<ScoringConfig>(),
     annotations: jsonb("annotations").$type<LexiconAnnotation[]>().notNull().default([]),
     options: text("options").array().notNull(),
     correctAnswer: integer("correct_answer").notNull(),
@@ -76,9 +87,12 @@ export const questions = pgTable(
   (table) => [
     check(
       "questions_five_options",
-      sql`array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 5 and array_position(${table.options}, null) is null`,
+      sql`${table.questionType} != 'single_choice' or (array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 5 and array_position(${table.options}, null) is null)`,
     ),
-    check("questions_valid_answer", sql`${table.correctAnswer} between 0 and 4`),
+    check(
+      "questions_valid_answer",
+      sql`${table.questionType} != 'single_choice' or (${table.correctAnswer} between 0 and 4)`,
+    ),
     foreignKey({
       columns: [table.packageId, table.topicId],
       foreignColumns: [questionPackages.id, questionPackages.topicId],
@@ -154,6 +168,7 @@ export const practiceAnswers = pgTable(
       .notNull()
       .references(() => questions.id, { onDelete: "cascade" }),
     selectedAnswer: integer("selected_answer").notNull(),
+    responsePayload: jsonb("response_payload"),
     isCorrect: integer("is_correct").notNull(),
     isFirstAttempt: boolean("is_first_attempt").default(true).notNull(),
     timeSpentSeconds: integer("time_spent_seconds"),
@@ -165,7 +180,10 @@ export const practiceAnswers = pgTable(
   (table) => [
     unique("answer_attempt_question_unique").on(table.attemptId, table.questionId),
     index("practice_answers_submitted_idx").on(table.submittedAt),
-    check("answer_valid_selected", sql`${table.selectedAnswer} between 0 and 4`),
+    check(
+      "answer_valid_selected",
+      sql`${table.selectedAnswer} between 0 and 4 or ${table.selectedAnswer} = -1`,
+    ),
     check("answer_valid_correct", sql`${table.isCorrect} in (0, 1)`),
   ],
 ).enableRLS();
@@ -225,18 +243,44 @@ export const tryoutSessions = pgTable("tryout_sessions", {
   totalScore: integer("total_score"),
 }).enableRLS();
 
+export const tryoutSections = pgTable(
+  "tryout_sections",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    packageId: uuid("package_id")
+      .notNull()
+      .references(() => questionPackages.id, { onDelete: "cascade" }),
+    subtestCode: text("subtest_code").notNull(),
+    title: text("title").notNull(),
+    sectionOrder: integer("section_order").notNull().default(0),
+    durationSeconds: integer("duration_seconds").notNull().default(1800),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("tryout_sections_package_code_unique").on(table.packageId, table.subtestCode),
+    unique("tryout_sections_package_order_unique").on(table.packageId, table.sectionOrder),
+    index("tryout_sections_package_idx").on(table.packageId),
+  ],
+).enableRLS();
+
 export const tryoutPackageQuestions = pgTable(
   "tryout_package_questions",
   {
     packageId: uuid("package_id")
       .notNull()
       .references(() => questionPackages.id, { onDelete: "cascade" }),
+    sectionId: uuid("section_id").references(() => tryoutSections.id, { onDelete: "cascade" }),
     questionId: uuid("question_id")
       .notNull()
       .references(() => questions.id, { onDelete: "cascade" }),
     order: integer("order").notNull().default(0),
+    position: integer("position").notNull().default(0),
   },
-  (table) => [unique("tryout_package_questions_unique").on(table.packageId, table.questionId)],
+  (table) => [
+    unique("tryout_package_questions_unique").on(table.packageId, table.questionId),
+    index("tryout_package_questions_section_idx").on(table.sectionId),
+  ],
 ).enableRLS();
 
 export const auditLogs = pgTable(

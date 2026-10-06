@@ -3,6 +3,7 @@ export interface ScoringItemInput {
   isCorrect: boolean;
   timeSpentSeconds?: number;
   itemWeight?: number;
+  scoreFraction?: number;
   stats?: {
     totalAttempts: number;
     correctAttempts: number;
@@ -13,6 +14,7 @@ export interface ScoringItemInput {
 export interface ItemScoreBreakdown {
   questionId: string;
   isCorrect: boolean;
+  scoreFraction?: number;
   timeSpentSeconds: number;
   itemWeight: number;
   timeFactor: number;
@@ -73,10 +75,17 @@ export function calculateLatveriaScore(
       weight = Math.round(100 + delta);
     }
 
+    const fraction =
+      typeof item.scoreFraction === "number"
+        ? Math.max(0, Math.min(1, item.scoreFraction))
+        : item.isCorrect
+          ? 1.0
+          : 0.0;
+
     // Time factor for fairness: bounded between 0.85 and 1.15
     let timeFactor = 1.0;
-    if (item.isCorrect) {
-      correctCount++;
+    if (fraction > 0) {
+      correctCount += fraction;
       // Time efficiency factor
       const ratio = standardTimeSeconds / Math.max(10, timeSpent);
       timeFactor = Math.max(
@@ -89,7 +98,7 @@ export function calculateLatveriaScore(
       timeFactor = 1.0;
     }
 
-    const itemScore = item.isCorrect ? Math.round(weight * timeFactor) : 0;
+    const itemScore = Math.round(weight * timeFactor * fraction);
     const maxItemScore = Math.round(weight * 1.15);
 
     totalRawScore += itemScore;
@@ -97,7 +106,8 @@ export function calculateLatveriaScore(
 
     itemBreakdowns.push({
       questionId: item.questionId,
-      isCorrect: item.isCorrect,
+      isCorrect: fraction >= 1,
+      scoreFraction: fraction,
       timeSpentSeconds: timeSpent,
       itemWeight: weight,
       timeFactor,
@@ -105,7 +115,7 @@ export function calculateLatveriaScore(
     });
   }
 
-  const accuracy = Math.round((correctCount / items.length) * 1000) / 10;
+  const accuracy = Math.round((Math.min(items.length, correctCount) / items.length) * 1000) / 10;
   const averageTime = Math.round((totalTime / items.length) * 10) / 10;
 
   // Normalized score 0 - 1000
@@ -122,9 +132,9 @@ export function calculateLatveriaScore(
     rawScore: totalRawScore,
     maxPossibleRawScore,
     totalCount: items.length,
-    correctCount,
+    correctCount: Math.round(correctCount),
     incorrectCount,
-    unansweredCount: items.length - correctCount - incorrectCount,
+    unansweredCount: Math.max(0, items.length - Math.round(correctCount) - incorrectCount),
     accuracy,
     averageTime,
     performanceIndex,
