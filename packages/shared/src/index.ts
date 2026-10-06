@@ -269,7 +269,9 @@ export type MoveQuestionPackageInput = z.infer<typeof moveQuestionPackageSchema>
 const questionFields = z.object({
   topicId: z.uuid(),
   packageId: z.uuid("ID paket tidak valid.").optional().nullable(),
-  prompt: z.string().trim().min(5).max(1000),
+  prompt: z.string().trim().min(5).max(5000),
+  passage: z.string().trim().max(10000).optional().nullable(),
+  passageId: z.string().uuid("ID wacana tidak valid.").optional().nullable(),
   options: z
     .array(z.string().trim().min(1).max(300))
     .length(5)
@@ -382,6 +384,8 @@ export type PracticeQuestion = {
   prompt: string;
   options: string[];
   annotations?: LexiconAnnotation[];
+  passage?: string | null;
+  passageId?: string | null;
 };
 export type ReviewQuestion = PracticeQuestion & {
   selectedAnswer: number;
@@ -422,6 +426,8 @@ export type Bank = {
     packageName?: string | null;
     source: string;
     annotationsCount?: number;
+    passage?: string | null;
+    passageId?: string | null;
   }[];
   total: number;
   page: number;
@@ -467,6 +473,8 @@ export type PackageDetail = QuestionPackage & {
   questions: {
     id: string;
     prompt: string;
+    passage?: string | null;
+    passageId?: string | null;
     category: string | null;
     source: string;
     usage: number;

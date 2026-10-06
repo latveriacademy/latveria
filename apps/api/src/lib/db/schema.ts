@@ -11,6 +11,7 @@ import {
   timestamp,
   unique,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 import type {
@@ -70,6 +71,9 @@ export const questions = pgTable(
     prompt: text("prompt").notNull(),
     stimulus: jsonb("stimulus").$type<QuestionStimulus>(),
     passage: text("passage"),
+    passageId: uuid("passage_id").references((): AnyPgColumn => questions.id, {
+      onDelete: "set null",
+    }),
     statements: jsonb("statements").$type<TrueFalseStatement[]>(),
     scoringConfig: jsonb("scoring_config").$type<ScoringConfig>(),
     annotations: jsonb("annotations").$type<LexiconAnnotation[]>().notNull().default([]),

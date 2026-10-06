@@ -6,14 +6,14 @@ export const mathSourcePattern =
 export const lexiconAnnotationInputSchema = z.object({
   id: z.string().uuid().optional(),
   term: z.string().trim().min(1).max(100),
-  start: z.number().int().min(0).max(1000).optional(),
-  end: z.number().int().min(1).max(1000).optional(),
+  start: z.number().int().min(0).max(10000).optional(),
+  end: z.number().int().min(1).max(10000).optional(),
   definition: z.string().trim().min(1).max(500),
   partOfSpeech: z.string().trim().min(1).max(50),
   phonetic: z.string().trim().max(100).default(""),
-  context: z.string().trim().max(1000).default(""),
-  example: z.string().trim().max(500).default(""),
-  etymology: z.string().trim().max(500).default(""),
+  context: z.string().trim().max(10000).default(""),
+  example: z.string().trim().max(1000).default(""),
+  etymology: z.string().trim().max(1000).default(""),
   synonyms: z.array(z.string().trim().min(1).max(100)).max(10).default([]),
 });
 
@@ -21,14 +21,14 @@ export const lexiconAnnotationSchema = z
   .object({
     id: z.uuid(),
     term: z.string().trim().min(1).max(100),
-    start: z.number().int().min(0).max(1000),
-    end: z.number().int().min(1).max(1000),
+    start: z.number().int().min(0).max(10000),
+    end: z.number().int().min(1).max(10000),
     definition: z.string().trim().min(1).max(500),
     partOfSpeech: z.string().trim().min(1).max(50),
     phonetic: z.string().trim().max(100).default(""),
-    context: z.string().trim().min(1).max(1000),
-    example: z.string().trim().max(500).default(""),
-    etymology: z.string().trim().max(500).default(""),
+    context: z.string().trim().min(1).max(10000),
+    example: z.string().trim().max(1000).default(""),
+    etymology: z.string().trim().max(1000).default(""),
     synonyms: z.array(z.string().trim().min(1).max(100)).max(10).default([]),
   })
   .strict();

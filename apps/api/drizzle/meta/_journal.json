@@ -141,6 +141,13 @@
       "when": 1791133000000,
       "tag": "0019_tryout_sections_and_rich_questions",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791296573939,
+      "tag": "0020_closed_wrecking_crew",
+      "breakpoints": true
     }
   ]
 }
