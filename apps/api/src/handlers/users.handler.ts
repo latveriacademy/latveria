@@ -1,12 +1,7 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
 import { user as userTable } from "../lib/db/auth-schema";
-import {
-  practiceAnswers,
-  practiceAttempts,
-  topics,
-  questionReports,
-} from "../lib/db/schema";
+import { practiceAnswers, practiceAttempts, topics, questionReports } from "../lib/db/schema";
 import { eq, sql, desc, asc, like, and, count, inArray } from "drizzle-orm";
 
 export const usersHandler = new Hono();
@@ -40,10 +35,7 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
     .select({ count: count() })
     .from(userTable)
     .where(
-      and(
-        eq(userTable.role, "user"),
-        sql`${userTable.createdAt} >= ${weekAgoStr}::timestamp`,
-      ),
+      and(eq(userTable.role, "user"), sql`${userTable.createdAt} >= ${weekAgoStr}::timestamp`),
     );
   const newThisWeek = Number(newThisWeekResult?.count ?? 0);
 
@@ -68,9 +60,7 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
   const totalPracticeTime = Number(totalTimeResult?.total ?? 0);
 
   // Total questions answered
-  const [totalAnswersResult] = await db
-    .select({ count: count() })
-    .from(practiceAnswers);
+  const [totalAnswersResult] = await db.select({ count: count() }).from(practiceAnswers);
   const totalQuestionsAnswered = Number(totalAnswersResult?.count ?? 0);
 
   // Average accuracy
@@ -131,14 +121,7 @@ usersHandler.get("/api/admin/users", async (c) => {
   const demoFilter = c.req.query("demo") ?? "";
   const sortBy = c.req.query("sort") ?? "created_at";
   const sortOrder = c.req.query("order") ?? "desc";
-  const levelMin = c.req.query("levelMin") ? parseInt(c.req.query("levelMin")!) : null;
-  const levelMax = c.req.query("levelMax") ? parseInt(c.req.query("levelMax")!) : null;
-  const accuracyMin = c.req.query("accuracyMin") ? parseInt(c.req.query("accuracyMin")!) : null;
-  const accuracyMax = c.req.query("accuracyMax") ? parseInt(c.req.query("accuracyMax")!) : null;
   const status = c.req.query("status") ?? "";
-  const lastActivityDays = c.req.query("lastActivityDays")
-    ? parseInt(c.req.query("lastActivityDays")!)
-    : null;
 
   const conditions = [eq(userTable.role, "user")];
 
@@ -309,8 +292,7 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
   const currentXP = totalXP % 100;
   const nextLevelXP = 100;
   const avgTimePerQuestion = answered > 0 ? Math.round(timeSpent / answered) : 0;
-  const firstAttemptRate =
-    answered > 0 ? Math.round((firstAttemptCount / answered) * 100) : 0;
+  const firstAttemptRate = answered > 0 ? Math.round((firstAttemptCount / answered) * 100) : 0;
 
   // Get weekly activity (last 7 days)
   const weeklyActivity = [];
@@ -746,10 +728,7 @@ usersHandler.post("/api/admin/users/bulk-action", async (c) => {
   switch (action) {
     case "setDemo": {
       const isDemo = params.isDemo === true;
-      await db
-        .update(userTable)
-        .set({ isDemo })
-        .where(inArray(userTable.id, userIds));
+      await db.update(userTable).set({ isDemo }).where(inArray(userTable.id, userIds));
       return c.json({ success: true, affected: userIds.length, isDemo });
     }
 
@@ -788,9 +767,7 @@ usersHandler.post("/api/admin/users/bulk-action", async (c) => {
         const attemptIds = attempts.map((a) => a.id);
 
         if (attemptIds.length > 0) {
-          await db
-            .delete(practiceAnswers)
-            .where(inArray(practiceAnswers.attemptId, attemptIds));
+          await db.delete(practiceAnswers).where(inArray(practiceAnswers.attemptId, attemptIds));
         }
         await db.delete(practiceAttempts).where(eq(practiceAttempts.userId, userId));
         await db.execute(sql`DELETE FROM session WHERE user_id = ${userId}`);
@@ -809,9 +786,7 @@ usersHandler.post("/api/admin/users/bulk-action", async (c) => {
         const attemptIds = attempts.map((a) => a.id);
 
         if (attemptIds.length > 0) {
-          await db
-            .delete(practiceAnswers)
-            .where(inArray(practiceAnswers.attemptId, attemptIds));
+          await db.delete(practiceAnswers).where(inArray(practiceAnswers.attemptId, attemptIds));
         }
         await db.delete(practiceAttempts).where(eq(practiceAttempts.userId, userId));
       }
@@ -829,11 +804,7 @@ usersHandler.get("/api/admin/users/:id/export", async (c) => {
   const userId = c.req.param("id");
   const format = c.req.query("format") ?? "json";
 
-  const [u] = await db
-    .select()
-    .from(userTable)
-    .where(eq(userTable.id, userId))
-    .limit(1);
+  const [u] = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
 
   if (!u) {
     return c.json({ error: "User tidak ditemukan." }, 404);

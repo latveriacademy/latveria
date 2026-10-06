@@ -9,6 +9,11 @@ export async function getCompletedTryoutQuestions(questionSets: string) {
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      questionType: questions.questionType,
+      stimulus: questions.stimulus,
+      passage: questions.passage,
+      statements: questions.statements,
+      scoringConfig: questions.scoringConfig,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
       explanation: questions.explanation,

@@ -1,6 +1,18 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../types";
-import { createAdminTryout } from "../services/admin-tryout.service";
+import {
+  createAdminTryout,
+  createTryoutSection,
+  deleteAdminTryout,
+  deleteTryoutSection,
+  getAdminTryout,
+  importSectionQuestions,
+  listAdminTryouts,
+  removeQuestionFromSection,
+  reorderSectionQuestions,
+  updateAdminTryout,
+  updateTryoutSection,
+} from "../services/admin-tryout.service";
 import {
   advanceTryoutSubtest,
   autosaveTryout,
@@ -10,6 +22,10 @@ import {
 } from "../services/tryout.service";
 
 export const tryoutHandler = new Hono<AppEnv>();
+
+// ==========================================
+// LEARNER TRYOUT (BATTLE WORLD) ENDPOINTS
+// ==========================================
 
 tryoutHandler.post("/api/learner/tryouts/start/:packageId", async (c) => {
   const result = await startTryout(c.get("user").id, c.req.param("packageId"));
@@ -39,8 +55,73 @@ tryoutHandler.post("/api/learner/tryouts/:sessionId/advance", async (c) => {
   return c.json(result);
 });
 
+// ==========================================
+// ADMIN TRYOUT BUILDER & MANAGEMENT
+// ==========================================
+
+tryoutHandler.get("/api/admin/tryouts", async (c) => {
+  const result = await listAdminTryouts();
+  return c.json(result);
+});
+
 tryoutHandler.post("/api/admin/tryouts", async (c) => {
   const body = await c.req.json().catch(() => null);
   const result = await createAdminTryout(body);
   return c.json(result, 201);
+});
+
+tryoutHandler.get("/api/admin/tryouts/:id", async (c) => {
+  const result = await getAdminTryout(c.req.param("id"));
+  return c.json(result);
+});
+
+tryoutHandler.put("/api/admin/tryouts/:id", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await updateAdminTryout(c.req.param("id"), body);
+  return c.json(result);
+});
+
+tryoutHandler.delete("/api/admin/tryouts/:id", async (c) => {
+  const result = await deleteAdminTryout(c.req.param("id"));
+  return c.json(result);
+});
+
+tryoutHandler.post("/api/admin/tryouts/:id/sections", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await createTryoutSection(c.req.param("id"), body);
+  return c.json(result, 201);
+});
+
+tryoutHandler.put("/api/admin/tryouts/sections/:sectionId", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await updateTryoutSection(c.req.param("sectionId"), body);
+  return c.json(result);
+});
+
+tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId", async (c) => {
+  const result = await deleteTryoutSection(c.req.param("sectionId"));
+  return c.json(result);
+});
+
+tryoutHandler.post("/api/admin/tryouts/sections/:sectionId/import", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await importSectionQuestions(c.req.param("sectionId"), body);
+  return c.json(result);
+});
+
+tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId/questions/:questionId", async (c) => {
+  const result = await removeQuestionFromSection(
+    c.req.param("sectionId"),
+    c.req.param("questionId"),
+  );
+  return c.json(result);
+});
+
+tryoutHandler.put("/api/admin/tryouts/sections/:sectionId/reorder", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as { questionIds?: string[] };
+  const result = await reorderSectionQuestions(
+    c.req.param("sectionId"),
+    Array.isArray(body?.questionIds) ? body.questionIds : [],
+  );
+  return c.json(result);
 });

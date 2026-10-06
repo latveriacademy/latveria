@@ -5,8 +5,8 @@ import { getDb } from "../lib/db";
 import {
   questionPackages,
   questions,
-  systemConfig,
   tryoutPackageQuestions,
+  tryoutSections,
   tryoutSessions,
 } from "../lib/db/schema";
 import { catalog } from "./topic.service";
@@ -32,6 +32,7 @@ export async function startTryout(userId: string, packageId: string) {
           eq(questionPackages.published, true),
           or(
             eq(questionPackages.isFullTryout, true),
+            eq(questionPackages.packageType, "Tryout"),
             eq(questionPackages.packageType, "Simulasi"),
             eq(questionPackages.packageType, "Simulasi Akbar"),
           ),
@@ -52,7 +53,7 @@ export async function startTryout(userId: string, packageId: string) {
         and(
           eq(tryoutSessions.userId, userId),
           eq(tryoutSessions.packageId, pkg.id),
-          inArray(tryoutSessions.state, ["active", "break"]),
+          inArray(tryoutSessions.state, ["active", "section_ready", "break"]),
         ),
       );
     if (existingSession && existingSession.questionSets !== "{}")
@@ -68,7 +69,7 @@ export async function startTryout(userId: string, packageId: string) {
         .from(tryoutPackageQuestions)
         .innerJoin(questions, eq(tryoutPackageQuestions.questionId, questions.id))
         .where(and(eq(tryoutPackageQuestions.packageId, pkg.id), eq(questions.topicId, topic.id)))
-        .orderBy(tryoutPackageQuestions.order, questions.order, questions.id);
+        .orderBy(tryoutPackageQuestions.position, tryoutPackageQuestions.order, questions.id);
       let pool = tryoutQuestions;
       if (!pool.length)
         pool = await tx
@@ -147,36 +148,34 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     : available.filter((topic) => topic.id === pkg.topicId);
   const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
 
-  let state = session.state;
-  let currentSubtestIndex = session.currentSubtestIndex;
-  if (state === "break" && session.breakEndsAt && new Date() >= session.breakEndsAt) {
-    state = "active";
-    currentSubtestIndex = Math.min(subtests.length - 1, currentSubtestIndex + 1);
-    await getDb()
-      .update(tryoutSessions)
-      .set({
-        state: "active",
-        currentSubtestIndex,
-        breakEndsAt: null,
-        currentQuestionIndex: 0,
-        subtestStartedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(tryoutSessions.id, session.id),
-          eq(tryoutSessions.userId, userId),
-          eq(tryoutSessions.state, "break"),
-        ),
-      );
-  }
-
+  const state = session.state;
+  const currentSubtestIndex = session.currentSubtestIndex;
   const currentSubtest = subtests[currentSubtestIndex] || subtests[0];
   if (!currentSubtest) throw new HTTPException(409, { message: "Subtes tryout tidak tersedia." });
+
+  // Check if tryout has custom section configured for this subtest to get accurate duration
+  const [sectionConfig] = await getDb()
+    .select()
+    .from(tryoutSections)
+    .where(
+      and(
+        eq(tryoutSections.packageId, pkg.id),
+        eq(
+          tryoutSections.subtestCode,
+          utbkSubtests.find((s) => s.slug === currentSubtest.slug)?.short || "",
+        ),
+      ),
+    );
+
   const selectedQuestionIds = questionSets[currentSubtest.id] ?? [];
   const qList = await getDb()
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      questionType: questions.questionType,
+      stimulus: questions.stimulus,
+      passage: questions.passage,
+      statements: questions.statements,
       options: questions.options,
       itemWeight: questions.itemWeight,
       calculatorAllowed: questions.calculatorAllowed,
@@ -189,6 +188,15 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     )
     .orderBy(questions.order, questions.id);
 
+  // Sanitize: hide correct answers from statements during active session
+  const sanitizedQuestions = qList.map((q) => ({
+    ...q,
+    statements:
+      state !== "completed" && Array.isArray(q.statements)
+        ? q.statements.map((s) => ({ id: s.id, text: s.text }))
+        : q.statements,
+  }));
+
   const score =
     session.state === "completed"
       ? (() => {
@@ -199,6 +207,7 @@ export async function getTryoutSession(userId: string, sessionId: string) {
             items.map((item) => ({
               questionId: item.questionId,
               isCorrect: item.isCorrect,
+              scoreFraction: item.scoreFraction,
               itemWeight: item.itemWeight,
               timeSpentSeconds: item.timeSpentSeconds,
             })),
@@ -206,32 +215,35 @@ export async function getTryoutSession(userId: string, sessionId: string) {
         })()
       : null;
 
-  const currentSubtestDuration = pkg.isFullTryout
-    ? ([30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30)
-    : pkg.duration;
+  const currentSubtestDurationSeconds = sectionConfig?.durationSeconds
+    ? sectionConfig.durationSeconds
+    : pkg.isFullTryout
+      ? ([30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30) * 60
+      : pkg.duration * 60;
+
   const elapsed = Math.max(0, Math.floor((Date.now() - session.subtestStartedAt.getTime()) / 1000));
-  const activeTimeRemaining = Math.max(0, currentSubtestDuration * 60 - elapsed);
+  const activeTimeRemaining =
+    session.state === "section_ready"
+      ? currentSubtestDurationSeconds
+      : Math.max(0, currentSubtestDurationSeconds - elapsed);
 
   return {
     session: {
       ...session,
       state,
       currentSubtestIndex,
-      breakEndsAt: session.breakEndsAt?.toISOString() ?? null,
+      breakEndsAt: null,
       answers: JSON.parse(session.answers || "{}"),
       flags: JSON.parse(session.flags || "{}"),
       questionTimes: JSON.parse(session.questionTimes || "{}"),
       totalScore: session.totalScore,
       completedAt: session.completedAt?.toISOString() ?? null,
-      secondsRemaining:
-        session.state === "break" && session.breakEndsAt
-          ? Math.max(0, Math.ceil((session.breakEndsAt.getTime() - Date.now()) / 1000))
-          : activeTimeRemaining,
+      secondsRemaining: activeTimeRemaining,
     },
     package: pkg,
     currentSubtest,
     totalSubtests: subtests.length,
-    questions: qList,
+    questions: sanitizedQuestions,
     score,
     ...(state === "completed"
       ? { reviewQuestions: await getCompletedTryoutQuestions(session.questionSets) }
@@ -299,14 +311,17 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
       .flatMap(([, ids]) => ids),
   );
 
+  const isValidAnswers = Object.entries(answers).every(([id, value]) => {
+    if (!previouslyAllowed.has(id)) return false;
+    if (typeof value === "number" || typeof value === "string") return true;
+    if (typeof value === "object" && value !== null) {
+      return Object.values(value).every((v) => typeof v === "boolean");
+    }
+    return false;
+  });
+
   if (
-    Object.entries(answers).some(
-      ([id, value]) =>
-        !previouslyAllowed.has(id) ||
-        !Number.isInteger(Number(value)) ||
-        Number(value) < 0 ||
-        Number(value) > 3,
-    ) ||
+    !isValidAnswers ||
     Object.entries(flags).some(
       ([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean",
     ) ||
@@ -315,7 +330,7 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
         !previouslyAllowed.has(id) ||
         !Number.isInteger(value) ||
         Number(value) < 0 ||
-        Number(value) > 3600,
+        Number(value) > 7200,
     ) ||
     (b.currentQuestionIndex as number) >= Math.max(1, allowed.size)
   )
@@ -386,43 +401,20 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
     const ids = sets[current.id] ?? [];
     const bodyAnswers = b.answers as Record<string, unknown>;
     const times = b.timeSpentByQuestion as Record<string, unknown>;
-    const savedAnswers = JSON.parse(session.answers || "{}") as Record<string, string>;
-    const previouslySubmittedIds = new Set(
-      Object.entries(sets)
-        .slice(0, session.currentSubtestIndex + 1)
-        .flatMap(([, questionIds]) => questionIds),
-    );
+    const savedAnswers = JSON.parse(session.answers || "{}") as Record<string, unknown>;
     const currentAnswers = Object.fromEntries(
       ids.filter((id) => Object.hasOwn(bodyAnswers, id)).map((id) => [id, bodyAnswers[id]]),
     );
     const allAnswers = { ...savedAnswers, ...currentAnswers };
 
-    if (
-      ids.some(
-        (id) =>
-          Object.hasOwn(currentAnswers, id) &&
-          (!Number.isInteger(Number(currentAnswers[id])) ||
-            Number(currentAnswers[id]) < 0 ||
-            Number(currentAnswers[id]) > 3),
-      ) ||
-      Object.keys(bodyAnswers).some((id) => !previouslySubmittedIds.has(id)) ||
-      Object.entries(times).some(
-        ([id, value]) =>
-          !previouslySubmittedIds.has(id) ||
-          !Number.isInteger(value) ||
-          Number(value) < 0 ||
-          Number(value) > 3600,
-      )
-    )
-      throw new HTTPException(400, {
-        message: "Format jawaban atau waktu tryout tidak valid.",
-      });
-
     const questionRows = ids.length
       ? await tx
           .select({
             id: questions.id,
+            questionType: questions.questionType,
             correctAnswer: questions.correctAnswer,
+            statements: questions.statements,
+            scoringConfig: questions.scoringConfig,
             itemWeight: questions.itemWeight,
           })
           .from(questions)
@@ -434,11 +426,37 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
     const result = calculateLatveriaScore(
       questionRows.map((question) => {
         const hasAnswer = Object.hasOwn(currentAnswers, question.id);
-        const isCorrect =
-          hasAnswer && Number(currentAnswers[question.id]) === question.correctAnswer;
+        let isCorrect = false;
+        let scoreFraction = 0;
+
+        if (hasAnswer) {
+          if (question.questionType === "true_false_group" && Array.isArray(question.statements)) {
+            const userStmtAnswers = (currentAnswers[question.id] || {}) as Record<string, boolean>;
+            const stmts = question.statements;
+            const correctCount = stmts.filter(
+              (s) => userStmtAnswers[s.id] === Boolean(s.answer),
+            ).length;
+            const totalCount = stmts.length || 1;
+            const mode = question.scoringConfig?.mode || "per_statement";
+
+            if (mode === "all_or_nothing") {
+              const allCorrect = correctCount === totalCount;
+              isCorrect = allCorrect;
+              scoreFraction = allCorrect ? 1.0 : 0.0;
+            } else {
+              scoreFraction = correctCount / totalCount;
+              isCorrect = scoreFraction === 1.0;
+            }
+          } else {
+            isCorrect = Number(currentAnswers[question.id]) === question.correctAnswer;
+            scoreFraction = isCorrect ? 1.0 : 0.0;
+          }
+        }
+
         return {
           questionId: question.id,
           isCorrect,
+          scoreFraction,
           itemWeight: question.itemWeight,
           timeSpentSeconds: Number.isInteger(times[question.id]) ? Number(times[question.id]) : 60,
         };
@@ -453,6 +471,7 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       scoreBreakdown.map((item) => ({
         questionId: item.questionId,
         isCorrect: item.isCorrect,
+        scoreFraction: item.scoreFraction,
         itemWeight: item.itemWeight,
         timeSpentSeconds: item.timeSpentSeconds,
       })),
@@ -473,28 +492,25 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       return { status: "completed" as const, score: aggregate };
     }
 
-    const [cfg] = await tx
-      .select()
-      .from(systemConfig)
-      .where(eq(systemConfig.key, "break_duration_minutes"));
-    const breakMinutes = Math.max(0, Number(cfg?.value || 15));
-    const breakEndsAt = new Date(Date.now() + breakMinutes * 60 * 1000);
+    // No mandatory 15-minute break: section completes and next is ready to start now or later
+    const nextSubtestIndex = session.currentSubtestIndex + 1;
     await tx
       .update(tryoutSessions)
       .set({
-        state: "break",
-        breakEndsAt,
+        state: "section_ready",
+        currentSubtestIndex: nextSubtestIndex,
+        breakEndsAt: null,
         answers: JSON.stringify(allAnswers),
         scoreBreakdown: JSON.stringify(scoreBreakdown),
         totalScore: aggregate.score,
+        currentQuestionIndex: 0,
       })
       .where(and(eq(tryoutSessions.id, session.id), eq(tryoutSessions.state, "active")));
 
     return {
-      status: "break" as const,
-      breakEndsAt: breakEndsAt.toISOString(),
-      breakMinutes,
-      nextSubtestIndex: session.currentSubtestIndex + 1,
+      status: "section_ready" as const,
+      nextSubtestIndex,
+      score: aggregate,
     };
   });
 }
@@ -513,26 +529,12 @@ export async function advanceTryoutSubtest(userId: string, sessionId: string) {
     return { status: "completed" as const, session };
   }
 
-  if (session.state === "break") {
-    const [pkg] = await getDb()
-      .select()
-      .from(questionPackages)
-      .where(eq(questionPackages.id, session.packageId));
-    if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
-
-    const available = (await catalog(true)).filter((topic) =>
-      utbkSubtests.some((subtest) => subtest.slug === topic.slug),
-    );
-    const subtests = pkg.isFullTryout
-      ? available
-      : available.filter((topic) => topic.id === pkg.topicId);
-
-    const nextIndex = Math.min(subtests.length - 1, session.currentSubtestIndex + 1);
+  // Transitions section_ready or break to active with fresh subtest timer
+  if (session.state === "section_ready" || session.state === "break") {
     const [updated] = await getDb()
       .update(tryoutSessions)
       .set({
         state: "active",
-        currentSubtestIndex: nextIndex,
         breakEndsAt: null,
         currentQuestionIndex: 0,
         subtestStartedAt: new Date(),
@@ -541,12 +543,12 @@ export async function advanceTryoutSubtest(userId: string, sessionId: string) {
         and(
           eq(tryoutSessions.id, session.id),
           eq(tryoutSessions.userId, userId),
-          eq(tryoutSessions.state, "break"),
+          or(eq(tryoutSessions.state, "section_ready"), eq(tryoutSessions.state, "break")),
         ),
       )
       .returning();
     return { status: "active" as const, session: updated ?? session };
   }
 
-  return { status: session.state as "active" | "break" | "completed", session };
+  return { status: session.state as "active" | "section_ready" | "completed", session };
 }
