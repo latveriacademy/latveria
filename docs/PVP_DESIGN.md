@@ -26,16 +26,17 @@ Real-time: BELUM ADA
 
 ### 1.2 Opsi Real-Time
 
-| Opsi | Deskripsi | Kelebihan | Kekurangan |
-|------|-----------|-----------|-------------|
-| **A. Hono WebSocket** | `@hono/ws` experimental | Satu codebase Hono, seamless integration | Experimental, dokumentasi terbatas |
-| **B. Dedicated WS Server** | Server terpisah (ws library) | Stabil, production-ready | Infra baru, perlu proxy/coordination |
-| **C. SSE + Polling** | Server-Sent Events untuk push | Mudah diimplementasi | Tidak true bidirectional, latency lebih tinggi |
-| **D. Long Polling** | Polling berkala | Kompatibel everywhere | Boros resource, latency tinggi |
+| Opsi                       | Deskripsi                     | Kelebihan                                | Kekurangan                                     |
+| -------------------------- | ----------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| **A. Hono WebSocket**      | `@hono/ws` experimental       | Satu codebase Hono, seamless integration | Experimental, dokumentasi terbatas             |
+| **B. Dedicated WS Server** | Server terpisah (ws library)  | Stabil, production-ready                 | Infra baru, perlu proxy/coordination           |
+| **C. SSE + Polling**       | Server-Sent Events untuk push | Mudah diimplementasi                     | Tidak true bidirectional, latency lebih tinggi |
+| **D. Long Polling**        | Polling berkala               | Kompatibel everywhere                    | Boros resource, latency tinggi                 |
 
 **Rekomendasi**: **Opsi A - Hono WebSocket**
 
 Alasan:
+
 1. Minim perubahan infra - tetap satu server
 2. Integrasi dengan auth yang ada lebih mudah
 3. Bun runtime sudah support WebSocket
@@ -43,14 +44,15 @@ Alasan:
 
 ### 1.3 Redis vs In-Memory
 
-| Penyimpanan | Kapan | Kelebihan | Kekurangan |
-|-------------|-------|-----------|-------------|
+| Penyimpanan   | Kapan                    | Kelebihan                      | Kekurangan                                   |
+| ------------- | ------------------------ | ------------------------------ | -------------------------------------------- |
 | **In-Memory** | < 100 concurrent players | Simpel, tidak perlu infra baru | Lost on restart, tidak bisa scale horizontal |
-| **Redis** | > 100 concurrent players | Persistent, scalable | Infra baru, complexity |
+| **Redis**     | > 100 concurrent players | Persistent, scalable           | Infra baru, complexity                       |
 
 **Rekomendasi MVP**: In-Memory dengan persist critical data ke PostgreSQL
 
 Untuk MVP, state room di-memory cukup karena:
+
 - Target pertama: user count rendah
 - Jika server restart, room yang aktif akan terminate
 - Data final (hasil match) akan tetap tersimpan di PostgreSQL
@@ -61,21 +63,21 @@ Untuk MVP, state room di-memory cukup karena:
 
 ### 2.1 Mode
 
-| Mode | Pemain | Keterangan |
-|------|--------|-------------|
-| **Duel** | 2 | Quick match 1v1 |
-| **Lobby** | 2-8 | Multi-player, configurable |
+| Mode      | Pemain | Keterangan                 |
+| --------- | ------ | -------------------------- |
+| **Duel**  | 2      | Quick match 1v1            |
+| **Lobby** | 2-8    | Multi-player, configurable |
 
 ### 2.2 Lobby Settings
 
-| Setting | Default | Opsi | Host Configurable |
-|---------|---------|------|-------------------|
-| Subtes | Campuran | Single subtes, Campuran | Ya |
-| Jumlah Soal | 10 | 5, 10, 15 | Ya |
-| Waktu/Soal | Auto | Auto, 30s, 45s, 60s | Ya (dalam batas) |
-| Max Pemain | 8 | 2-8 | Ya |
-| Visibilitas | Privat | Privat, Publik | Ya |
-| Ranked | No | Yes/No | Ya (host only) |
+| Setting     | Default  | Opsi                    | Host Configurable |
+| ----------- | -------- | ----------------------- | ----------------- |
+| Subtes      | Campuran | Single subtes, Campuran | Ya                |
+| Jumlah Soal | 10       | 5, 10, 15               | Ya                |
+| Waktu/Soal  | Auto     | Auto, 30s, 45s, 60s     | Ya (dalam batas)  |
+| Max Pemain  | 8        | 2-8                     | Ya                |
+| Visibilitas | Privat   | Privat, Publik          | Ya                |
+| Ranked      | No       | Yes/No                  | Ya (host only)    |
 
 ### 2.3 Waktu Per Soal Otomatis
 
@@ -83,16 +85,16 @@ Untuk MVP, state room di-memory cukup karena:
 
 **Solusi**: Waktu berdasarkan kategori subtes
 
-| Subtes | Waktu Default | Batas Min | Batas Max |
-|--------|--------------|-----------|-----------|
-| PU | 60s | 45s | 90s |
-| PPU | 45s | 30s | 60s |
-| PBM | 75s | 60s | 120s |
-| PK | 30s | 20s | 45s |
-| BI | 45s | 30s | 60s |
-| EN | 45s | 30s | 60s |
-| PM | 45s | 30s | 60s |
-| Campuran | 45s | 30s | 90s |
+| Subtes   | Waktu Default | Batas Min | Batas Max |
+| -------- | ------------- | --------- | --------- |
+| PU       | 60s           | 45s       | 90s       |
+| PPU      | 45s           | 30s       | 60s       |
+| PBM      | 75s           | 60s       | 120s      |
+| PK       | 30s           | 20s       | 45s       |
+| BI       | 45s           | 30s       | 60s       |
+| EN       | 45s           | 30s       | 60s       |
+| PM       | 45s           | 30s       | 60s       |
+| Campuran | 45s           | 30s       | 90s       |
 
 Host dapat pilih waktu dalam rentang Min-Max. Untuk "Campuran", pakai waktu subtes yang paling panjang di batch soal.
 
@@ -118,6 +120,7 @@ FINAL_RESULTS (peringkat, XP reward)
 **Masalah**: Klien dengan device lambat (parsing KaTeX/TikZ) bisa disadvantage.
 
 **Solusi**:
+
 1. Server kirim soal + metadata ("needsRender": true/false)
 2. Klien kirim "READY" setelah soal terender
 3. Server tunggu semua klien READY (max 5 detik)
@@ -130,6 +133,7 @@ FINAL_RESULTS (peringkat, XP reward)
 ### 3.1 Rumus Poin
 
 **Paramater**:
+
 - T = waktu soal dalam detik (dari section 2.3)
 - t = waktu pemain menjawab dalam detik (0 ≤ t ≤ T)
 - basePoints = 50 (konstanta)
@@ -137,6 +141,7 @@ FINAL_RESULTS (peringkat, XP reward)
 - firstCorrectBonus = 10
 
 **Rumus**:
+
 ```
 if jawaban == BENAR:
     speedRatio = (T - t) / T
@@ -150,15 +155,15 @@ else:
 
 **Contoh Kalkulasi** (T = 45 detik):
 
-| Waktu Jawab | Benar? | First? | Poin |
-|-------------|--------|---------|------|
-| 0s | Ya | Ya | 110 |
-| 0s | Ya | Tidak | 100 |
-| 10s | Ya | Ya | 93 |
-| 22.5s | Ya | Ya | 75 |
-| 45s (deadline) | Ya | Ya | 60 |
-| 15s | Salah | - | 0 |
-| - | Timeout | - | 0 |
+| Waktu Jawab    | Benar?  | First? | Poin |
+| -------------- | ------- | ------ | ---- |
+| 0s             | Ya      | Ya     | 110  |
+| 0s             | Ya      | Tidak  | 100  |
+| 10s            | Ya      | Ya     | 93   |
+| 22.5s          | Ya      | Ya     | 75   |
+| 45s (deadline) | Ya      | Ya     | 60   |
+| 15s            | Salah   | -      | 0    |
+| -              | Timeout | -      | 0    |
 
 ### 3.2 Mitigasi Menebak Cepat
 
@@ -191,8 +196,14 @@ export const PVP_SCORING = {
     { threshold: 60, multiplier: 0.05 },
   ],
   TIME_PER_QUESTION: {
-    PU: 60, PPU: 45, PBM: 75, PK: 30,
-    BI: 45, EN: 45, PM: 45, MIXED: 45,
+    PU: 60,
+    PPU: 45,
+    PBM: 75,
+    PK: 30,
+    BI: 45,
+    EN: 45,
+    PM: 45,
+    MIXED: 45,
   },
   TIME_LIMITS: { MIN: 20, MAX: 120 },
 };
@@ -213,17 +224,18 @@ export const PVP_SCORING = {
 
 ```typescript
 enum RoomState {
-  LOBBY = 'LOBBY',
-  COUNTDOWN = 'COUNTDOWN',
-  ROUND_ACTIVE = 'ROUND_ACTIVE',
-  REVEAL = 'REVEAL',
-  FINISHED = 'FINISHED',
+  LOBBY = "LOBBY",
+  COUNTDOWN = "COUNTDOWN",
+  ROUND_ACTIVE = "ROUND_ACTIVE",
+  REVEAL = "REVEAL",
+  FINISHED = "FINISHED",
 }
 ```
 
 ### 4.2 WebSocket Protocol
 
 **Client → Server Messages**:
+
 - `room:create` - Buat room
 - `room:join` - Gabung dengan kode
 - `room:ready` - Toggle ready
@@ -233,6 +245,7 @@ enum RoomState {
 - `round:ready` - Konfirmasi render selesai
 
 **Server → Client Messages**:
+
 - `room:state` - Update state room
 - `round:start` - Mulai round (tanpa kunci)
 - `answer:ack` - Acknowledge jawaban (tanpa benar/salah)
@@ -246,7 +259,11 @@ enum RoomState {
 ### 4.3 Server-Authoritative Timing
 
 ```typescript
-function calculateCorrectedTime(submitTimestamp: number, serverNow: number, playerLatency: number): number {
+function calculateCorrectedTime(
+  submitTimestamp: number,
+  serverNow: number,
+  playerLatency: number,
+): number {
   const travelTime = (serverNow - submitTimestamp) / 2;
   const correctedTime = travelTime - playerLatency;
   return Math.max(0, correctedTime);
@@ -293,11 +310,11 @@ const RATE_LIMITS = {
 
 ### 5.4 XP Farming Prevention
 
-| Lobby Type | XP Multiplier | Max XP/Day |
-|-----------|--------------|------------|
-| Ranked + 2+ players + diverse opponents | 100% | 500 |
-| Public + 2+ players | 50% | 250 |
-| Private (friends) | 10% | 50 |
+| Lobby Type                              | XP Multiplier | Max XP/Day |
+| --------------------------------------- | ------------- | ---------- |
+| Ranked + 2+ players + diverse opponents | 100%          | 500        |
+| Public + 2+ players                     | 50%           | 250        |
+| Private (friends)                       | 10%           | 50         |
 
 ---
 
@@ -398,60 +415,64 @@ ALTER TABLE practice_answers ADD COLUMN source TEXT DEFAULT 'drilling';
 
 ### Phase 1: Fondasi (2-3 sprint)
 
-| Task | Estimasi | Paralel |
-|------|----------|---------|
-| Setup WebSocket in Hono | 1 week | - |
-| Schema + Migration | 2 days | - |
-| Room state machine | 3 days | Yes |
-| Question selection | 2 days | Yes |
-| Scoring engine | 3 days | Yes |
-| Basic lobby UI | 1 week | Yes |
-| Real-time round UI | 1 week | Yes |
+| Task                    | Estimasi | Paralel |
+| ----------------------- | -------- | ------- |
+| Setup WebSocket in Hono | 1 week   | -       |
+| Schema + Migration      | 2 days   | -       |
+| Room state machine      | 3 days   | Yes     |
+| Question selection      | 2 days   | Yes     |
+| Scoring engine          | 3 days   | Yes     |
+| Basic lobby UI          | 1 week   | Yes     |
+| Real-time round UI      | 1 week   | Yes     |
 
 ### Phase 2: Ranked + Rating (1-2 sprint)
 
-| Task | Estimasi | Paralel |
-|------|----------|---------|
-| Rating calculation | 2 days | - |
-| Season system | 3 days | Yes |
-| Leaderboard PvP | 3 days | Yes |
-| Anti-cheat | 3 days | Yes |
+| Task               | Estimasi | Paralel |
+| ------------------ | -------- | ------- |
+| Rating calculation | 2 days   | -       |
+| Season system      | 3 days   | Yes     |
+| Leaderboard PvP    | 3 days   | Yes     |
+| Anti-cheat         | 3 days   | Yes     |
 
 ### Phase 3: Polish (1-2 sprint)
 
-| Task | Estimasi | Paralel |
-|------|----------|---------|
-| Emote reactions | 2 days | - |
-| Report system | 3 days | Yes |
-| Block users | 2 days | Yes |
-| Disconnect handling | 2 days | Yes |
+| Task                | Estimasi | Paralel |
+| ------------------- | -------- | ------- |
+| Emote reactions     | 2 days   | -       |
+| Report system       | 3 days   | Yes     |
+| Block users         | 2 days   | Yes     |
+| Disconnect handling | 2 days   | Yes     |
 
 ### Phase 4: Growth (1 sprint)
 
-| Task | Estimasi | Paralel |
-|------|----------|---------|
-| Public lobbies | 3 days | - |
-| Ghost match | 1 week | Yes |
-| Daily PvP challenge | 3 days | Yes |
+| Task                | Estimasi | Paralel |
+| ------------------- | -------- | ------- |
+| Public lobbies      | 3 days   | -       |
+| Ghost match         | 1 week   | Yes     |
+| Daily PvP challenge | 3 days   | Yes     |
 
 ---
 
 ## 9. Testing Strategy
 
 ### 9.1 Unit Tests
+
 - Scoring engine
 - Tiebreaker logic
 - Rating calculation
 
 ### 9.2 Integration Tests
+
 - Match flow (3+ players)
 - Player disconnect/reconnect
 
 ### 9.3 Load Tests
+
 - 50 concurrent rooms
 - High latency simulation
 
 ### 9.4 Security Tests
+
 - No answer key leak
 - Rate limiting
 - Late answer rejection

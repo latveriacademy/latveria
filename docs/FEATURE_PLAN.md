@@ -29,18 +29,22 @@ Tanggal: 06 October 2026
 **Status**: Item kecil, bukan fitur baru.
 
 ### Situasi Saat Ini
+
 Aplikasi sudah memiliki dua tema: Latveria Obsidian (gelap) dan Imperial Parchment (terang) dengan toggle di header.
 
 ### Yang Perlu Dicek
+
 1. Apakah tema sudah persiste di akun (database) atau hanya di localStorage?
 2. Apakah sudah ada opsi "Ikuti pengaturan sistem"?
 
 ### Aksi yang Dibutuhkan
+
 - Jika belum persiste: tambahkan field `theme_preference` di tabel user (`'light' | 'dark' | 'system'`)
 - Tambahkan opsi di halaman profil pengguna
 - Backend tidak perlu tahu tema; cukup simpan preference
 
 ### Estimasi Usaha: Kecil
+
 Tidak ada perubahan API atau logika domain.
 
 ---
@@ -48,10 +52,13 @@ Tidak ada perubahan API atau logika domain.
 ## B. Battle World vs PvP: Analisis Konflik
 
 ### Situasi Saat Ini
+
 Battle World di PLAN.md tertulis sebagai "tryout mode" - simulasi ujian dengan timer dan state sendiri.
 
 ### Masalah dengan PvP
+
 PvP juga memerlukan:
+
 - Timer real-time
 - Sinkronisasi antar pemain
 - State room/lobby
@@ -62,6 +69,7 @@ Ini BUKAN konflik fundamental, tapi bisa membingungkan user jika naming tidak je
 ### Opsi Struktur Menu
 
 #### Opsi 1: Battle World sebagai Hub Terintegrasi
+
 ```
 Battle World
 ├── Tryout (simulasi ujian, timer sendiri, single player)
@@ -75,6 +83,7 @@ Battle World
 **Kekurangan**: Perlu diferenciasi jelas antara Tryout dan Versus.
 
 #### Opsi 2: Pisahkan Menu
+
 ```
 Latihan → Drilling
 Tryout → Battle World (existing)
@@ -85,7 +94,9 @@ Competitif → Versus (PvP) - menu baru
 **Kekurangan**: Menu lebih banyak.
 
 #### Opsi 3: Tab di Battle World
+
 Battle World sekarang punya tab:
+
 - Tab "Latihan" (existing drilling)
 - Tab "Tryout" (simulasi ujian)
 - Tab "Versus" (PvP)
@@ -94,7 +105,9 @@ Battle World sekarang punya tab:
 **Kekurangan**: Bisa crowded di mobile.
 
 ### Rekomendasi
+
 **Opsi 3** - Tab di Battle World. Alasannya:
+
 1. Minim perubahan routing
 2. User sudah familiar dengan navigasi Battle World
 3. PvP dan Tryout bisa share komponen timer/state jika diarsitektur dengan benar
@@ -107,6 +120,7 @@ Battle World sekarang punya tab:
 **Lihat**: `docs/PVP_DESIGN.md` untuk desain lengkap.
 
 ### Ringkasan
+
 - Mode: duel 1v1 dan lobby multi-pemain (2-8 pemain)
 - Host membuat room dengan kode atau tautan
 - Aturan skor: benar dapat poin + bonus kecepatan; salah = 0
@@ -125,6 +139,7 @@ Battle World sekarang punya tab:
 **Nilai bagi casual learner**: Less relevant - mungkin prefer random practice.
 
 **Skema Data Baru**:
+
 ```typescript
 // Tidak perlu tabel baru - reuse data existing
 // subtest_stats di user detail sudah punya:
@@ -133,31 +148,37 @@ Battle World sekarang punya tab:
 ```
 
 **Endpoint API** (reuse existing):
+
 - `GET /api/admin/users/:id` sudah mengembalikan `weakAreas`
 - Perlu endpoint untuk learner:
   - `GET /api/learner/weak-areas` → array of weak subtests with accuracy
   - `GET /api/learner/recommended-packages?subtest=xxx` → paket yang sesuai
 
 **Perubahan UI**:
+
 - Tab baru di dashboard: "Area Lemah"
 - Card per subtest dengan accuracy dan trend
 - Rekomendasi paket drill yang sesuai
 - Quick action: "Mulai latihan [subtest]"
 
 **Dependensi**:
+
 - Memerlukan data `subtest_stats` dari user detail (sudah ada)
 - Integrasi dengan katalog paket (sudah ada)
 - Titik integrasi: reuse dari `/api/admin/users/:id` weakAreas
 
 **Estimasi Usaha**: Sedang
+
 - Backend: endpoint baru + rekomendasi logic
 - Frontend: halaman baru + komponen card
 
 **Risiko**:
+
 - Akurasi weak areas tergantung jumlah data (butuh minimal N soal per subtest)
 - Rekomendasi bisa tidak relevan jika bank soal terbatas
 
 **Pengujian**:
+
 - Unit test untuk algoritma weak area
 - Verifikasi rekomendasi sesuai subtest yang lemah
 - Edge case: user baru dengan sedikit data
@@ -174,6 +195,7 @@ Battle World sekarang punya tab:
 **Nilai bagi casual learner**:收藏 favourite questions.
 
 **Skema Data Baru**:
+
 ```typescript
 // Tabel bookmark_questions
 {
@@ -186,6 +208,7 @@ Battle World sekarang punya tab:
 ```
 
 **Endpoint API**:
+
 ```
 POST   /api/learner/bookmarks          - Tambah bookmark
 DELETE /api/learner/bookmarks/:id      - Hapus bookmark
@@ -195,24 +218,29 @@ PUT    /api/learner/bookmarks/:id/notes - Update catatan
 ```
 
 **Perubahan UI**:
+
 - Tombol bookmark di setiap soal (drilling dan PvP)
 - Halaman "Bookmark Saya" dengan filter (subtest, tanggal, ada catatan)
 - Auto-import soal salah ke bookmark (dengan toggle)
 - Quick review dari bookmark
 
 **Dependensi**:
+
 - Tidak ada dependensi blocking
 - Titik integrasi: tombol bookmark di PracticeQuestion component
 
 **Estimasi Usaha**: Sedang
+
 - Backend: CRUD bookmark + query soal salah
 - Frontend: tombol bookmark, halaman bookmark, filter
 
 **Risiko**:
+
 - Bookmark banyak bisa bikin UI crowded
 - Auto-bookmark wrong answers perlu UX yang jelas
 
 **Pengujian**:
+
 - CRUD operations
 - Verify bookmark persists across sessions
 - Pagination works correctly
@@ -229,6 +257,7 @@ PUT    /api/learner/bookmarks/:id/notes - Update catatan
 **Nilai bagi casual learner**: Fun dan engagement.
 
 **Skema Data Baru**:
+
 ```typescript
 // Tabel user_streak_config
 {
@@ -250,6 +279,7 @@ PUT    /api/learner/bookmarks/:id/notes - Update catatan
 ```
 
 **Endpoint API**:
+
 ```
 GET  /api/learner/streak           - Info streak saat ini
 GET  /api/learner/daily-challenge  - Soal challenge hari ini
@@ -259,30 +289,36 @@ POST /api/learner/streak/freeze    - Gunakan streak freeze
 ```
 
 **Perubahan UI**:
+
 - Streak counter di header/dashboard
 - Notifikasi/prompt untuk daily challenge
 - Confetti animation saat streak milestone
 - Modal "Pakai Streak Freeze?" saat skip hari
 
 **Streak Rules**:
+
 - Streak naik jika latihan (min 1 soal) dalam 1 hari kalender WIB
 - Streak freeze bisa dipakai 1x per minggu (beli dengan XP atau grant bulanan)
 - Streak istirahat 1 hari masih aktif jika pakai freeze
 
 **Daily Challenge Rules**:
+
 - 1 soal per hari, berbeda setiap hari
 - Bonus XP extra jika menjawab benar
 - Streak khusus daily challenge (terpisah dari overall streak)
 
 **Estimasi Usaha**: Besar
+
 - Backend: streak logic, challenge scheduling, freeze system
 - Frontend: streak UI, challenge prompt, animations
 
 **Risiko**:
+
 - Streak farming (maintenance yang tidak bermakna)
 - Streak freeze bisa jadi abused
 
 **Pengujian**:
+
 - Streak calculation across timezone
 - Streak freeze logic
 - Daily challenge rotates correctly
@@ -297,6 +333,7 @@ POST /api/learner/streak/freeze    - Gunakan streak freeze
 **Nilai bagi casual learner**: Less urgent.
 
 **Skema Data** (reuse existing):
+
 ```typescript
 // Data sudah ada di practice_answers:
 {
@@ -311,6 +348,7 @@ POST /api/learner/streak/freeze    - Gunakan streak freeze
 ```
 
 **Endpoint API**:
+
 ```
 GET /api/learner/analytics/time
   Query: ?subtest=xxx&period=30d
@@ -323,6 +361,7 @@ GET /api/learner/analytics/time
 ```
 
 **Perubahan UI**:
+
 - Tab "Analytics" di dashboard
 - Chart time per subtest
 - Heatmap waktu vs akurasi
@@ -341,6 +380,7 @@ GET /api/learner/analytics/time
 **Dependensi**: Memerlukan Bookmarks dan log jawaban salah.
 
 **Skema Data** (reuse):
+
 ```typescript
 // Jika pakai algoritma SM-2 sederhana:
 {
@@ -353,6 +393,7 @@ GET /api/learner/analytics/time
 ```
 
 **Endpoint API**:
+
 ```
 GET  /api/learner/review/queue     - Soal untuk review hari ini
 POST /api/learner/review/:id/done  - Tandai selesai dengan rating (again/hard/good/easy)
@@ -369,6 +410,7 @@ POST /api/learner/review/:id/done  - Tandai selesai dengan rating (again/hard/go
 **Dependensi**: Memerlukan Weak Area Tracking.
 
 **Skema Data**:
+
 ```typescript
 // Tabel study_plans
 {
@@ -396,6 +438,7 @@ POST /api/learner/review/:id/done  - Tandai selesai dengan rating (again/hard/go
 **Nilai**: cocok untuk bimbel, guru, atau self-study group.
 
 **Skema Data**:
+
 ```typescript
 // Tabel groups
 {
@@ -420,6 +463,7 @@ POST /api/learner/review/:id/done  - Tandai selesai dengan rating (again/hard/go
 ```
 
 **Endpoint API**:
+
 ```
 POST   /api/learner/groups          - Buat group
 GET    /api/learner/groups           - Daftar group saya
@@ -432,6 +476,7 @@ GET    /api/admin/groups/:id/analytics - Progress semua member
 ```
 
 **Privasi** (kritis untuk user < 18 tahun):
+
 - Default: group adalah private
 - Invite only via code
 - No public profiles
@@ -449,6 +494,7 @@ GET    /api/admin/groups/:id/analytics - Progress semua member
 **Tujuan**: Bagikan achievement ke social media.
 
 **Skema Data** (tidak ada tabel baru):
+
 ```typescript
 // Generate shareable card dari data existing:
 {
@@ -458,6 +504,7 @@ GET    /api/admin/groups/:id/analytics - Progress semua member
 ```
 
 **Endpoint API**:
+
 ```
 GET /api/learner/share-card
   Query: ?style=minimal|detailed
@@ -465,6 +512,7 @@ GET /api/learner/share-card
 ```
 
 **Catatan**:
+
 - Card adalah image, bukan live page
 - Tidak ada personal data tambahan yang terbuka
 - Referral system: see separate section
@@ -476,6 +524,7 @@ GET /api/learner/share-card
 **Tujuan**: Organic growth.
 
 **Skema Data**:
+
 ```typescript
 // Tabel referrals
 {
@@ -487,6 +536,7 @@ GET /api/learner/share-card
 ```
 
 **Anti-penyalahgunaan**:
+
 - Reward hanya sekali per referee
 - Reward claimable setelah referee reach level X
 - Batasi referral per user (mis. max 10)
@@ -503,6 +553,7 @@ GET /api/learner/share-card
 **Skema Data** (tidak ada tabel baru).
 
 **Endpoint API**:
+
 ```
 GET /api/learner/results/:id/export?format=pdf
   Response: PDF binary stream
@@ -521,6 +572,7 @@ GET /api/learner/results/:id/export?format=pdf
 **Tujuan**: Practice bisa dilakukan offline.
 
 **Analisis TikZ**:
+
 ```
 TikZ rendering: CLIENT-SIDE (React component)
 KaTeX rendering: CLIENT-SIDE (browser)
@@ -532,17 +584,20 @@ Implikasi:
 ```
 
 **Yang Bisa Offline**:
+
 - Practice dengan soal yang sudah di-cache
 - Review bookmarked questions
 - View cached results
 
 **Yang Tidak Bisa Offline**:
+
 - Login (butuh auth)
 - Submit jawaban baru
 - Daily challenge baru
 - Leaderboard
 
 **Estimasi Usaha**: Besar
+
 - Service worker setup
 - Cache strategy
 - Sync logic
@@ -554,6 +609,7 @@ Implikasi:
 **Dihapus sementara**.
 
 **Alasan**:
+
 - Biaya API yang tidak terprediksi
 - Akurasi untuk matematika masih challenging
 - Moderasi untuk user < 18 tahun kompleks
@@ -564,13 +620,16 @@ Implikasi:
 ## E. Tryout Mode dan Penskoran UTBK
 
 ### Sistem Saat Ini
+
 Tryout mode (Battle World) menghitung:
+
 - `correctCount` / `totalCount` = akurasi
 - XP dari jawaban benar
 
 ### Opsi Penskoran
 
 #### Opsi A: Simple Percentage
+
 ```
 Score = (correct / total) * 100
 ```
@@ -579,6 +638,7 @@ Score = (correct / total) * 100
 **Con**: Tidak akurat dengan UTBK real scoring.
 
 #### Opsi B: IRT-like Scoring (Perkiraan)
+
 ```
 // Tanpa soal sebenarnya, kita pakai estimasi sederhana:
 // Soal lebih sulit (lower historical accuracy) = lebih banyak poin
@@ -589,6 +649,7 @@ Score = Σ (base_points * difficulty_weight * correctness)
 **Con**: Butuh data kesulitan soal yang valid.
 
 #### Opsi C: As-is dengan Label Jujur
+
 ```
 Tampilkan:
 - "Latveria Score" (proprietary metric)
@@ -603,7 +664,9 @@ Dengan disclaimer jelas:
 **Con**: User mungkin bingung kenapa berbeda dari ekspektasi.
 
 ### Rekomendasi
+
 **Opsi C** - Label jujur dengan disclaimer. Alasannya:
+
 1. Kita tidak punya akses ke sistem IRT UTBK yang sebenarnya
 2. Memberi ilusi prediksi yang akurat bisa dangerous
 3. User yang serius akan appreciate honesty
@@ -631,6 +694,7 @@ PvP                     ✗         Perlu desain lengkap
 ```
 
 **Tim Bisa Bekerja Paralel Pada**:
+
 1. Weak Area Tracking + Bookmarks
 2. Time Analytics + PDF Export
 3. Group Management (desain schema)
@@ -640,15 +704,15 @@ PvP                     ✗         Perlu desain lengkap
 
 ## G. Keputusan yang Sudah Dibuat
 
-| Keputusan | Jawaban |
-|-----------|---------|
-| Target utama | Learner persiapan UTBK |
-| Target sekunder | Casual learner (mekanik kompetitif opsional) |
-| Gamifikasi | Penting, tapi dorong kebiasaan belajar benar dan anti-curang |
-| Pendekatan | Comprehensive, tim bisa kerja paralel |
-| Privasi | Prioritas, terutama untuk user < 18 tahun |
-| Voice Input | DIHAPUS dari rencana |
-| PvP | Arah utama: 1v1 dan multi-player lobby |
+| Keputusan       | Jawaban                                                      |
+| --------------- | ------------------------------------------------------------ |
+| Target utama    | Learner persiapan UTBK                                       |
+| Target sekunder | Casual learner (mekanik kompetitif opsional)                 |
+| Gamifikasi      | Penting, tapi dorong kebiasaan belajar benar dan anti-curang |
+| Pendekatan      | Comprehensive, tim bisa kerja paralel                        |
+| Privasi         | Prioritas, terutama untuk user < 18 tahun                    |
+| Voice Input     | DIHAPUS dari rencana                                         |
+| PvP             | Arah utama: 1v1 dan multi-player lobby                       |
 
 ---
 
@@ -668,16 +732,16 @@ PvP                     ✗         Perlu desain lengkap
 
 ## I. Titik Integrasi
 
-| Fitur | Integrates With | How |
-|--------|-----------------|-----|
-| Weak Area Tracking | Leaderboard, Admin Dashboard | Share subtest_stats computation |
-| Bookmarks | PracticeQuestion component | Add bookmark button |
-| Bookmarks | Practice Results | Auto-import wrong answers |
-| Streak | Practice submit flow | Trigger streak check on submit |
-| Daily Challenge | Streak system | Separate challenge streak |
-| PvP | Bookmarks | "Soal salah PvP" masuk review |
-| PvP | Weak Areas | "Pilihan subtest lemah" untuk PvP |
-| Group Management | Leaderboard | Group leaderboards |
+| Fitur              | Integrates With              | How                               |
+| ------------------ | ---------------------------- | --------------------------------- |
+| Weak Area Tracking | Leaderboard, Admin Dashboard | Share subtest_stats computation   |
+| Bookmarks          | PracticeQuestion component   | Add bookmark button               |
+| Bookmarks          | Practice Results             | Auto-import wrong answers         |
+| Streak             | Practice submit flow         | Trigger streak check on submit    |
+| Daily Challenge    | Streak system                | Separate challenge streak         |
+| PvP                | Bookmarks                    | "Soal salah PvP" masuk review     |
+| PvP                | Weak Areas                   | "Pilihan subtest lemah" untuk PvP |
+| Group Management   | Leaderboard                  | Group leaderboards                |
 
 ---
 
@@ -724,13 +788,13 @@ First-time user flow:
 ```typescript
 // Tabel user_onboarding
 {
-  user_id: string (FK, PK)
-  completed: boolean
-  assessment_score: jsonb  // { subtest: score }
-  initial_weak_areas: jsonb  // [slug]
-  reminder_time: time
-  reminder_enabled: boolean
-  created_at: timestamp
+  user_id: string(FK, PK);
+  completed: boolean;
+  assessment_score: jsonb; // { subtest: score }
+  initial_weak_areas: jsonb; // [slug]
+  reminder_time: time;
+  reminder_enabled: boolean;
+  created_at: timestamp;
 }
 ```
 
@@ -745,6 +809,7 @@ PUT  /api/learner/onboarding/reminder - Update reminder settings
 ```
 
 ### Estimasi Usaha: Sedang
+
 - Backend: assessment logic, progress tracking
 - Frontend: multi-step wizard, tooltips
 - Content: 5-10 soal assessment per subtes
@@ -759,14 +824,14 @@ PUT  /api/learner/onboarding/reminder - Update reminder settings
 
 ### Jenis Notifikasi
 
-| Type | Trigger | Channel | Priority |
-|------|---------|---------|----------|
-| Streak Reminder | Daily, sesuai preferensi | In-app + Push | High |
-| Daily Challenge Ready | Setiap pagi 06:00 WIB | In-app + Push | High |
-| PvP Invite | Otro user invite | In-app only | Medium |
-| Streak at Risk | 1 jam sebelum midnight | In-app + Push | High |
-| Weak Area Improvement | Minggu baru | In-app | Low |
-| Weekly Summary | Setiap Minggu | In-app + Email | Low |
+| Type                  | Trigger                  | Channel        | Priority |
+| --------------------- | ------------------------ | -------------- | -------- |
+| Streak Reminder       | Daily, sesuai preferensi | In-app + Push  | High     |
+| Daily Challenge Ready | Setiap pagi 06:00 WIB    | In-app + Push  | High     |
+| PvP Invite            | Otro user invite         | In-app only    | Medium   |
+| Streak at Risk        | 1 jam sebelum midnight   | In-app + Push  | High     |
+| Weak Area Improvement | Minggu baru              | In-app         | Low      |
+| Weekly Summary        | Setiap Minggu            | In-app + Email | Low      |
 
 ### Skema Data
 
@@ -863,12 +928,12 @@ User Report Flow:
 
 ### Content Growth
 
-| Metode | Effort | Quality | Notes |
-|--------|--------|---------|-------|
-| Manual by team | Tinggi | Tinggi | Butuh budget |
-| Teacher submission | Sedang | Sedang | Perlu review queue |
-| AI-assisted generation | Rendah | Rendah | Butuh human review wajib |
-| Import dari partner | Rendah | Varied | Butuh format agreement |
+| Metode                 | Effort | Quality | Notes                    |
+| ---------------------- | ------ | ------- | ------------------------ |
+| Manual by team         | Tinggi | Tinggi  | Butuh budget             |
+| Teacher submission     | Sedang | Sedang  | Perlu review queue       |
+| AI-assisted generation | Rendah | Rendah  | Butuh human review wajib |
+| Import dari partner    | Rendah | Varied  | Butuh format agreement   |
 
 ### Estimasi Usaha: Besar (ongoing)
 
@@ -883,11 +948,11 @@ User Report Flow:
 ```typescript
 // Difficulty berdasarkan historical accuracy
 interface QuestionDifficulty {
-  questionId: string
-  totalAttempts: number
-  correctRate: number  // 0-1
-  confidence: number   // 0-1, berdasarkan sample size
-  lastUpdated: Date
+  questionId: string;
+  totalAttempts: number;
+  correctRate: number; // 0-1
+  confidence: number; // 0-1, berdasarkan sample size
+  lastUpdated: Date;
 }
 
 // Update difficulty secara batch (setiap malam)
@@ -898,15 +963,17 @@ async function recalculateDifficulties() {
     FROM practice_answers
     WHERE created_at > NOW() - INTERVAL '30 days'
     GROUP BY question_id
-  `)
-  
+  `);
+
   for (const row of answers) {
-    if (row.attempts >= 30) {  // Minimum sample
-      const correctRate = row.correct / row.attempts
-      const confidence = Math.min(row.attempts / 100, 1)
-      await db.update(questions)
+    if (row.attempts >= 30) {
+      // Minimum sample
+      const correctRate = row.correct / row.attempts;
+      const confidence = Math.min(row.attempts / 100, 1);
+      await db
+        .update(questions)
         .set({ difficultyRate: correctRate, confidence })
-        .where(eq(questions.id, row.question_id))
+        .where(eq(questions.id, row.question_id));
     }
   }
 }
@@ -916,24 +983,24 @@ async function recalculateDifficulties() {
 
 ```typescript
 const DIFFICULTY = {
-  MIN_SAMPLES: 30,        // Minimum attempts untuk consider
-  EASY_THRESHOLD: 0.7,     // >70% correct
-  MEDIUM_THRESHOLD: 0.4,    // 40-70% correct
-  HARD_THRESHOLD: 0.4,      // <40% correct
-  
+  MIN_SAMPLES: 30, // Minimum attempts untuk consider
+  EASY_THRESHOLD: 0.7, // >70% correct
+  MEDIUM_THRESHOLD: 0.4, // 40-70% correct
+  HARD_THRESHOLD: 0.4, // <40% correct
+
   // Untuk matchmaking PvP
   BALANCE_TOLERANCE: 0.15, // 15% spread max per match
-}
+};
 ```
 
 ### Penggunaan
 
-| Use Case | How |
-|----------|-----|
-| Rekomendasi | Prioritas soal sesuai weak areas + difficulty |
+| Use Case      | How                                                  |
+| ------------- | ---------------------------------------------------- |
+| Rekomendasi   | Prioritas soal sesuai weak areas + difficulty        |
 | PvP Selection | Match players dengan similar difficulty distribution |
-| Study Plan | Target difficulty progression |
-| Content Gap | Identifikasi topik yang kurang soal |
+| Study Plan    | Target difficulty progression                        |
+| Content Gap   | Identifikasi topik yang kurang soal                  |
 
 ### Estimasi Usaha: Kecil (ongoing maintenance)
 
@@ -1021,15 +1088,15 @@ DELETE /api/parent/consent/:linkId  - Revoke consent
 
 ### Core Metrics
 
-| Metrik | Definisi | Target | Measurement |
-|--------|----------|--------|-------------|
-| DAU/MAU | Daily vs Monthly active | > 20% | Monthly |
-| Streak Survival | % user streak > 7 hari | > 40% | Weekly |
-| Improvement Rate | % weak areas improve setelah 2 minggu | > 50% | Bi-weekly |
-| Challenge Completion | % daily challenge diselesaikan | > 60% | Daily |
-| PvP Retention | % user main PvP lagi setelah pertama | > 30% | Monthly |
-| Onboarding Completion | % user finish onboarding | > 70% | Weekly |
-| Time to First Practice | Median menit dari signup ke first practice | < 10 min | Weekly |
+| Metrik                 | Definisi                                   | Target   | Measurement |
+| ---------------------- | ------------------------------------------ | -------- | ----------- |
+| DAU/MAU                | Daily vs Monthly active                    | > 20%    | Monthly     |
+| Streak Survival        | % user streak > 7 hari                     | > 40%    | Weekly      |
+| Improvement Rate       | % weak areas improve setelah 2 minggu      | > 50%    | Bi-weekly   |
+| Challenge Completion   | % daily challenge diselesaikan             | > 60%    | Daily       |
+| PvP Retention          | % user main PvP lagi setelah pertama       | > 30%    | Monthly     |
+| Onboarding Completion  | % user finish onboarding                   | > 70%    | Weekly      |
+| Time to First Practice | Median menit dari signup ke first practice | < 10 min | Weekly      |
 
 ### Engagement Funnel
 
@@ -1100,6 +1167,7 @@ SESUDAH:
 ```
 
 **Alasan**:
+
 - 1 soal terlalu sedikit untuk meaningful practice
 - 5 menit adalah sweet spot untuk daily engagement
 - User bisa selesaikan di antrian/break
@@ -1166,12 +1234,12 @@ TIER 3: Public Study Group
 
 Berdasarkan analisis effort vs impact:
 
-| Fitur | Alasan Tunda |
-|-------|-------------|
-| Referral System | Butuh user base dulu (~1000 DAU) |
-| Offline PWA | Effort tinggi, impact medium |
-| AI Study Assistant | Biaya + accuracy belum ready |
-| Parent Dashboard | Effort medium, bisa Phase 2 |
+| Fitur              | Alasan Tunda                     |
+| ------------------ | -------------------------------- |
+| Referral System    | Butuh user base dulu (~1000 DAU) |
+| Offline PWA        | Effort tinggi, impact medium     |
+| AI Study Assistant | Biaya + accuracy belum ready     |
+| Parent Dashboard   | Effort medium, bisa Phase 2      |
 
 **Rekomendasi**: Fokus ke core learning loop dulu, baru growth features.
 
