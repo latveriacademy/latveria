@@ -7,13 +7,15 @@ import {
   type QuestionDetail,
   type QuestionPackage,
   type LexiconAnnotation,
+  type PackageDetail,
 } from "@latveria/shared";
 import { LexiconEditor } from "./lexicon-editor";
+import { PassageEditor, type AvailablePassage } from "./passage-editor";
+import { TikzHelp } from "./tikz-help";
 import { api } from "../../lib/api";
 import { ArrowLeft, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { MathText } from "../../components/math-text";
-import { tikzExamples } from "../../lib/tikz-examples";
 import {
   Select,
   SelectContent,
@@ -52,10 +54,31 @@ export function QuestionForm({
   const [pkgPending, setPkgPending] = useState(false);
   const [pkgError, setPkgError] = useState("");
   const [prompt, setPrompt] = useState(question?.prompt ?? "");
+  const [passage, setPassage] = useState(question?.passage ?? "");
+  const [passageId, setPassageId] = useState<string | null>(question?.passageId ?? null);
+  const [availablePassages, setAvailablePassages] = useState<AvailablePassage[]>([]);
   const [diagramError, setDiagramError] = useState("");
   const [annotations, setAnnotations] = useState<LexiconAnnotation[]>(question?.annotations ?? []);
   const isLbe =
     topics.find((topic) => topic.id === selectedTopicId)?.slug === "literasi-bahasa-inggris";
+
+  useEffect(() => {
+    if (!selectedPackageId) {
+      setAvailablePassages([]);
+      return;
+    }
+    const controller = new AbortController();
+    api<PackageDetail>(`/admin/packages/${selectedPackageId}`, { signal: controller.signal })
+      .then((detail) => {
+        if (controller.signal.aborted) return;
+        const candidates = detail.questions
+          .filter((q) => q.passage && q.id !== question?.id)
+          .map((q) => ({ id: q.id, passage: q.passage!, prompt: q.prompt }));
+        setAvailablePassages(candidates);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [selectedPackageId, question?.id]);
 
   useEffect(() => {
     if (!selectedTopicId) return;
@@ -119,6 +142,8 @@ export function QuestionForm({
     const parsed = questionSchema.safeParse({
       topicId: selectedTopicId,
       packageId: selectedPackageId || undefined,
+      passage: passage.trim() || undefined,
+      passageId: passageId || undefined,
       prompt: form.get("prompt"),
       options: [0, 1, 2, 3, 4].map((index) => form.get(`option-${index}`)),
       correctAnswer: Number(form.get("correctAnswer")),
@@ -316,13 +341,27 @@ export function QuestionForm({
             Opsional. Isi sesuai materi yang ingin kamu kelompokkan.
           </span>
         </div>
+        <PassageEditor
+          passage={passage}
+          onChangePassage={setPassage}
+          passageId={passageId}
+          onChangePassageId={setPassageId}
+          availablePassages={availablePassages}
+          disabled={pending}
+        />
         <div className={styles.field}>
-          <label htmlFor="prompt">Pertanyaan</label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="prompt">Pertanyaan</label>
+            <span className="font-mono text-[11px] text-[var(--soft-ink)]">
+              {prompt.length} / 5.000 karakter
+            </span>
+          </div>
           <textarea
             id="prompt"
             name="prompt"
             minLength={5}
-            maxLength={1000}
+            maxLength={5000}
+            rows={4}
             value={prompt}
             onChange={(event) => {
               setPrompt(event.target.value);
@@ -335,43 +374,13 @@ export function QuestionForm({
           Rumus: <code>$x^2$</code> inline atau <code>$$\frac&#123;1&#125;&#123;2&#125;$$</code>{" "}
           blok.
         </p>
-        <details className={styles.diagramHelp}>
-          <summary>Tambahkan diagram geometri</summary>
-          <p>
-            TikZ dasar mendukung garis, poligon, rectangle, lingkaran, elips, dan label LaTeX.
-            Koordinat (x,y,z) diproyeksikan untuk bangun ruang.
-          </p>
-          <div className={styles.formActions}>
-            {tikzExamples.map((example) => (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                key={example.name}
-                disabled={pending}
-                onClick={() => {
-                  const next = prompt.trim() ? `${prompt}\n\n${example.source}` : example.source;
-                  if (next.length > 1000) {
-                    setDiagramError(
-                      "Contoh ini melebihi batas 1.000 karakter pertanyaan. Ringkas teks atau diagram sebelum menambahkannya.",
-                    );
-                    return;
-                  }
-                  setPrompt(next);
-                  setDiagramError("");
-                }}
-              >
-                Tambahkan {example.name.toLowerCase()}
-              </Button>
-            ))}
-          </div>
-          <p>
-            Ubah koordinat dan label di teks pertanyaan. Gunakan{" "}
-            <code>% alt: deskripsi bangun</code> untuk membantu pembaca layar. Sintaks TikZ lain
-            belum didukung.
-          </p>
-          {diagramError && <p role="alert">{diagramError}</p>}
-        </details>
+        <TikzHelp
+          prompt={prompt}
+          onApply={setPrompt}
+          disabled={pending}
+          diagramError={diagramError}
+          setDiagramError={setDiagramError}
+        />
         {prompt && (
           <div className={styles.promptPreview}>
             <h2>Pratinjau pertanyaan</h2>

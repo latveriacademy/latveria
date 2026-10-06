@@ -66,7 +66,7 @@ function apiQuestionToView(q) {
   return {
     id: q.id, // UUID
     question: q.prompt,
-    passage: null, // API doesn't have passage field, prompt contains everything
+    passage: q.passage ?? null,
     annotations: q.annotations ?? [],
     options: q.options.map((text, i) => ({ key: INDEX_TO_KEY[i], text })),
     // correctAnswer and explanation not available during practice (API strips them)
@@ -83,6 +83,7 @@ function mergeReviewData(sessionQuestions, reviewAnswers) {
     if (!ra) return sq;
     return {
       ...sq,
+      passage: ra.passage ?? sq.passage ?? null,
       correctAnswer: INDEX_TO_KEY[ra.correctAnswer],
       explanation: ra.explanation,
       annotations: ra.annotations ?? sq.annotations ?? [],

@@ -35,6 +35,21 @@ export function QuestionPreview() {
       />
       <Panel className={styles.preview}>
         <div className={styles.previewHeader}>{item.source}</div>
+        {item.passage && (
+          <div className="border-b border-[var(--edge)] bg-[var(--surface)] p-6">
+            <div className="flex items-center justify-between text-xs font-mono text-[var(--soft-ink)] mb-2 uppercase tracking-wider">
+              <span>Wacana / Teks Soal</span>
+              {item.passageId && (
+                <span className="font-semibold text-[var(--accent-gold)]">
+                  ★ Wacana Terhubung (Reusable)
+                </span>
+              )}
+            </div>
+            <div className="font-serif text-base leading-relaxed text-[var(--ink)] whitespace-pre-line">
+              <MathText>{item.passage}</MathText>
+            </div>
+          </div>
+        )}
         <div className={styles.previewPrompt}>
           <AnnotatedText
             annotations={item.annotations || []}

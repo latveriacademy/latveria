@@ -11,6 +11,7 @@ export function reviewResultToSession(result: Result) {
   const questions = result.answers.map((answer) => ({
     id: answer.id,
     question: answer.prompt,
+    passage: answer.passage ?? null,
     options: answer.options.map((text, index) => ({ key: letters[index], text })),
     correctAnswer: letters[answer.correctAnswer],
     explanation: answer.explanation,

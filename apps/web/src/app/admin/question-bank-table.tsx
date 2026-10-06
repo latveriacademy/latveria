@@ -160,6 +160,14 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                       </span>
                     </>
                   )}
+                  {(row.passage || row.passageId) && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono text-xs text-[var(--gold)]">
+                        {row.passageId ? "wacana terhubung" : "ada wacana"}
+                      </span>
+                    </>
+                  )}
                 </div>
               </TableCell>
               <TableCell>
