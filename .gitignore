@@ -10,3 +10,4 @@ coverage/
 .playwright-mcp/
 AGENTS.md
 PLAN.md
+session-ses*

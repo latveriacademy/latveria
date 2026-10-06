@@ -98,7 +98,6 @@ export const AppProvider = ({ children }) => {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const tab = params.get("tab") || "dashboard";
-  const practiceSubtest = params.get("subtes");
   const currentTab = pathname.startsWith("/dashboard/riwayat")
     ? "practice"
     : ["dashboard", "practice", "library", "tryout", "leaderboard", "profile", "settings"].includes(
@@ -106,13 +105,7 @@ export const AppProvider = ({ children }) => {
         )
       ? tab
       : "dashboard";
-  const setCurrentTab = useCallback(
-    (next) =>
-      navigate(
-        `/dashboard?tab=${next}${next === "practice" && practiceSubtest ? `&subtes=${encodeURIComponent(practiceSubtest)}` : ""}`,
-      ),
-    [navigate, practiceSubtest],
-  );
+  const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}`), [navigate]);
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
   const [sidebarOpen, setSidebarOpen] = useState(() => {

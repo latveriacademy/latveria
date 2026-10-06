@@ -333,12 +333,14 @@ export async function getAllLearnerPackages() {
   ]);
   const pinnedCounts = new Map(pinned.map((item) => [item.packageId, Number(item.questionCount)]));
 
-  return rows.map((row) => ({
-    ...row,
-    questionCount: row.isFullTryout
-      ? (pinnedCounts.get(row.id) ?? 0)
-      : Number(row.questionCount ?? 0),
-  }));
+  return rows.map((row) => {
+    const pinned = pinnedCounts.get(row.id);
+    const direct = Number(row.questionCount ?? 0);
+    return {
+      ...row,
+      questionCount: row.isFullTryout ? (pinned && pinned > 0 ? pinned : direct) : direct,
+    };
+  });
 }
 
 export async function duplicatePackage(packageId: string) {

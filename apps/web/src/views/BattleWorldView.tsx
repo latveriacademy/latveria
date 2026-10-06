@@ -49,7 +49,12 @@ export function BattleWorldView() {
             (pkg) =>
               pkg.published &&
               pkg.questionCount > 0 &&
-              (pkg.isFullTryout || pkg.packageType?.includes("Simulasi")),
+              (pkg.isFullTryout ||
+                pkg.packageType === "Tryout" ||
+                pkg.packageType?.includes("Simulasi") ||
+                pkg.category === "tka" ||
+                pkg.category === "ujian-mandiri" ||
+                pkg.category === "mandiri"),
           ),
         ),
       )

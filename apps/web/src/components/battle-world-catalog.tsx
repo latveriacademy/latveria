@@ -43,7 +43,13 @@ export function BattleWorldCatalog({
     { value: "mandiri", label: "Ujian Mandiri" },
   ];
   const [category, setCategory] = useState("utbk");
-  const filteredPackages = packages.filter((pkg) => (pkg.category || "utbk") === category);
+  const filteredPackages = packages.filter((pkg) => {
+    const pkgCat = pkg.category || "utbk";
+    if (category === "mandiri") {
+      return pkgCat === "mandiri" || pkgCat === "ujian-mandiri";
+    }
+    return pkgCat === category;
+  });
   const categoryLabel = categories.find((item) => item.value === category)?.label;
   return (
     <div className={`latveria-view-container motion-page-enter ${styles.catalog}`}>
