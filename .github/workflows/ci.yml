@@ -46,8 +46,10 @@ jobs:
           COMMIT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           COMMIT_HEAD: ${{ github.sha }}
       - run: bun run check
+      # Migrate dan seed dijalankan dua kali dengan sengaja: run kedua memverifikasi idempotensi.
       - run: bun run db:migrate
       - run: bun run db:migrate
+      # Seed dibutuhkan test:integration (tujuh subtes dan soal contoh).
       - run: bun run db:seed
       - run: bun run db:seed
       - run: bun run test:integration
@@ -89,6 +91,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
       - run: docker compose -f compose.production.yaml up -d --wait postgres
+      # Migrate dan seed dijalankan dua kali dengan sengaja: run kedua memverifikasi idempotensi.
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/seed-db.ts
