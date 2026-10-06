@@ -1,3 +1,4 @@
+/* eslint-disable no-alert */
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router";
 import {
@@ -23,7 +24,6 @@ import {
   AlertTriangle,
   Users,
   BarChart3,
-  RefreshCw,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { PageHeading, StatTile } from "../../components/ui/dashboard";
@@ -242,7 +242,11 @@ export function AdminUsers() {
   };
 
   const handleResetProgress = async (userId: string) => {
-    if (!confirm("Yakin ingin mereset semua progres latihan user ini? Tindakan ini tidak dapat dibatalkan.")) {
+    if (
+      !confirm(
+        "Yakin ingin mereset semua progres latihan user ini? Tindakan ini tidak dapat dibatalkan.",
+      )
+    ) {
       return;
     }
     try {
@@ -338,12 +342,6 @@ export function AdminUsers() {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    if (seconds < 60) return `${seconds}d`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    return `${Math.floor(seconds / 3600)}j ${Math.floor((seconds % 3600) / 60)}m`;
-  };
-
   return (
     <div className="motion-page-enter">
       <PageHeading title="Manajemen User" description="Kelola akun dan statistik peserta" />
@@ -396,7 +394,9 @@ export function AdminUsers() {
                   <div className="text-xs text-[var(--soft-ink)]">Baru Minggu Ini</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[var(--gold)]">{overview.avgAccuracy}%</div>
+                  <div className="text-2xl font-bold text-[var(--gold)]">
+                    {overview.avgAccuracy}%
+                  </div>
                   <div className="text-xs text-[var(--soft-ink)]">Rata-rata Akurasi</div>
                 </div>
                 <div className="text-center">
@@ -479,9 +479,7 @@ export function AdminUsers() {
 
           {selectedIds.size > 0 && (
             <div className="mb-4 p-3 border border-[var(--gold)]/50 rounded-md bg-[var(--gold)]/10 flex items-center justify-between">
-              <span className="text-sm text-[var(--ink)]">
-                {selectedIds.size} user dipilih
-              </span>
+              <span className="text-sm text-[var(--ink)]">{selectedIds.size} user dipilih</span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -832,17 +830,28 @@ function UserDetailView({
             <StatTile label="Akurasi" value={user.accuracy > 0 ? `${user.accuracy}%` : "-"} />
             <StatTile label="Waktu Total" value={formatTime(user.timeSpent)} />
             <StatTile label="Rata-rata/Soal" value={formatTime(user.avgTimePerQuestion)} />
-            <StatTile label="Streak Sekarang" value={`${user.currentStreak} hari`} icon={<Flame size={14} className="text-orange-500" />} />
+            <StatTile
+              label="Streak Sekarang"
+              value={`${user.currentStreak} hari`}
+              icon={<Flame size={14} className="text-orange-500" />}
+            />
             <StatTile label="Streak Terpanjang" value={`${user.longestStreak} hari`} />
             <StatTile label="First Attempt" value={`${user.firstAttemptRate}%`} />
             <StatTile
               label="Improvement"
               value={`${user.improvementRate > 0 ? "+" : ""}${user.improvementRate}%`}
-              icon={<TrendingUp size={14} className={user.improvementRate >= 0 ? "text-green-500" : "text-red-500"} />}
+              icon={
+                <TrendingUp
+                  size={14}
+                  className={user.improvementRate >= 0 ? "text-green-500" : "text-red-500"}
+                />
+              }
             />
             <StatTile
               label="Bergabung"
-              value={new Date(user.createdAt).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })}
+              value={new Date(user.createdAt).toLocaleDateString("id-ID", {
+                timeZone: "Asia/Jakarta",
+              })}
             />
           </div>
 
@@ -855,10 +864,15 @@ function UserDetailView({
               <div className="flex items-end gap-2 h-24">
                 {user.weeklyActivity.map((day, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full bg-[var(--edge)] rounded-t relative" style={{ height: "60px" }}>
+                    <div
+                      className="w-full bg-[var(--edge)] rounded-t relative"
+                      style={{ height: "60px" }}
+                    >
                       <div
                         className="absolute bottom-0 w-full bg-[var(--gold)] rounded-t transition-all"
-                        style={{ height: `${Math.max((day.count / maxWeeklyCount) * 100, day.count > 0 ? 10 : 0)}%` }}
+                        style={{
+                          height: `${Math.max((day.count / maxWeeklyCount) * 100, day.count > 0 ? 10 : 0)}%`,
+                        }}
                       />
                     </div>
                     <span className="text-xs text-[var(--soft-ink)]">{day.dayName}</span>
@@ -921,8 +935,12 @@ function UserDetailView({
                         <div>{stat.name}</div>
                         <div className="text-xs text-[var(--soft-ink)]">{stat.slug}</div>
                       </td>
-                      <td className="py-2 text-right font-mono text-[var(--ink)]">{stat.answered}</td>
-                      <td className="py-2 text-right font-mono text-[var(--ink)]">{stat.correct}</td>
+                      <td className="py-2 text-right font-mono text-[var(--ink)]">
+                        {stat.answered}
+                      </td>
+                      <td className="py-2 text-right font-mono text-[var(--ink)]">
+                        {stat.correct}
+                      </td>
                       <td className="py-2 text-right">
                         <span
                           className={`font-mono ${
@@ -1027,7 +1045,9 @@ function UserDetailView({
                   variant={user.hideFromLeaderboard ? "outline" : "default"}
                   size="sm"
                   disabled={updatingFlag === "hideFromLeaderboard"}
-                  onClick={() => onToggleFlag(user.id, "hideFromLeaderboard", user.hideFromLeaderboard)}
+                  onClick={() =>
+                    onToggleFlag(user.id, "hideFromLeaderboard", user.hideFromLeaderboard)
+                  }
                 >
                   {updatingFlag === "hideFromLeaderboard" ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -1048,14 +1068,30 @@ function UserDetailView({
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatTile label="Total Login" value={user.sessionCount} icon={<Users size={14} />} />
-            <StatTile label="Laporan Soal" value={user.reportsCount} icon={<AlertTriangle size={14} className="text-yellow-500" />} />
+            <StatTile
+              label="Laporan Soal"
+              value={user.reportsCount}
+              icon={<AlertTriangle size={14} className="text-yellow-500" />}
+            />
             <StatTile
               label="Login Terakhir"
-              value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }) : "Belum pernah"}
+              value={
+                user.lastLoginAt
+                  ? new Date(user.lastLoginAt).toLocaleDateString("id-ID", {
+                      timeZone: "Asia/Jakarta",
+                    })
+                  : "Belum pernah"
+              }
             />
             <StatTile
               label="Dinonaktifkan"
-              value={user.deactivatedAt ? new Date(user.deactivatedAt).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }) : "-"}
+              value={
+                user.deactivatedAt
+                  ? new Date(user.deactivatedAt).toLocaleDateString("id-ID", {
+                      timeZone: "Asia/Jakarta",
+                    })
+                  : "-"
+              }
             />
           </div>
 
@@ -1086,7 +1122,9 @@ function UserDetailView({
                         <CheckCircle size={14} className="text-green-500" />
                         <span className="font-mono text-sm text-green-500">{activity.correct}</span>
                         <span className="text-[var(--soft-ink)]">/</span>
-                        <span className="font-mono text-sm text-[var(--ink)]">{activity.total}</span>
+                        <span className="font-mono text-sm text-[var(--ink)]">
+                          {activity.total}
+                        </span>
                       </div>
                       <span className="text-xs text-[var(--soft-ink)]">
                         <Clock size={12} className="inline mr-1" />
@@ -1104,11 +1142,21 @@ function UserDetailView({
       {activeTab === "security" && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <StatTile label="Login Gagal" value={user.failedLoginAttempts} icon={<XCircle size={14} className="text-red-500" />} />
+            <StatTile
+              label="Login Gagal"
+              value={user.failedLoginAttempts}
+              icon={<XCircle size={14} className="text-red-500" />}
+            />
             <StatTile label="Total Login" value={user.sessionCount} icon={<Users size={14} />} />
             <StatTile
               label="Login Terakhir"
-              value={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }) : "Belum pernah"}
+              value={
+                user.lastLoginAt
+                  ? new Date(user.lastLoginAt).toLocaleDateString("id-ID", {
+                      timeZone: "Asia/Jakarta",
+                    })
+                  : "Belum pernah"
+              }
             />
           </div>
 
@@ -1139,24 +1187,21 @@ function UserDetailView({
                 {user.isDeactivated ? <Unlock size={14} /> : <Lock size={14} />}
                 {user.isDeactivated ? "Aktifkan Kembali" : "Nonaktifkan Akun"}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => onResetProgress(user.id)}
-              >
+              <Button variant="outline" onClick={() => onResetProgress(user.id)}>
                 <RotateCcw size={14} />
                 Reset Progres
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => onDeleteUser(user.id)}
-              >
+              <Button variant="destructive" onClick={() => onDeleteUser(user.id)}>
                 <Trash2 size={14} />
                 Hapus Akun
               </Button>
             </div>
             {user.isDeactivated && (
               <p className="mt-3 text-sm text-red-400">
-                Akun dinonaktifkan pada: {new Date(user.deactivatedAt!).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
+                Akun dinonaktifkan pada:{" "}
+                {new Date(user.deactivatedAt!).toLocaleString("id-ID", {
+                  timeZone: "Asia/Jakarta",
+                })}
               </p>
             )}
           </div>

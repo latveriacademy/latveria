@@ -74,6 +74,16 @@ const AdminSystemHealth = lazy(() =>
     default: module.AdminSystemHealth,
   })),
 );
+const AdminTryouts = lazy(() =>
+  import("./app/admin/admin-tryouts").then((module) => ({
+    default: module.AdminTryouts,
+  })),
+);
+const AdminTryoutDetail = lazy(() =>
+  import("./app/admin/admin-tryout-detail").then((module) => ({
+    default: module.AdminTryoutDetail,
+  })),
+);
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -239,6 +249,8 @@ export const router = createBrowserRouter([
         },
         element: <AdminPackageDetail />,
       },
+      { path: "tryouts", element: <AdminTryouts /> },
+      { path: "tryouts/:id", element: <AdminTryoutDetail /> },
       {
         path: "soal",
         loader: ({ request }) => api<Bank>(`/admin/questions?${new URL(request.url).searchParams}`),
