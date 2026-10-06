@@ -61,6 +61,31 @@ export async function getLearnerHistory(userId: string): Promise<HistoryItem[]> 
   }));
 }
 
+async function resolvePassages<
+  T extends { id: string; passage?: string | null; passageId?: string | null },
+>(items: T[]): Promise<T[]> {
+  const passageMap = new Map<string, string>();
+  for (const item of items) {
+    if (item.passage) passageMap.set(item.id, item.passage);
+  }
+  const missing = items
+    .filter((item) => !item.passage && item.passageId && !passageMap.has(item.passageId))
+    .map((item) => item.passageId!);
+  if (missing.length > 0) {
+    const parentRows = await getDb()
+      .select({ id: questions.id, passage: questions.passage })
+      .from(questions)
+      .where(inArray(questions.id, missing));
+    for (const p of parentRows) {
+      if (p.passage) passageMap.set(p.id, p.passage);
+    }
+  }
+  return items.map((item) => ({
+    ...item,
+    passage: item.passage || (item.passageId ? (passageMap.get(item.passageId) ?? null) : null),
+  }));
+}
+
 export async function getPracticeQuestions(slug: string, packageId?: string) {
   const [topic] = await getDb().select().from(topics).where(eq(topics.slug, slug));
   if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
@@ -85,6 +110,8 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
       .select({
         id: questions.id,
         prompt: questions.prompt,
+        passage: questions.passage,
+        passageId: questions.passageId,
         options: questions.options,
         annotations: questions.annotations,
       })
@@ -97,7 +124,7 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
       packageId: pkg.id,
       packageName: pkg.name,
       package: { id: pkg.id, name: pkg.name, description: pkg.description },
-      items,
+      items: await resolvePassages(items),
     };
   }
 
@@ -106,13 +133,15 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      passage: questions.passage,
+      passageId: questions.passageId,
       options: questions.options,
       annotations: questions.annotations,
     })
     .from(questions)
     .where(eq(questions.topicId, topic.id))
     .orderBy(questions.id);
-  return { topic, items };
+  return { topic, items: await resolvePassages(items) };
 }
 
 export async function submitPractice(
@@ -310,6 +339,8 @@ export async function getResultDetail(userId: string, idParam: string): Promise<
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      passage: questions.passage,
+      passageId: questions.passageId,
       annotations: questions.annotations,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
@@ -329,6 +360,6 @@ export async function getResultDetail(userId: string, idParam: string): Promise<
       earnedXP: practiceXP(attempt.correct),
       scoreBreakdown: attempt.scoreBreakdown ? JSON.parse(attempt.scoreBreakdown) : null,
     },
-    answers,
+    answers: await resolvePassages(answers),
   };
 }

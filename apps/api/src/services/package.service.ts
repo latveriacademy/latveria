@@ -129,6 +129,8 @@ export async function getPackageDetail(packageId: string): Promise<PackageDetail
     .select({
       id: questions.id,
       prompt: questions.prompt,
+      passage: questions.passage,
+      passageId: questions.passageId,
       category: questions.category,
       source: questions.source,
       usage: count(practiceAnswers.id),

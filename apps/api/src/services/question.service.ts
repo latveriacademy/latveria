@@ -29,6 +29,7 @@ export async function getAdminQuestions(
       ? or(
           ilike(questions.prompt, searchPattern),
           ilike(questions.source, searchPattern),
+          ilike(questions.passage, searchPattern),
           ilike(questionPackages.name, searchPattern),
         )
       : undefined,
@@ -73,6 +74,8 @@ export async function getAdminQuestions(
       .select({
         id: questions.id,
         prompt: questions.prompt,
+        passage: questions.passage,
+        passageId: questions.passageId,
         category: questions.category,
         packageId: questions.packageId,
         packageName: questionPackages.name,
@@ -97,6 +100,8 @@ export async function getAdminQuestions(
           .select({
             id: questions.id,
             prompt: questions.prompt,
+            passage: questions.passage,
+            passageId: questions.passageId,
             category: questions.category,
             packageId: questions.packageId,
             packageName: questionPackages.name,
@@ -161,7 +166,11 @@ export async function createQuestion(body: unknown) {
 
   const [created] = await getDb()
     .insert(questions)
-    .values(parsed.data)
+    .values({
+      ...parsed.data,
+      passage: parsed.data.passage ?? null,
+      passageId: parsed.data.passageId ?? null,
+    })
     .returning({ id: questions.id, packageId: questions.packageId });
   invalidateCatalogCache();
   return { id: created.id, slug: topic.slug, packageId: created.packageId };
@@ -270,6 +279,8 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
       packageId: questions.packageId,
       packageName: questionPackages.name,
       prompt: questions.prompt,
+      passage: questions.passage,
+      passageId: questions.passageId,
       annotations: questions.annotations,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
@@ -284,11 +295,27 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
     .leftJoin(questionPackages, eq(questions.packageId, questionPackages.id))
     .where(eq(questions.id, id.data));
   if (!item) throw new HTTPException(404);
+
+  let resolvedPassage = item.passage;
+  if (!resolvedPassage && item.passageId) {
+    const [ref] = await getDb()
+      .select({ passage: questions.passage })
+      .from(questions)
+      .where(eq(questions.id, item.passageId));
+    resolvedPassage = ref?.passage ?? null;
+  }
+
   const [usage] = await getDb()
     .select({ value: count() })
     .from(practiceAnswers)
     .where(eq(practiceAnswers.questionId, id.data));
-  return { ...item, category: item.category ?? undefined, usage: usage.value };
+  return {
+    ...item,
+    passage: resolvedPassage ?? undefined,
+    passageId: item.passageId ?? undefined,
+    category: item.category ?? undefined,
+    usage: usage.value,
+  };
 }
 
 export async function updateQuestion(idParam: string, body: unknown) {
@@ -331,6 +358,8 @@ export async function updateQuestion(idParam: string, body: unknown) {
         ...parsed.data,
         packageId: parsed.data.packageId ?? null,
         category: parsed.data.category ?? null,
+        passage: parsed.data.passage ?? null,
+        passageId: parsed.data.passageId ?? null,
       })
       .where(eq(questions.id, id.data));
     return topic.slug;

@@ -50,8 +50,7 @@ try {
   await verifyLexicon();
   assert.equal((await request("/learner/topics")).status, 401);
   assert.equal((await request("/learner/profile")).status, 401);
-  const learner = await signup();
-  const other = await signup();
+  const [learner, other] = [await signup(), await signup()];
   const initialProfile = await (await request("/learner/profile", learner.cookie)).json();
   assert.equal(initialProfile.name, "Penguji API");
   assert.equal(initialProfile.bio, "");
@@ -75,18 +74,15 @@ try {
     (await (await request("/learner/profile", other.cookie)).json()).name,
     initialProfile.name,
   );
-  for (const field of ["role", "id", "email", "level", "totalXP", "streakDays"])
-    assert.equal(
-      (
-        await request(
-          "/learner/profile",
-          learner.cookie,
-          { ...profileInput, [field]: "forbidden" },
-          "PUT",
-        )
-      ).status,
-      400,
+  for (const field of ["role", "id", "email", "level", "totalXP", "streakDays"]) {
+    const res = await request(
+      "/learner/profile",
+      learner.cookie,
+      { ...profileInput, [field]: "forbidden" },
+      "PUT",
     );
+    assert.equal(res.status, 400);
+  }
   assert.equal(
     (await request("/learner/profile", learner.cookie, { ...profileInput, name: " " }, "PUT"))
       .status,
@@ -358,6 +354,11 @@ try {
         .update(tryoutSessions)
         .set({ breakEndsAt: new Date(Date.now() - 1000) })
         .where(eq(tryoutSessions.id, tryoutSession.id));
+    } else if (outcome.status === "section_ready") {
+      assert.equal(
+        (await request(`/learner/tryouts/${tryoutSession.id}/advance`, learner.cookie, {})).status,
+        200,
+      );
     } else {
       assert.equal(outcome.status, "completed");
       assert.equal(outcome.score.totalCount, Object.keys(answers).length);

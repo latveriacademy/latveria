@@ -10,7 +10,7 @@ import {
   tryoutSessions,
 } from "../lib/db/schema";
 import { catalog } from "./topic.service";
-import { getCompletedTryoutQuestions } from "./tryout-review.service";
+import { getCompletedTryoutQuestions, resolvePassages } from "./tryout-review.service";
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);
@@ -175,6 +175,7 @@ export async function getTryoutSession(userId: string, sessionId: string) {
       questionType: questions.questionType,
       stimulus: questions.stimulus,
       passage: questions.passage,
+      passageId: questions.passageId,
       statements: questions.statements,
       options: questions.options,
       itemWeight: questions.itemWeight,
@@ -188,8 +189,10 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     )
     .orderBy(questions.order, questions.id);
 
+  const resolvedQuestions = await resolvePassages(qList);
+
   // Sanitize: hide correct answers from statements during active session
-  const sanitizedQuestions = qList.map((q) => ({
+  const sanitizedQuestions = resolvedQuestions.map((q) => ({
     ...q,
     statements:
       state !== "completed" && Array.isArray(q.statements)
