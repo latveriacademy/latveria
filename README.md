@@ -8,7 +8,7 @@ Platform latihan UTBK-SNBT berbahasa Indonesia. Frontend **React + Vite + Tailwi
 - `apps/api`: server Hono/Bun, autentikasi, pemeriksaan role/ownership, SQL, migrasi, seed, dan CLI admin.
 - `packages/shared`: skema Zod request, tipe response API, serta nama tujuh subtes SNPMB. Tidak mengimpor backend.
 
-Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, serta bank soal admin dengan tab subtes, kategori, paginasi, dan pratinjau.
+Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan navigator desktop/mobile, hasil dan riwayat, EXP/level/streak dari latihan tersimpan, bank soal admin dengan impor JSON 5 opsi (A–E), serta panel manajemen user dengan statistik lengkap, bulk actions, tab detail, dan kontrol keamanan.
 
 Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (katalog paket latihan dengan pencarian, filter, dan paginasi), dan **Drill Log** (riwayat). **Battle World** membuka alur tryout pada `/dashboard?tab=tryout`, termasuk sesi lintas subtes dan jeda. **Library** diperuntukkan materi dan menampilkan empty state saat materi belum tersedia. Ketersediaan paket mengikuti data server.
 

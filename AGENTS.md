@@ -107,7 +107,43 @@ bun run --filter @latveria/api test src/lib/env.test.ts
 - Impor menerima file JSON maupun JSON yang ditempel ke editor, dengan ringkasan sebelum submit.
 - Gunakan `questionImportSchema` shared. Batasnya **100 soal dan 200 KB** per impor.
 - Backend memvalidasi ulang dan menyisipkan seluruh batch secara atomik.
-- `correctAnswer` memakai indeks 0–3.
+- `correctAnswer` memakai indeks 0–4 (lima opsi A–E).
+
+### Manajemen user admin
+
+- Akses via `/admin/users` untuk admin yang login.
+- Statistik overview menampilkan: total user, aktif hari ini, baru minggu ini, rata-rata akurasi, dan jumlah dinonaktifkan.
+- Daftar user dengan filter: pencarian nama/email, tipe (demo/normal), status (aktif/nonaktif), dan sorting (terbaru, nama, login terakhir).
+- Bulk actions: select semua/pilih, tampilkan/sembunyikan dari leaderboard, aktifkan/nonaktifkan, hapus massal.
+- Detail user dengan tab:
+  - **Overview**: level, XP, akurasi, streak, weekly activity chart, weak areas, favorite topics, subtest stats.
+  - **Aktivitas**: riwayat login, laporan soal, statistik sesi.
+  - **Keamanan**: role admin/user, aktifkan/nonaktifkan akun, reset progres, hapus akun permanen.
+- Catatan admin per user untuk menyimpan informasi tambahan.
+- Export data user ke JSON/CSV.
+
+**Endpoint baru:**
+| Endpoint | Method | Deskripsi |
+|----------|--------|-----------|
+| `/api/admin/users/stats/overview` | GET | Statistik global platform |
+| `/api/admin/users` | GET | Daftar user dengan filter/sort |
+| `/api/admin/users/:id` | GET | Detail user dengan statistik lengkap |
+| `/api/admin/users/:id/activity` | GET | Timeline aktivitas user |
+| `/api/admin/users/:id/flags` | PUT | Toggle demo/hide flags |
+| `/api/admin/users/:id/role` | PUT | Ubah role user/admin |
+| `/api/admin/users/:id/notes` | PUT | Update catatan admin |
+| `/api/admin/users/:id/deactivate` | POST | Aktifkan/nonaktifkan akun |
+| `/api/admin/users/:id/reset` | POST | Reset semua progres latihan |
+| `/api/admin/users/:id` | DELETE | Hapus user permanen |
+| `/api/admin/users/:id/export` | GET | Export data (JSON/CSV) |
+| `/api/admin/users/bulk-action` | POST | Aksi massal |
+
+**Field database baru:**
+- `is_deactivated` - Status akun dinonaktifkan
+- `deactivated_at` - Timestamp penonaktifan
+- `account_notes` - Catatan admin
+- `last_login_at` - Timestamp login terakhir
+- `failed_login_attempts` - Counter percobaan login gagal
 
 ### Latihan, hasil, dan riwayat
 

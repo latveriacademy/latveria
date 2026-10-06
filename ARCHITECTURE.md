@@ -141,7 +141,7 @@ TikZ dirender sebagai SVG lokal oleh `components/tikz-diagram.tsx` dan parser `l
 
 `src/app.ts` hanya mengoordinasikan aplikasi: health/auth publik, middleware sesi/Origin, role guard, handler domain, dan error JSON. `handlers/` memetakan endpoint ke fungsi `services/`; service melakukan query, transaksi, dan perhitungan domain tanpa membangun UI.
 
-Domain utama: topik, paket, soal/impor, latihan/hasil, leaderboard, tryout, dan sistem (profil, konfigurasi, afirmasi, laporan soal). Cache katalog dan leaderboard berada di service terkait; operasi perubahan konten menginvalidasi katalog.
+Domain utama: topik, paket, soal/impor, latihan/hasil, leaderboard, tryout, manajemen user, dan sistem (profil, konfigurasi, afirmasi, laporan soal). Cache katalog dan leaderboard berada di service terkait; operasi perubahan konten menginvalidasi katalog.
 
 Request mengikuti alur:
 
@@ -156,11 +156,13 @@ Request mengikuti alur:
 
 | Kelompok tabel                                            | Data                                                          |
 | --------------------------------------------------------- | ------------------------------------------------------------- |
-| Better Auth: `user`, `session`, `account`, `verification` | Identitas, role, profil, kredensial, sesi                     |
+| Better Auth: `user`, `session`, `account`, `verification` | Identitas, role, profil, kredensial, sesi, status aktif       |
 | `topics`, `question_packages`, `questions`                | Katalog subtes, metadata paket, prompt/opsi/kunci/pembahasan  |
 | `practice_attempts`, `practice_answers`                   | Latihan tersimpan, jawaban per soal, skor dan waktu           |
 | `tryout_sessions`, `tryout_package_questions`             | State/draft tryout, question sets sesi, dan relasi soal paket |
 | `affirmations`, `question_reports`, `system_config`       | Pesan dashboard, laporan peserta, konfigurasi sistem          |
+
+User table mencakup: `is_deactivated`, `deactivated_at`, `account_notes`, `last_login_at`, `failed_login_attempts`.
 
 ### Drilling, hasil, dan progres
 

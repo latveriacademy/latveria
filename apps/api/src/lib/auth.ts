@@ -18,7 +18,18 @@ function createAuth() {
     trustedOrigins: allowedOrigins(),
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     emailAndPassword: { enabled: true, disableSignUp: process.env.NODE_ENV !== "development" },
-    user: { additionalFields: { role: { type: "string", defaultValue: "user", input: false } } },
+    user: {
+      additionalFields: {
+        role: { type: "string", defaultValue: "user", input: false },
+        isDemo: { type: "boolean", defaultValue: false, input: false },
+        hideFromLeaderboard: { type: "boolean", defaultValue: false, input: false },
+        isDeactivated: { type: "boolean", defaultValue: false, input: false },
+        deactivatedAt: { type: "date", defaultValue: null, input: false },
+        accountNotes: { type: "string", defaultValue: "", input: false },
+        lastLoginAt: { type: "date", defaultValue: null, input: false },
+        failedLoginAttempts: { type: "number", defaultValue: 0, input: false },
+      },
+    },
   });
 }
 

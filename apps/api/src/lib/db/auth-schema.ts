@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -19,6 +19,11 @@ export const user = pgTable("user", {
   role: text("role").default("user").notNull(),
   isDemo: boolean("is_demo").default(false).notNull(),
   hideFromLeaderboard: boolean("hide_from_leaderboard").default(false).notNull(),
+  isDeactivated: boolean("is_deactivated").default(false).notNull(),
+  deactivatedAt: timestamp("deactivated_at"),
+  accountNotes: text("account_notes").default("").notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
 }).enableRLS();
 
 export const session = pgTable(

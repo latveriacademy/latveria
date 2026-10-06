@@ -1,6 +1,6 @@
 # Latveria — Rencana situs belajar UTBK
 
-Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, serta bank soal admin telah dibuat. Stack sudah dimigrasikan ke React/Vite + Hono dengan kontrak Zod shared; Supabase sebagai database produksi belum diverifikasi.
+Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, bank soal admin dengan impor JSON 5 opsi (A–E), serta manajemen user admin dengan statistik lengkap, bulk actions, tab detail, dan fitur keamanan telah dibuat. Stack sudah dimigrasikan ke React/Vite + Hono dengan kontrak Zod shared; Supabase sebagai database produksi sudah diverifikasi.
 
 Rekomendasi stack TypeScript, arsitektur MVP, model data, dan urutan penyiapan tersedia di `ARCHITECTURE.md`.
 
@@ -76,3 +76,20 @@ PvP (kompetisi antarpemain), peringkat kompetitif, musim kompetisi, jenjang, len
 - PostgreSQL melalui Supabase telah disetujui dan fondasi teknis sudah tersedia. Autentikasi, layanan hosting, serta anggaran operasional di `ARCHITECTURE.md` masih perlu ditetapkan sebelum rilis.
 
 Target implementasi pertama: sejumlah kecil soal yang sudah ditinjau, dapat dikerjakan dari awal sampai akhir, dan memiliki pembahasan yang membantu peserta memahami jawabannya. Catat perintah penyiapan dan pemeriksaan terarah yang benar-benar tersedia di `AGENTS.md` setelah perangkat pengembangan disiapkan.
+
+## 5. Manajemen User Admin
+
+Panel manajemen user menyediakan kontrol lengkap untuk admin:
+
+- **Statistik platform**: total user, aktif hari ini, baru minggu ini, dinonaktifkan, rata-rata akurasi, dan growth data 30 hari.
+- **Daftar user terfilter**: pencarian, filter demo/normal/aktif/nonaktif, sorting, dan pagination.
+- **Bulk actions**: tampilkan/sembunyikan leaderboard, aktifkan/nonaktifkan, hapus massal.
+- **Detail user tabbed**:
+  - Overview dengan level, XP, akurasi, streak, weekly activity chart, weak areas, favorite topics, subtest stats.
+  - Aktivitas dengan riwayat login dan laporan soal.
+  - Keamanan dengan role, aktifkan/nonaktifkan, reset progres, hapus permanen.
+- **Catatan admin** per user untuk dokumentasi internal.
+
+- [x] Implementasi backend dengan endpoint baru dan field database
+- [x] Frontend dengan UI tabbed, statistik, dan bulk actions
+- [x] Statistik lengkap per user (streak, weekly activity, weak areas, improvement rate)
