@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Trash2 } from "lucide-react";
 import type { LexiconAnnotation, QuestionDetail } from "@latveria/shared";
 import { api } from "../../lib/api";
+import { downloadJson, questionFilename, questionToJson } from "../../lib/question-export";
 import { Button } from "../../components/ui/button";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { ConfirmDialog } from "../../components/confirm-dialog";
@@ -140,6 +141,13 @@ export function QuestionPreview() {
             <Pencil />
             Edit soal
           </Link>
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => downloadJson(questionFilename(item), questionToJson(item))}
+        >
+          <Download />
+          Ekspor JSON
         </Button>
         <Button
           variant="outline"

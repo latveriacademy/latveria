@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useState } from "react";
 import {
   createBrowserRouter,
   isRouteErrorResponse,
@@ -25,6 +25,7 @@ import { Login } from "./app/login";
 import { AdminSummary } from "./app/admin/admin-summary";
 import { BankPage } from "./app/admin/question-bank";
 import { QuestionForm } from "./app/admin/question-form";
+import { QuestionJsonEditor } from "./app/admin/question-json-editor";
 import { AdminLayout } from "./app/admin/admin-layout";
 import { ImportQuestions } from "./app/admin/import-questions";
 import { QuestionPreview } from "./app/admin/question-preview";
@@ -125,13 +126,38 @@ function ImportPage() {
 }
 function EditQuestion() {
   const { item, topics } = useLoaderData<{ item: QuestionDetail; topics: Topic[] }>();
+  const [mode, setMode] = useState<"form" | "json">("form");
   return (
     <>
       <PageHeading
         title="Edit soal"
         description={`${item.topic} · ${item.category ?? "Tanpa kategori"}`}
+        actions={
+          <div className="flex gap-2" role="group" aria-label="Mode edit">
+            <Button
+              type="button"
+              variant={mode === "form" ? "default" : "outline"}
+              aria-pressed={mode === "form"}
+              onClick={() => setMode("form")}
+            >
+              Formulir
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "json" ? "default" : "outline"}
+              aria-pressed={mode === "json"}
+              onClick={() => setMode("json")}
+            >
+              JSON
+            </Button>
+          </div>
+        }
       />
-      <QuestionForm key={item.id} topics={topics} question={item} />
+      {mode === "form" ? (
+        <QuestionForm key={item.id} topics={topics} question={item} />
+      ) : (
+        <QuestionJsonEditor key={item.id} topics={topics} question={item} />
+      )}
     </>
   );
 }
