@@ -15,7 +15,7 @@ const annotation = lexiconAnnotationSchema.parse({
 const question = {
   topicId: "00000000-0000-4000-8000-000000000001",
   prompt,
-  options: ["A", "B", "C", "D"],
+  options: ["A", "B", "C", "D", "E"],
   correctAnswer: 0,
   explanation: "Penjelasan soal",
   source: "Contoh tim",
@@ -71,7 +71,7 @@ it("accepts annotated imports and preserves compatibility with existing question
         questions: [
           {
             prompt: "National sovereignty requires civic responsibility.",
-            options: ["A", "B", "C", "D"],
+            options: ["A", "B", "C", "D", "E"],
             correctAnswer: 0,
             explanation: "Pembahasan",
             source: "AI Import",

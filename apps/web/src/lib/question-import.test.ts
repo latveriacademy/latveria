@@ -13,7 +13,7 @@ const group = {
   questions: [
     {
       prompt: "Berapakah seperempat dari 80?",
-      options: ["10", "15", "20", "25"],
+      options: ["10", "15", "20", "25", "30"],
       correctAnswer: 2,
       explanation: "Seperempat dari 80 adalah 20.",
       source: "Contoh buatan tim",
@@ -97,7 +97,10 @@ describe("parseQuestionImport", () => {
   it("identifies the question containing invalid options", () => {
     const invalid = {
       ...group,
-      questions: [group.questions[0], { ...group.questions[0], options: ["A", "A", "B", "C"] }],
+      questions: [
+        group.questions[0],
+        { ...group.questions[0], options: ["A", "A", "B", "C", "D"] },
+      ],
     };
     expect(() => parseQuestionImport(JSON.stringify({ groups: [invalid] }))).toThrow(
       "grup 1, soal 2",

@@ -1,6 +1,6 @@
 import { utbkSubtests, type Result } from "@latveria/shared";
 
-const letters = ["A", "B", "C", "D"];
+const letters = ["A", "B", "C", "D", "E"];
 
 export function reviewResultToSession(result: Result) {
   if (!result.answers.length || result.answers.length !== result.attempt.total)

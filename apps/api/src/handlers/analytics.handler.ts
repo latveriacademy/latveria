@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
 import { questions, topics, practiceAnswers, practiceAttempts } from "../lib/db/schema";
-import { eq, sql, desc, asc, and } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export const analyticsHandler = new Hono();
 
@@ -22,7 +22,10 @@ analyticsHandler.get("/api/admin/analytics/questions", async (c) => {
       topicName: topics.name,
       prompt: questions.prompt,
       answersCount: sql<number>`count(${practiceAnswers.id})`.as("answers_count"),
-      correctCount: sql<number>`sum(case when ${practiceAnswers.isCorrect} = 1 then 1 else 0 end)`.as("correct_count"),
+      correctCount:
+        sql<number>`sum(case when ${practiceAnswers.isCorrect} = 1 then 1 else 0 end)`.as(
+          "correct_count",
+        ),
     })
     .from(questions)
     .innerJoin(topics, eq(questions.topicId, topics.id))
@@ -35,7 +38,7 @@ analyticsHandler.get("/api/admin/analytics/questions", async (c) => {
   const allQuestions = await baseQuery;
 
   // Filter by subtest if specified
-  let filteredQuestions = subtest
+  const filteredQuestions = subtest
     ? allQuestions.filter((q) => q.topicSlug === subtest)
     : allQuestions;
 

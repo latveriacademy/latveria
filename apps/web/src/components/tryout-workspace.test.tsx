@@ -24,7 +24,7 @@ it("renders the practice workspace with index-zero answers and tryout subtest co
       {
         id: "q1",
         prompt: "Pertanyaan",
-        options: ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D"],
+        options: ["Pilihan A", "Pilihan B", "Pilihan C", "Pilihan D", "Pilihan E"],
       },
     ],
   };

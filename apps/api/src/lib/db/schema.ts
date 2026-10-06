@@ -75,10 +75,10 @@ export const questions = pgTable(
   },
   (table) => [
     check(
-      "questions_four_options",
-      sql`array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 4 and array_position(${table.options}, null) is null`,
+      "questions_five_options",
+      sql`array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 5 and array_position(${table.options}, null) is null`,
     ),
-    check("questions_valid_answer", sql`${table.correctAnswer} between 0 and 3`),
+    check("questions_valid_answer", sql`${table.correctAnswer} between 0 and 4`),
     foreignKey({
       columns: [table.packageId, table.topicId],
       foreignColumns: [questionPackages.id, questionPackages.topicId],
@@ -165,7 +165,7 @@ export const practiceAnswers = pgTable(
   (table) => [
     unique("answer_attempt_question_unique").on(table.attemptId, table.questionId),
     index("practice_answers_submitted_idx").on(table.submittedAt),
-    check("answer_valid_selected", sql`${table.selectedAnswer} between 0 and 3`),
+    check("answer_valid_selected", sql`${table.selectedAnswer} between 0 and 4`),
     check("answer_valid_correct", sql`${table.isCorrect} in (0, 1)`),
   ],
 ).enableRLS();

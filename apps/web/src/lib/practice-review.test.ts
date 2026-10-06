@@ -15,7 +15,7 @@ const result: Result = {
     {
       id: "question-1",
       prompt: "Soal pertama",
-      options: ["10", "20", "30", "40"],
+      options: ["10", "20", "30", "40", "50"],
       correctAnswer: 0,
       selectedAnswer: 0,
       isCorrect: 1,
@@ -24,7 +24,7 @@ const result: Result = {
     {
       id: "question-2",
       prompt: "Soal kedua",
-      options: ["A", "B", "C", "D"],
+      options: ["A", "B", "C", "D", "E"],
       correctAnswer: 1,
       selectedAnswer: 2,
       isCorrect: 0,

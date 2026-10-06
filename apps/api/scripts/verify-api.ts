@@ -164,7 +164,7 @@ try {
       topicId: mathTopic.id,
       prompt:
         "Atap lama limas membutuhkan genteng. $$\\begin{tikzpicture}[scale=0.35]\\draw (0,0)--cycle;\\end{tikzpicture}$$",
-      options: ["A", "B", "C", "D"],
+      options: ["A", "B", "C", "D", "E"],
       correctAnswer: 0,
       explanation: "Penjelasan lama.",
       source: "Uji migrasi prompt seed",
@@ -386,7 +386,7 @@ try {
   const created = await request("/admin/questions", other.cookie, {
     topicId: topics[0].id,
     prompt: "Soal uji API $x^2$",
-    options: ["1", "2", "3", "4"],
+    options: ["1", "2", "3", "4", "5"],
     correctAnswer: 3,
     explanation: "Penjelasan uji API.",
     source: "Dummy integrasi",
@@ -408,7 +408,7 @@ try {
   const change = {
     topicId: topics[0].id,
     prompt: "Soal uji API versi edit",
-    options: ["5", "6", "7", "8"],
+    options: ["5", "6", "7", "8", "9"],
     correctAnswer: 0,
     explanation: "Penjelasan soal sesudah diedit.",
     source: "Dummy integrasi",
@@ -434,14 +434,14 @@ try {
         questions: [
           {
             prompt: "Contoh soal batch pertama",
-            options: ["A", "B", "C", "D"],
+            options: ["A", "B", "C", "D", "E"],
             correctAnswer: 1,
             explanation: "Pembahasan soal pertama.",
             source: "Dummy integrasi",
           },
           {
             prompt: "Contoh soal batch kedua",
-            options: ["E", "F", "G", "H"],
+            options: ["E", "F", "G", "H", "I"],
             correctAnswer: 2,
             explanation: "Pembahasan soal kedua.",
             source: "Dummy integrasi",
@@ -481,7 +481,7 @@ try {
         ...batch.groups[0],
         questions: [
           batch.groups[0].questions[0],
-          { ...batch.groups[0].questions[1], options: ["X", "X", "Y", "Z"] },
+          { ...batch.groups[0].questions[1], options: ["X", "X", "Y", "Z", "W"] },
         ],
       },
     ],
@@ -605,7 +605,7 @@ try {
     topicId: topics[0].id,
     packageId: testPkg.id,
     prompt: "Soal dalam paket uji coba $y=2x$",
-    options: ["A", "B", "C", "D"],
+    options: ["A", "B", "C", "D", "E"],
     correctAnswer: 0,
     explanation: "Penjelasan soal paket uji coba.",
     source: "Dummy paket",
@@ -621,7 +621,7 @@ try {
     topicId: topics[0].id,
     packageId: testPkgTopic1.id, // belongs to topics[1]!
     prompt: "Soal silang subtes",
-    options: ["A", "B", "C", "D"],
+    options: ["A", "B", "C", "D", "E"],
     correctAnswer: 0,
     explanation: "Penjelasan.",
     source: "Dummy",

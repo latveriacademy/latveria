@@ -120,7 +120,7 @@ export function QuestionForm({
       topicId: selectedTopicId,
       packageId: selectedPackageId || undefined,
       prompt: form.get("prompt"),
-      options: [0, 1, 2, 3].map((index) => form.get(`option-${index}`)),
+      options: [0, 1, 2, 3, 4].map((index) => form.get(`option-${index}`)),
       correctAnswer: Number(form.get("correctAnswer")),
       explanation: form.get("explanation"),
       source: form.get("source"),
@@ -393,7 +393,7 @@ export function QuestionForm({
       <fieldset className={styles.formSection}>
         <legend>Pilihan jawaban</legend>
         <div className={styles.options}>
-          {[0, 1, 2, 3].map((index) => (
+          {[0, 1, 2, 3, 4].map((index) => (
             <div className={styles.field} key={index}>
               <label htmlFor={`option-${index}`}>Opsi {index + 1}</label>
               <input
@@ -413,7 +413,7 @@ export function QuestionForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[0, 1, 2, 3].map((index) => (
+              {[0, 1, 2, 3, 4].map((index) => (
                 <SelectItem key={index} value={String(index)}>
                   Opsi {index + 1}
                 </SelectItem>

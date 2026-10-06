@@ -70,7 +70,7 @@ export async function verifyLexicon() {
       topicId: lbe.id,
       packageId: pkg.id,
       prompt: "The phone was fried. What does fried mean?",
-      options: ["Damaged", "Cooked", "Wet", "Clean"],
+      options: ["Damaged", "Cooked", "Wet", "Clean", "Broken"],
       correctAnswer: 0,
       explanation: "Fried berarti rusak pada perangkat elektronik.",
       source: "Lexicon integration fixture",

@@ -10,7 +10,7 @@ export function TryoutReview({ data, onBack }: { data: TryoutSessionState; onBac
   const [index, setIndex] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const rows = data.reviewQuestions ?? [];
-  const letters = ["A", "B", "C", "D"];
+  const letters = ["A", "B", "C", "D", "E"];
   const questions = rows.map((row) => ({
     id: row.id,
     question: row.prompt,

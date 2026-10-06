@@ -9,7 +9,7 @@ export const packageImportExample: QuestionImport = {
       questions: [
         {
           prompt: "Berapakah 25 persen dari 80?",
-          options: ["10", "15", "20", "25"],
+          options: ["10", "15", "20", "25", "30"],
           correctAnswer: 2,
           explanation: "25 persen sama dengan seperempat. Seperempat dari 80 adalah 20.",
           source: "Soal contoh buatan tim",
@@ -33,6 +33,7 @@ export const lexiconImportExample: QuestionImport = {
             "Equality and fairness",
             "Financial collapse",
             "International commerce",
+            "Technological advancement",
           ],
           correctAnswer: 0,
           explanation:

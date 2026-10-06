@@ -11,7 +11,7 @@ export const pyramidQuestion = {
 \node[right] at (4,2.5) {$5\text{ m}$};
 \node[left] at (4,0) {$3\text{ m}$};
 \end{tikzpicture}`,
-  options: ["900 genteng", "1.050 genteng", "1.200 genteng", "1.350 genteng"],
+  options: ["900 genteng", "1.050 genteng", "1.200 genteng", "1.350 genteng", "1.500 genteng"],
   correctAnswer: 2,
   explanation: String.raw`Tinggi sisi tegak (apotema) adalah $\sqrt{3^2+4^2}=5$ m. Luas satu sisi $=\frac12\times8\times5=20$ m². Luas empat sisi $=4\times20=80$ m². Jumlah genteng $=80\times15=1200$.`,
   source: "Contoh buatan tim",
@@ -31,7 +31,7 @@ export const openCuboidQuestion = {
 \node[below right] at (4.75,0.75) {$10\text{ cm}$};
 \node[left] at (0,1.5) {$8\text{ cm}$};
 \end{tikzpicture}`,
-  options: ["Rp200.000,00", "Rp275.000,00", "Rp350.000,00", "Rp425.000,00"],
+  options: ["Rp200.000,00", "Rp275.000,00", "Rp350.000,00", "Rp425.000,00", "Rp500.000,00"],
   correctAnswer: 1,
   explanation: String.raw`Luas tanpa tutup $=(15\times10)+2(15\times8+10\times8)=550$ cm². Biaya $=550\times500=\text{Rp}275.000,00$.`,
   source: "Contoh buatan tim",
@@ -52,7 +52,7 @@ export const cylinderTankQuestion = {
 \node[right] at (2.6,2.5) {$10\text{ m}$};
 \node[left] at (-2,3) {$\frac{3}{5}\text{ penuh}$};
 \end{tikzpicture}`,
-  options: ["4 jam", "5 jam", "6 jam", "10 jam"],
+  options: ["4 jam", "5 jam", "6 jam", "8 jam", "10 jam"],
   correctAnswer: 2,
   explanation: String.raw`Volume tangki $=\frac{22}{7}\times7^2\times10=1540$ m³. Air yang harus dipompa $=\frac{3}{5}\times1540=924$ m³. Waktu $=924\div154=6$ jam.`,
   source: "Contoh buatan tim",

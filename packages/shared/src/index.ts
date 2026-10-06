@@ -222,9 +222,9 @@ const questionFields = z.object({
   prompt: z.string().trim().min(5).max(1000),
   options: z
     .array(z.string().trim().min(1).max(300))
-    .length(4)
-    .refine((items) => new Set(items).size === 4, "Opsi harus berbeda."),
-  correctAnswer: z.number().int().min(0).max(3),
+    .length(5)
+    .refine((items) => new Set(items).size === 5, "Opsi harus berbeda."),
+  correctAnswer: z.number().int().min(0).max(4),
   explanation: z.string().trim().min(5).max(2000),
   source: z.string().trim().min(3).max(300),
   category: z.string().trim().max(120).optional(),
@@ -292,7 +292,7 @@ export const questionImportSchema = z
 
 export const submissionSchema = z.object({
   submissionId: z.uuid().optional(),
-  answers: z.record(z.uuid(), z.number().int().min(0).max(3)),
+  answers: z.record(z.uuid(), z.number().int().min(0).max(4)),
   packageId: z.uuid().optional().nullable(),
   timeSpentSeconds: z.number().int().min(0).optional(),
   questionTimes: z.record(z.uuid(), z.number().int().min(0)).optional(),
