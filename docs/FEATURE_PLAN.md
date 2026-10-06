@@ -678,3 +678,544 @@ PvP                     ✗         Perlu desain lengkap
 | PvP | Bookmarks | "Soal salah PvP" masuk review |
 | PvP | Weak Areas | "Pilihan subtest lemah" untuk PvP |
 | Group Management | Leaderboard | Group leaderboards |
+
+---
+
+## J. Onboarding Flow
+
+**Tujuan**: Bimbing user baru dari awal sampai bisa praktik dengan efektif.
+
+**Nilai**: User yang bingung di awal akan churn. Onboarding singkat bisa increase retention 20-30%.
+
+### Alur Onboarding
+
+```
+First-time user flow:
+│
+├─→ Welcome screen (1 slide, 5 detik)
+│   └── "Selamat datang di Latveria Academy"
+│
+├─→ Pilih target UTBK
+│   ├── Tahun ujian (2025, 2026, 2027+)
+│   └── Jurusan/IPK target (optional)
+│
+├─→ Initial Assessment (5-10 soal)
+│   ├── Identifikasi baseline skill
+│   ├── Tentukan weak areas awal
+│   └── Durasi: ~5 menit
+│
+├─→ Hasil Assessment
+│   ├── Tampilkan weak areas
+│   ├── Rekomendasi paket pertama
+│   └── "Mulai latihan?" CTA
+│
+├─→ Setup Streak Reminder
+│   ├── Pilih waktu reminder (pagi/siang/malam)
+│   └── Toggle notifikasi
+│
+└─→ Dashboard (dengan tutorial tooltip)
+    ├── Highlight navigation utama
+    ├── Highlight weak areas
+    └── "Tip: Mulai dari sini"
+```
+
+### Skema Data
+
+```typescript
+// Tabel user_onboarding
+{
+  user_id: string (FK, PK)
+  completed: boolean
+  assessment_score: jsonb  // { subtest: score }
+  initial_weak_areas: jsonb  // [slug]
+  reminder_time: time
+  reminder_enabled: boolean
+  created_at: timestamp
+}
+```
+
+### Endpoint API
+
+```
+GET  /api/learner/onboarding/status     - Cek status onboarding
+POST /api/learner/onboarding/assessment - Submit assessment
+GET  /api/learner/onboarding/next-step - Step berikutnya
+POST /api/learner/onboarding/complete - Tandai selesai
+PUT  /api/learner/onboarding/reminder - Update reminder settings
+```
+
+### Estimasi Usaha: Sedang
+- Backend: assessment logic, progress tracking
+- Frontend: multi-step wizard, tooltips
+- Content: 5-10 soal assessment per subtes
+
+### Paralelisme: Independen
+
+---
+
+## K. Notification System
+
+**Tujuan**: Bimbing user kembali dan engaged dengan pembelajaran.
+
+### Jenis Notifikasi
+
+| Type | Trigger | Channel | Priority |
+|------|---------|---------|----------|
+| Streak Reminder | Daily, sesuai preferensi | In-app + Push | High |
+| Daily Challenge Ready | Setiap pagi 06:00 WIB | In-app + Push | High |
+| PvP Invite | Otro user invite | In-app only | Medium |
+| Streak at Risk | 1 jam sebelum midnight | In-app + Push | High |
+| Weak Area Improvement | Minggu baru | In-app | Low |
+| Weekly Summary | Setiap Minggu | In-app + Email | Low |
+
+### Skema Data
+
+```typescript
+// Tabel notifications
+{
+  id: uuid (PK)
+  user_id: uuid (FK)
+  type: enum('streak_reminder', 'challenge_ready', 'pvp_invite', ...)
+  title: text
+  body: text
+  data: jsonb  // { action_url, metadata }
+  read: boolean default false
+  created_at: timestamp
+}
+
+// Tabel notification_preferences
+{
+  user_id: uuid (FK, PK)
+  streak_reminder: boolean default true
+  challenge_ready: boolean default true
+  pvp_invite: boolean default true
+  weekly_summary: boolean default false
+  push_enabled: boolean default true
+  email_enabled: boolean default false
+}
+```
+
+### Endpoint API
+
+```
+GET  /api/learner/notifications     - Daftar notifikasi (paginated)
+POST /api/learner/notifications/read - Tandai sudah dibaca
+PUT  /api/learner/notifications/preferences - Update preferensi
+DELETE /api/learner/notifications/:id - Hapus notifikasi
+```
+
+### Pertimbangan Privasi
+
+- Default: in-app only
+- Push notification perlu consent eksplisit
+- Tidak ada notifikasi untuk user < 13 tahun tanpa parent consent
+- Opt-out jelas di setiap notifikasi
+
+### Estimasi Usaha: Sedang
+
+---
+
+## L. Content Pipeline
+
+**Tujuan**: Pastikan bank soal berkualitas dan terus berkembang.
+
+### Quality Assurance Flow
+
+```
+Question Lifecycle:
+│
+├─→ Draft (oleh content creator)
+│   ├── Input: prompt, opsi, kunci, pembahasan, source
+│   └── Status: draft
+│
+├─→ Review Queue (admin)
+│   ├── Cek benar/salah, grammar, alignment UTBK
+│   ├── Approve → Published
+│   └── Reject → Draft dengan feedback
+│
+├─→ Published (public)
+│   ├── Mulai track difficulty dari user answers
+│   ├── Archive jika outdated
+│   └── Edit (jika belum ada yang jawab)
+│
+└─→ Archived
+    └── Tidak tampil di random selection
+```
+
+### Community Reporting
+
+```
+User Report Flow:
+│
+├─→ User laporkan soal (dari UI "Laporkan")
+│   ├── Reason: Salah kunci, Grammar, Tidak jelas, Outdated
+│   └── Detail (optional)
+│
+├─→ Admin Queue
+│   ├── Review laporan
+│   ├── Fix atau reject
+│   └── Feedback ke reporter (optional)
+│
+└─→ Resolution
+    ├── Fix soal → Update dengan versi history
+    └── No action → Closed dengan reason
+```
+
+### Content Growth
+
+| Metode | Effort | Quality | Notes |
+|--------|--------|---------|-------|
+| Manual by team | Tinggi | Tinggi | Butuh budget |
+| Teacher submission | Sedang | Sedang | Perlu review queue |
+| AI-assisted generation | Rendah | Rendah | Butuh human review wajib |
+| Import dari partner | Rendah | Varied | Butuh format agreement |
+
+### Estimasi Usaha: Besar (ongoing)
+
+---
+
+## M. Difficulty Calibration
+
+**Tujuan**: Setiap soal punya "difficulty score" yang akurat untuk rekomendasi dan matchmaking.
+
+### Algoritma
+
+```typescript
+// Difficulty berdasarkan historical accuracy
+interface QuestionDifficulty {
+  questionId: string
+  totalAttempts: number
+  correctRate: number  // 0-1
+  confidence: number   // 0-1, berdasarkan sample size
+  lastUpdated: Date
+}
+
+// Update difficulty secara batch (setiap malam)
+async function recalculateDifficulties() {
+  const answers = await db.query(`
+    SELECT question_id, COUNT(*) as attempts,
+           SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+    FROM practice_answers
+    WHERE created_at > NOW() - INTERVAL '30 days'
+    GROUP BY question_id
+  `)
+  
+  for (const row of answers) {
+    if (row.attempts >= 30) {  // Minimum sample
+      const correctRate = row.correct / row.attempts
+      const confidence = Math.min(row.attempts / 100, 1)
+      await db.update(questions)
+        .set({ difficultyRate: correctRate, confidence })
+        .where(eq(questions.id, row.question_id))
+    }
+  }
+}
+```
+
+### Thresholds
+
+```typescript
+const DIFFICULTY = {
+  MIN_SAMPLES: 30,        // Minimum attempts untuk consider
+  EASY_THRESHOLD: 0.7,     // >70% correct
+  MEDIUM_THRESHOLD: 0.4,    // 40-70% correct
+  HARD_THRESHOLD: 0.4,      // <40% correct
+  
+  // Untuk matchmaking PvP
+  BALANCE_TOLERANCE: 0.15, // 15% spread max per match
+}
+```
+
+### Penggunaan
+
+| Use Case | How |
+|----------|-----|
+| Rekomendasi | Prioritas soal sesuai weak areas + difficulty |
+| PvP Selection | Match players dengan similar difficulty distribution |
+| Study Plan | Target difficulty progression |
+| Content Gap | Identifikasi topik yang kurang soal |
+
+### Estimasi Usaha: Kecil (ongoing maintenance)
+
+---
+
+## N. Parent/Guardian Dashboard
+
+**Tujuan**: Orang tua bisa monitor progress anak tanpa violate privasi anak.
+
+### Tier Privasi
+
+```
+3 Tier untuk Group/Class Management:
+
+TIER 1: Maximum Privacy (Default untuk individual)
+├── Anak sehenanya bisa lihat progress sendiri
+├── Tidak ada leaderboard public
+├── Parent tidak bisa lihat detail individual question
+└── Chat/communication tidak ada
+
+TIER 2: Supervised Learning (Untuk Class/Group)
+├── Teacher bisa lihat progress student
+├── Student bisa lihat progress sendiri
+├── Student TIDAK bisa lihat progress student lain
+├── Teacher bisa assign work
+└── No peer-to-peer communication
+
+TIER 3: Parent Monitoring (Opt-in untuk individual)
+├── Parent consent required (user < 18)
+├── Parent dashboard dengan:
+│   ├── Weekly practice summary
+│   ├── Total time spent
+│   ├── Weak areas progression
+│   ├── Streak status
+│   └── Achievement badges earned
+├── Parent TIDAK bisa lihat:
+│   ├── Individual question content
+│   ├── Answer details
+│   └── Full practice history
+└── Student notified saat parent connects
+```
+
+### Skema Data
+
+```typescript
+// Parent-Child link
+{
+  id: uuid
+  parent_user_id: uuid (FK)
+  child_user_id: uuid (FK)
+  consent_given_at: timestamp
+  consent_method: enum('email', 'sms', 'manual')
+  status: enum('pending', 'active', 'revoked')
+}
+
+// Parent dashboard cache (refreshed daily)
+{
+  user_id: uuid (FK, child)
+  week_start: date
+  total_practice_minutes: integer
+  questions_answered: integer
+  accuracy: float
+  streak_current: integer
+  weak_areas_summary: jsonb
+  generated_at: timestamp
+}
+```
+
+### Endpoint API
+
+```
+GET /api/learner/parent/connect     - Generate parent link
+GET /api/parent/dashboard/:childId  - Parent dashboard data
+POST /api/parent/consent            - Give consent
+DELETE /api/parent/consent/:linkId  - Revoke consent
+```
+
+### Estimasi Usaha: Sedang
+
+---
+
+## O. Performance Metrics
+
+**Tujuan**: Ukur seberapa baik fitur membantu user belajar.
+
+### Core Metrics
+
+| Metrik | Definisi | Target | Measurement |
+|--------|----------|--------|-------------|
+| DAU/MAU | Daily vs Monthly active | > 20% | Monthly |
+| Streak Survival | % user streak > 7 hari | > 40% | Weekly |
+| Improvement Rate | % weak areas improve setelah 2 minggu | > 50% | Bi-weekly |
+| Challenge Completion | % daily challenge diselesaikan | > 60% | Daily |
+| PvP Retention | % user main PvP lagi setelah pertama | > 30% | Monthly |
+| Onboarding Completion | % user finish onboarding | > 70% | Weekly |
+| Time to First Practice | Median menit dari signup ke first practice | < 10 min | Weekly |
+
+### Engagement Funnel
+
+```
+Signup
+  ↓ (100%)
+Email Verified
+  ↓ (60%)
+Onboarding Complete
+  ↓ (70%)
+First Practice
+  ↓ (80%)
+3 Day Streak
+  ↓ (50%)
+7 Day Streak
+  ↓ (40%)
+30 Day Active
+  ↓ (20%)
+```
+
+### Dashboard untuk Tim
+
+```typescript
+// Admin Analytics Dashboard
+{
+  overview: {
+    dau, wau, mau,
+    new_signups,
+    retention_rate
+  },
+  engagement: {
+    avg_session_duration,
+    questions_per_session,
+    streak_distribution
+  },
+  feature_adoption: {
+    daily_challenge_completion_rate,
+    pvp_match_count,
+    bookmarks_created
+  },
+  cohort_analysis: {
+    week_1_retention,
+    week_2_retention,
+    week_4_retention
+  }
+}
+```
+
+### Estimasi Usaha: Kecil (dashboard) + Ongoing (tracking)
+
+---
+
+## P. Koreksi Fitur
+
+### P1. Daily Challenge: 1 Soal → Mini Session
+
+**Koreksi**:
+
+```
+SEBELUM:
+- 1 soal per hari
+
+SESUDAH:
+- Mini session: 3-5 soal, ~5 menit
+- Bisa selesai di waktu senggang
+- Streak dihitung dari completion, bukan soal
+- Variety: random subtes atau fokus weak areas
+```
+
+**Alasan**:
+- 1 soal terlalu sedikit untuk meaningful practice
+- 5 menit adalah sweet spot untuk daily engagement
+- User bisa selesaikan di antrian/break
+
+### P2. Spaced Repetition: Detail SM-2
+
+**Koreksi**:
+
+```
+SM-2 Algorithm Intervals:
+
+Rating "Again" (Lupa):
+├── Interval: 1 menit
+├── Ease factor: -0.2
+└── Next review: +1 minute
+
+Rating "Hard" (Susah):
+├── Interval: 6 menit
+├── Ease factor: -0.15
+└── Next review: +6 minutes
+
+Rating "Good" (Normal):
+├── Interval: 1 hari
+├── Ease factor: 0
+└── Next review: +1 day
+
+Rating "Easy" (Mudah):
+├── Interval: 4 hari
+├── Ease factor: +0.15
+└── Next review: +4 days
+
+Default starts at "Good"
+Adjusts based on user performance over time
+```
+
+### P3. Group Management: Privacy Tier Detail
+
+**Koreksi**:
+
+```
+TIER 1: Private (Default)
+├── Invite only via code
+├── Nobody sees each other's progress
+├── Teacher sees own only
+└── No communication features
+
+TIER 2: Class (For formal groups)
+├── Teacher can see all student progress
+├── Students see own progress only
+├── Teacher can assign packages
+├── No peer visibility
+└── Scheduled deadlines
+
+TIER 3: Public Study Group
+├── Leaderboard visible
+├── No personal details
+├── Join via search
+└── Moderate content
+```
+
+---
+
+## Q. Fitur yang Bisa Ditunda
+
+Berdasarkan analisis effort vs impact:
+
+| Fitur | Alasan Tunda |
+|-------|-------------|
+| Referral System | Butuh user base dulu (~1000 DAU) |
+| Offline PWA | Effort tinggi, impact medium |
+| AI Study Assistant | Biaya + accuracy belum ready |
+| Parent Dashboard | Effort medium, bisa Phase 2 |
+
+**Rekomendasi**: Fokus ke core learning loop dulu, baru growth features.
+
+---
+
+## R. Ringkasan Prioritas Tim
+
+```
+TIM A: Core Learning
+├── Weak Area Tracking
+├── Bookmarks
+├── Spaced Repetition
+└── Daily Challenge (mini session)
+
+TIM B: Gamification + Engagement
+├── Streak System
+├── Time Analytics
+└── Onboarding Flow
+
+TIM C: PvP (see PVP_DESIGN.md)
+├── Phase 1: MVP
+├── Phase 2: Ranked
+└── Phase 3: Polish
+
+TIM D: Infrastructure
+├── Notification System
+├── Difficulty Calibration
+└── Content Pipeline
+```
+
+---
+
+## S. Checklist Sebelum Launch
+
+```markdown
+[ ] Onboarding flow tested dengan user research
+[ ] Notification system dengan opt-out jelas
+[ ] Content quality dengan minimum 100 soal per subtes
+[ ] Difficulty calibration dengan 30+ attempts per soal
+[ ] Privacy policy untuk user < 18 tahun
+[ ] Parent consent flow untuk monitoring
+[ ] Moderation queue untuk reports
+[ ] Analytics tracking untuk semua metrik
+[ ] Error monitoring (Sentry equivalent)
+[ ] Performance testing (load test)
+[ ] Security audit (OWASP checklist)
+```
