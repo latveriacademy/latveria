@@ -743,6 +743,14 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.compact-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .compact-online-dot {
@@ -3826,6 +3834,68 @@ body::after {
   justify-content: center;
   position: relative;
   overflow: hidden;
+}
+
+.id-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.id-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.id-avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.btn-avatar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--accent-gold);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-avatar-action:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--accent-gold);
+}
+
+.btn-avatar-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--accent-crimson);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-avatar-delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--accent-crimson);
 }
 
 .id-photo-initial {

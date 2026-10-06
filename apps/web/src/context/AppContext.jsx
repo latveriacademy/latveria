@@ -183,6 +183,7 @@ export const AppProvider = ({ children }) => {
         ...profile,
         email: apiUser.email,
         role: apiUser.role,
+        image: profile.image ?? apiUser.image ?? null,
         id: `LTV-${apiUser.id.slice(0, 4).toUpperCase()}`,
       }));
       setProfileLoaded(true);

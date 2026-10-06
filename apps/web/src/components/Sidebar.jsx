@@ -40,7 +40,11 @@ function CompactProfileCard({
           >
             <div className="compact-avatar-wrapper">
               <div className="compact-avatar-mini">
-                <UserRound size={18} className="text-gold" />
+                {user.image ? (
+                  <img src={user.image} alt="" className="compact-avatar-img" />
+                ) : (
+                  <UserRound size={18} className="text-gold" />
+                )}
               </div>
               <span className="compact-online-dot" />
             </div>

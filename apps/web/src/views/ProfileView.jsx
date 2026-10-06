@@ -2,18 +2,93 @@ import React, { useState } from "react";
 import { ProfileEditorDialog } from "../components/profile-editor-dialog";
 import { useApp } from "../context/AppContext";
 import { ACHIEVEMENTS_LIST } from "../data/achievementsData";
-import { Award, Flame, ShieldCheck, Edit3, Crosshair, Moon, Archive, Layers } from "lucide-react";
-import { UserRound } from "lucide-react";
+import {
+  Award,
+  Flame,
+  ShieldCheck,
+  Edit3,
+  Crosshair,
+  Moon,
+  Archive,
+  Layers,
+  UserRound,
+  Camera,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { PageHeading, ProgressBar } from "../components/ui/dashboard";
+import { api } from "../lib/api";
 
 export const ProfileView = () => {
   const { user, setUser, showToast, profileLoaded, profileError, loadProfile } = useApp();
 
   // Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      showToast("FORMAT TIDAK VALID", "Gunakan format JPG, PNG, WebP, atau GIF.", "error");
+      return;
+    }
+
+    if (file.size < 5120) {
+      showToast("FOTO TERLALU KECIL", "Ukuran foto minimal 5 KB.", "error");
+      return;
+    }
+
+    if (file.size > 3145728) {
+      showToast("FOTO TERLALU BESAR", "Ukuran foto maksimal 3 MB.", "error");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await api("/learner/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+      setUser((prev) => ({ ...prev, image: res.image }));
+      sound.playSelect();
+      showToast("FOTO DIPERBARUI", "Foto profil berhasil diperbarui.", "info");
+    } catch (err) {
+      showToast(
+        "GAGAL UPLOAD",
+        err instanceof Error ? err.message : "Gagal mengunggah foto profil.",
+        "error",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    setUploading(true);
+    try {
+      await api("/learner/profile/avatar", { method: "DELETE" });
+      setUser((prev) => ({ ...prev, image: null }));
+      sound.playClick();
+      showToast("FOTO DIHAPUS", "Foto profil berhasil dihapus.", "info");
+    } catch (err) {
+      showToast(
+        "GAGAL HAPUS",
+        err instanceof Error ? err.message : "Gagal menghapus foto profil.",
+        "error",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!profileLoaded || profileError)
     return (
@@ -64,13 +139,48 @@ export const ProfileView = () => {
           <div className="id-avatar-column">
             <div className="id-photo-frame">
               <div className="id-photo-inner">
-                <UserRound
-                  size={64}
-                  className="text-gold"
-                  role="img"
-                  aria-label="Placeholder foto profil"
-                />
+                {user.image ? (
+                  <img src={user.image} alt={user.name} className="id-photo-img" />
+                ) : (
+                  <UserRound
+                    size={64}
+                    className="text-gold"
+                    role="img"
+                    aria-label="Placeholder foto profil"
+                  />
+                )}
+                {uploading && (
+                  <div className="id-photo-overlay" aria-live="polite">
+                    <Loader2 size={24} className="animate-spin text-gold" />
+                  </div>
+                )}
               </div>
+            </div>
+
+            <div className="id-avatar-actions">
+              <label className="btn-avatar-action font-mono">
+                <Camera size={12} />
+                <span>{user.image ? "Ganti foto" : "Upload foto"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={handleAvatarUpload}
+                />
+              </label>
+
+              {user.image && (
+                <button
+                  type="button"
+                  className="btn-avatar-delete font-mono"
+                  disabled={uploading}
+                  onClick={handleAvatarDelete}
+                >
+                  <Trash2 size={12} />
+                  <span>Hapus</span>
+                </button>
+              )}
             </div>
 
             <button
