@@ -1,15 +1,30 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock, FileCheck, Flag, Layers } from "lucide-react";
 import { Button } from "./ui/button";
-import { PracticeQuestion } from "./practice-question";
+import { QuestionRenderer, type QuestionData } from "./question-renderer";
 import { PracticeNavigator } from "./practice-navigator";
 import { ProgressBar } from "./ui/dashboard";
-import type { LexiconAnnotation } from "@latveria/shared";
+import type {
+  LexiconAnnotation,
+  QuestionStimulus,
+  TrueFalseStatementClient,
+} from "@latveria/shared";
+
+export interface TryoutSessionQuestion {
+  id: string;
+  prompt: string;
+  questionType?: string;
+  stimulus?: QuestionStimulus | null;
+  passage?: string | null;
+  statements?: TrueFalseStatementClient[] | null;
+  options?: string[];
+  rawOptions?: Array<{ id?: string; text: string; isCorrect?: boolean }>;
+}
 
 export interface TryoutSessionState {
   session: {
     id: string;
-    state: "active" | "break" | "completed";
+    state: "active" | "break" | "section_ready" | "completed";
     currentSubtestIndex: number;
     breakEndsAt: string | null;
     answers: Record<string, string>;
@@ -23,10 +38,14 @@ export interface TryoutSessionState {
   package: { id: string; name: string };
   currentSubtest: { id: string; name: string; slug: string };
   totalSubtests: number;
-  questions: { id: string; prompt: string; options: string[] }[];
+  questions: TryoutSessionQuestion[];
   reviewQuestions?: {
     id: string;
     prompt: string;
+    questionType?: string;
+    stimulus?: QuestionStimulus | null;
+    passage?: string | null;
+    statements?: TrueFalseStatementClient[] | null;
     options: string[];
     correctAnswer: number;
     explanation: string;
@@ -55,7 +74,7 @@ type Props = {
   pending: boolean;
   onExit: () => void;
   onSubmit: () => void;
-  onAnswer: (id: string, index: number) => void;
+  onAnswer: (id: string, answerPayload: string | number) => void;
   onFlag: (id: string) => void;
   onJump: (index: number) => void;
 };
@@ -76,15 +95,64 @@ export function TryoutWorkspace({
 }: Props) {
   const { session, questions, currentSubtest, totalSubtests } = data;
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const question = questions[currentIndex] || questions[0];
-  const practiceQuestions = questions.map((item) => ({
+  const currentQ = questions[currentIndex] || questions[0];
+
+  // Prepare questions for navigator
+  const navigatorQuestions = questions.map((item) => ({
     id: item.id,
     question: item.prompt,
-    options: item.options.map((text, index) => ({ key: String.fromCharCode(65 + index), text })),
+    correctAnswer: undefined,
   }));
-  const practiceAnswers = questions.map((item) =>
-    answers[item.id] === undefined ? undefined : String.fromCharCode(65 + Number(answers[item.id])),
-  );
+
+  // Map answers for navigator (any answered state)
+  const navigatorAnswers = questions.map((item) => answers[item.id]);
+
+  // Normalize current answer for QuestionRenderer
+  const rawAnswer = currentQ ? answers[currentQ.id] : undefined;
+  let formattedAnswer: string | Record<string, boolean> | undefined = undefined;
+
+  if (rawAnswer !== undefined) {
+    if (currentQ?.questionType === "true_false_group") {
+      try {
+        formattedAnswer = JSON.parse(rawAnswer);
+      } catch {
+        formattedAnswer = {};
+      }
+    } else {
+      // If single choice and answer is numeric string "0", convert to "A"
+      const num = Number(rawAnswer);
+      if (!Number.isNaN(num) && num >= 0 && num < 26) {
+        formattedAnswer = String.fromCharCode(65 + num);
+      } else {
+        formattedAnswer = rawAnswer;
+      }
+    }
+  }
+
+  const handleRendererAnswer = (val: string | Record<string, boolean>) => {
+    if (!currentQ) return;
+    if (typeof val === "object") {
+      onAnswer(currentQ.id, JSON.stringify(val));
+    } else {
+      // Val is "A", "B", ...
+      const code = val.charCodeAt(0) - 65;
+      onAnswer(currentQ.id, code >= 0 ? code : val);
+    }
+  };
+
+  const rendererQuestionData: QuestionData = {
+    id: currentQ?.id || "",
+    prompt: currentQ?.prompt || "",
+    questionType: currentQ?.questionType || "single_choice",
+    stimulus: currentQ?.stimulus,
+    passage: currentQ?.passage,
+    statements: currentQ?.statements,
+    options: currentQ?.options?.map((text, idx) => ({
+      key: String.fromCharCode(65 + idx),
+      text,
+    })),
+  };
+
   return (
     <>
       <header className="question-header-bar">
@@ -110,13 +178,13 @@ export function TryoutWorkspace({
         <div className="header-tools-group flex-wrap">
           <Button
             variant="ghost"
-            className={`tool-action-btn ${question && flags[question.id] ? "flagged" : ""}`}
-            aria-pressed={Boolean(question && flags[question.id])}
+            className={`tool-action-btn ${currentQ && flags[currentQ.id] ? "flagged" : ""}`}
+            aria-pressed={Boolean(currentQ && flags[currentQ.id])}
             disabled={pending}
-            onClick={() => question && onFlag(question.id)}
+            onClick={() => currentQ && onFlag(currentQ.id)}
           >
             <Flag size={14} />
-            {question && flags[question.id] ? "Ragu-ragu" : "Tandai"}
+            {currentQ && flags[currentQ.id] ? "Ragu-ragu" : "Tandai"}
           </Button>
           <Button size="sm" className="btn-gold-solid" disabled={pending} onClick={onSubmit}>
             <FileCheck size={15} />
@@ -147,19 +215,17 @@ export function TryoutWorkspace({
       </div>
       <div className="quiz-split-workspace">
         <main className="quiz-question-pane">
-          {question && (
-            <PracticeQuestion
-              key={question.id}
-              question={practiceQuestions[currentIndex] || practiceQuestions[0]}
-              answer={practiceAnswers[currentIndex]}
+          {currentQ && (
+            <QuestionRenderer
+              key={currentQ.id}
+              question={rendererQuestionData}
+              answer={formattedAnswer}
               evaluated={false}
               disabled={pending}
-              englishLiteracy={false}
-              onAnswer={(key: string) => onAnswer(question.id, key.charCodeAt(0) - 65)}
-              onOpenLexicon={() => {}}
+              onAnswer={handleRendererAnswer}
             />
           )}
-          <footer className="question-footer-nav">
+          <footer className="question-footer-nav mt-6">
             <Button
               variant="outline"
               disabled={currentIndex === 0 || pending}
@@ -183,8 +249,8 @@ export function TryoutWorkspace({
         </main>
         <PracticeNavigator
           session={{
-            questions: practiceQuestions,
-            answers: practiceAnswers,
+            questions: navigatorQuestions,
+            answers: navigatorAnswers,
             flagged: questions.map((item) => Boolean(flags[item.id])),
             currentIndex,
             isEvaluated: false,

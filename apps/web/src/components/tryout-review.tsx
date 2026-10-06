@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
-import { PracticeQuestion } from "./practice-question";
+import { QuestionRenderer, type QuestionData } from "./question-renderer";
 import { PracticeNavigator } from "./practice-navigator";
 import { Button } from "./ui/button";
 import type { TryoutSessionState } from "./tryout-workspace";
@@ -11,27 +11,44 @@ export function TryoutReview({ data, onBack }: { data: TryoutSessionState; onBac
   const [mobileOpen, setMobileOpen] = useState(false);
   const rows = data.reviewQuestions ?? [];
   const letters = ["A", "B", "C", "D", "E"];
-  const questions = rows.map((row) => ({
+
+  const questions: QuestionData[] = rows.map((row) => ({
     id: row.id,
-    question: row.prompt,
+    prompt: row.prompt,
+    questionType: row.questionType || "single_choice",
+    stimulus: row.stimulus,
+    passage: row.passage,
+    statements: row.statements,
     options: row.options.map((text, optionIndex) => ({ key: letters[optionIndex], text })),
     correctAnswer: letters[row.correctAnswer],
     explanation: row.explanation,
     annotations: row.annotations,
+    topic: row.topic,
   }));
-  const answers = rows.map((row) =>
-    data.session.answers[row.id] === undefined
-      ? undefined
-      : letters[Number(data.session.answers[row.id])],
-  );
+
+  const answers = rows.map((row) => {
+    const raw = data.session.answers[row.id];
+    if (raw === undefined) return undefined;
+    if (row.questionType === "true_false_group") {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return raw;
+      }
+    }
+    const num = Number(raw);
+    return !Number.isNaN(num) && num >= 0 && num < letters.length ? letters[num] : raw;
+  });
+
   const question = questions[index];
+
   return (
     <div className="latveria-view-container question-view-active">
       <header className="question-header-bar">
         <Button variant="outline" onClick={onBack}>
           Kembali ke hasil
         </Button>
-        <span>
+        <span className="font-mono text-xs uppercase tracking-wider text-[var(--gold)]">
           {rows[index]?.topic} · Soal {index + 1}/{rows.length}
         </span>
         <Button
@@ -43,21 +60,19 @@ export function TryoutReview({ data, onBack }: { data: TryoutSessionState; onBac
         </Button>
       </header>
       {!question ? (
-        <p>Soal review tidak tersedia.</p>
+        <p className="p-8 text-center text-muted">Soal review tidak tersedia.</p>
       ) : (
         <div className="quiz-split-workspace">
           <main className="quiz-question-pane">
-            <PracticeQuestion
+            <QuestionRenderer
               key={question.id}
               question={question}
               answer={answers[index]}
               evaluated
               disabled
-              englishLiteracy={rows[index].slug === "literasi-bahasa-inggris"}
               onOpenLexicon={openLexicon}
-              onAnswer={() => {}}
             />
-            <footer className="question-footer-nav">
+            <footer className="question-footer-nav mt-6">
               <Button variant="outline" disabled={index === 0} onClick={() => setIndex(index - 1)}>
                 Sebelumnya
               </Button>
@@ -67,7 +82,17 @@ export function TryoutReview({ data, onBack }: { data: TryoutSessionState; onBac
             </footer>
           </main>
           <PracticeNavigator
-            session={{ questions, answers, flagged: [], currentIndex: index, isEvaluated: true }}
+            session={{
+              questions: rows.map((r) => ({
+                id: r.id,
+                question: r.prompt,
+                correctAnswer: letters[r.correctAnswer],
+              })),
+              answers,
+              flagged: [],
+              currentIndex: index,
+              isEvaluated: true,
+            }}
             mobileOpen={mobileOpen}
             onMobileOpenChange={setMobileOpen}
             onJump={(next: number) => {

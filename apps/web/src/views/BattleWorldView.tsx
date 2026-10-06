@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { ArrowRight, CheckCircle2, Play, Coffee } from "lucide-react";
+import { ArrowRight, CheckCircle2, Play, Layers } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Panel } from "../components/ui/dashboard";
 import { api } from "../lib/api";
@@ -23,7 +23,6 @@ export function BattleWorldView() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [subtestTimer, setSubtestTimer] = useState<number>(30 * 60);
-  const [breakTimer, setBreakTimer] = useState<number>(15 * 60);
   const [showSubmitSubtestModal, setShowSubmitSubtestModal] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [submittingSubtest, setSubmittingSubtest] = useState(false);
@@ -82,9 +81,7 @@ export function BattleWorldView() {
         currentQuestionIndex: data.session.currentQuestionIndex || 0,
       };
       if (data.session.state === "completed") setResult(data.score ?? null);
-
-      if (data.session.state === "break") setBreakTimer(data.session.secondsRemaining);
-      else setSubtestTimer(data.session.secondsRemaining);
+      if (data.session.state === "active") setSubtestTimer(data.session.secondsRemaining);
     } catch (error) {
       localStorage.removeItem("latveria_tryout_session_id");
       setActiveSessionData(null);
@@ -108,19 +105,6 @@ export function BattleWorldView() {
       }
       const interval = setInterval(() => {
         setSubtestTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-
-    if (activeSessionData.session.state === "break") {
-      const interval = setInterval(() => {
-        setBreakTimer((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
             return 0;
@@ -170,7 +154,7 @@ export function BattleWorldView() {
     }, 400);
   };
 
-  const handleSelectAnswer = (qId: string, optIdx: number) => {
+  const handleSelectAnswer = (qId: string, optIdx: number | string) => {
     const questionTime =
       (timeSpentByQuestion[qId] ?? 0) +
       Math.max(0, Math.round((Date.now() - questionEnteredAt.current) / 1000));
@@ -298,8 +282,8 @@ export function BattleWorldView() {
   if (activeSessionData) {
     const { session, currentSubtest, questions } = activeSessionData;
 
-    // SCENARIO A: BREAK STATE
-    if (session.state === "break") {
+    // SCENARIO A: SECTION READY / TRANSITION STATE (NO FORCED BREAK)
+    if (session.state === "section_ready" || session.state === "break") {
       return (
         <div
           className="latveria-view-container motion-fade-in"
@@ -315,16 +299,16 @@ export function BattleWorldView() {
               gap: 20,
             }}
           >
-            <Coffee size={44} style={{ color: "var(--accent-gold)" }} />
+            <Layers size={44} style={{ color: "var(--accent-gold)" }} />
             <span className="font-mono text-xs uppercase tracking-widest text-[var(--gold)]">
-              Jeda Resmi Ujian
+              Subtes Selesai
             </span>
             <h2 className="font-serif text-3xl font-semibold text-[var(--ink)]">
-              Sesi Istirahat Antar-Subtes
+              Siap Melanjutkan Subtes Berikutnya?
             </h2>
             <p className="text-[var(--text-secondary)] text-sm max-w-lg leading-relaxed">
-              Kamu telah menyelesaikan subtes sebelumnya dengan baik. Gunakan waktu istirahat ini
-              untuk menarik napas sejenak, merilekskan mata, atau minum air.
+              Subtes sebelumnya berhasil dikumpulkan dan tersimpan aman. Kamu dapat langsung memulai
+              subtes berikutnya sekarang atau beristirahat sejenak dan melanjutkannya nanti.
             </p>
 
             <div
@@ -333,23 +317,23 @@ export function BattleWorldView() {
                 border: "1px solid var(--border-subtle)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px 28px",
-                margin: "16px 0",
+                margin: "12px 0",
               }}
             >
               <span className="font-mono text-xs text-[var(--text-muted)] block mb-1">
-                SISA WAKTU ISTIRAHAT
+                SUBTES SELANJUTNYA
               </span>
-              <span className="font-mono text-3xl font-bold text-[var(--ink)]">
-                {formatSeconds(breakTimer)}
+              <span className="font-serif text-xl font-bold text-[var(--ink)]">
+                {currentSubtest?.name || "Subtes Berikutnya"}
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
               <Button variant="outline" onClick={handleExitTryout}>
-                Simpan & Keluar
+                Nanti Saja (Simpan)
               </Button>
-              <Button onClick={handleEndBreak} disabled={loading}>
-                <Play size={16} /> Lanjut ke Subtes Berikutnya
+              <Button onClick={handleEndBreak} disabled={loading} className="btn-gold-solid">
+                <Play size={16} /> Mulai Sekarang
               </Button>
             </div>
           </Panel>
