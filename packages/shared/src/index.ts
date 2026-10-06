@@ -118,9 +118,19 @@ export const profileSchema = z
     targetUniversity: z.string().trim().max(200, "Target PTN maksimal 200 karakter."),
     bio: z.string().trim().max(500, "Bio maksimal 500 karakter."),
     motto: z.string().trim().max(200, "Motto maksimal 200 karakter."),
+    image: z.string().nullable().optional(),
   })
   .strict();
 export type Profile = z.infer<typeof profileSchema>;
+
+export const AVATAR_MIN_SIZE_BYTES = 5120; // 5 KB
+export const AVATAR_MAX_SIZE_BYTES = 3145728; // 3 MB
+export const ALLOWED_AVATAR_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
 
 export const affirmationSchema = z.object({
   affirmation: z
@@ -315,7 +325,7 @@ export const bulkDeleteSchema = z.object({
 export type NewQuestion = z.infer<typeof questionSchema>;
 export type QuestionImport = z.input<typeof questionImportSchema>;
 export type Submission = z.infer<typeof submissionSchema>;
-export type User = { id: string; name: string; email: string; role: string };
+export type User = { id: string; name: string; email: string; role: string; image?: string | null };
 export type Topic = {
   id: string;
   slug: string;

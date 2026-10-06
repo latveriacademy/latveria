@@ -15,6 +15,7 @@ import { vocabularyHandler } from "./handlers/vocabulary.handler";
 import { usersHandler } from "./handlers/users.handler";
 import { analyticsHandler } from "./handlers/analytics.handler";
 import { auditHandler } from "./handlers/audit.handler";
+import { learnerAvatarHandler, publicAvatarHandler } from "./handlers/avatar.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -22,6 +23,7 @@ export const app = new Hono<AppEnv>();
 
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
+app.route("/", publicAvatarHandler);
 
 // CORS headers for Better Auth
 function setCorsHeaders(c: { header: (name: string, value: string) => void }, origin: string) {
@@ -78,6 +80,7 @@ app.use("/api/*", async (c, next) => {
     email: session.user.email,
     name: session.user.name,
     role: session.user.role,
+    image: session.user.image,
   });
   if (!["GET", "HEAD"].includes(c.req.method)) {
     if (!allowedOrigins().includes(c.req.header("origin") ?? "")) {
@@ -111,6 +114,7 @@ app.route("/", tryoutHandler);
 app.route("/", questionHandler);
 app.route("/", systemHandler);
 app.route("/", vocabularyHandler);
+app.route("/", learnerAvatarHandler);
 app.route("/", usersHandler);
 app.route("/", analyticsHandler);
 app.route("/", auditHandler);

@@ -5,8 +5,10 @@ import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
 import { questionPackages, questions, tryoutPackageQuestions } from "../src/lib/db/schema";
 import { invalidateCatalogCache } from "../src/services/topic.service";
+import { verifyAvatar } from "./verify-avatar";
 
 export async function verifyLexicon() {
+  await verifyAvatar();
   if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname))
     throw new Error("Verifikasi Lexicon hanya untuk DB lokal.");
   const origin = new URL(process.env.BETTER_AUTH_URL!).origin;

@@ -25,6 +25,7 @@ const profileFields = {
   targetUniversity: accounts.targetUniversity,
   bio: accounts.bio,
   motto: accounts.motto,
+  image: accounts.image,
 };
 
 export async function getLearnerProfile(userId: string): Promise<Profile> {

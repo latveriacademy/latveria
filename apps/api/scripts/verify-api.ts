@@ -62,7 +62,7 @@ try {
     bio: "Latihan setiap hari",
     motto: "Terus belajar",
   };
-  const expectedProfile = { ...profileInput, name: "Peserta baru" };
+  const expectedProfile = { ...profileInput, name: "Peserta baru", image: null };
   const profileUpdate = await request("/learner/profile", learner.cookie, profileInput, "PUT");
   assert.equal(profileUpdate.status, 200);
   assert.deepEqual(await profileUpdate.json(), expectedProfile);
