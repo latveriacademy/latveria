@@ -88,7 +88,7 @@ Migrasi `0007_wet_ma_gnuci.sql` menambah indeks peserta/tanggal untuk query prog
 
 Untuk update Library/tryout/leaderboard, terapkan juga migrasi berikutnya. `0010_hesitant_sheva_callister.sql` memperbaiki kolom leaderboard yang dapat terlewati akibat timestamp lama pada jurnal `0008`, mengisi tanggal jawaban dari attempt, dan menandai jawaban pertama per peserta/soal. Migrasi ini mendukung database lama maupun instalasi baru; database tidak perlu di-reset.
 
-PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
+PostgreSQL lokal: `127.0.0.1:5433`, volume persisten. Adminer: `http://127.0.0.1:8080` (PostgreSQL, server `postgres`, user/password/database `latveria`). MinIO lokal (S3-compatible): API `http://127.0.0.1:9002`, Console `http://127.0.0.1:9003` (user: `latveria`, password: `latveria123`) dengan bucket otomatis `latveria-avatars`. Batasan ukuran foto profil disarankan 5 KB – 3 MB. Pada produksi, MinIO digantikan oleh Cloudflare R2 atau Amazon S3. Kredensial ini untuk lokal saja. `docker compose down` menghentikan service tanpa menghapus volume; `down -v` menghapus data.
 
 Seed idempoten menyediakan tujuh subtes SNPMB 2026 dan 17 soal dummy UTBK, serta empat contoh soal materi tambahan. Empat slug topik lama dipindahkan tanpa mengganti ID sehingga riwayat dan soal admin tetap terhubung. Nama subtes mengikuti [Materi Tes SNPMB 2026](https://snpmb.id/utbk-snbt/informasi-umum); soal bukan konten resmi. Supabase PostgreSQL tetap bisa dipakai dengan mengganti URL koneksi, tetapi belum diverifikasi.
 

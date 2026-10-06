@@ -9,7 +9,10 @@ async function main() {
   if (!email) throw new Error("Gunakan: bun run db:admin email@contoh.test");
   const url = getDatabaseUrl("DATABASE_URL");
   // Allow for Supabase databases by checking for pooler URL
-  if (!["localhost", "127.0.0.1"].includes(new URL(url).hostname) && !url.includes("pooler.supabase"))
+  if (
+    !["localhost", "127.0.0.1"].includes(new URL(url).hostname) &&
+    !url.includes("pooler.supabase")
+  )
     throw new Error("Promosi hanya tersedia untuk database lokal atau Supabase.");
   const client = postgres(url, { max: 1, prepare: false });
   try {

@@ -59,18 +59,14 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
   const response = await getAuth().handler(c.req.raw);
   // Extract body, status, and set-cookie headers from Better Auth response
   const body = await response.text();
+  const status = response.status;
   const setCookieHeaders = response.headers.getSetCookie();
   // Return with CORS headers and preserve Set-Cookie
   setCorsHeaders(c, origin);
   for (const cookie of setCookieHeaders) {
     c.header("Set-Cookie", cookie);
   }
-  // Return with proper status code - cast to any to satisfy Hono's strict types
-  // while preserving the actual HTTP status from Better Auth
-  return new Response(body, {
-    status: response.status,
-    headers: { "Content-Type": "application/json" },
-  });
+  return c.newResponse(body, status as Parameters<typeof c.newResponse>[1]);
 });
 
 // Authentication and Origin verification middleware

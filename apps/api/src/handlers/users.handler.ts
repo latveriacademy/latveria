@@ -17,9 +17,7 @@ usersHandler.get("/api/admin/users", async (c) => {
 
   const conditions = [];
   if (search) {
-    conditions.push(
-      like(userTable.name, `%${search}%`),
-    );
+    conditions.push(like(userTable.name, `%${search}%`));
   }
   if (demoFilter === "true") {
     conditions.push(eq(userTable.isDemo, true));
@@ -35,9 +33,7 @@ usersHandler.get("/api/admin/users", async (c) => {
   const total = countResult[0]?.count ?? 0;
 
   // Sorting
-  const orderColumn =
-    sortBy === "name" ? userTable.name :
-    userTable.createdAt;
+  const orderColumn = sortBy === "name" ? userTable.name : userTable.createdAt;
   const orderDirection = sortOrder === "asc" ? asc : desc;
 
   // Get users with stats
@@ -158,12 +154,13 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
 
   // Get topic names
   const topicIds = [...new Set(recentAttempts.map((a) => a.topicId).filter(Boolean))];
-  const topicsResult = topicIds.length > 0
-    ? await db
-        .select({ id: topics.id, name: topics.name, slug: topics.slug })
-        .from(topics)
-        .where(sql`${topics.id} = ANY(${topicIds})`)
-    : [];
+  const topicsResult =
+    topicIds.length > 0
+      ? await db
+          .select({ id: topics.id, name: topics.name, slug: topics.slug })
+          .from(topics)
+          .where(sql`${topics.id} = ANY(${topicIds})`)
+      : [];
   const topicMap = new Map(topicsResult.map((t) => [t.id, t]));
 
   // Get today's practice
@@ -173,10 +170,7 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
     .select({ count: sql<number>`count(*)` })
     .from(practiceAttempts)
     .where(
-      and(
-        eq(practiceAttempts.userId, userId),
-        sql`${practiceAttempts.submittedAt} >= ${today}`,
-      ),
+      and(eq(practiceAttempts.userId, userId), sql`${practiceAttempts.submittedAt} >= ${today}`),
     );
 
   // Get subtest stats
