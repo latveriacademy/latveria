@@ -52,8 +52,21 @@ jobs:
       # Seed dibutuhkan test:integration (tujuh subtes dan soal contoh).
       - run: bun run db:seed
       - run: bun run db:seed
-      # test:integration menguji unggah avatar ke S3; MinIO memakai nilai bawaan yang sama dengan storage.service.
-      - run: docker compose up -d --wait minio
+      # test:integration menguji unggah avatar ke S3. Image minio/minio sudah tidak tersedia di Docker Hub,
+      # jadi CI memakai image Chainguard dengan kredensial dan bucket bawaan storage.service (port 9002).
+      - name: Start MinIO
+        run: |
+          mkdir -p "$RUNNER_TEMP/minio/latveria-avatars"
+          chmod -R 777 "$RUNNER_TEMP/minio"
+          docker run -d --name minio -p 127.0.0.1:9002:9000 \
+            -e MINIO_ROOT_USER=latveria -e MINIO_ROOT_PASSWORD=latveria123 \
+            -v "$RUNNER_TEMP/minio:/data" cgr.dev/chainguard/minio:latest server /data
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:9002/minio/health/live && exit 0
+            sleep 1
+          done
+          docker logs minio
+          exit 1
       - run: bun run test:integration
 
   containers:
