@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, Play, Layers } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Panel } from "../components/ui/dashboard";
 import { api } from "../lib/api";
+import { isBattleWorldPackage } from "../lib/battle-world";
 import { ConfirmDialog } from "../components/confirm-dialog";
 import { SubmissionSummary } from "../components/submission-summary";
 import { BattleWorldCatalog, type TryoutPackage } from "../components/battle-world-catalog";
@@ -43,21 +44,7 @@ export function BattleWorldView() {
   useEffect(() => {
     const controller = new AbortController();
     api<TryoutPackage[]>("/learner/packages", { signal: controller.signal })
-      .then((data) =>
-        setPackages(
-          data.filter(
-            (pkg) =>
-              pkg.published &&
-              pkg.questionCount > 0 &&
-              (pkg.isFullTryout ||
-                pkg.packageType === "Tryout" ||
-                pkg.packageType?.includes("Simulasi") ||
-                pkg.category === "tka" ||
-                pkg.category === "ujian-mandiri" ||
-                pkg.category === "mandiri"),
-          ),
-        ),
-      )
+      .then((data) => setPackages(data.filter(isBattleWorldPackage)))
       .catch((error) => {
         if (!controller.signal.aborted)
           setCatalogError(error instanceof Error ? error.message : "Gagal memuat tryout.");
