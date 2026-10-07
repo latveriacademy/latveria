@@ -556,6 +556,7 @@ async function main() {
                   "Variabel tidak terdefinisi secara independen",
                   "Hukum termodinamika tidak berlaku secara mutlak",
                   "Asumsi model mengabaikan seluruh relasi",
+                  "Kesimpulan diambil tanpa memeriksa premis",
                 ],
                 correctAnswer: 0,
                 explanation: `Analisis konsep ${subj.name} mengutamakan verifikasi matematis dan keteraturan relasi antar premis.`,
