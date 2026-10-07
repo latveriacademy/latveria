@@ -52,6 +52,8 @@ jobs:
       # Seed dibutuhkan test:integration (tujuh subtes dan soal contoh).
       - run: bun run db:seed
       - run: bun run db:seed
+      # test:integration menguji unggah avatar ke S3; MinIO memakai nilai bawaan yang sama dengan storage.service.
+      - run: docker compose up -d --wait minio
       - run: bun run test:integration
 
   containers:
