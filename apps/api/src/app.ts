@@ -85,14 +85,14 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
 app.use("/api/*", async (c, next) => {
   const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
-  const [account] = await getDb().select().from(accounts).where(eq(accounts.id, session.user.id));
-  if (!account || account.isDeactivated)
+  const rawUser = session.user as typeof session.user & { isDeactivated?: boolean };
+  if (rawUser.isDeactivated)
     throw new HTTPException(403, { message: "Akun dinonaktifkan." });
   c.set("user", {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
-    role: account.role,
+    role: session.user.role,
     image: session.user.image,
   });
   if (!["GET", "HEAD"].includes(c.req.method)) {
