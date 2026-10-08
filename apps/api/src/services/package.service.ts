@@ -14,6 +14,8 @@ import {
   questions,
   topics,
   tryoutPackageQuestions,
+  tryoutSessions,
+  practiceAttempts,
 } from "../lib/db/schema";
 import { invalidateCatalogCache, resolveTopic } from "./topic.service";
 
@@ -202,24 +204,42 @@ export async function updatePackage(packageId: string, body: unknown): Promise<Q
 }
 
 export async function deletePackage(packageId: string): Promise<{ success: true }> {
-  const [existing] = await getDb()
-    .select()
-    .from(questionPackages)
-    .where(eq(questionPackages.id, packageId));
-  if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
+  return getDb().transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, packageId))
+      .for("update");
+    if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
-  const [qCount] = await getDb()
-    .select({ value: count() })
-    .from(questions)
-    .where(eq(questions.packageId, packageId));
-  if (qCount.value > 0) {
-    throw new HTTPException(409, {
-      message: `Paket masih berisi ${qCount.value} soal. Pindahkan atau keluarkan soal sebelum menghapus paket.`,
-    });
-  }
+    const [history] = await tx
+      .select({ id: tryoutSessions.id })
+      .from(tryoutSessions)
+      .where(eq(tryoutSessions.packageId, packageId))
+      .limit(1);
+    const [attempt] = await tx
+      .select({ id: practiceAttempts.id })
+      .from(practiceAttempts)
+      .where(eq(practiceAttempts.packageId, packageId))
+      .limit(1);
+    if (history || attempt)
+      throw new HTTPException(409, {
+        message: "Paket memiliki riwayat peserta. Nonaktifkan paket agar riwayat tetap tersimpan.",
+      });
+    const [qCount] = await tx
+      .select({ value: count() })
+      .from(questions)
+      .where(eq(questions.packageId, packageId));
+    if (qCount.value > 0) {
+      throw new HTTPException(409, {
+        message: `Paket masih berisi ${qCount.value} soal. Pindahkan atau keluarkan soal sebelum menghapus paket.`,
+      });
+    }
 
-  await getDb().delete(questionPackages).where(eq(questionPackages.id, packageId));
-  return { success: true };
+    await tx.delete(questionPackages).where(eq(questionPackages.id, packageId));
+    invalidateCatalogCache();
+    return { success: true };
+  });
 }
 
 export async function addQuestionToPackage(packageId: string, questionId: string) {

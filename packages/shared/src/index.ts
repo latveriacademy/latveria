@@ -1,5 +1,12 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+export {
+  createTryoutSchema,
+  updateTryoutSchema,
+  isTryoutPackage,
+  type AdminTryoutItem,
+  type AdminTryoutDetail,
+} from "./admin-tryout";
 import {
   lexiconAnnotationInputSchema,
   resolveLexiconAnnotations,

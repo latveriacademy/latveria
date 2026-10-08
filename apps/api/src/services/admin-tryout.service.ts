@@ -4,11 +4,13 @@ import {
   idSchema,
   sectionImportSchema,
   utbkSubtests,
-  type CreateTryoutSectionInput,
+  createTryoutSchema,
+  updateTryoutSchema,
+  createTryoutSectionSchema,
+  updateTryoutSectionSchema,
   type SectionImportInput,
   type TryoutSectionItem,
   type TryoutSectionQuestion,
-  type UpdateTryoutSectionInput,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
 import {
@@ -19,6 +21,8 @@ import {
   tryoutSections,
 } from "../lib/db/schema";
 import { catalog, invalidateCatalogCache } from "./topic.service";
+import { deletePackage } from "./package.service";
+import { buildTryoutConfig } from "./tryout-config";
 
 export async function listAdminTryouts() {
   const db = getDb();
@@ -28,7 +32,6 @@ export async function listAdminTryouts() {
     .where(
       or(
         eq(questionPackages.isFullTryout, true),
-        eq(questionPackages.packageType, "Tryout"),
         eq(questionPackages.packageType, "Simulasi"),
         eq(questionPackages.packageType, "Simulasi Akbar"),
       ),
@@ -48,6 +51,11 @@ export async function listAdminTryouts() {
     })
     .from(tryoutPackageQuestions)
     .groupBy(tryoutPackageQuestions.packageId, tryoutPackageQuestions.sectionId);
+  const directCounts = await db
+    .select({ packageId: questions.packageId, cnt: count() })
+    .from(questions)
+    .groupBy(questions.packageId);
+  const directMap = new Map(directCounts.map((row) => [row.packageId, Number(row.cnt)]));
 
   const sectionCountMap = new Map<string, number>();
   const packageTotalMap = new Map<string, number>();
@@ -82,11 +90,18 @@ export async function listAdminTryouts() {
       packageType: pkg.packageType,
       isFullTryout: pkg.isFullTryout,
       duration: pkg.duration,
+      targetYear: pkg.targetYear,
+      totalDurationSeconds: pkgSections.length
+        ? pkgSections.reduce((n, s) => n + s.durationSeconds, 0)
+        : pkg.duration * 60,
+      durationMinutes: pkgSections.length
+        ? Math.round(pkgSections.reduce((n, s) => n + s.durationSeconds, 0) / 60)
+        : pkg.duration,
       published: pkg.published,
       isActive: pkg.isActive,
       targetQuestions: pkg.targetQuestions,
       sectionCount: pkgSections.length,
-      questionCount: packageTotalMap.get(pkg.id) ?? 0,
+      questionCount: packageTotalMap.get(pkg.id) ?? directMap.get(pkg.id) ?? 0,
       sections: pkgSections,
       createdAt: pkg.createdAt.toISOString(),
       updatedAt: pkg.updatedAt.toISOString(),
@@ -172,6 +187,12 @@ export async function getAdminTryout(packageId: string) {
 
   return {
     ...pkg,
+    totalDurationSeconds: sections.length
+      ? sections.reduce((n, s) => n + s.durationSeconds, 0)
+      : pkg.duration * 60,
+    durationMinutes: sections.length
+      ? Math.round(sections.reduce((n, s) => n + s.durationSeconds, 0) / 60)
+      : pkg.duration,
     sectionCount: sections.length,
     questionCount: questionsWithSection.length,
     sections: sectionItems,
@@ -181,21 +202,13 @@ export async function getAdminTryout(packageId: string) {
 }
 
 export async function createAdminTryout(body: unknown) {
-  const b = body as {
-    name?: string;
-    topicId?: string;
-    isFullTryout?: boolean;
-    targetQuestions?: number;
-    description?: string;
-    category?: string;
-    duration?: number;
-    published?: boolean;
-    order?: number;
-    autoSeedSections?: boolean;
-  };
-  if (!b || !b.name) {
-    throw new HTTPException(400, { message: "Nama tryout wajib diisi." });
-  }
+  const parsed = createTryoutSchema.safeParse(body);
+  if (!parsed.success) throw new HTTPException(400, { message: "Data tryout tidak valid." });
+  const b = parsed.data;
+  if (b.published)
+    throw new HTTPException(409, {
+      message: "Buat draf, isi seluruh subtes, lalu publikasikan tryout.",
+    });
 
   const db = getDb();
   let topicId = b.topicId;
@@ -219,7 +232,8 @@ export async function createAdminTryout(body: unknown) {
       duration: Number(b.duration || 195),
       isFullTryout,
       targetQuestions,
-      published: b.published !== false,
+      targetYear: b.targetYear ?? null,
+      published: b.published,
       order: Number(b.order || 1),
       isActive: true,
     })
@@ -258,15 +272,17 @@ export async function updateAdminTryout(packageId: string, body: unknown) {
   const pId = idSchema.safeParse(packageId);
   if (!pId.success) throw new HTTPException(404, { message: "ID tryout tidak valid." });
 
-  const b = body as {
-    name?: string;
-    description?: string;
-    category?: string;
-    duration?: number;
-    published?: boolean;
-    isActive?: boolean;
-    targetQuestions?: number;
-  };
+  const parsed = updateTryoutSchema.safeParse(body);
+  if (!parsed.success) throw new HTTPException(400, { message: "Data tryout tidak valid." });
+  const b = parsed.data;
+  if (b.published) {
+    const [pkg] = await getDb()
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, pId.data));
+    if (!pkg) throw new HTTPException(404, { message: "Tryout tidak ditemukan." });
+    await buildTryoutConfig(pkg);
+  }
 
   const [updated] = await getDb()
     .update(questionPackages)
@@ -278,6 +294,7 @@ export async function updateAdminTryout(packageId: string, body: unknown) {
       ...(b.published !== undefined ? { published: Boolean(b.published) } : {}),
       ...(b.isActive !== undefined ? { isActive: Boolean(b.isActive) } : {}),
       ...(b.targetQuestions !== undefined ? { targetQuestions: Number(b.targetQuestions) } : {}),
+      ...(b.targetYear !== undefined ? { targetYear: b.targetYear } : {}),
       updatedAt: new Date(),
     })
     .where(eq(questionPackages.id, pId.data))
@@ -292,17 +309,13 @@ export async function deleteAdminTryout(packageId: string) {
   const pId = idSchema.safeParse(packageId);
   if (!pId.success) throw new HTTPException(404, { message: "ID tryout tidak valid." });
 
-  const [deleted] = await getDb()
-    .delete(questionPackages)
-    .where(eq(questionPackages.id, pId.data))
-    .returning();
-  if (!deleted) throw new HTTPException(404, { message: "Tryout tidak ditemukan." });
-
-  invalidateCatalogCache();
-  return { success: true };
+  return deletePackage(pId.data);
 }
 
-export async function createTryoutSection(packageId: string, input: CreateTryoutSectionInput) {
+export async function createTryoutSection(packageId: string, body: unknown) {
+  const parsed = createTryoutSectionSchema.safeParse(body);
+  if (!parsed.success) throw new HTTPException(400, { message: "Data subtes tidak valid." });
+  const input = parsed.data;
   const pId = idSchema.safeParse(packageId);
   if (!pId.success) throw new HTTPException(404, { message: "ID tryout tidak valid." });
 
@@ -331,7 +344,10 @@ export async function createTryoutSection(packageId: string, input: CreateTryout
   };
 }
 
-export async function updateTryoutSection(sectionId: string, input: UpdateTryoutSectionInput) {
+export async function updateTryoutSection(sectionId: string, body: unknown) {
+  const parsed = updateTryoutSectionSchema.safeParse(body);
+  if (!parsed.success) throw new HTTPException(400, { message: "Data subtes tidak valid." });
+  const input = parsed.data;
   const sId = idSchema.safeParse(sectionId);
   if (!sId.success) throw new HTTPException(404, { message: "ID section tidak valid." });
 
@@ -369,6 +385,8 @@ export async function deleteTryoutSection(sectionId: string) {
 }
 
 export async function importSectionQuestions(sectionId: string, body: unknown) {
+  if (new TextEncoder().encode(JSON.stringify(body)).byteLength > 200_000)
+    throw new HTTPException(413, { message: "JSON terlalu besar (maksimal 200 KB)." });
   const sId = idSchema.safeParse(sectionId);
   if (!sId.success) throw new HTTPException(404, { message: "ID section tidak valid." });
 
@@ -433,7 +451,7 @@ export async function importSectionQuestions(sectionId: string, body: unknown) {
         .insert(questions)
         .values({
           topicId,
-          packageId: pkg.id,
+          packageId: null,
           questionType: q.type,
           schemaVersion: data.schemaVersion,
           prompt: q.prompt,

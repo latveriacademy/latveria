@@ -1,24 +1,14 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { calculateLatveriaScore, idSchema, utbkSubtests } from "@latveria/shared";
+import { calculateLatveriaScore, idSchema } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import {
-  questionPackages,
-  questions,
-  tryoutPackageQuestions,
-  tryoutSections,
-  tryoutSessions,
-} from "../lib/db/schema";
-import { catalog } from "./topic.service";
+import { questionPackages, questions, tryoutSessions } from "../lib/db/schema";
+import { buildTryoutConfig, sessionSubtests } from "./tryout-config";
 import { getCompletedTryoutQuestions, resolvePassages } from "./tryout-review.service";
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);
   if (!pkgId.success) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
-
-  const officialSubtests = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
-  );
 
   const db = getDb();
   const result = await db.transaction(async (tx) => {
@@ -32,19 +22,13 @@ export async function startTryout(userId: string, packageId: string) {
           eq(questionPackages.published, true),
           or(
             eq(questionPackages.isFullTryout, true),
-            eq(questionPackages.packageType, "Tryout"),
             eq(questionPackages.packageType, "Simulasi"),
             eq(questionPackages.packageType, "Simulasi Akbar"),
           ),
         ),
-      );
+      )
+      .for("update");
     if (!pkg) throw new HTTPException(404, { message: "Tryout tidak tersedia." });
-
-    const tryoutTopics = pkg.isFullTryout
-      ? officialSubtests
-      : officialSubtests.filter((topic) => topic.id === pkg.topicId);
-    if (!tryoutTopics.length)
-      throw new HTTPException(409, { message: "Tryout belum memiliki subtes aktif." });
 
     const [existingSession] = await tx
       .select()
@@ -59,42 +43,14 @@ export async function startTryout(userId: string, packageId: string) {
     if (existingSession && existingSession.questionSets !== "{}")
       return { session: existingSession, status: 200 as const };
 
-    const questionSets: Record<string, string[]> = {};
-    const baseCount = Math.floor(pkg.targetQuestions / tryoutTopics.length);
-    const extraCount = pkg.targetQuestions % tryoutTopics.length;
-    for (const [topicIndex, topic] of tryoutTopics.entries()) {
-      const targetPerSubtest = Math.max(1, baseCount + (topicIndex < extraCount ? 1 : 0));
-      const tryoutQuestions = await tx
-        .select({ id: questions.id })
-        .from(tryoutPackageQuestions)
-        .innerJoin(questions, eq(tryoutPackageQuestions.questionId, questions.id))
-        .where(and(eq(tryoutPackageQuestions.packageId, pkg.id), eq(questions.topicId, topic.id)))
-        .orderBy(tryoutPackageQuestions.position, tryoutPackageQuestions.order, questions.id);
-      let pool = tryoutQuestions;
-      if (!pool.length)
-        pool = await tx
-          .select({ id: questions.id })
-          .from(questions)
-          .where(and(eq(questions.topicId, topic.id), eq(questions.category, pkg.category)))
-          .orderBy(questions.order, questions.id);
-      if (!pool.length)
-        pool = await tx
-          .select({ id: questions.id })
-          .from(questions)
-          .where(eq(questions.topicId, topic.id))
-          .orderBy(questions.order, questions.id);
-      for (let index = pool.length - 1; index > 0; index--) {
-        const swap = Math.floor(Math.random() * (index + 1));
-        [pool[index], pool[swap]] = [pool[swap], pool[index]];
-      }
-      questionSets[topic.id] = pool.slice(0, targetPerSubtest).map((question) => question.id);
-    }
+    const { questionSets, subtests } = await buildTryoutConfig(pkg, tx);
 
     if (existingSession) {
       const [session] = await tx
         .update(tryoutSessions)
         .set({
           questionSets: JSON.stringify(questionSets),
+          subtestConfig: JSON.stringify(subtests),
           currentQuestionIndex: 0,
           subtestStartedAt: new Date(),
         })
@@ -112,6 +68,7 @@ export async function startTryout(userId: string, packageId: string) {
         answers: "{}",
         flags: "{}",
         questionSets: JSON.stringify(questionSets),
+        subtestConfig: JSON.stringify(subtests),
         questionTimes: "{}",
         scoreBreakdown: "[]",
         currentQuestionIndex: 0,
@@ -140,32 +97,13 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     .where(eq(questionPackages.id, session.packageId));
   if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
-  const available = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
-  );
-  const subtests = pkg.isFullTryout
-    ? available
-    : available.filter((topic) => topic.id === pkg.topicId);
+  const subtests = await sessionSubtests(session, pkg);
   const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
 
   const state = session.state;
   const currentSubtestIndex = session.currentSubtestIndex;
   const currentSubtest = subtests[currentSubtestIndex] || subtests[0];
   if (!currentSubtest) throw new HTTPException(409, { message: "Subtes tryout tidak tersedia." });
-
-  // Check if tryout has custom section configured for this subtest to get accurate duration
-  const [sectionConfig] = await getDb()
-    .select()
-    .from(tryoutSections)
-    .where(
-      and(
-        eq(tryoutSections.packageId, pkg.id),
-        eq(
-          tryoutSections.subtestCode,
-          utbkSubtests.find((s) => s.slug === currentSubtest.slug)?.short || "",
-        ),
-      ),
-    );
 
   const selectedQuestionIds = questionSets[currentSubtest.id] ?? [];
   const qList = await getDb()
@@ -189,7 +127,12 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     )
     .orderBy(questions.order, questions.id);
 
-  const resolvedQuestions = await resolvePassages(qList);
+  const resolvedQuestions = await resolvePassages(
+    selectedQuestionIds.flatMap((id) => {
+      const question = qList.find((q) => q.id === id);
+      return question ? [question] : [];
+    }),
+  );
 
   // Sanitize: hide correct answers from statements during active session
   const sanitizedQuestions = resolvedQuestions.map((q) => ({
@@ -218,11 +161,7 @@ export async function getTryoutSession(userId: string, sessionId: string) {
         })()
       : null;
 
-  const currentSubtestDurationSeconds = sectionConfig?.durationSeconds
-    ? sectionConfig.durationSeconds
-    : pkg.isFullTryout
-      ? ([30, 15, 25, 20, 45, 30, 30][currentSubtestIndex] ?? 30) * 60
-      : pkg.duration * 60;
+  const currentSubtestDurationSeconds = currentSubtest.durationSeconds;
 
   const elapsed = Math.max(0, Math.floor((Date.now() - session.subtestStartedAt.getTime()) / 1000));
   const activeTimeRemaining =
@@ -289,20 +228,13 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
   if (!session) throw new HTTPException(404, { message: "Sesi tryout aktif tidak ditemukan." });
 
   const [packageInfo] = await getDb()
-    .select({ topicId: questionPackages.topicId, isFullTryout: questionPackages.isFullTryout })
+    .select()
     .from(questionPackages)
     .where(eq(questionPackages.id, session.packageId));
   if (!packageInfo) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
   const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
-  const availableSubtests = (await catalog(true)).filter((topic) =>
-    utbkSubtests.some((subtest) => subtest.slug === topic.slug),
-  );
-  const activeSubtest = (
-    packageInfo.isFullTryout
-      ? availableSubtests
-      : availableSubtests.filter((topic) => topic.id === packageInfo.topicId)
-  )[session.currentSubtestIndex];
+  const activeSubtest = (await sessionSubtests(session, packageInfo))[session.currentSubtestIndex];
   const allowed = new Set(activeSubtest ? (questionSets[activeSubtest.id] ?? []) : []);
 
   const answers = b.answers as Record<string, unknown>;
@@ -393,10 +325,7 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
       .where(eq(questionPackages.id, session.packageId));
     if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
 
-    const all = (await catalog(true)).filter((topic) =>
-      utbkSubtests.some((subtest) => subtest.slug === topic.slug),
-    );
-    const subtests = pkg.isFullTryout ? all : all.filter((topic) => topic.id === pkg.topicId);
+    const subtests = await sessionSubtests(session, pkg);
     const current = subtests[session.currentSubtestIndex];
     if (!current) throw new HTTPException(409, { message: "Urutan subtes tryout tidak valid." });
 
