@@ -1,10 +1,31 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql, desc } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { calculateLatveriaScore, idSchema } from "@latveria/shared";
 import { getDb } from "../lib/db";
 import { questionPackages, questions, tryoutSessions } from "../lib/db/schema";
 import { buildTryoutConfig, sessionSubtests } from "./tryout-config";
 import { getCompletedTryoutQuestions, resolvePassages } from "./tryout-review.service";
+import {
+  snapshotTryoutQuestions,
+  revisionQuestions,
+  publicTryoutSession,
+} from "./tryout-revisions";
+import { submitSimulationSubtest } from "./tryout-simulation";
+
+export async function getTryoutHistory(userId: string) {
+  return getDb()
+    .select({
+      id: tryoutSessions.id,
+      name: questionPackages.name,
+      completedAt: tryoutSessions.completedAt,
+      score: tryoutSessions.totalScore,
+      scoringVersion: tryoutSessions.scoringVersion,
+    })
+    .from(tryoutSessions)
+    .innerJoin(questionPackages, eq(questionPackages.id, tryoutSessions.packageId))
+    .where(and(eq(tryoutSessions.userId, userId), eq(tryoutSessions.state, "completed")))
+    .orderBy(desc(tryoutSessions.completedAt));
+}
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);
@@ -44,11 +65,13 @@ export async function startTryout(userId: string, packageId: string) {
       return { session: existingSession, status: 200 as const };
 
     const { questionSets, subtests } = await buildTryoutConfig(pkg, tx);
+    const snapshot = await snapshotTryoutQuestions(tx, questionSets);
 
     if (existingSession) {
       const [session] = await tx
         .update(tryoutSessions)
         .set({
+          ...snapshot,
           questionSets: JSON.stringify(questionSets),
           subtestConfig: JSON.stringify(subtests),
           currentQuestionIndex: 0,
@@ -61,6 +84,7 @@ export async function startTryout(userId: string, packageId: string) {
     const [session] = await tx
       .insert(tryoutSessions)
       .values({
+        ...snapshot,
         userId,
         packageId: pkg.id,
         currentSubtestIndex: 0,
@@ -78,7 +102,7 @@ export async function startTryout(userId: string, packageId: string) {
     return { session, status: 201 as const };
   });
 
-  return { ...result.session, _status: result.status };
+  return { ...publicTryoutSession(result.session), _status: result.status };
 }
 
 export async function getTryoutSession(userId: string, sessionId: string) {
@@ -106,37 +130,53 @@ export async function getTryoutSession(userId: string, sessionId: string) {
   if (!currentSubtest) throw new HTTPException(409, { message: "Subtes tryout tidak tersedia." });
 
   const selectedQuestionIds = questionSets[currentSubtest.id] ?? [];
-  const qList = await getDb()
-    .select({
-      id: questions.id,
-      prompt: questions.prompt,
-      questionType: questions.questionType,
-      stimulus: questions.stimulus,
-      passage: questions.passage,
-      passageId: questions.passageId,
-      statements: questions.statements,
-      options: questions.options,
-      itemWeight: questions.itemWeight,
-      calculatorAllowed: questions.calculatorAllowed,
-    })
-    .from(questions)
-    .where(
-      selectedQuestionIds.length
-        ? and(eq(questions.topicId, currentSubtest.id), inArray(questions.id, selectedQuestionIds))
-        : sql`false`,
-    )
-    .orderBy(questions.order, questions.id);
+  const qList =
+    session.scoringVersion === "utbk-simulation-v1"
+      ? []
+      : await getDb()
+          .select({
+            id: questions.id,
+            prompt: questions.prompt,
+            questionType: questions.questionType,
+            stimulus: questions.stimulus,
+            passage: questions.passage,
+            passageId: questions.passageId,
+            statements: questions.statements,
+            options: questions.options,
+            itemWeight: questions.itemWeight,
+            calculatorAllowed: questions.calculatorAllowed,
+          })
+          .from(questions)
+          .where(
+            selectedQuestionIds.length
+              ? and(
+                  eq(questions.topicId, currentSubtest.id),
+                  inArray(questions.id, selectedQuestionIds),
+                )
+              : sql`false`,
+          )
+          .orderBy(questions.order, questions.id);
 
-  const resolvedQuestions = await resolvePassages(
-    selectedQuestionIds.flatMap((id) => {
-      const question = qList.find((q) => q.id === id);
-      return question ? [question] : [];
-    }),
-  );
+  const resolvedQuestions =
+    session.scoringVersion === "utbk-simulation-v1"
+      ? await revisionQuestions(session, selectedQuestionIds)
+      : await resolvePassages(
+          selectedQuestionIds.flatMap((id) => {
+            const question = qList.find((q) => q.id === id);
+            return question ? [question] : [];
+          }),
+        );
 
   // Sanitize: hide correct answers from statements during active session
   const sanitizedQuestions = resolvedQuestions.map((q) => ({
-    ...q,
+    id: q.id,
+    prompt: q.prompt,
+    questionType: q.questionType,
+    stimulus: q.stimulus,
+    passage: q.passage,
+    options: q.options,
+    itemWeight: q.itemWeight,
+    calculatorAllowed: q.calculatorAllowed,
     statements:
       state !== "completed" && Array.isArray(q.statements)
         ? q.statements.map((s) => ({ id: s.id, text: s.text }))
@@ -144,22 +184,26 @@ export async function getTryoutSession(userId: string, sessionId: string) {
   }));
 
   const score =
-    session.state === "completed"
-      ? (() => {
-          const items = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<
-            typeof calculateLatveriaScore
-          >["itemBreakdowns"];
-          return calculateLatveriaScore(
-            items.map((item) => ({
-              questionId: item.questionId,
-              isCorrect: item.isCorrect,
-              scoreFraction: item.scoreFraction,
-              itemWeight: item.itemWeight,
-              timeSpentSeconds: item.timeSpentSeconds,
-            })),
-          );
-        })()
-      : null;
+    session.scoringVersion === "utbk-simulation-v1"
+      ? session.state === "completed"
+        ? session.scoreReport
+        : null
+      : session.state === "completed"
+        ? (() => {
+            const items = JSON.parse(session.scoreBreakdown || "[]") as ReturnType<
+              typeof calculateLatveriaScore
+            >["itemBreakdowns"];
+            return calculateLatveriaScore(
+              items.map((item) => ({
+                questionId: item.questionId,
+                isCorrect: item.isCorrect,
+                scoreFraction: item.scoreFraction,
+                itemWeight: item.itemWeight,
+                timeSpentSeconds: item.timeSpentSeconds,
+              })),
+            );
+          })()
+        : null;
 
   const currentSubtestDurationSeconds = currentSubtest.durationSeconds;
 
@@ -171,7 +215,7 @@ export async function getTryoutSession(userId: string, sessionId: string) {
 
   return {
     session: {
-      ...session,
+      ...publicTryoutSession(session),
       state,
       currentSubtestIndex,
       breakEndsAt: null,
@@ -188,7 +232,16 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     questions: sanitizedQuestions,
     score,
     ...(state === "completed"
-      ? { reviewQuestions: await getCompletedTryoutQuestions(session.questionSets) }
+      ? {
+          reviewQuestions:
+            session.scoringVersion === "utbk-simulation-v1"
+              ? (await revisionQuestions(session, Object.values(questionSets).flat())).map((q) => ({
+                  ...q,
+                  topic: subtests.find((s) => s.id === q.topicId)?.name ?? "",
+                  slug: subtests.find((s) => s.id === q.topicId)?.slug ?? "",
+                }))
+              : await getCompletedTryoutQuestions(session.questionSets),
+        }
       : {}),
   };
 }
@@ -307,6 +360,12 @@ export async function submitTryoutSubtest(userId: string, sessionId: string, bod
     Array.isArray(b.timeSpentByQuestion)
   )
     throw new HTTPException(400, { message: "Jawaban tryout tidak valid." });
+  const [version] = await getDb()
+    .select({ scoringVersion: tryoutSessions.scoringVersion })
+    .from(tryoutSessions)
+    .where(and(eq(tryoutSessions.id, sId.data), eq(tryoutSessions.userId, userId)));
+  if (version?.scoringVersion === "utbk-simulation-v1")
+    return submitSimulationSubtest(userId, sId.data, b);
 
   return await getDb().transaction(async (tx) => {
     const [session] = await tx
@@ -458,7 +517,7 @@ export async function advanceTryoutSubtest(userId: string, sessionId: string) {
   if (!session) throw new HTTPException(404, { message: "Sesi tidak ditemukan." });
 
   if (session.state === "completed") {
-    return { status: "completed" as const, session };
+    return { status: "completed" as const, session: publicTryoutSession(session) };
   }
 
   // Transitions section_ready or break to active with fresh subtest timer
@@ -479,7 +538,7 @@ export async function advanceTryoutSubtest(userId: string, sessionId: string) {
         ),
       )
       .returning();
-    return { status: "active" as const, session: updated ?? session };
+    return { status: "active" as const, session: publicTryoutSession(updated ?? session) };
   }
 
   return { status: session.state as "active" | "section_ready" | "completed", session };

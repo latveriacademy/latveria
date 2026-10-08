@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../src/lib/db";
-import { questionPackages, questions, tryoutSessions } from "../src/lib/db/schema";
+import {
+  questionPackages,
+  questions,
+  tryoutSessions,
+  questionRevisions,
+} from "../src/lib/db/schema";
 import type { AdminTryoutDetail } from "@latveria/shared";
 
 type Request = (
@@ -87,6 +92,14 @@ export async function verifyAdminTryouts(
     assert.equal(state.questions.length, 1);
     assert.equal(state.questions[0].id, questionIds[0]);
     assert.ok(!("correctAnswer" in state.questions[0]));
+    assert.ok(!("scoringPlan" in state.session));
+    assert.ok(!("revisionSets" in state.session));
+    await getDb()
+      .update(questions)
+      .set({ prompt: "Edited after start", correctAnswer: 4 })
+      .where(eq(questions.id, questionIds[0]));
+    const frozen = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.equal(frozen.questions[0].prompt, state.questions[0].prompt);
     assert.ok(state.session.secondsRemaining <= 600 && state.session.secondsRemaining > 590);
     await request(
       `/admin/tryouts/sections/${section.id}`,
@@ -108,7 +121,7 @@ export async function verifyAdminTryouts(
       const submitted = await request(
         `/learner/tryouts/${session.id}/subtest-submit`,
         learnerCookie,
-        { answers: {}, timeSpentByQuestion: {} },
+        { answers: index === 0 ? { [questionIds[0]]: "0" } : {}, timeSpentByQuestion: {} },
       );
       assert.equal(submitted.status, 200);
       if (index < 6)
@@ -120,6 +133,25 @@ export async function verifyAdminTryouts(
     assert.equal(
       (await request(`/admin/tryouts/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
       409,
+    );
+    const completed = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.equal(completed.score.score, 143);
+    assert.equal(completed.score.correctCount, 1);
+    assert.equal(completed.score.unansweredCount, 6);
+    assert.equal(completed.score.subtests[0].score, 1000);
+    assert.equal(completed.score.irtScore, null);
+    const history = await (await request("/learner/tryouts/history", learnerCookie)).json();
+    assert.ok(history.some((row: { id: string }) => row.id === session.id));
+    assert.equal(
+      (await request(`/admin/questions/${questionIds[0]}`, adminCookie, undefined, "DELETE"))
+        .status,
+      200,
+    );
+    const review = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.deepEqual(review.score, completed.score);
+    assert.equal(
+      review.reviewQuestions.find((q: { id: string }) => q.id === questionIds[0]).correctAnswer,
+      0,
     );
     assert.equal((await request(`/admin/users/${learnerId}/reset`, adminCookie, {})).status, 200);
     assert.equal(
@@ -144,6 +176,10 @@ export async function verifyAdminTryouts(
     );
   } finally {
     await getDb().delete(tryoutSessions).where(eq(tryoutSessions.packageId, pkg.id));
+    if (questionIds.length)
+      await getDb()
+        .delete(questionRevisions)
+        .where(inArray(questionRevisions.questionId, questionIds));
     if (questionIds.length)
       await getDb().delete(questions).where(inArray(questions.id, questionIds));
     await getDb().delete(questionPackages).where(eq(questionPackages.id, pkg.id));
