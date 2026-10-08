@@ -1,33 +1,44 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { utbkSubtests, type QuestionImport, type QuestionPackage } from "@latveria/shared";
+import {
+  utbkSubtests,
+  normalizeTryoutImport,
+  type TryoutImport,
+  type AdminTryoutDetail,
+  type QuestionImport,
+  type QuestionPackage,
+} from "@latveria/shared";
 import { Download, FileCheck, Loader2, Upload } from "lucide-react";
 import { api } from "../../lib/api";
-import {
-  lexiconImportExample,
-  packageImportExample,
-  parseQuestionImport,
-} from "../../lib/question-import";
-import { geometryImportExample } from "../../lib/tikz-examples";
-import { mathImportExample } from "../../lib/math-import-examples";
+import { importExample, parseQuestionImport } from "../../lib/question-import";
 import { ImportGuide } from "./import-guide";
 import { Button } from "../../components/ui/button";
 import { Panel, PanelHeader } from "../../components/ui/dashboard";
 import styles from "./admin.module.css";
 import packageStyles from "./packages.module.css";
 
-export function ImportQuestions() {
+export function ImportQuestions({
+  tryout,
+  initialSubtest,
+}: {
+  tryout?: AdminTryoutDetail;
+  initialSubtest?: string;
+}) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [mode, setMode] = useState(params.has("paket") ? "package" : "json");
-  const [subtest, setSubtest] = useState(params.get("subtes") ?? "pengetahuan-kuantitatif");
+  const [mode, setMode] = useState(
+    tryout ? (initialSubtest ? "section" : "json") : params.has("paket") ? "package" : "json",
+  );
+  const [subtest, setSubtest] = useState(
+    initialSubtest ?? params.get("subtes") ?? "pengetahuan-kuantitatif",
+  );
   const [packageId, setPackageId] = useState(params.get("paket") ?? "");
   const [packages, setPackages] = useState<QuestionPackage[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [packagesError, setPackagesError] = useState("");
   const [packagesRetry, setPackagesRetry] = useState(0);
   const [text, setText] = useState("");
-  const [batch, setBatch] = useState<QuestionImport | null>(null);
+  const [batch, setBatch] = useState<QuestionImport | TryoutImport | null>(null);
   const [preview, setPreview] = useState<{ name: string; isNew: boolean }[]>([]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -40,7 +51,7 @@ export function ImportQuestions() {
   const count = batch?.groups.reduce((sum, group) => sum + group.questions.length, 0) ?? 0;
 
   useEffect(() => {
-    if (mode !== "package") return;
+    if (tryout || mode !== "package") return;
     const controller = new AbortController();
     setLoadingPackages(true);
     setPackagesError("");
@@ -59,33 +70,14 @@ export function ImportQuestions() {
         if (!controller.signal.aborted) setLoadingPackages(false);
       });
     return () => controller.abort();
-  }, [subtest, mode, packagesRetry]);
+  }, [subtest, mode, packagesRetry, tryout]);
 
   function example(kind: string): QuestionImport {
-    const source =
-      kind === "geometry"
-        ? geometryImportExample
-        : kind === "math"
-          ? mathImportExample
-          : kind === "lexicon"
-            ? lexiconImportExample
-            : packageImportExample;
-    return {
-      groups: source.groups.map((group) => ({
-        ...group,
-        subtes: mode === "package" ? subtest : group.subtes,
-        packageName:
-          mode === "package" && selectedPackage
-            ? selectedPackage.name
-            : kind === "geometry"
-              ? "Paket Bangun Ruang"
-              : kind === "math"
-                ? "Paket Rumus Matematika"
-                : kind === "lexicon"
-                  ? "Paket Vocabulary LBE"
-                  : "Paket Persentase",
-      })),
-    };
+    return importExample(
+      kind,
+      mode === "package" || (tryout && mode === "section") ? subtest : undefined,
+      mode === "package" ? selectedPackage?.name : undefined,
+    );
   }
 
   async function check(source: string) {
@@ -93,6 +85,24 @@ export function ImportQuestions() {
     setBatch(null);
     setChecking(true);
     try {
+      if (tryout) {
+        if (new TextEncoder().encode(source).byteLength > 200_000)
+          throw new Error("JSON maksimal 200 KB.");
+        const data = normalizeTryoutImport(
+          JSON.parse(source),
+          mode === "section" ? subtest : undefined,
+        );
+        const targets = data.groups.map((group) => {
+          const official = utbkSubtests.find((s) => s.slug === group.subtes)!;
+          const section = tryout.sections.find((s) => s.subtestCode === official.short);
+          if (!section)
+            throw new Error(`Subtes ${official.name} belum dikonfigurasi pada tryout ini.`);
+          return { name: `${tryout.name} · ${section.title}`, isNew: false };
+        });
+        setPreview(targets);
+        setBatch(data);
+        return;
+      }
       let data = parseQuestionImport(source);
       if (mode === "package") {
         if (!selectedPackage) throw new Error("Pilih paket tujuan terlebih dahulu.");
@@ -138,88 +148,131 @@ export function ImportQuestions() {
       <div className={packageStyles.page}>
         <Panel>
           <PanelHeader title="Tujuan impor" />
-          <div className={styles.field}>
-            <label htmlFor="import-mode">Masukkan soal ke</label>
-            <select
-              id="import-mode"
-              disabled={busy}
-              value={mode}
-              onChange={(event) => {
-                setMode(event.target.value);
-                setBatch(null);
-                setError("");
-              }}
-            >
-              <option value="json">Paket yang ditentukan dalam JSON</option>
-              <option value="package">Satu paket yang sudah ada</option>
-            </select>
-          </div>
-          {mode === "package" ? (
-            <div className={packageStyles.fields}>
+          {tryout ? (
+            <>
+              <p className={packageStyles.help}>
+                Tryout: <strong>{tryout.name}</strong>
+              </p>
               <div className={styles.field}>
-                <label htmlFor="import-subtest">Subtes tujuan</label>
+                <label htmlFor="tryout-import-target">Subtes tujuan</label>
                 <select
-                  id="import-subtest"
+                  id="tryout-import-target"
                   disabled={busy}
-                  value={subtest}
+                  value={mode === "section" ? subtest : "json"}
                   onChange={(event) => {
-                    setSubtest(event.target.value);
-                    setPackageId("");
+                    const value = event.target.value;
+                    setMode(value === "json" ? "json" : "section");
+                    if (value !== "json") setSubtest(value);
                     setBatch(null);
                     setError("");
                   }}
                 >
-                  {utbkSubtests.map((topic) => (
-                    <option key={topic.slug} value={topic.slug}>
-                      {topic.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="import-package">Paket tujuan</label>
-                <select
-                  id="import-package"
-                  disabled={busy}
-                  value={packageId}
-                  onChange={(event) => {
-                    setPackageId(event.target.value);
-                    setBatch(null);
-                    setError("");
-                  }}
-                >
-                  <option value="">{loadingPackages ? "Memuat paket…" : "Pilih paket"}</option>
-                  {packages.map((pkg) => (
-                    <option key={pkg.id} value={pkg.id}>
-                      {pkg.name}
-                      {pkg.isActive ? "" : " (nonaktif)"}
-                    </option>
-                  ))}
+                  <option value="json">Subtes yang ditentukan dalam JSON</option>
+                  {tryout.sections.map((section) => {
+                    const official = utbkSubtests.find((s) => s.short === section.subtestCode);
+                    return official ? (
+                      <option key={section.id} value={official.slug}>
+                        {section.title}
+                      </option>
+                    ) : null;
+                  })}
                 </select>
               </div>
               <p className={packageStyles.help}>
-                Tujuan dari form diterapkan ke seluruh soal. Semua grup harus memakai subtes yang
-                dipilih.
+                Gunakan format groups seperti Bank soal. Format lama questions diterima saat satu
+                subtes dipilih. Tujuan paket pada JSON tidak membuat paket baru; soal masuk ke
+                Tryout ini.
               </p>
-              {packagesError ? (
-                <div role="alert">
-                  <p>{packagesError}</p>
-                  <Button variant="outline" onClick={() => setPackagesRetry((value) => value + 1)}>
-                    Coba lagi
-                  </Button>
+            </>
+          ) : (
+            <>
+              <div className={styles.field}>
+                <label htmlFor="import-mode">Masukkan soal ke</label>
+                <select
+                  id="import-mode"
+                  disabled={busy}
+                  value={mode}
+                  onChange={(event) => {
+                    setMode(event.target.value);
+                    setBatch(null);
+                    setError("");
+                  }}
+                >
+                  <option value="json">Paket yang ditentukan dalam JSON</option>
+                  <option value="package">Satu paket yang sudah ada</option>
+                </select>
+              </div>
+              {mode === "package" ? (
+                <div className={packageStyles.fields}>
+                  <div className={styles.field}>
+                    <label htmlFor="import-subtest">Subtes tujuan</label>
+                    <select
+                      id="import-subtest"
+                      disabled={busy}
+                      value={subtest}
+                      onChange={(event) => {
+                        setSubtest(event.target.value);
+                        setPackageId("");
+                        setBatch(null);
+                        setError("");
+                      }}
+                    >
+                      {utbkSubtests.map((topic) => (
+                        <option key={topic.slug} value={topic.slug}>
+                          {topic.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label htmlFor="import-package">Paket tujuan</label>
+                    <select
+                      id="import-package"
+                      disabled={busy}
+                      value={packageId}
+                      onChange={(event) => {
+                        setPackageId(event.target.value);
+                        setBatch(null);
+                        setError("");
+                      }}
+                    >
+                      <option value="">{loadingPackages ? "Memuat paket…" : "Pilih paket"}</option>
+                      {packages.map((pkg) => (
+                        <option key={pkg.id} value={pkg.id}>
+                          {pkg.name}
+                          {pkg.isActive ? "" : " (nonaktif)"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className={packageStyles.help}>
+                    Tujuan dari form diterapkan ke seluruh soal. Semua grup harus memakai subtes
+                    yang dipilih.
+                  </p>
+                  {packagesError ? (
+                    <div role="alert">
+                      <p>{packagesError}</p>
+                      <Button
+                        variant="outline"
+                        onClick={() => setPackagesRetry((value) => value + 1)}
+                      >
+                        Coba lagi
+                      </Button>
+                    </div>
+                  ) : (
+                    !loadingPackages &&
+                    !packages.length && (
+                      <Link to={`/admin/subtes/${subtest}`}>Buat paket pada subtes ini</Link>
+                    )
+                  )}
                 </div>
               ) : (
-                !loadingPackages &&
-                !packages.length && (
-                  <Link to={`/admin/subtes/${subtest}`}>Buat paket pada subtes ini</Link>
-                )
+                <p className={packageStyles.help}>
+                  Isi <code>packageName</code> pada setiap grup. Nama yang belum ada dibuat otomatis
+                  pada subtes tersebut; tanpa tujuan paket, soal masuk ke “Paket 1”.
+                </p>
               )}
-            </div>
-          ) : (
-            <p className={packageStyles.help}>
-              Isi <code>packageName</code> pada setiap grup. Nama yang belum ada dibuat otomatis
-              pada subtes tersebut; tanpa tujuan paket, soal masuk ke “Paket 1”.
-            </p>
+            </>
           )}
         </Panel>
         <Panel>
@@ -233,23 +286,31 @@ export function ImportQuestions() {
               { kind: "math", label: "Gunakan contoh rumus" },
               { kind: "geometry", label: "Gunakan contoh geometri" },
               { kind: "lexicon", label: "Gunakan contoh Lexicon LBE" },
-            ].map(({ kind, label }) => (
-              <Button
-                key={kind}
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() => {
-                  setExampleKind(kind);
-                  setText(JSON.stringify(example(kind), null, 2));
-                  setBatch(null);
-                  setError("");
-                  setFileName("");
-                }}
-              >
-                {label}
-              </Button>
-            ))}
+            ]
+              .filter(
+                ({ kind }) =>
+                  kind !== "lexicon" ||
+                  !tryout ||
+                  mode !== "section" ||
+                  subtest === "literasi-bahasa-inggris",
+              )
+              .map(({ kind, label }) => (
+                <Button
+                  key={kind}
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setExampleKind(kind);
+                    setText(JSON.stringify(example(kind), null, 2));
+                    setBatch(null);
+                    setError("");
+                    setFileName("");
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
             <Button
               variant="ghost"
               size="sm"
@@ -391,14 +452,20 @@ export function ImportQuestions() {
               setPending(true);
               setError("");
               try {
-                const result = await api<{ count: number; packages: { id: string }[] }>(
-                  "/admin/questions/import",
+                const result = await api<{ count: number; packages?: { id: string }[] }>(
+                  tryout
+                    ? mode === "section"
+                      ? `/admin/tryouts/sections/${tryout.sections.find((s) => s.subtestCode === utbkSubtests.find((t) => t.slug === subtest)?.short)!.id}/import`
+                      : `/admin/tryouts/${tryout.id}/import`
+                    : "/admin/questions/import",
                   { method: "POST", body: JSON.stringify(batch) },
                 );
                 navigate(
-                  result.packages.length === 1
-                    ? `/admin/paket/${result.packages[0].id}?imported=${result.count}`
-                    : `/admin/soal?imported=${result.count}`,
+                  tryout
+                    ? `/admin/tryouts/${tryout.id}?imported=${result.count}`
+                    : result.packages?.length === 1
+                      ? `/admin/paket/${result.packages[0].id}?imported=${result.count}`
+                      : `/admin/soal?imported=${result.count}`,
                 );
               } catch (error) {
                 setError(error instanceof Error ? error.message : "Impor gagal. Coba lagi.");
@@ -411,7 +478,15 @@ export function ImportQuestions() {
             {pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}
           </Button>
           <Button asChild variant="ghost">
-            <Link to={params.has("paket") ? `/admin/paket/${params.get("paket")}` : "/admin/soal"}>
+            <Link
+              to={
+                tryout
+                  ? `/admin/tryouts/${tryout.id}`
+                  : params.has("paket")
+                    ? `/admin/paket/${params.get("paket")}`
+                    : "/admin/soal"
+              }
+            >
               Batal
             </Link>
           </Button>

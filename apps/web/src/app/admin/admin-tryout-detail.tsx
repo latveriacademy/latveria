@@ -23,7 +23,6 @@ import { Button } from "../../components/ui/button";
 import { AppDialog } from "../../components/app-dialog";
 import { ConfirmDialog } from "../../components/confirm-dialog";
 import { QuestionRenderer } from "../../components/question-renderer";
-import { TryoutSectionImportModal } from "./tryout-section-import-modal";
 
 type TryoutDetailData = AdminTryoutDetail;
 
@@ -36,7 +35,6 @@ export function AdminTryoutDetail() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   // Import modal state
-  const [importSection, setImportSection] = useState<TryoutSectionWithQuestions | null>(null);
 
   // Preview modal state
   const [previewQuestion, setPreviewQuestion] = useState<
@@ -229,13 +227,10 @@ export function AdminTryoutDetail() {
                 </button>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setImportSection(section)}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Upload size={13} /> Impor Soal
+                  <Button asChild size="sm" variant="outline" className="flex items-center gap-1.5">
+                    <Link to={`/admin/tryouts/${id}/impor?section=${section.id}`}>
+                      <Upload size={13} /> Impor Soal
+                    </Link>
                   </Button>
                   <Button
                     size="sm"
@@ -257,12 +252,10 @@ export function AdminTryoutDetail() {
                       <p className="font-serif text-sm text-[var(--soft-ink)] mb-3">
                         Subtes ini belum memiliki soal.
                       </p>
-                      <Button
-                        size="sm"
-                        onClick={() => setImportSection(section)}
-                        className="btn-gold-solid"
-                      >
-                        <Upload size={14} /> Impor Soal Subtes Sekarang
+                      <Button asChild size="sm" className="btn-gold-solid">
+                        <Link to={`/admin/tryouts/${id}/impor?section=${section.id}`}>
+                          <Upload size={14} /> Impor Soal Subtes Sekarang
+                        </Link>
                       </Button>
                     </div>
                   ) : (
@@ -351,16 +344,6 @@ export function AdminTryoutDetail() {
       </div>
 
       {/* Import Modal */}
-      {importSection && id && (
-        <TryoutSectionImportModal
-          open={Boolean(importSection)}
-          onOpenChange={(open) => !open && setImportSection(null)}
-          tryoutId={id}
-          sectionId={importSection.id}
-          sectionTitle={importSection.title}
-          onSuccess={loadData}
-        />
-      )}
 
       {/* Question Preview Modal */}
       <AppDialog

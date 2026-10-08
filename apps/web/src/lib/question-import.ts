@@ -1,4 +1,6 @@
 import { questionImportSchema, utbkSubtests, type QuestionImport } from "@latveria/shared";
+import { geometryImportExample } from "./tikz-examples";
+import { mathImportExample } from "./math-import-examples";
 
 export const packageImportExample: QuestionImport = {
   groups: [
@@ -89,4 +91,34 @@ export function parseQuestionImport(text: string): QuestionImport {
       `Subtes pada grup ${invalid + 1} tidak dikenal. Gunakan slug subtes seperti pada contoh.`,
     );
   return parsed.data;
+}
+
+export function importExample(
+  kind: string,
+  subtest?: string,
+  packageName?: string,
+): QuestionImport {
+  const source =
+    kind === "geometry"
+      ? geometryImportExample
+      : kind === "math"
+        ? mathImportExample
+        : kind === "lexicon"
+          ? lexiconImportExample
+          : packageImportExample;
+  return {
+    groups: source.groups.map((group) => ({
+      ...group,
+      subtes: subtest ?? group.subtes,
+      packageName:
+        packageName ??
+        (kind === "geometry"
+          ? "Paket Bangun Ruang"
+          : kind === "math"
+            ? "Paket Rumus Matematika"
+            : kind === "lexicon"
+              ? "Paket Vocabulary LBE"
+              : "Paket Persentase"),
+    })),
+  };
 }

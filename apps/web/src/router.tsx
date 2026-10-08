@@ -28,6 +28,7 @@ import { QuestionForm } from "./app/admin/question-form";
 import { QuestionJsonEditor } from "./app/admin/question-json-editor";
 import { AdminLayout } from "./app/admin/admin-layout";
 import { ImportQuestions } from "./app/admin/import-questions";
+import { TryoutImportPage } from "./app/admin/tryout-import-page";
 import { QuestionPreview } from "./app/admin/question-preview";
 import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
@@ -277,6 +278,11 @@ export const router = createBrowserRouter([
       },
       { path: "tryouts", element: <AdminTryouts /> },
       { path: "tryouts/:id", element: <AdminTryoutDetail /> },
+      {
+        path: "tryouts/:id/impor",
+        loader: ({ params }) => api(`/admin/tryouts/${params.id}`),
+        element: <TryoutImportPage />,
+      },
       {
         path: "soal",
         loader: ({ request }) => api<Bank>(`/admin/questions?${new URL(request.url).searchParams}`),
