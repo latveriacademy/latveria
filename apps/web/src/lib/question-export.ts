@@ -15,7 +15,7 @@ export function questionToImport(item: QuestionDetail): QuestionImport {
         questions: [
           {
             prompt: item.prompt,
-            ...(item.passage ? { passage: item.passage } : {}),
+            ...(item.passage && !item.passageId ? { passage: item.passage } : {}),
             ...(item.passageId ? { passageId: item.passageId } : {}),
             options: item.options,
             correctAnswer: item.correctAnswer,

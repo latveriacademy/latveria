@@ -1,4 +1,4 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, or, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   createPackageSchema,
@@ -18,6 +18,9 @@ import {
   practiceAttempts,
 } from "../lib/db/schema";
 import { invalidateCatalogCache, resolveTopic } from "./topic.service";
+import { protectPassageSources, validatePassage } from "./question-passage";
+import { resolvePassages } from "./tryout-review.service";
+import { tryoutSections } from "../lib/db/schema";
 
 export async function getSubtestPackages(subtestId: string): Promise<QuestionPackage[]> {
   const topic = await resolveTopic(subtestId);
@@ -257,7 +260,8 @@ export async function addQuestionToPackage(packageId: string, questionId: string
       message: "Soal tidak dapat dimasukkan ke paket dari subtes yang berbeda.",
     });
   }
-
+  if (q.packageId !== pkg.id) await protectPassageSources(getDb(), [q.id]);
+  await validatePassage(getDb(), { ...q, packageId: pkg.id }, q.id);
   await getDb().update(questions).set({ packageId: pkg.id }).where(eq(questions.id, q.id));
   return { success: true, packageId: pkg.id, questionId: q.id };
 }
@@ -265,6 +269,8 @@ export async function addQuestionToPackage(packageId: string, questionId: string
 export async function moveQuestionPackage(questionId: string, targetPackageId: string | null) {
   const [q] = await getDb().select().from(questions).where(eq(questions.id, questionId));
   if (!q) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
+  if (q.packageId !== targetPackageId) await protectPassageSources(getDb(), [q.id]);
+  await validatePassage(getDb(), { ...q, packageId: targetPackageId }, q.id);
 
   if (targetPackageId) {
     const [pkg] = await getDb()
@@ -291,7 +297,8 @@ export async function removeQuestionFromPackage(packageId: string, questionId: s
     .from(questions)
     .where(and(eq(questions.id, questionId), eq(questions.packageId, packageId)));
   if (!q) throw new HTTPException(404, { message: "Soal tidak ditemukan dalam paket ini." });
-
+  await protectPassageSources(getDb(), [q.id]);
+  await validatePassage(getDb(), { ...q, packageId: null }, q.id);
   await getDb().update(questions).set({ packageId: null }).where(eq(questions.id, q.id));
   return { success: true };
 }
@@ -311,7 +318,13 @@ export async function getLearnerPackagesByTopic(
     })
     .from(questionPackages)
     .leftJoin(questions, eq(questions.packageId, questionPackages.id))
-    .where(and(eq(questionPackages.topicId, topic.id), eq(questionPackages.isActive, true)))
+    .where(
+      and(
+        eq(questionPackages.topicId, topic.id),
+        eq(questionPackages.isActive, true),
+        eq(questionPackages.published, true),
+      ),
+    )
     .groupBy(questionPackages.id)
     .orderBy(questionPackages.order, questionPackages.createdAt);
 
@@ -364,57 +377,93 @@ export async function getAllLearnerPackages() {
 }
 
 export async function duplicatePackage(packageId: string) {
-  const [existing] = await getDb()
-    .select()
-    .from(questionPackages)
-    .where(eq(questionPackages.id, packageId));
-  if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
+  const result = await getDb().transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, packageId));
+    if (!existing) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
 
-  const newName = `${existing.name} (Salinan ${Date.now().toString().slice(-4)})`;
-  const [created] = await getDb()
-    .insert(questionPackages)
-    .values({
-      topicId: existing.topicId,
-      name: newName,
-      description: existing.description,
-      packageType: existing.packageType,
-      category: existing.category,
-      duration: existing.duration,
-      isFullTryout: existing.isFullTryout,
-      targetQuestions: existing.targetQuestions,
-      published: existing.published,
-      order: existing.order + 1,
-      isActive: true,
-    })
-    .returning();
+    const newName = `${existing.name} (Salinan ${Date.now().toString().slice(-4)})`;
+    const [created] = await tx
+      .insert(questionPackages)
+      .values({
+        topicId: existing.topicId,
+        name: newName,
+        description: existing.description,
+        packageType: existing.packageType,
+        category: existing.category,
+        duration: existing.duration,
+        isFullTryout: existing.isFullTryout,
+        targetQuestions: existing.targetQuestions,
+        targetYear: existing.targetYear,
+        published: false,
+        order: existing.order + 1,
+        isActive: true,
+      })
+      .returning();
 
-  const qRows = await getDb().select().from(questions).where(eq(questions.packageId, existing.id));
-  if (qRows.length > 0) {
-    await getDb()
-      .insert(questions)
-      .values(
-        qRows.map((q) => ({
-          topicId: q.topicId,
-          packageId: created.id,
-          prompt: q.prompt,
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation,
-          source: q.source,
-          category: q.category,
-          itemWeight: q.itemWeight,
-          calculatorAllowed: q.calculatorAllowed,
-          order: q.order,
-          subtestOrder: q.subtestOrder,
-        })),
+    const pinned = await tx
+      .select()
+      .from(tryoutPackageQuestions)
+      .where(eq(tryoutPackageQuestions.packageId, existing.id));
+    const qRows = await tx
+      .select()
+      .from(questions)
+      .where(
+        or(
+          eq(questions.packageId, existing.id),
+          pinned.length
+            ? inArray(
+                questions.id,
+                pinned.map((pin) => pin.questionId),
+              )
+            : undefined,
+        ),
       );
-  }
+    const resolved = await resolvePassages(qRows);
+    const ids = new Map(qRows.map((q) => [q.id, crypto.randomUUID()]));
+    if (qRows.length > 0) {
+      await tx
+        .insert(questions)
+        .values(
+          resolved.map((q) => ({
+            ...q,
+            id: ids.get(q.id)!,
+            packageId: q.packageId === existing.id ? created.id : null,
+            passageId: q.passageId ? (ids.get(q.passageId) ?? null) : null,
+            passage: q.passageId && ids.has(q.passageId) ? null : q.passage,
+          })),
+        );
+    }
 
+    const sections = await tx
+      .select()
+      .from(tryoutSections)
+      .where(eq(tryoutSections.packageId, existing.id));
+    const sectionIds = new Map(sections.map((s) => [s.id, crypto.randomUUID()]));
+    if (sections.length)
+      await tx
+        .insert(tryoutSections)
+        .values(sections.map((s) => ({ ...s, id: sectionIds.get(s.id)!, packageId: created.id })));
+    if (pinned.length)
+      await tx
+        .insert(tryoutPackageQuestions)
+        .values(
+          pinned.map((pin) => ({
+            ...pin,
+            packageId: created.id,
+            questionId: ids.get(pin.questionId)!,
+            sectionId: pin.sectionId ? sectionIds.get(pin.sectionId)! : null,
+          })),
+        );
+    return {
+      ...created,
+      questionCount: qRows.length,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    };
+  });
   invalidateCatalogCache();
-  return {
-    ...created,
-    questionCount: qRows.length,
-    createdAt: created.createdAt.toISOString(),
-    updatedAt: created.updatedAt.toISOString(),
-  };
+  return result;
 }

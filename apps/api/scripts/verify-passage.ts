@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { inArray } from "drizzle-orm";
+import { inArray, eq } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
 import { user } from "../src/lib/db/auth-schema";
@@ -107,6 +107,32 @@ export async function verifyPassage() {
     const q2Detail = await (await request(`/admin/questions/${q2.id}`, admin.cookie)).json();
     assert.equal(q2Detail.passage, passageText);
     assert.equal(q2Detail.passageId, q1.id);
+    const edit = { ...q2Detail, annotations: [] };
+    assert.equal(
+      (await request(`/admin/questions/${q2.id}`, admin.cookie, edit, "PUT")).status,
+      200,
+    );
+    const [stored] = await getDb().select().from(questions).where(eq(questions.id, q2.id));
+    assert.equal(stored.passage, null);
+    assert.equal(
+      (
+        await request(
+          `/admin/questions/${q2.id}`,
+          admin.cookie,
+          { ...edit, passageId: q2.id },
+          "PUT",
+        )
+      ).status,
+      400,
+    );
+    assert.equal(
+      (await request(`/admin/questions/${q1.id}`, admin.cookie, undefined, "DELETE")).status,
+      409,
+    );
+    assert.equal(
+      (await request("/admin/questions/bulk-delete", admin.cookie, { ids: [q1.id] })).status,
+      409,
+    );
 
     // 4. Learner practice receives the passage on both questions
     const practiceRes = await request(`/learner/practice/${pu.slug}/${pkg.id}`, learner.cookie);
@@ -123,6 +149,36 @@ export async function verifyPassage() {
     assert.equal(searchRes.status, 200);
     const searchData = await searchRes.json();
     assert.ok(searchData.rows.some((r: { id: string }) => r.id === q1.id));
+    const source = await (await request(`/admin/questions/${q1.id}`, admin.cookie)).json();
+    const updatedPassage = `${passageText} Perubahan sumber.`;
+    assert.equal(
+      (
+        await request(
+          `/admin/questions/${q1.id}`,
+          admin.cookie,
+          { ...source, passage: updatedPassage },
+          "PUT",
+        )
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await (await request(`/admin/questions/${q2.id}`, admin.cookie)).json()).passage,
+      updatedPassage,
+    );
+    const cloned = await request(`/admin/packages/${pkg.id}/duplicate`, admin.cookie, {});
+    assert.equal(cloned.status, 201);
+    const copy = await cloned.json();
+    packageIds.push(copy.id);
+    const copiedQuestions = await getDb()
+      .select()
+      .from(questions)
+      .where(eq(questions.packageId, copy.id));
+    questionIds.push(...copiedQuestions.map((q) => q.id));
+    assert.equal(copiedQuestions.length, 2);
+    const copiedSource = copiedQuestions.find((q) => q.passage)!;
+    assert.equal(copiedSource.passage, updatedPassage);
+    assert.equal(copiedQuestions.find((q) => q.passageId)!.passageId, copiedSource.id);
 
     console.info(
       "Passage integration: creation, reusable linking, resolution, learner view, and search PASSED.",

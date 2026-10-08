@@ -54,7 +54,7 @@ export function QuestionForm({
   const [pkgPending, setPkgPending] = useState(false);
   const [pkgError, setPkgError] = useState("");
   const [prompt, setPrompt] = useState(question?.prompt ?? "");
-  const [passage, setPassage] = useState(question?.passage ?? "");
+  const [passage, setPassage] = useState(question?.passageId ? "" : (question?.passage ?? ""));
   const [passageId, setPassageId] = useState<string | null>(question?.passageId ?? null);
   const [availablePassages, setAvailablePassages] = useState<AvailablePassage[]>([]);
   const [diagramError, setDiagramError] = useState("");

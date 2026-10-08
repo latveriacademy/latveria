@@ -13,6 +13,7 @@ import {
 import { getDb } from "../lib/db";
 import { practiceAnswers, questionPackages, questions, topics } from "../lib/db/schema";
 import { catalog, invalidateCatalogCache } from "./topic.service";
+import { validatePassage, protectPassageSources } from "./question-passage";
 
 export async function getAdminQuestions(
   queryParams: Record<string, string | undefined>,
@@ -164,14 +165,18 @@ export async function createQuestion(body: unknown) {
     }
   }
 
-  const [created] = await getDb()
-    .insert(questions)
-    .values({
-      ...parsed.data,
-      passage: parsed.data.passage ?? null,
-      passageId: parsed.data.passageId ?? null,
-    })
-    .returning({ id: questions.id, packageId: questions.packageId });
+  const created = await getDb().transaction(async (tx) => {
+    await validatePassage(tx, parsed.data);
+    const [row] = await tx
+      .insert(questions)
+      .values({
+        ...parsed.data,
+        passage: parsed.data.passageId ? null : (parsed.data.passage ?? null),
+        passageId: parsed.data.passageId ?? null,
+      })
+      .returning({ id: questions.id, packageId: questions.packageId });
+    return row;
+  });
   invalidateCatalogCache();
   return { id: created.id, slug: topic.slug, packageId: created.packageId };
 }
@@ -252,10 +257,12 @@ export async function importQuestions(text: string) {
         throw new HTTPException(400, { message: "Paket tujuan tidak tersedia. Coba lagi." });
       const values = group.questions.map((question) => ({
         ...question,
+        passage: question.passageId ? null : (question.passage ?? null),
         category: group.category,
         topicId,
         packageId: pkg.id,
       }));
+      for (const value of values) await validatePassage(tx, value);
       await tx.insert(questions).values(values);
       count += values.length;
       const destination = destinations.get(pkg.id) ?? { ...pkg, slug: group.subtes, count: 0 };
@@ -326,11 +333,18 @@ export async function updateQuestion(idParam: string, body: unknown) {
   const db = getDb();
   const result = await db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ id: questions.id })
+      .select()
       .from(questions)
       .where(eq(questions.id, id.data))
       .for("update");
     if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
+    await validatePassage(tx, parsed.data, id.data);
+    if (
+      ((!parsed.data.passage || parsed.data.passageId) && existing.passage) ||
+      existing.topicId !== parsed.data.topicId ||
+      existing.packageId !== (parsed.data.packageId ?? null)
+    )
+      await protectPassageSources(tx, [id.data]);
     const [topic] = await tx
       .select({ slug: topics.slug })
       .from(topics)
@@ -358,7 +372,7 @@ export async function updateQuestion(idParam: string, body: unknown) {
         ...parsed.data,
         packageId: parsed.data.packageId ?? null,
         category: parsed.data.category ?? null,
-        passage: parsed.data.passage ?? null,
+        passage: parsed.data.passageId ? null : (parsed.data.passage ?? null),
         passageId: parsed.data.passageId ?? null,
       })
       .where(eq(questions.id, id.data));
@@ -384,6 +398,7 @@ export async function bulkDeleteQuestions(body: unknown) {
       throw new HTTPException(404, {
         message: "Sebagian soal tidak ditemukan. Muat ulang bank soal.",
       });
+    await protectPassageSources(tx, ids);
     return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
   });
   invalidateCatalogCache();
@@ -394,10 +409,15 @@ export async function deleteQuestion(idParam: string) {
   const id = idSchema.safeParse(idParam);
   if (!id.success) throw new HTTPException(400);
   try {
-    const deleted = await getDb()
-      .delete(questions)
-      .where(eq(questions.id, id.data))
-      .returning({ id: questions.id });
+    const deleted = await getDb().transaction(async (tx) => {
+      await tx
+        .select({ id: questions.id })
+        .from(questions)
+        .where(eq(questions.id, id.data))
+        .for("update");
+      await protectPassageSources(tx, [id.data]);
+      return tx.delete(questions).where(eq(questions.id, id.data)).returning({ id: questions.id });
+    });
     if (!deleted.length) throw new HTTPException(404);
     invalidateCatalogCache();
   } catch (error) {

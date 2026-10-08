@@ -102,6 +102,7 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
           eq(questionPackages.id, pkgId.data),
           eq(questionPackages.topicId, topic.id),
           eq(questionPackages.isActive, true),
+          eq(questionPackages.published, true),
         ),
       );
     if (!pkg) throw new HTTPException(404, { message: "Paket tidak ditemukan." });
