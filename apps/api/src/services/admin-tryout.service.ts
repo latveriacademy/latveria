@@ -2,13 +2,11 @@ import { and, asc, count, desc, eq, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   idSchema,
-  sectionImportSchema,
   utbkSubtests,
   createTryoutSchema,
   updateTryoutSchema,
   createTryoutSectionSchema,
   updateTryoutSectionSchema,
-  type SectionImportInput,
   type TryoutSectionItem,
   type TryoutSectionQuestion,
 } from "@latveria/shared";
@@ -16,13 +14,13 @@ import { getDb } from "../lib/db";
 import {
   questionPackages,
   questions,
-  topics,
   tryoutPackageQuestions,
   tryoutSections,
 } from "../lib/db/schema";
 import { catalog, invalidateCatalogCache } from "./topic.service";
 import { deletePackage } from "./package.service";
 import { buildTryoutConfig } from "./tryout-config";
+import { importSectionBatch } from "./tryout-import.service";
 
 export async function listAdminTryouts() {
   const db = getDb();
@@ -385,116 +383,7 @@ export async function deleteTryoutSection(sectionId: string) {
 }
 
 export async function importSectionQuestions(sectionId: string, body: unknown) {
-  if (new TextEncoder().encode(JSON.stringify(body)).byteLength > 200_000)
-    throw new HTTPException(413, { message: "JSON terlalu besar (maksimal 200 KB)." });
-  const sId = idSchema.safeParse(sectionId);
-  if (!sId.success) throw new HTTPException(404, { message: "ID section tidak valid." });
-
-  const parsed = sectionImportSchema.safeParse(body);
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0];
-    const pathStr = issue.path.join(".");
-    throw new HTTPException(400, {
-      message: `Format JSON tidak valid pada ${pathStr}: ${issue.message}`,
-    });
-  }
-
-  const data: SectionImportInput = parsed.data;
-  const db = getDb();
-
-  return await db.transaction(async (tx) => {
-    const [section] = await tx
-      .select()
-      .from(tryoutSections)
-      .where(eq(tryoutSections.id, sId.data))
-      .for("update");
-    if (!section) throw new HTTPException(404, { message: "Section tryout tidak ditemukan." });
-
-    const [pkg] = await tx
-      .select()
-      .from(questionPackages)
-      .where(eq(questionPackages.id, section.packageId));
-    if (!pkg) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
-
-    // Match topic from subtestCode or fallback to package topic
-    const matchedSubtest = utbkSubtests.find(
-      (s) => s.short.toUpperCase() === section.subtestCode.toUpperCase(),
-    );
-    let topicId = pkg.topicId;
-    if (matchedSubtest) {
-      const [matchedTopic] = await tx
-        .select({ id: topics.id })
-        .from(topics)
-        .where(eq(topics.slug, matchedSubtest.slug));
-      if (matchedTopic) topicId = matchedTopic.id;
-    }
-
-    // Determine current highest position in section
-    const existingQuestions = await tx
-      .select({ position: tryoutPackageQuestions.position })
-      .from(tryoutPackageQuestions)
-      .where(eq(tryoutPackageQuestions.sectionId, section.id))
-      .orderBy(desc(tryoutPackageQuestions.position));
-    let nextPosition = (existingQuestions[0]?.position ?? 0) + 1;
-
-    let importedCount = 0;
-    for (const q of data.questions) {
-      const isSingleChoice = q.type === "single_choice" || !q.type;
-      const options = isSingleChoice
-        ? (q as { options: string[] }).options
-        : ["(A)", "(B)", "(C)", "(D)", "(E)"];
-      const correctAnswer = isSingleChoice
-        ? Number((q as { correctAnswer: number }).correctAnswer ?? 0)
-        : 0;
-
-      const [insertedQuestion] = await tx
-        .insert(questions)
-        .values({
-          topicId,
-          packageId: null,
-          questionType: q.type,
-          schemaVersion: data.schemaVersion,
-          prompt: q.prompt,
-          stimulus: q.stimulus ?? null,
-          passage: q.passage ?? null,
-          statements: q.type === "true_false_group" ? q.statements : null,
-          scoringConfig: q.type === "true_false_group" ? q.scoring : null,
-          options,
-          correctAnswer,
-          explanation: q.explanation || "Pembahasan tersedia.",
-          source: q.source || "Tryout Latveria",
-          category: q.category || section.title,
-          itemWeight: q.itemWeight ?? 100,
-          calculatorAllowed: Boolean(q.calculatorAllowed),
-          order: nextPosition,
-          subtestOrder: section.sectionOrder,
-        })
-        .returning({ id: questions.id });
-
-      const finalPosition = q.position ?? nextPosition;
-      await tx
-        .insert(tryoutPackageQuestions)
-        .values({
-          packageId: pkg.id,
-          sectionId: section.id,
-          questionId: insertedQuestion.id,
-          order: finalPosition,
-          position: finalPosition,
-        })
-        .onConflictDoNothing();
-
-      nextPosition++;
-      importedCount++;
-    }
-
-    return {
-      success: true,
-      imported: importedCount,
-      skipped: 0,
-      failed: 0,
-      sectionId: section.id,
-    };
-  });
+  return importSectionBatch(sectionId, body);
 }
 
 export async function removeQuestionFromSection(sectionId: string, questionId: string) {

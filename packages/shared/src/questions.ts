@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  lexiconAnnotationInputSchema,
+  resolveLexiconAnnotations,
+  validLexiconRanges,
+} from "./lexicon";
 
 // ==========================================
 // CONTENT BLOCKS & STIMULUS
@@ -165,6 +170,8 @@ export type TryoutSectionWithQuestions = TryoutSectionItem & {
 // ==========================================
 
 const baseSectionImportQuestion = z.object({
+  passageId: z.uuid().optional().nullable(),
+  annotations: z.array(lexiconAnnotationInputSchema).max(20).default([]),
   externalId: z.string().trim().max(50).optional(),
   prompt: z.string().trim().min(3).max(5000),
   stimulus: stimulusSchema.optional().nullable(),
@@ -198,10 +205,13 @@ export const trueFalseImportQuestionSchema = baseSectionImportQuestion.extend({
   scoring: scoringConfigSchema.default({ mode: "per_statement", points: 1 }),
 });
 
-export const sectionImportQuestionSchema = z.union([
-  trueFalseImportQuestionSchema,
-  singleChoiceImportQuestionSchema,
-]);
+export const sectionImportQuestionSchema = z
+  .union([trueFalseImportQuestionSchema, singleChoiceImportQuestionSchema])
+  .transform((q) => ({ ...q, annotations: resolveLexiconAnnotations(q.prompt, q.annotations) }))
+  .refine(
+    (q) => validLexiconRanges(q.prompt, q.annotations),
+    "Anotasi tidak sesuai dengan pertanyaan.",
+  );
 
 export const sectionImportSchema = z.object({
   schemaVersion: z.coerce.number().int().min(1).max(2).default(2),

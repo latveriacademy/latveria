@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+export { normalizeTryoutImport, tryoutImportSchema, type TryoutImport } from "./tryout-import";
 export {
   createTryoutSchema,
   updateTryoutSchema,

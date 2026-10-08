@@ -6,13 +6,25 @@ import {
   deleteAdminTryout,
   deleteTryoutSection,
   getAdminTryout,
-  importSectionQuestions,
   listAdminTryouts,
   removeQuestionFromSection,
   reorderSectionQuestions,
   updateAdminTryout,
   updateTryoutSection,
 } from "../services/admin-tryout.service";
+import { importTryoutBatch, importSectionBatch } from "../services/tryout-import.service";
+import { HTTPException } from "hono/http-exception";
+
+async function readImport(c: import("hono").Context) {
+  const text = await c.req.text();
+  if (new TextEncoder().encode(text).byteLength > 200_000)
+    throw new HTTPException(413, { message: "JSON maksimal 200 KB." });
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new HTTPException(400, { message: "Sintaks JSON tidak valid." });
+  }
+}
 import {
   advanceTryoutSubtest,
   autosaveTryout,
@@ -104,10 +116,12 @@ tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId", async (c) => {
 });
 
 tryoutHandler.post("/api/admin/tryouts/sections/:sectionId/import", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const result = await importSectionQuestions(c.req.param("sectionId"), body);
+  const result = await importSectionBatch(c.req.param("sectionId"), await readImport(c));
   return c.json(result);
 });
+tryoutHandler.post("/api/admin/tryouts/:id/import", async (c) =>
+  c.json(await importTryoutBatch(c.req.param("id"), await readImport(c)), 201),
+);
 
 tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId/questions/:questionId", async (c) => {
   const result = await removeQuestionFromSection(
