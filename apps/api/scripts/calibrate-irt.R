@@ -13,7 +13,7 @@ set.seed(2026)
 model <- mirt::mirt(responses, 1, itemtype = "2PL", SE = TRUE, verbose = FALSE,
                     technical = list(NCYCLES = 1000))
 if (!mirt::extract.mirt(model, "converged")) stop("Model did not converge.")
-parameters <- stats::coef(model, IRTpars = TRUE, simplify = TRUE)$items
+parameters <- mirt::coef(model, IRTpars = TRUE, simplify = TRUE)$items
 fit <- mirt::M2(model, type = "C2")
 reliability <- as.numeric(mirt::marginal_rxx(model))[1]
 rmsea <- as.numeric(fit$RMSEA)[1]
