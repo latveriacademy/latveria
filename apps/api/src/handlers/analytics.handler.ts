@@ -1,16 +1,19 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
-import { questions, topics, practiceAnswers, practiceAttempts } from "../lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { questions, topics, practiceAnswers } from "../lib/db/schema";
+import { eq, sql, and, asc, desc } from "drizzle-orm";
+import { pagination } from "../lib/admin-query";
+import { HTTPException } from "hono/http-exception";
 
 export const analyticsHandler = new Hono();
 
 analyticsHandler.get("/api/admin/analytics/questions", async (c) => {
   const db = getDb();
-  const page = parseInt(c.req.query("page") ?? "1", 10);
-  const limit = parseInt(c.req.query("limit") ?? "50", 10);
+  const { page, limit } = pagination(c.req.query());
   const subtest = c.req.query("subtest") ?? "";
   const sortBy = c.req.query("sort") ?? "accuracy";
+  if (!["accuracy", "attempts", "correct"].includes(sortBy))
+    throw new HTTPException(400, { message: "Urutan tidak valid." });
 
   const minAttempts = 10;
 
@@ -29,40 +32,23 @@ analyticsHandler.get("/api/admin/analytics/questions", async (c) => {
     })
     .from(questions)
     .innerJoin(topics, eq(questions.topicId, topics.id))
-    .leftJoin(practiceAttempts, sql`1=1`)
-    .leftJoin(practiceAnswers, eq(practiceAnswers.attemptId, practiceAttempts.id))
+    .leftJoin(practiceAnswers, eq(practiceAnswers.questionId, questions.id))
+    .where(and(subtest ? eq(topics.slug, subtest) : undefined))
     .groupBy(questions.id, topics.slug, topics.name, questions.prompt)
     .having(sql`count(${practiceAnswers.id}) >= ${minAttempts}`);
 
-  // Get all questions first
-  const allQuestions = await baseQuery;
-
-  // Filter by subtest if specified
-  const filteredQuestions = subtest
-    ? allQuestions.filter((q) => q.topicSlug === subtest)
-    : allQuestions;
-
-  // Sort
-  filteredQuestions.sort((a, b) => {
-    const rateA = Number(a.answersCount) > 0 ? Number(a.correctCount) / Number(a.answersCount) : 1;
-    const rateB = Number(b.answersCount) > 0 ? Number(b.correctCount) / Number(b.answersCount) : 1;
-
-    switch (sortBy) {
-      case "attempts":
-        return Number(b.answersCount) - Number(a.answersCount);
-      case "correct":
-        return Number(b.correctCount) - Number(a.correctCount);
-      case "accuracy":
-      default:
-        return rateA - rateB;
-    }
-  });
-
-  const total = filteredQuestions.length;
-
-  // Paginate
-  const offset = (page - 1) * limit;
-  const paginatedQuestions = filteredQuestions.slice(offset, offset + limit);
+  const [totalRow] = await db.select({ count: sql<number>`count(*)` }).from(baseQuery.as("stats"));
+  const total = Number(totalRow.count);
+  const order =
+    sortBy === "attempts"
+      ? desc(sql`count(${practiceAnswers.id})`)
+      : sortBy === "correct"
+        ? desc(sql`sum(${practiceAnswers.isCorrect})`)
+        : asc(sql`sum(${practiceAnswers.isCorrect})::numeric / count(${practiceAnswers.id})`);
+  const paginatedQuestions = await baseQuery
+    .orderBy(order, asc(questions.id))
+    .limit(limit)
+    .offset((page - 1) * limit);
 
   const rows = paginatedQuestions.map((q) => {
     const answersCount = Number(q.answersCount ?? 0);

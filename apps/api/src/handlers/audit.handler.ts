@@ -3,13 +3,13 @@ import { getDb } from "../lib/db";
 import { auditLogs } from "../lib/db/schema";
 import { user as userTable } from "../lib/db/auth-schema";
 import { eq, desc, and, sql } from "drizzle-orm";
+import { pagination } from "../lib/admin-query";
 
 export const auditHandler = new Hono();
 
 auditHandler.get("/api/admin/audit", async (c) => {
   const db = getDb();
-  const page = parseInt(c.req.query("page") ?? "1", 10);
-  const limit = parseInt(c.req.query("limit") ?? "50", 10);
+  const { page, limit } = pagination(c.req.query());
   const action = c.req.query("action") ?? "";
   const targetType = c.req.query("target_type") ?? "";
   const adminId = c.req.query("admin_id") ?? "";
@@ -30,7 +30,7 @@ auditHandler.get("/api/admin/audit", async (c) => {
     .select({ count: sql<number>`count(*)` })
     .from(auditLogs)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
-  const total = countResult[0]?.count ?? 0;
+  const total = Number(countResult[0]?.count ?? 0);
 
   // Get logs with admin email
   const offset = (page - 1) * limit;

@@ -8,7 +8,9 @@ import {
   questionReports,
   tryoutSessions,
 } from "../lib/db/schema";
-import { eq, sql, desc, asc, like, and, count, inArray } from "drizzle-orm";
+import { eq, sql, desc, asc, ilike, or, and, count, inArray } from "drizzle-orm";
+import { pagination } from "../lib/admin-query";
+import { getUserProgress } from "../services/admin-user-progress";
 
 export const usersHandler = new Hono();
 
@@ -121,8 +123,7 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
 // List users with enhanced filters
 usersHandler.get("/api/admin/users", async (c) => {
   const db = getDb();
-  const page = parseInt(c.req.query("page") ?? "1", 10);
-  const limit = parseInt(c.req.query("limit") ?? "20", 10);
+  const { page, limit } = pagination(c.req.query(), 20);
   const search = c.req.query("search") ?? "";
   const demoFilter = c.req.query("demo") ?? "";
   const sortBy = c.req.query("sort") ?? "created_at";
@@ -132,7 +133,8 @@ usersHandler.get("/api/admin/users", async (c) => {
   const conditions = [eq(userTable.role, "user")];
 
   if (search) {
-    conditions.push(like(userTable.name, `%${search}%`));
+    const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push(or(ilike(userTable.name, pattern), ilike(userTable.email, pattern))!);
   }
   if (demoFilter === "true") {
     conditions.push(eq(userTable.isDemo, true));
@@ -203,6 +205,7 @@ usersHandler.get("/api/admin/users", async (c) => {
       },
     ]),
   );
+  const progress = await getUserProgress(userIds);
 
   const rows = users.map((u) => {
     const stats = statsMap.get(u.id) ?? {
@@ -211,11 +214,11 @@ usersHandler.get("/api/admin/users", async (c) => {
       timeSpent: 0,
       lastActivity: null,
     };
-    const answered = stats.answered;
-    const correct = stats.correct;
+    const summary = progress.get(u.id)!;
+    const answered = summary.answered;
+    const correct = summary.correct;
     const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
-    const totalXP = correct * 10;
-    const level = Math.floor(totalXP / 100) + 1;
+    const { totalXP, level } = summary;
 
     return {
       ...u,
@@ -224,7 +227,7 @@ usersHandler.get("/api/admin/users", async (c) => {
       accuracy,
       totalXP,
       level,
-      timeSpent: stats.timeSpent,
+      timeSpent: summary.timeSpent,
       lastActivity: stats.lastActivity,
     };
   });
@@ -288,92 +291,22 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
     .innerJoin(practiceAttempts, eq(practiceAnswers.attemptId, practiceAttempts.id))
     .where(eq(practiceAttempts.userId, userId));
 
-  const answered = Number(stats[0]?.answered ?? 0);
-  const correct = Number(stats[0]?.correct ?? 0);
-  const timeSpent = Number(stats[0]?.timeSpent ?? 0);
+  const progress = (await getUserProgress([userId])).get(userId)!;
+  const { answered, correct } = progress;
+  const timeSpent = progress.timeSpent;
   const firstAttemptCount = Number(stats[0]?.firstAttempt ?? 0);
   const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
-  const totalXP = correct * 10;
-  const level = Math.floor(totalXP / 100) + 1;
-  const currentXP = totalXP % 100;
-  const nextLevelXP = 100;
+  const { totalXP, level, currentXP, nextLevelXP } = progress;
   const avgTimePerQuestion = answered > 0 ? Math.round(timeSpent / answered) : 0;
   const firstAttemptRate = answered > 0 ? Math.round((firstAttemptCount / answered) * 100) : 0;
 
-  // Get weekly activity (last 7 days)
-  const weeklyActivity = [];
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    date.setHours(0, 0, 0, 0);
-    const nextDate = new Date(date);
-    nextDate.setDate(nextDate.getDate() + 1);
-
-    const [dayStats] = await db
-      .select({ count: count() })
-      .from(practiceAttempts)
-      .where(
-        and(
-          eq(practiceAttempts.userId, userId),
-          sql`${practiceAttempts.submittedAt} >= ${date.toISOString()}::timestamp`,
-          sql`${practiceAttempts.submittedAt} < ${nextDate.toISOString()}::timestamp`,
-        ),
-      );
-
-    weeklyActivity.push({
-      date: date.toISOString().split("T")[0],
-      dayName: date.toLocaleDateString("id-ID", { weekday: "short" }),
-      count: Number(dayStats?.count ?? 0),
-    });
-  }
-
-  // Get streak
-  let currentStreak = 0;
-  let longestStreak = 0;
-  const streakData = await db
-    .select({
-      date: sql<string>`DATE(${practiceAttempts.submittedAt})`,
-    })
-    .from(practiceAttempts)
-    .where(eq(practiceAttempts.userId, userId))
-    .groupBy(sql`DATE(${practiceAttempts.submittedAt})`)
-    .orderBy(desc(sql`DATE(${practiceAttempts.submittedAt})`));
-
-  if (streakData.length > 0) {
-    const dates = streakData.map((s) => s.date);
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-
-    // Check if streak is active (practiced today or yesterday)
-    if (dates[0] === today || dates[0] === yesterday) {
-      currentStreak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const prev = new Date(dates[i - 1]);
-        const curr = new Date(dates[i]);
-        const diff = (prev.getTime() - curr.getTime()) / 86400000;
-        if (diff === 1) {
-          currentStreak++;
-        } else {
-          break;
-        }
-      }
-    }
-
-    // Calculate longest streak
-    let tempStreak = 1;
-    for (let i = 1; i < dates.length; i++) {
-      const prev = new Date(dates[i - 1]);
-      const curr = new Date(dates[i]);
-      const diff = (prev.getTime() - curr.getTime()) / 86400000;
-      if (diff === 1) {
-        tempStreak++;
-        longestStreak = Math.max(longestStreak, tempStreak);
-      } else {
-        tempStreak = 1;
-      }
-    }
-    longestStreak = Math.max(longestStreak, tempStreak);
-  }
+  const weeklyActivity = progress.weeklyChartData.map((day) => ({
+    date: day.fullDay,
+    dayName: day.day,
+    count: day.questions,
+  }));
+  const currentStreak = progress.streakDays;
+  const longestStreak = progress.longestStreak;
 
   // Get subtest stats
   const subtestStatsResult = await db
@@ -519,8 +452,7 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
 usersHandler.get("/api/admin/users/:id/activity", async (c) => {
   const db = getDb();
   const userId = c.req.param("id");
-  const page = parseInt(c.req.query("page") ?? "1", 10);
-  const limit = parseInt(c.req.query("limit") ?? "20", 10);
+  const { page, limit } = pagination(c.req.query(), 20);
   const offset = (page - 1) * limit;
 
   const [userExists] = await db

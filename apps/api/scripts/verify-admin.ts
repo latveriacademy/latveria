@@ -3,11 +3,14 @@ import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
 import { user, session } from "../src/lib/db/auth-schema";
+import { questions, topics, practiceAttempts, practiceAnswers } from "../src/lib/db/schema";
+import { learnerSummary } from "@latveria/shared";
 
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname))
   throw new Error("Verifikasi admin hanya untuk DB lokal.");
 const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const ids: string[] = [];
+const questionIds: string[] = [];
 const request = (path: string, cookie = "", body?: unknown, method = body ? "POST" : "GET") =>
   app.request(`${origin}/api${path}`, {
     method,
@@ -66,7 +69,71 @@ try {
   const [failed] = await getDb().select().from(user).where(eq(user.id, learner.id));
   assert.equal(failed.failedLoginAttempts, 1);
   assert.equal((await request("/auth/sign-in/email", "", learner.credentials)).status, 200);
+  assert.equal((await request("/admin/users?page=-1&limit=0", admin.cookie)).status, 400);
+  const search = await (
+    await request(
+      `/admin/users?search=${encodeURIComponent(learner.credentials.email)}`,
+      admin.cookie,
+    )
+  ).json();
+  assert.equal(search.pagination.total, 1);
+  const [topic] = await getDb().select().from(topics).limit(1);
+  const created = await getDb()
+    .insert(questions)
+    .values(
+      ["answered", "unanswered"].map((name) => ({
+        topicId: topic.id,
+        prompt: `QA ${name}`,
+        options: ["A", "B", "C", "D", "E"],
+        correctAnswer: 0,
+        explanation: "QA explanation",
+        source: "QA",
+      })),
+    )
+    .returning();
+  questionIds.push(...created.map((q) => q.id));
+  for (let index = 0; index < 10; index++) {
+    const [attempt] = await getDb()
+      .insert(practiceAttempts)
+      .values({
+        userId: learner.id,
+        topicId: topic.id,
+        correctCount: index % 2,
+        totalCount: 1,
+        timeSpentSeconds: 10,
+      })
+      .returning();
+    await getDb()
+      .insert(practiceAnswers)
+      .values({
+        attemptId: attempt.id,
+        questionId: created[0].id,
+        selectedAnswer: index % 2 ? 0 : 1,
+        isCorrect: index % 2,
+      });
+  }
+  const attempts = await getDb()
+    .select()
+    .from(practiceAttempts)
+    .where(eq(practiceAttempts.userId, learner.id));
+  const expected = learnerSummary(attempts);
+  const detail = await (await request(`/admin/users/${learner.id}`, admin.cookie)).json();
+  assert.equal(detail.totalXP, expected.totalXP);
+  assert.equal(detail.level, expected.level);
+  assert.equal(detail.timeSpent, 100);
+  const analytics = await (
+    await request("/admin/analytics/questions?limit=100", admin.cookie)
+  ).json();
+  const stats = analytics.rows.find(
+    (row: { questionId: string }) => row.questionId === created[0].id,
+  );
+  assert.equal(stats.attempts, 10);
+  assert.equal(stats.correctRate, 50);
+  assert.ok(
+    !analytics.rows.some((row: { questionId: string }) => row.questionId === created[1].id),
+  );
   console.info("Verifikasi kontrol akun admin berhasil.");
 } finally {
   if (ids.length) await getDb().delete(user).where(inArray(user.id, ids));
+  if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));
 }
