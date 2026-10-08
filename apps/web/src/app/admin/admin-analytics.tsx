@@ -42,6 +42,7 @@ export function AdminAnalytics() {
 
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const subtest = searchParams.get("subtest") ?? "all";
   const sortBy = searchParams.get("sort") ?? "accuracy";
@@ -49,6 +50,7 @@ export function AdminAnalytics() {
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
       setError(null);
       const params = new URLSearchParams();
       if (subtest !== "all") params.set("subtest", subtest);
@@ -60,6 +62,8 @@ export function AdminAnalytics() {
       setData(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal memuat data analytics.");
+    } finally {
+      setLoading(false);
     }
   }, [subtest, sortBy, page]);
 
@@ -71,7 +75,7 @@ export function AdminAnalytics() {
     const next = new URLSearchParams(searchParams);
     if (value === "all") next.delete(key);
     else next.set(key, value);
-    if (key !== "subtest") next.set("page", "1");
+    if (key !== "page") next.set("page", "1");
     if (key === "subtest") next.delete("sort");
     setSearchParams(next);
   };
@@ -96,7 +100,7 @@ export function AdminAnalytics() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--soft-ink)]">Subtes:</span>
           <Select value={subtest} onValueChange={(v) => updateFilter("subtest", v)}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger aria-label="Subtes" className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -113,7 +117,7 @@ export function AdminAnalytics() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--soft-ink)]">Urutkan:</span>
           <Select value={sortBy} onValueChange={(v) => updateFilter("sort", v)}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger aria-label="Urutan statistik soal" className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -125,7 +129,7 @@ export function AdminAnalytics() {
         </div>
       </div>
 
-      {isNavigating && !data && (
+      {loading && !data && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="size-8 animate-spin text-[var(--gold)]" />
         </div>
@@ -137,7 +141,7 @@ export function AdminAnalytics() {
             <span>
               {data.pagination.total} soal dengan minimal {data.minAttempts} percobaan
             </span>
-            {isNavigating && <Loader2 className="size-4 animate-spin" />}
+            {(loading || isNavigating) && <Loader2 className="size-4 animate-spin" />}
           </div>
 
           <div className="overflow-x-auto">
@@ -236,7 +240,7 @@ export function AdminAnalytics() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page <= 1 || isNavigating}
+                disabled={page <= 1 || isNavigating || loading}
                 onClick={() => updateFilter("page", String(page - 1))}
               >
                 Sebelumnya
@@ -247,7 +251,7 @@ export function AdminAnalytics() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={page >= data.pagination.pageCount || isNavigating}
+                disabled={page >= data.pagination.pageCount || isNavigating || loading}
                 onClick={() => updateFilter("page", String(page + 1))}
               >
                 Berikutnya

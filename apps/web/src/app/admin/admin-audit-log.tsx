@@ -148,7 +148,7 @@ export function AdminAuditLog() {
     const next = new URLSearchParams(searchParams);
     if (!value) next.delete(key);
     else next.set(key, value);
-    next.set("page", "1");
+    if (key !== "page") next.set("page", "1");
     setSearchParams(next);
   };
 
@@ -169,7 +169,7 @@ export function AdminAuditLog() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--soft-ink)]">Aksi:</span>
           <Select value={action} onValueChange={(v) => updateFilter("action", v)}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger aria-label="Filter aksi admin" className="w-48">
               <SelectValue placeholder="Semua aksi" />
             </SelectTrigger>
             <SelectContent>
@@ -186,7 +186,7 @@ export function AdminAuditLog() {
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--soft-ink)]">Tipe:</span>
           <Select value={targetType} onValueChange={(v) => updateFilter("target_type", v)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger aria-label="Tipe target log" className="w-40">
               <SelectValue placeholder="Semua" />
             </SelectTrigger>
             <SelectContent>

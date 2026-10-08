@@ -84,9 +84,9 @@ export function QuestionPreview() {
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {item.annotations!.map((entry) => (
-                <div
+                <button type="button"
                   key={entry.id}
-                  className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-4 cursor-pointer hover:border-[var(--accent-gold)] transition-colors"
+                  className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-4 text-left cursor-pointer hover:border-[var(--accent-gold)] transition-colors"
                   onClick={() => setSelectedAnnotation(entry)}
                 >
                   <div className="flex flex-wrap items-baseline gap-2 mb-1">
@@ -110,7 +110,7 @@ export function QuestionPreview() {
                       "{entry.context}"
                     </p>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           </section>

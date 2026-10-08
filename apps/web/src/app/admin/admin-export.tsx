@@ -161,7 +161,7 @@ export function AdminExport() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+        <div className="min-w-0 lg:col-span-1">
           <div className="space-y-2">
             {EXPORT_OPTIONS.map((option) => {
               const Icon = option.icon;
@@ -176,7 +176,7 @@ export function AdminExport() {
                       : "border-[var(--edge)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                   <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         selectedExport === option.id ? "bg-[var(--gold)]/20" : "bg-[var(--edge)]"
@@ -191,7 +191,7 @@ export function AdminExport() {
                         }
                       />
                     </div>
-                    <div>
+                     <div className="min-w-0 break-words">
                       <div className="font-semibold text-[var(--ink)]">{option.label}</div>
                       <div className="text-sm text-[var(--soft-ink)]">{option.description}</div>
                     </div>
@@ -202,7 +202,7 @@ export function AdminExport() {
           </div>
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <div className="border border-[var(--edge)] rounded-md bg-[var(--surface)] p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-full bg-[var(--gold)]/10 flex items-center justify-center">
@@ -219,8 +219,8 @@ export function AdminExport() {
 
             <div className="space-y-4">
               {currentOption.fields.map((field) => (
-                <div key={field.key} className="flex items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-[var(--ink)] capitalize">
+                <div key={field.key} className="grid min-w-0 gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor={`export-${field.key}`} className="text-sm font-medium text-[var(--ink)] capitalize">
                     {field.name}
                   </label>
                   {field.options ? (
@@ -228,7 +228,7 @@ export function AdminExport() {
                       value={values[field.key] ?? ""}
                       onValueChange={(v) => setValues({ ...values, [field.key]: v })}
                     >
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger id={`export-${field.key}`} className="w-full min-w-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -247,11 +247,12 @@ export function AdminExport() {
                     </Select>
                   ) : (
                     <input
+                      id={`export-${field.key}`}
                       type="text"
                       value={values[field.key] ?? ""}
                       onChange={(e) => setValues({ ...values, [field.key]: e.target.value })}
                       placeholder="Opsional..."
-                      className="flex-1 h-10 px-3 border border-[var(--edge)] rounded-md bg-[var(--bg)] text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
+                      className="min-w-0 w-full h-11 px-3 border border-[var(--edge)] rounded-md bg-[var(--bg)] text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
                     />
                   )}
                 </div>

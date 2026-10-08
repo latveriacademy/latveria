@@ -22,14 +22,16 @@ export function AdminAffirmations() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [addError, setAddError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const loadAffirmations = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const data = await api<AffirmationItem[]>("/admin/affirmations");
       setAffirmations(data);
     } catch {
-      // fallback
+      setLoadError("Gagal memuat afirmasi. Coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export function AdminAffirmations() {
       </Panel>
 
       <Panel>
-        <PanelHeader title="Daftar Afirmasi Aktif">
+        <PanelHeader title="Daftar Afirmasi">
           <span style={{ fontSize: 13, color: "var(--soft-ink)" }}>
             {affirmations.length} pesan
           </span>
@@ -138,6 +140,10 @@ export function AdminAffirmations() {
 
         {loading ? (
           <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>Memuat…</div>
+        ) : loadError ? (
+          <div role="alert" className="p-5 text-[var(--crimson)]">
+            <p>{loadError}</p><Button variant="outline" onClick={loadAffirmations}>Coba lagi</Button>
+          </div>
         ) : affirmations.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>
             Belum ada pesan afirmasi.
@@ -172,6 +178,7 @@ export function AdminAffirmations() {
                     >
                       "{a.affirmation}"
                     </p>
+                    {!a.active && <span className="text-xs text-[var(--soft-ink)]">Nonaktif</span>}
                     <span
                       style={{
                         fontSize: 12,

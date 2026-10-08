@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from "react";
+import type { QuestionReportItem } from "@latveria/shared";
 import { Link } from "react-router";
 import { CheckCircle, ExternalLink } from "lucide-react";
 import { api } from "../../lib/api";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 
-interface ReportItem {
-  id: string;
-  questionId: string;
-  packageId?: string | null;
-  reason: string;
-  description?: string | null;
-  status: "open" | "reviewing" | "resolved" | "rejected";
-  createdAt: string;
-  userName?: string;
-  userEmail?: string;
-  questionPrompt?: string;
-}
+type ReportItem = QuestionReportItem;
 
 export function AdminReports() {
   const [reports, setReports] = useState<ReportItem[]>([]);
@@ -156,10 +146,11 @@ export function AdminReports() {
                       </Link>
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--soft-ink)" }}>
-                      {r.userEmail || "Peserta"}
+                      {r.userName || "Peserta"}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <select
+                        aria-label={`Status laporan ${r.reason} oleh ${r.userName || "peserta"}`}
                         value={r.status}
                         disabled={updatingId === r.id}
                         onChange={(e) =>

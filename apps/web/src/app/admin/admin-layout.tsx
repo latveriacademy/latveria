@@ -12,6 +12,7 @@ import {
   Activity,
   Download,
   Trophy,
+  Menu,
 } from "lucide-react";
 import type { User } from "@latveria/shared";
 import {
@@ -96,7 +97,11 @@ export function AdminLayout() {
           <ThemeToggle className="header-tool-btn" />
         </DashboardHeader>
       }
-      bottomNav={<DashboardNavigation items={navigation} active={active} mobile />}
+      bottomNav={<DashboardNavigation
+        items={[...navigation.filter((item) => ["summary", "tryouts", "questions", "users"].includes(item.id)),
+          { id: "menu", label: "Menu", icon: Menu }]}
+        active={["summary", "tryouts", "questions", "users"].includes(active) ? active : "menu"}
+        onSelect={() => setSidebarOpen(true)} mobile />}
     >
       {isNavigating && (
         <>
