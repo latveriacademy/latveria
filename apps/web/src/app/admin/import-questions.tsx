@@ -428,7 +428,9 @@ export function ImportQuestions({
                   </strong>
                   <span>{utbkSubtests.find((topic) => topic.slug === group.subtes)?.name}</span>
                   <span>
-                    {group.category} · {group.questions.length} soal
+                    {group.category ?? "Tanpa kategori"} · {group.questions.length} soal
+                    {tryout &&
+                      ` · ${group.questions.filter((q) => "type" in q && q.type === "true_false_group").length} benar/salah kompleks`}
                   </span>
                 </li>
               ))}
@@ -441,8 +443,9 @@ export function ImportQuestions({
           </p>
         )}
         <p className={styles.importHelp}>
-          Paket baru dan seluruh soal disimpan dalam satu transaksi. Jika ada data yang tidak valid,
-          tidak ada perubahan yang disimpan.
+          {tryout ? "Seluruh soal dan relasi subtes Tryout" : "Paket baru dan seluruh soal"}{" "}
+          disimpan dalam satu transaksi. Jika ada data yang tidak valid, tidak ada perubahan yang
+          disimpan.
         </p>
         <div className={styles.importActions}>
           <Button

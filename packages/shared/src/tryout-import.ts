@@ -16,7 +16,7 @@ export const tryoutImportSchema = z
         }),
       )
       .min(1)
-      .max(7),
+      .max(30),
   })
   .refine(
     (batch) => batch.groups.reduce((n, group) => n + group.questions.length, 0) <= 100,

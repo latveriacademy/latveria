@@ -46,7 +46,9 @@ tryoutHandler.post("/api/learner/tryouts/start/:packageId", async (c) => {
   return c.json(session, _status);
 });
 
-tryoutHandler.get("/api/learner/tryouts/history", async (c) => c.json(await getTryoutHistory(c.get("user").id)));
+tryoutHandler.get("/api/learner/tryouts/history", async (c) =>
+  c.json(await getTryoutHistory(c.get("user").id)),
+);
 tryoutHandler.get("/api/learner/tryouts/:sessionId", async (c) => {
   const result = await getTryoutSession(c.get("user").id, c.req.param("sessionId"));
   return c.json(result);

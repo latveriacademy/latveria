@@ -39,3 +39,19 @@ it("applies the 100-question limit across groups", () => {
     }),
   ).toThrow("100 soal");
 });
+it("allows Bank batches with multiple categories and rejects duplicate statement identifiers", () => {
+  expect(
+    normalizeTryoutImport({
+      groups: Array.from({ length: 8 }, () => ({ subtes: slug, questions: [question] })),
+    }).groups,
+  ).toHaveLength(8);
+  const invalid = {
+    type: "true_false_group",
+    prompt: "Complex question",
+    statements: [
+      { id: "same", text: "One", answer: true },
+      { id: "same", text: "Two", answer: false },
+    ],
+  };
+  expect(() => normalizeTryoutImport({ questions: [invalid] }, slug)).toThrow("unik");
+});

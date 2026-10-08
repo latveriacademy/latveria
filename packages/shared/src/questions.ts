@@ -201,7 +201,11 @@ export const trueFalseImportQuestionSchema = baseSectionImportQuestion.extend({
   statements: z
     .array(trueFalseStatementSchema)
     .min(2, "Minimal 2 pernyataan.")
-    .max(10, "Maksimal 10 pernyataan."),
+    .max(10, "Maksimal 10 pernyataan.")
+    .refine(
+      (items) => new Set(items.map((s) => s.id)).size === items.length,
+      "ID pernyataan harus unik.",
+    ),
   scoring: scoringConfigSchema.default({ mode: "per_statement", points: 1 }),
 });
 

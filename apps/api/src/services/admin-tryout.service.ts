@@ -20,7 +20,6 @@ import {
 import { catalog, invalidateCatalogCache } from "./topic.service";
 import { deletePackage } from "./package.service";
 import { buildTryoutConfig } from "./tryout-config";
-import { importSectionBatch } from "./tryout-import.service";
 
 export async function listAdminTryouts() {
   const db = getDb();
@@ -380,10 +379,6 @@ export async function deleteTryoutSection(sectionId: string) {
   if (!deleted) throw new HTTPException(404, { message: "Section tidak ditemukan." });
 
   return { success: true };
-}
-
-export async function importSectionQuestions(sectionId: string, body: unknown) {
-  return importSectionBatch(sectionId, body);
 }
 
 export async function removeQuestionFromSection(sectionId: string, questionId: string) {
