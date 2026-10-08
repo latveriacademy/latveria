@@ -28,6 +28,7 @@ export function BattleWorldCatalog({
   activeSessionId,
   onStart,
   onResume,
+  onHistory,
 }: {
   packages: TryoutPackage[];
   catalogError: string;
@@ -36,6 +37,7 @@ export function BattleWorldCatalog({
   activeSessionId: string | null;
   onStart: (id: string) => void;
   onResume: (sessionId: string) => void;
+  onHistory?: () => void;
 }) {
   const categories = [
     { value: "utbk", label: "UTBK" },
@@ -56,6 +58,13 @@ export function BattleWorldCatalog({
       <PageHeading
         title="Battle World"
         description="Pilih jenis ujian dan kerjakan tryout berwaktu."
+        actions={
+          onHistory && (
+            <Button variant="outline" onClick={onHistory}>
+              Riwayat Tryout
+            </Button>
+          )
+        }
       />
       <Tabs value={category} onValueChange={setCategory}>
         <TabsList aria-label="Jenis ujian" className="max-w-full">

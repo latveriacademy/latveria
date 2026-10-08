@@ -94,9 +94,14 @@ export function AdminTryouts() {
         title="Manajemen Tryout"
         description="Buat dan kelola simulasi UTBK-SNBT lengkap per subtes beserta alokasi durasinya."
         actions={
-          <Button onClick={() => setCreateOpen(true)} className="btn-gold-solid">
-            <Plus size={16} /> Buat Tryout Baru
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link to="/admin/tryouts/kalibrasi">Kalibrasi IRT</Link>
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} className="btn-gold-solid">
+              <Plus size={16} /> Buat Tryout Baru
+            </Button>
+          </>
         }
       />
 

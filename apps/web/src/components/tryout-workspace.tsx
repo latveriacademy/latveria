@@ -8,6 +8,8 @@ import type {
   LexiconAnnotation,
   QuestionStimulus,
   TrueFalseStatementClient,
+  UtbkScoreReport,
+  LatveriaScoreResult,
 } from "@latveria/shared";
 
 export interface TryoutSessionQuestion {
@@ -53,15 +55,7 @@ export interface TryoutSessionState {
     topic: string;
     slug: string;
   }[];
-  score?: {
-    score: number;
-    correctCount: number;
-    totalCount: number;
-    accuracy: number;
-    rawScore: number;
-    performanceIndex: number;
-    averageTime: number;
-  } | null;
+  score?: UtbkScoreReport | LatveriaScoreResult | null;
 }
 
 type Props = {

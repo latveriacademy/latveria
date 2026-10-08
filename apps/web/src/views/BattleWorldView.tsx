@@ -10,6 +10,8 @@ import { SubmissionSummary } from "../components/submission-summary";
 import { BattleWorldCatalog, type TryoutPackage } from "../components/battle-world-catalog";
 import { TryoutWorkspace, type TryoutSessionState } from "../components/tryout-workspace";
 import { TryoutReview } from "../components/tryout-review";
+import { TryoutScoreReport } from "../components/tryout-score-report";
+import { TryoutHistory } from "../components/tryout-history";
 
 export function BattleWorldView() {
   const navigate = useNavigate();
@@ -31,6 +33,7 @@ export function BattleWorldView() {
   const [actionError, setActionError] = useState("");
   const [result, setResult] = useState<TryoutSessionState["score"]>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [timeSpentByQuestion, setTimeSpentByQuestion] = useState<Record<string, number>>({});
   const questionEnteredAt = useRef(Date.now());
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -360,11 +363,7 @@ export function BattleWorldView() {
             <h2 className="font-serif text-3xl font-semibold text-[var(--ink)]">
               Selamat! Kamu Telah Menuntaskan Tryout
             </h2>
-            <p className="text-[var(--text-secondary)] text-sm max-w-lg leading-relaxed">
-              {result
-                ? `Skor Latveria ${result.score}/1.000 · Akurasi ${result.accuracy}% · ${result.correctCount}/${result.totalCount} benar.`
-                : "Jawabanmu sudah tersimpan."}
-            </p>
+            {result ? <TryoutScoreReport report={result} /> : <p>Jawabanmu sudah tersimpan.</p>}
 
             {activeSessionData.reviewQuestions?.length ? (
               <Button onClick={() => setReviewing(true)}>Tinjau soal</Button>
@@ -423,6 +422,16 @@ export function BattleWorldView() {
     );
   }
 
+  if (showHistory)
+    return (
+      <TryoutHistory
+        onBack={() => setShowHistory(false)}
+        onOpen={(id) => {
+          setShowHistory(false);
+          void loadSession(id);
+        }}
+      />
+    );
   return (
     <BattleWorldCatalog
       packages={packages}
@@ -432,6 +441,7 @@ export function BattleWorldView() {
       activeSessionId={activeSessionId}
       onStart={handleStartTryout}
       onResume={loadSession}
+      onHistory={() => setShowHistory(true)}
     />
   );
 }
