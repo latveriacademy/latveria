@@ -62,6 +62,18 @@ export async function verifyIrt(
       ).status,
       400,
     );
+    const withBrokenSource = {
+      ...groups[5],
+      questions: groups[5].questions.map((q) => ({ ...q, passageId: crypto.randomUUID() })),
+    };
+    assert.equal(
+      (
+        await request(`/admin/tryouts/${pkg.id}/import`, adminCookie, {
+          groups: [groups[0], withBrokenSource],
+        })
+      ).status,
+      400,
+    );
     assert.equal(
       (await (await request(`/admin/tryouts/${pkg.id}`, adminCookie)).json()).questionCount,
       16,
@@ -126,6 +138,23 @@ export async function verifyIrt(
     );
     for (let start = 0; start < responseRows.length; start += 500)
       await db.insert(tryoutResponses).values(responseRows.slice(start, start + 500));
+    const [repeat, unfinished] = await db
+      .insert(tryoutSessions)
+      .values([
+        { userId: cohort[0].id, packageId: pkg.id, state: "completed", completedAt: new Date() },
+        { userId: cohort[1].id, packageId: pkg.id, state: "active" },
+      ])
+      .returning();
+    await db.insert(tryoutResponses).values(
+      [repeat, unfinished].flatMap((session) =>
+        responseRows.slice(0, 10).map((row) => ({
+          ...row,
+          sessionId: session.id,
+          scoreFraction: 1 - row.scoreFraction,
+          submittedAt: new Date(Date.now() + 60000),
+        })),
+      ),
+    );
     const exported = await request("/admin/irt/datasets", adminCookie, {
       topicSlug: topic.slug,
       revisionIds: revisions,

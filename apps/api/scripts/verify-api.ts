@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { verifyBankSearch } from "./verify-bank-search";
 import { verifyLexicon } from "./verify-lexicon";
-import { createTryoutFixture } from "./verify-tryout-fixture";
+import { createTryoutFixture, tryoutDummyAnswers } from "./verify-tryout-fixture";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
@@ -318,7 +318,7 @@ try {
     );
     const answers = {
       ...state.session.answers,
-      ...Object.fromEntries(state.questions.map((question: { id: string }) => [question.id, "0"])),
+      ...tryoutDummyAnswers(state.questions),
     };
     const timeSpentByQuestion = Object.fromEntries(
       state.questions.map((question: { id: string }) => [question.id, 12]),

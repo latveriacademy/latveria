@@ -4,6 +4,19 @@ import { getDb } from "../src/lib/db";
 import { questions, questionPackages, tryoutPackageQuestions } from "../src/lib/db/schema";
 import { resolvePassages } from "../src/services/tryout-review.service";
 
+export function tryoutDummyAnswers(
+  rows: { id: string; questionType?: string; statements?: { id: string }[] }[],
+) {
+  return Object.fromEntries(
+    rows.map((q) => [
+      q.id,
+      q.questionType === "true_false_group"
+        ? JSON.stringify(Object.fromEntries((q.statements ?? []).map((s) => [s.id, false])))
+        : "0",
+    ]),
+  );
+}
+
 export async function createTryoutFixture(topics: { id: string }[]) {
   const db = getDb();
   const source = await db.select().from(questions);

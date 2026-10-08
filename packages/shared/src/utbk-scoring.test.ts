@@ -68,3 +68,15 @@ it("estimates stable EAP abilities and treats calibration as mandatory", () => {
     }).irt?.theta,
   ).toBeCloseTo(0.41324193, 5);
 });
+it("uses response-pattern likelihood rather than a sum of difficulty weights", () => {
+  const first = estimate2pl([
+    { a: 0.5, b: 0, response: 1 },
+    { a: 2, b: 0, response: 0 },
+  ]);
+  const second = estimate2pl([
+    { a: 0.5, b: 0, response: 0 },
+    { a: 2, b: 0, response: 1 },
+  ]);
+  expect(second.theta).toBeGreaterThan(first.theta);
+  expect(() => estimate2pl([{ a: 0, b: 0, response: 1 }])).toThrow("IRT");
+});
