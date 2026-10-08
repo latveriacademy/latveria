@@ -1,5 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
+import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import * as schema from "./db/auth-schema";
 import { allowedOrigins } from "./origins";
@@ -18,6 +20,26 @@ function createAuth() {
     trustedOrigins: allowedOrigins(),
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     emailAndPassword: { enabled: true, disableSignUp: process.env.NODE_ENV !== "development" },
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            const [account] = await getDb()
+              .select({ inactive: schema.user.isDeactivated })
+              .from(schema.user)
+              .where(eq(schema.user.id, session.userId));
+            if (!account || account.inactive) {
+              throw new APIError("FORBIDDEN", { message: "Akun dinonaktifkan." });
+            }
+            await getDb()
+              .update(schema.user)
+              .set({ lastLoginAt: new Date(), failedLoginAttempts: 0 })
+              .where(eq(schema.user.id, session.userId));
+            return { data: session };
+          },
+        },
+      },
+    },
     user: {
       additionalFields: {
         role: { type: "string", defaultValue: "user", input: false },

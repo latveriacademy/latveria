@@ -1,7 +1,13 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
-import { user as userTable } from "../lib/db/auth-schema";
-import { practiceAnswers, practiceAttempts, topics, questionReports } from "../lib/db/schema";
+import { user as userTable, session } from "../lib/db/auth-schema";
+import {
+  practiceAnswers,
+  practiceAttempts,
+  topics,
+  questionReports,
+  tryoutSessions,
+} from "../lib/db/schema";
 import { eq, sql, desc, asc, like, and, count, inArray } from "drizzle-orm";
 
 export const usersHandler = new Hono();
@@ -648,10 +654,13 @@ usersHandler.post("/api/admin/users/:id/deactivate", async (c) => {
   const deactivate = body?.deactivate !== false;
 
   if (deactivate) {
-    await db
-      .update(userTable)
-      .set({ isDeactivated: true, deactivatedAt: new Date() })
-      .where(eq(userTable.id, userId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(userTable)
+        .set({ isDeactivated: true, deactivatedAt: new Date() })
+        .where(eq(userTable.id, userId));
+      await tx.delete(session).where(eq(session.userId, userId));
+    });
   } else {
     await db
       .update(userTable)
@@ -667,20 +676,14 @@ usersHandler.post("/api/admin/users/:id/reset", async (c) => {
   const db = getDb();
   const userId = c.req.param("id");
 
-  // Delete all practice answers
-  const attempts = await db
-    .select({ id: practiceAttempts.id })
-    .from(practiceAttempts)
-    .where(eq(practiceAttempts.userId, userId));
-
-  const attemptIds = attempts.map((a) => a.id);
-
-  if (attemptIds.length > 0) {
-    await db.delete(practiceAnswers).where(inArray(practiceAnswers.attemptId, attemptIds));
-  }
-  await db.delete(practiceAttempts).where(eq(practiceAttempts.userId, userId));
-
-  return c.json({ success: true, deletedAttempts: attemptIds.length });
+  const deletedAttempts = await db.transaction(async (tx) => {
+    await tx.delete(tryoutSessions).where(eq(tryoutSessions.userId, userId));
+    return tx
+      .delete(practiceAttempts)
+      .where(eq(practiceAttempts.userId, userId))
+      .returning({ id: practiceAttempts.id });
+  });
+  return c.json({ success: true, deletedAttempts: deletedAttempts.length });
 });
 
 // Delete user
@@ -742,10 +745,13 @@ usersHandler.post("/api/admin/users/bulk-action", async (c) => {
     }
 
     case "deactivate": {
-      await db
-        .update(userTable)
-        .set({ isDeactivated: true, deactivatedAt: new Date() })
-        .where(inArray(userTable.id, userIds));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(userTable)
+          .set({ isDeactivated: true, deactivatedAt: new Date() })
+          .where(inArray(userTable.id, userIds));
+        await tx.delete(session).where(inArray(session.userId, userIds));
+      });
       return c.json({ success: true, affected: userIds.length });
     }
 
@@ -778,18 +784,10 @@ usersHandler.post("/api/admin/users/bulk-action", async (c) => {
     }
 
     case "resetProgress": {
-      for (const userId of userIds) {
-        const attempts = await db
-          .select({ id: practiceAttempts.id })
-          .from(practiceAttempts)
-          .where(eq(practiceAttempts.userId, userId));
-        const attemptIds = attempts.map((a) => a.id);
-
-        if (attemptIds.length > 0) {
-          await db.delete(practiceAnswers).where(inArray(practiceAnswers.attemptId, attemptIds));
-        }
-        await db.delete(practiceAttempts).where(eq(practiceAttempts.userId, userId));
-      }
+      await db.transaction(async (tx) => {
+        await tx.delete(tryoutSessions).where(inArray(tryoutSessions.userId, userIds));
+        await tx.delete(practiceAttempts).where(inArray(practiceAttempts.userId, userIds));
+      });
       return c.json({ success: true, affected: userIds.length });
     }
 

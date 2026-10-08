@@ -4,6 +4,9 @@ import { credentialsSchema, signupSchema } from "@latveria/shared";
 import type { AppEnv } from "./types";
 import { getAuth } from "./lib/auth";
 import { allowedOrigins } from "./lib/origins";
+import { eq, sql } from "drizzle-orm";
+import { getDb } from "./lib/db";
+import { user as accounts } from "./lib/db/auth-schema";
 import { topicHandler } from "./handlers/topic.handler";
 import { packageHandler } from "./handlers/package.handler";
 import { practiceHandler } from "./handlers/practice.handler";
@@ -27,6 +30,7 @@ app.route("/", publicAvatarHandler);
 
 // CORS headers for Better Auth
 function setCorsHeaders(c: { header: (name: string, value: string) => void }, origin: string) {
+  if (!allowedOrigins().includes(origin)) return;
   c.header("Access-Control-Allow-Origin", origin);
   c.header("Access-Control-Allow-Credentials", "true");
   c.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
@@ -59,27 +63,34 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
     }
   }
   const response = await getAuth().handler(c.req.raw);
-  // Extract body, status, and set-cookie headers from Better Auth response
-  const body = await response.text();
-  const status = response.status;
-  const setCookieHeaders = response.headers.getSetCookie();
-  // Return with CORS headers and preserve Set-Cookie
-  setCorsHeaders(c, origin);
-  for (const cookie of setCookieHeaders) {
-    c.header("Set-Cookie", cookie);
+  if (c.req.path === "/api/auth/sign-in/email" && response.status === 401) {
+    const body = await c.req.raw
+      .clone()
+      .json()
+      .catch(() => null);
+    if (typeof body?.email === "string") {
+      await getDb()
+        .update(accounts)
+        .set({ failedLoginAttempts: sql`${accounts.failedLoginAttempts} + 1` })
+        .where(eq(accounts.email, body.email.toLowerCase()));
+    }
   }
-  return c.newResponse(body, status as Parameters<typeof c.newResponse>[1]);
+  setCorsHeaders(c, origin);
+  return c.newResponse(response.body, response);
 });
 
 // Authentication and Origin verification middleware
 app.use("/api/*", async (c, next) => {
   const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
+  const [account] = await getDb().select().from(accounts).where(eq(accounts.id, session.user.id));
+  if (!account || account.isDeactivated)
+    throw new HTTPException(403, { message: "Akun dinonaktifkan." });
   c.set("user", {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
-    role: session.user.role,
+    role: account.role,
     image: session.user.image,
   });
   if (!["GET", "HEAD"].includes(c.req.method)) {
