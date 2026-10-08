@@ -12,7 +12,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { TryoutSectionWithQuestions, TryoutSectionQuestion } from "@latveria/shared";
+import type {
+  TryoutSectionWithQuestions,
+  TryoutSectionQuestion,
+  AdminTryoutDetail,
+} from "@latveria/shared";
 import { api } from "../../lib/api";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { Button } from "../../components/ui/button";
@@ -21,15 +25,7 @@ import { ConfirmDialog } from "../../components/confirm-dialog";
 import { QuestionRenderer } from "../../components/question-renderer";
 import { TryoutSectionImportModal } from "./tryout-section-import-modal";
 
-interface TryoutDetailData {
-  id: string;
-  name: string;
-  description: string | null;
-  targetYear: number | null;
-  published: boolean;
-  totalDurationSeconds: number;
-  sections: TryoutSectionWithQuestions[];
-}
+type TryoutDetailData = AdminTryoutDetail;
 
 export function AdminTryoutDetail() {
   const { id } = useParams<{ id: string }>();
@@ -106,7 +102,7 @@ export function AdminTryoutDetail() {
     setDeleting(true);
     try {
       await api(
-        `/admin/tryouts/${id}/sections/${deleteTarget.sectionId}/questions/${deleteTarget.questionId}`,
+        `/admin/tryouts/sections/${deleteTarget.sectionId}/questions/${deleteTarget.questionId}`,
         { method: "DELETE" },
       );
       setDeleteTarget(null);
@@ -213,7 +209,9 @@ export function AdminTryoutDetail() {
             >
               {/* Header */}
               <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--surface-muted)] p-4 border-b border-[var(--edge)]">
-                <div
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
                   className="flex items-center gap-3 cursor-pointer select-none"
                   onClick={() => setExpandedSection(isExpanded ? null : section.id)}
                 >
@@ -228,7 +226,7 @@ export function AdminTryoutDetail() {
                       <span>• {section.questions.length} Soal</span>
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div className="flex items-center gap-2">
                   <Button
@@ -243,6 +241,8 @@ export function AdminTryoutDetail() {
                     size="sm"
                     variant="ghost"
                     onClick={() => setExpandedSection(isExpanded ? null : section.id)}
+                    aria-label={`${isExpanded ? "Tutup" : "Buka"} subtes ${section.title}`}
+                    aria-expanded={isExpanded}
                   >
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </Button>
@@ -399,10 +399,14 @@ export function AdminTryoutDetail() {
       >
         <form onSubmit={handleAddSection} className="space-y-4 pt-2">
           <div>
-            <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+            <label
+              htmlFor="section-code"
+              className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+            >
               Kode Subtes
             </label>
             <input
+              id="section-code"
               type="text"
               required
               value={newSubtestCode}
@@ -412,10 +416,14 @@ export function AdminTryoutDetail() {
             />
           </div>
           <div>
-            <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+            <label
+              htmlFor="section-title"
+              className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+            >
               Nama Subtes
             </label>
             <input
+              id="section-title"
               type="text"
               required
               value={newTitle}
@@ -425,10 +433,14 @@ export function AdminTryoutDetail() {
             />
           </div>
           <div>
-            <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+            <label
+              htmlFor="section-duration"
+              className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+            >
               Alokasi Waktu (Menit)
             </label>
             <input
+              id="section-duration"
               type="number"
               required
               min={1}
@@ -456,6 +468,7 @@ export function AdminTryoutDetail() {
         description="Soal akan dilepaskan dari subtes ini. Riwayat jawaban masa lalu tetap terjaga."
         confirmLabel="Hapus dari Subtes"
         pending={deleting}
+        error={error}
         onConfirm={handleRemoveQuestion}
       />
     </>

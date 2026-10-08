@@ -15,18 +15,9 @@ import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { Button } from "../../components/ui/button";
 import { AppDialog } from "../../components/app-dialog";
 import { ConfirmDialog } from "../../components/confirm-dialog";
+import type { AdminTryoutItem } from "@latveria/shared";
 
-interface TryoutItem {
-  id: string;
-  name: string;
-  description: string | null;
-  targetYear: number | null;
-  durationMinutes: number;
-  published: boolean;
-  questionCount: number;
-  sectionCount: number;
-  createdAt: string;
-}
+type TryoutItem = AdminTryoutItem;
 
 export function AdminTryouts() {
   const [tryouts, setTryouts] = useState<TryoutItem[]>([]);
@@ -37,7 +28,6 @@ export function AdminTryouts() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [targetYear, setTargetYear] = useState("2026");
-  const [published, setPublished] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<TryoutItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -70,7 +60,7 @@ export function AdminTryouts() {
           name: name.trim(),
           description: description.trim() || undefined,
           targetYear: targetYear ? Number(targetYear) : 2026,
-          published,
+          published: false,
         }),
       });
       setCreateOpen(false);
@@ -183,6 +173,7 @@ export function AdminTryouts() {
                   size="sm"
                   className="text-[var(--crimson)] hover:bg-[var(--crimson)]/10"
                   onClick={() => setDeleteTarget(item)}
+                  aria-label={`Hapus tryout ${item.name}`}
                 >
                   <Trash2 size={14} />
                 </Button>
@@ -206,10 +197,14 @@ export function AdminTryouts() {
       >
         <form onSubmit={handleCreate} className="space-y-4 pt-2">
           <div>
-            <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+            <label
+              htmlFor="tryout-name"
+              className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+            >
               Nama Paket Tryout *
             </label>
             <input
+              id="tryout-name"
               type="text"
               required
               value={name}
@@ -220,10 +215,14 @@ export function AdminTryouts() {
           </div>
 
           <div>
-            <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+            <label
+              htmlFor="tryout-description"
+              className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+            >
               Deskripsi Singkat
             </label>
             <textarea
+              id="tryout-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -234,31 +233,25 @@ export function AdminTryouts() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+              <label
+                htmlFor="tryout-year"
+                className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+              >
                 Tahun Target
               </label>
               <input
+                id="tryout-year"
                 type="number"
+                min={2020}
+                max={2100}
                 value={targetYear}
                 onChange={(e) => setTargetYear(e.target.value)}
                 className="w-full rounded-md border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
               />
             </div>
-            <div className="flex items-center gap-2 pt-5">
-              <input
-                type="checkbox"
-                id="pubCheck"
-                checked={published}
-                onChange={(e) => setPublished(e.target.checked)}
-                className="size-4 rounded border-[var(--edge)] accent-[var(--emerald)]"
-              />
-              <label
-                htmlFor="pubCheck"
-                className="font-mono text-xs text-[var(--ink)] cursor-pointer"
-              >
-                Publikasikan ke peserta
-              </label>
-            </div>
+            <p className="text-sm text-[var(--soft-ink)]">
+              Tryout dibuat sebagai draf. Isi soal setiap subtes sebelum dipublikasikan.
+            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--edge)]">
@@ -277,7 +270,9 @@ export function AdminTryouts() {
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Hapus Paket Tryout?"
-        description={`Paket "${deleteTarget?.name}" beserta semua section dan relasi soalnya akan dihapus.`}
+        description={`Paket "${deleteTarget?.name}" beserta section dan relasi soalnya akan dihapus. Paket yang memiliki soal asal atau riwayat peserta tidak dapat dihapus; nonaktifkan melalui pengaturan paket.`}
+        destructive
+        error={error}
         confirmLabel="Hapus Permanen"
         pending={deleting}
         onConfirm={handleDelete}

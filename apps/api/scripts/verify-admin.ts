@@ -5,13 +5,14 @@ import { getDb } from "../src/lib/db";
 import { user, session } from "../src/lib/db/auth-schema";
 import { questions, topics, practiceAttempts, practiceAnswers } from "../src/lib/db/schema";
 import { learnerSummary } from "@latveria/shared";
+import { verifyAdminTryouts } from "./verify-admin-tryouts";
 
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname))
   throw new Error("Verifikasi admin hanya untuk DB lokal.");
 const origin = new URL(process.env.BETTER_AUTH_URL!).origin;
 const ids: string[] = [];
 const questionIds: string[] = [];
-const request = (path: string, cookie = "", body?: unknown, method = body ? "POST" : "GET") =>
+const request = async (path: string, cookie = "", body?: unknown, method = body ? "POST" : "GET") =>
   app.request(`${origin}/api${path}`, {
     method,
     headers: { Origin: origin, Cookie: cookie, "Content-Type": "application/json" },
@@ -153,7 +154,13 @@ try {
       .status,
     400,
   );
-  console.info("Verifikasi kontrol akun admin berhasil.");
+  const login = await request("/auth/sign-in/email", "", learner.credentials);
+  const learnerCookie = login.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  await verifyAdminTryouts(request, admin.cookie, learnerCookie, learner.id);
+  console.info("Verifikasi kontrol akun dan tryout admin berhasil.");
 } finally {
   if (ids.length) await getDb().delete(user).where(inArray(user.id, ids));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));

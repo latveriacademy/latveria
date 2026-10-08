@@ -1,0 +1,151 @@
+import assert from "node:assert/strict";
+import { eq, inArray } from "drizzle-orm";
+import { getDb } from "../src/lib/db";
+import { questionPackages, questions, tryoutSessions } from "../src/lib/db/schema";
+import type { AdminTryoutDetail } from "@latveria/shared";
+
+type Request = (
+  path: string,
+  cookie?: string,
+  body?: unknown,
+  method?: string,
+) => Promise<Response>;
+export async function verifyAdminTryouts(
+  request: Request,
+  adminCookie: string,
+  learnerCookie: string,
+  learnerId: string,
+) {
+  const questionIds: string[] = [];
+  const response = await request("/admin/tryouts", adminCookie, {
+    name: `QA Tryout ${crypto.randomUUID()}`,
+    targetYear: 2027,
+  });
+  assert.equal(response.status, 201);
+  const pkg: AdminTryoutDetail = await response.json();
+  try {
+    assert.equal(pkg.targetYear, 2027);
+    assert.equal(pkg.published, false);
+    assert.equal(
+      (await request(`/admin/tryouts/${pkg.id}`, adminCookie, { published: true }, "PUT")).status,
+      409,
+    );
+    for (const section of pkg.sections) {
+      const imported = await request(`/admin/tryouts/sections/${section.id}/import`, adminCookie, {
+        questions: [
+          {
+            type: "single_choice",
+            prompt: `QA ${section.subtestCode}`,
+            options: ["one", "two", "three", "four", "five"],
+            correctAnswer: 0,
+            explanation: "QA explanation",
+          },
+        ],
+      });
+      assert.equal(imported.status, 200);
+      const detail: AdminTryoutDetail = await (
+        await request(`/admin/tryouts/${pkg.id}`, adminCookie)
+      ).json();
+      questionIds.push(
+        ...detail.sections
+          .find((s) => s.id === section.id)!
+          .questions.map((q) => q.id)
+          .filter((id) => !questionIds.includes(id)),
+      );
+    }
+    const section = pkg.sections[0];
+    assert.equal(
+      (
+        await request(
+          `/admin/tryouts/sections/${section.id}`,
+          adminCookie,
+          { durationSeconds: -60 },
+          "PUT",
+        )
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await request(
+          `/admin/tryouts/sections/${section.id}`,
+          adminCookie,
+          { durationSeconds: 600 },
+          "PUT",
+        )
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/admin/tryouts/${pkg.id}`, adminCookie, { published: true }, "PUT")).status,
+      200,
+    );
+    const started = await request(`/learner/tryouts/start/${pkg.id}`, learnerCookie, {});
+    assert.equal(started.status, 201);
+    const session = await started.json();
+    const state = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.equal(state.questions.length, 1);
+    assert.equal(state.questions[0].id, questionIds[0]);
+    assert.ok(!("correctAnswer" in state.questions[0]));
+    assert.ok(state.session.secondsRemaining <= 600 && state.session.secondsRemaining > 590);
+    await request(
+      `/admin/tryouts/sections/${section.id}`,
+      adminCookie,
+      { durationSeconds: 1200 },
+      "PUT",
+    );
+    const unchanged = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.ok(unchanged.session.secondsRemaining <= 600);
+    assert.equal(
+      (await request(`/admin/tryouts/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
+      409,
+    );
+    assert.equal(
+      (await request(`/admin/packages/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
+      409,
+    );
+    for (let index = 0; index < 7; index++) {
+      const submitted = await request(
+        `/learner/tryouts/${session.id}/subtest-submit`,
+        learnerCookie,
+        { answers: {}, timeSpentByQuestion: {} },
+      );
+      assert.equal(submitted.status, 200);
+      if (index < 6)
+        assert.equal(
+          (await request(`/learner/tryouts/${session.id}/advance`, learnerCookie, {})).status,
+          200,
+        );
+    }
+    assert.equal(
+      (await request(`/admin/tryouts/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
+      409,
+    );
+    assert.equal((await request(`/admin/users/${learnerId}/reset`, adminCookie, {})).status, 200);
+    assert.equal(
+      (await getDb().select().from(tryoutSessions).where(eq(tryoutSessions.userId, learnerId)))
+        .length,
+      0,
+    );
+    assert.equal(
+      (
+        await request(
+          `/admin/tryouts/sections/${section.id}/questions/${questionIds[0]}`,
+          adminCookie,
+          undefined,
+          "DELETE",
+        )
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await request(`/admin/tryouts/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
+      200,
+    );
+  } finally {
+    await getDb().delete(tryoutSessions).where(eq(tryoutSessions.packageId, pkg.id));
+    if (questionIds.length)
+      await getDb().delete(questions).where(inArray(questions.id, questionIds));
+    await getDb().delete(questionPackages).where(eq(questionPackages.id, pkg.id));
+  }
+}

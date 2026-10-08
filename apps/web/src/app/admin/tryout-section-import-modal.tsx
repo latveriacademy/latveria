@@ -17,7 +17,6 @@ interface Props {
 export function TryoutSectionImportModal({
   open,
   onOpenChange,
-  tryoutId,
   sectionId,
   sectionTitle,
   onSuccess,
@@ -34,6 +33,11 @@ export function TryoutSectionImportModal({
     setApiError("");
     if (!raw.trim()) {
       setParsedData(null);
+      return;
+    }
+    if (new TextEncoder().encode(raw).byteLength > 200_000) {
+      setParsedData(null);
+      setParseError("JSON maksimal 200 KB.");
       return;
     }
     try {
@@ -55,6 +59,11 @@ export function TryoutSectionImportModal({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 200_000) {
+      setParsedData(null);
+      setParseError("File maksimal 200 KB.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (evt) => {
       const content = evt.target?.result as string;
@@ -69,7 +78,7 @@ export function TryoutSectionImportModal({
     setSubmitting(true);
     setApiError("");
     try {
-      await api(`/admin/tryouts/${tryoutId}/sections/${sectionId}/import`, {
+      await api(`/admin/tryouts/sections/${sectionId}/import`, {
         method: "POST",
         body: JSON.stringify(parsedData),
       });
@@ -97,6 +106,7 @@ export function TryoutSectionImportModal({
       onOpenChange={onOpenChange}
       title={`Impor Soal Subtes: ${sectionTitle}`}
       description="Format JSON mendukung pilihan ganda tunggal, pilihan benar-salah kompleks, stimulus gambar, tabel, dan grafik."
+      pending={submitting}
     >
       <div className="space-y-4 pt-1">
         {/* Tab switch */}
@@ -149,16 +159,20 @@ export function TryoutSectionImportModal({
         )}
 
         <div>
-          <label className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1">
+          <label
+            htmlFor="section-json"
+            className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+          >
             Editor JSON Batch
           </label>
           <textarea
+            id="section-json"
             value={jsonText}
             onChange={(e) => {
               setJsonText(e.target.value);
               handleValidate(e.target.value);
             }}
-            placeholder={`{\n  "questions": [\n    {\n      "questionType": "single_choice",\n      "prompt": "Berapakah nilai x?",\n      "options": [{"text": "1"}, {"text": "2"}],\n      "correctAnswer": 0,\n      "explanation": "Penjelasan..."\n    }\n  ]\n}`}
+            placeholder={`{\n  "questions": [{\n    "type": "single_choice",\n    "prompt": "Berapakah nilai x?",\n    "options": ["1", "2", "3", "4", "5"],\n    "correctAnswer": 0,\n    "explanation": "Penjelasan..."\n  }]\n}`}
             rows={10}
             className="w-full font-mono text-xs rounded-md border border-[var(--edge)] bg-[var(--surface)] p-3 text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
           />
