@@ -129,6 +129,19 @@ export async function verifyAdminTryouts(
           (await request(`/learner/tryouts/${session.id}/advance`, learnerCookie, {})).status,
           200,
         );
+      if (index === 0) {
+        const autosaved = await request(`/learner/tryouts/${session.id}/autosave`, learnerCookie, {
+          answers: { [questionIds[0]]: "4" },
+          flags: {},
+          questionTimes: {},
+          currentQuestionIndex: 0,
+        });
+        assert.equal(autosaved.status, 200);
+        const preserved = await (
+          await request(`/learner/tryouts/${session.id}`, learnerCookie)
+        ).json();
+        assert.equal(preserved.session.answers[questionIds[0]], "0");
+      }
     }
     assert.equal(
       (await request(`/admin/tryouts/${pkg.id}`, adminCookie, undefined, "DELETE")).status,
@@ -140,6 +153,12 @@ export async function verifyAdminTryouts(
     assert.equal(completed.score.unansweredCount, 6);
     assert.equal(completed.score.subtests[0].score, 1000);
     assert.equal(completed.score.irtScore, null);
+    await getDb()
+      .update(tryoutSessions)
+      .set({ answers: JSON.stringify({ [questionIds[0]]: "4" }) })
+      .where(eq(tryoutSessions.id, session.id));
+    const restored = await (await request(`/learner/tryouts/${session.id}`, learnerCookie)).json();
+    assert.equal(restored.session.answers[questionIds[0]], "0");
     const history = await (await request("/learner/tryouts/history", learnerCookie)).json();
     assert.ok(history.some((row: { id: string }) => row.id === session.id));
     assert.equal(

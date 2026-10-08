@@ -2,7 +2,7 @@ import { and, eq, inArray, or, sql, desc } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { calculateLatveriaScore, idSchema } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import { questionPackages, questions, tryoutSessions } from "../lib/db/schema";
+import { questionPackages, questions, tryoutSessions, tryoutResponses } from "../lib/db/schema";
 import { buildTryoutConfig, sessionSubtests } from "./tryout-config";
 import { getCompletedTryoutQuestions, resolvePassages } from "./tryout-review.service";
 import {
@@ -212,6 +212,23 @@ export async function getTryoutSession(userId: string, sessionId: string) {
     session.state === "section_ready"
       ? currentSubtestDurationSeconds
       : Math.max(0, currentSubtestDurationSeconds - elapsed);
+  const storedResponses =
+    session.scoringVersion === "utbk-simulation-v1" && state === "completed"
+      ? await getDb()
+          .select()
+          .from(tryoutResponses)
+          .where(eq(tryoutResponses.sessionId, session.id))
+      : null;
+  const reviewAnswers = storedResponses
+    ? Object.fromEntries(
+        storedResponses
+          .filter((r) => r.isAnswered)
+          .map((r) => [
+            r.questionId,
+            typeof r.answer === "object" ? JSON.stringify(r.answer) : String(r.answer),
+          ]),
+      )
+    : JSON.parse(session.answers || "{}");
 
   return {
     session: {
@@ -219,7 +236,7 @@ export async function getTryoutSession(userId: string, sessionId: string) {
       state,
       currentSubtestIndex,
       breakEndsAt: null,
-      answers: JSON.parse(session.answers || "{}"),
+      answers: reviewAnswers,
       flags: JSON.parse(session.flags || "{}"),
       questionTimes: JSON.parse(session.questionTimes || "{}"),
       totalScore: session.totalScore,
@@ -268,84 +285,94 @@ export async function autosaveTryout(userId: string, sessionId: string, body: un
   )
     throw new HTTPException(400, { message: "Data simpan tryout tidak valid." });
 
-  const [session] = await getDb()
-    .select()
-    .from(tryoutSessions)
-    .where(
-      and(
-        eq(tryoutSessions.id, sId.data),
-        eq(tryoutSessions.userId, userId),
-        eq(tryoutSessions.state, "active"),
-      ),
+  return getDb().transaction(async (db) => {
+    const [session] = await db
+      .select()
+      .from(tryoutSessions)
+      .where(
+        and(
+          eq(tryoutSessions.id, sId.data),
+          eq(tryoutSessions.userId, userId),
+          eq(tryoutSessions.state, "active"),
+        ),
+      )
+      .for("update");
+    if (!session) throw new HTTPException(404, { message: "Sesi tryout aktif tidak ditemukan." });
+
+    const [packageInfo] = await db
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, session.packageId));
+    if (!packageInfo) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
+
+    const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
+    const activeSubtest = (await sessionSubtests(session, packageInfo))[
+      session.currentSubtestIndex
+    ];
+    const allowed = new Set(activeSubtest ? (questionSets[activeSubtest.id] ?? []) : []);
+
+    const answers = b.answers as Record<string, unknown>;
+    const flags = b.flags as Record<string, unknown>;
+    const times = b.questionTimes as Record<string, unknown>;
+    const previouslyAllowed = new Set(
+      Object.entries(questionSets)
+        .slice(0, session.currentSubtestIndex + 1)
+        .flatMap(([, ids]) => ids),
     );
-  if (!session) throw new HTTPException(404, { message: "Sesi tryout aktif tidak ditemukan." });
 
-  const [packageInfo] = await getDb()
-    .select()
-    .from(questionPackages)
-    .where(eq(questionPackages.id, session.packageId));
-  if (!packageInfo) throw new HTTPException(404, { message: "Paket tryout tidak ditemukan." });
-
-  const questionSets = JSON.parse(session.questionSets || "{}") as Record<string, string[]>;
-  const activeSubtest = (await sessionSubtests(session, packageInfo))[session.currentSubtestIndex];
-  const allowed = new Set(activeSubtest ? (questionSets[activeSubtest.id] ?? []) : []);
-
-  const answers = b.answers as Record<string, unknown>;
-  const flags = b.flags as Record<string, unknown>;
-  const times = b.questionTimes as Record<string, unknown>;
-  const previouslyAllowed = new Set(
-    Object.entries(questionSets)
-      .slice(0, session.currentSubtestIndex + 1)
-      .flatMap(([, ids]) => ids),
-  );
-
-  const isValidAnswers = Object.entries(answers).every(([id, value]) => {
-    if (!previouslyAllowed.has(id)) return false;
-    if (typeof value === "number" || typeof value === "string") return true;
-    if (typeof value === "object" && value !== null) {
-      return Object.values(value).every((v) => typeof v === "boolean");
-    }
-    return false;
-  });
-
-  if (
-    !isValidAnswers ||
-    Object.entries(flags).some(
-      ([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean",
-    ) ||
-    Object.entries(times).some(
-      ([id, value]) =>
-        !previouslyAllowed.has(id) ||
-        !Number.isInteger(value) ||
-        Number(value) < 0 ||
-        Number(value) > 7200,
-    ) ||
-    (b.currentQuestionIndex as number) >= Math.max(1, allowed.size)
-  )
-    throw new HTTPException(400, {
-      message: "Jawaban atau posisi soal tidak sesuai dengan sesi tryout.",
+    const isValidAnswers = Object.entries(answers).every(([id, value]) => {
+      if (!previouslyAllowed.has(id)) return false;
+      if (typeof value === "number" || typeof value === "string") return true;
+      if (typeof value === "object" && value !== null) {
+        return Object.values(value).every((v) => typeof v === "boolean");
+      }
+      return false;
     });
 
-  const updated = await getDb()
-    .update(tryoutSessions)
-    .set({
-      answers: JSON.stringify(answers),
-      flags: JSON.stringify(flags),
-      questionTimes: JSON.stringify(times),
-      currentQuestionIndex: b.currentQuestionIndex as number,
-    })
-    .where(
-      and(
-        eq(tryoutSessions.id, sId.data),
-        eq(tryoutSessions.userId, userId),
-        eq(tryoutSessions.state, "active"),
-      ),
+    if (
+      !isValidAnswers ||
+      Object.entries(flags).some(
+        ([id, value]) => !previouslyAllowed.has(id) || typeof value !== "boolean",
+      ) ||
+      Object.entries(times).some(
+        ([id, value]) =>
+          !previouslyAllowed.has(id) ||
+          !Number.isInteger(value) ||
+          Number(value) < 0 ||
+          Number(value) > 7200,
+      ) ||
+      (b.currentQuestionIndex as number) >= Math.max(1, allowed.size)
     )
-    .returning({ id: tryoutSessions.id });
-  if (!updated.length)
-    throw new HTTPException(409, { message: "Sesi berubah. Muat ulang tryout." });
+      throw new HTTPException(400, {
+        message: "Jawaban atau posisi soal tidak sesuai dengan sesi tryout.",
+      });
 
-  return { saved: true };
+    const mergeDraft = (saved: string, draft: Record<string, unknown>) =>
+      JSON.stringify({
+        ...Object.fromEntries(Object.entries(JSON.parse(saved)).filter(([id]) => !allowed.has(id))),
+        ...Object.fromEntries(Object.entries(draft).filter(([id]) => allowed.has(id))),
+      });
+    const updated = await db
+      .update(tryoutSessions)
+      .set({
+        answers: mergeDraft(session.answers, answers),
+        flags: mergeDraft(session.flags, flags),
+        questionTimes: mergeDraft(session.questionTimes, times),
+        currentQuestionIndex: b.currentQuestionIndex as number,
+      })
+      .where(
+        and(
+          eq(tryoutSessions.id, sId.data),
+          eq(tryoutSessions.userId, userId),
+          eq(tryoutSessions.state, "active"),
+        ),
+      )
+      .returning({ id: tryoutSessions.id });
+    if (!updated.length)
+      throw new HTTPException(409, { message: "Sesi berubah. Muat ulang tryout." });
+
+    return { saved: true };
+  });
 }
 
 export async function submitTryoutSubtest(userId: string, sessionId: string, body: unknown) {
