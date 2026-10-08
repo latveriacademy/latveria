@@ -12,6 +12,8 @@ import {
   unique,
   uuid,
   type AnyPgColumn,
+  doublePrecision,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 import type {
@@ -19,6 +21,11 @@ import type {
   QuestionStimulus,
   TrueFalseStatement,
   ScoringConfig,
+  UtbkScoreReport,
+  SectionCalibration,
+  IrtDatasetItem,
+  IrtParameter,
+  IrtDiagnostics,
 } from "@latveria/shared";
 
 export const topics = pgTable("topics", {
@@ -242,6 +249,13 @@ export const tryoutSessions = pgTable("tryout_sessions", {
   subtestConfig: text("subtest_config").notNull().default("[]"),
   questionTimes: text("question_times").notNull().default("{}"),
   scoreBreakdown: text("score_breakdown").notNull().default("[]"),
+  scoringVersion: text("scoring_version").notNull().default("legacy"),
+  revisionSets: jsonb("revision_sets").$type<Record<string, string>>().notNull().default({}),
+  scoringPlan: jsonb("scoring_plan")
+    .$type<Record<string, SectionCalibration>>()
+    .notNull()
+    .default({}),
+  scoreReport: jsonb("score_report").$type<UtbkScoreReport>(),
   currentQuestionIndex: integer("current_question_index").notNull().default(0),
   subtestStartedAt: timestamp("subtest_started_at", { withTimezone: true }).defaultNow().notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
@@ -306,5 +320,89 @@ export const auditLogs = pgTable(
     index("audit_logs_admin_idx").on(table.adminId),
     index("audit_logs_action_idx").on(table.action),
     index("audit_logs_created_idx").on(table.createdAt),
+  ],
+).enableRLS();
+
+export const questionRevisions = pgTable(
+  "question_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    // Logical ID survives deletion of mutable bank content.
+    questionId: uuid("question_id").notNull(),
+    topicId: uuid("topic_id")
+      .notNull()
+      .references(() => topics.id),
+    contentHash: text("content_hash").notNull(),
+    snapshot: jsonb("snapshot").$type<typeof questions.$inferSelect>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique("question_revision_hash_unique").on(table.questionId, table.contentHash)],
+).enableRLS();
+
+export const tryoutResponses = pgTable(
+  "tryout_responses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => tryoutSessions.id, { onDelete: "cascade" }),
+    revisionId: uuid("revision_id")
+      .notNull()
+      .references(() => questionRevisions.id),
+    questionId: uuid("question_id").notNull(),
+    topicId: uuid("topic_id")
+      .notNull()
+      .references(() => topics.id),
+    answer: jsonb("answer").$type<unknown>(),
+    isAnswered: boolean("is_answered").notNull(),
+    scoreFraction: doublePrecision("score_fraction").notNull(),
+    maxPoints: integer("max_points").notNull(),
+    timeSpentSeconds: integer("time_spent_seconds").notNull(),
+    irtEligible: boolean("irt_eligible").notNull(),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("tryout_response_session_question_unique").on(table.sessionId, table.questionId),
+    check(
+      "tryout_response_valid_score",
+      sql`${table.scoreFraction} between 0 and 1 and ${table.maxPoints} > 0 and ${table.timeSpentSeconds} >= 0`,
+    ),
+    index("tryout_response_topic_idx").on(table.topicId),
+  ],
+).enableRLS();
+
+export const irtDatasets = pgTable("irt_datasets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  topicId: uuid("topic_id")
+    .notNull()
+    .references(() => topics.id),
+  datasetHash: text("dataset_hash").notNull().unique(),
+  sampleSize: integer("sample_size").notNull(),
+  items: jsonb("items").$type<IrtDatasetItem[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+export const irtCalibrations = pgTable(
+  "irt_calibrations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    topicId: uuid("topic_id")
+      .notNull()
+      .references(() => topics.id),
+    datasetId: uuid("dataset_id")
+      .notNull()
+      .references(() => irtDatasets.id),
+    version: text("version").notNull(),
+    active: boolean("active").notNull().default(false),
+    parameters: jsonb("parameters").$type<IrtParameter[]>().notNull(),
+    diagnostics: jsonb("diagnostics").$type<IrtDiagnostics>().notNull(),
+    sourceVersion: text("source_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("irt_calibration_topic_version_unique").on(table.topicId, table.version),
+    uniqueIndex("irt_calibration_active_topic_unique")
+      .on(table.topicId)
+      .where(sql`${table.active} = true`),
   ],
 ).enableRLS();
