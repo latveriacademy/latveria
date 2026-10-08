@@ -84,7 +84,8 @@ export function QuestionPreview() {
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {item.annotations!.map((entry) => (
-                <button type="button"
+                <button
+                  type="button"
                   key={entry.id}
                   className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-4 text-left cursor-pointer hover:border-[var(--accent-gold)] transition-colors"
                   onClick={() => setSelectedAnnotation(entry)}

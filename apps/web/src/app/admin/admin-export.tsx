@@ -176,7 +176,7 @@ export function AdminExport() {
                       : "border-[var(--edge)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
                   }`}
                 >
-                   <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         selectedExport === option.id ? "bg-[var(--gold)]/20" : "bg-[var(--edge)]"
@@ -191,7 +191,7 @@ export function AdminExport() {
                         }
                       />
                     </div>
-                     <div className="min-w-0 break-words">
+                    <div className="min-w-0 break-words">
                       <div className="font-semibold text-[var(--ink)]">{option.label}</div>
                       <div className="text-sm text-[var(--soft-ink)]">{option.description}</div>
                     </div>
@@ -219,8 +219,14 @@ export function AdminExport() {
 
             <div className="space-y-4">
               {currentOption.fields.map((field) => (
-                <div key={field.key} className="grid min-w-0 gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                  <label htmlFor={`export-${field.key}`} className="text-sm font-medium text-[var(--ink)] capitalize">
+                <div
+                  key={field.key}
+                  className="grid min-w-0 gap-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center"
+                >
+                  <label
+                    htmlFor={`export-${field.key}`}
+                    className="text-sm font-medium text-[var(--ink)] capitalize"
+                  >
                     {field.name}
                   </label>
                   {field.options ? (

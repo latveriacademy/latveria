@@ -424,17 +424,15 @@ export async function duplicatePackage(packageId: string) {
     const resolved = await resolvePassages(qRows);
     const ids = new Map(qRows.map((q) => [q.id, crypto.randomUUID()]));
     if (qRows.length > 0) {
-      await tx
-        .insert(questions)
-        .values(
-          resolved.map((q) => ({
-            ...q,
-            id: ids.get(q.id)!,
-            packageId: q.packageId === existing.id ? created.id : null,
-            passageId: q.passageId ? (ids.get(q.passageId) ?? null) : null,
-            passage: q.passageId && ids.has(q.passageId) ? null : q.passage,
-          })),
-        );
+      await tx.insert(questions).values(
+        resolved.map((q) => ({
+          ...q,
+          id: ids.get(q.id)!,
+          packageId: q.packageId === existing.id ? created.id : null,
+          passageId: q.passageId ? (ids.get(q.passageId) ?? null) : null,
+          passage: q.passageId && ids.has(q.passageId) ? null : q.passage,
+        })),
+      );
     }
 
     const sections = await tx
@@ -447,16 +445,14 @@ export async function duplicatePackage(packageId: string) {
         .insert(tryoutSections)
         .values(sections.map((s) => ({ ...s, id: sectionIds.get(s.id)!, packageId: created.id })));
     if (pinned.length)
-      await tx
-        .insert(tryoutPackageQuestions)
-        .values(
-          pinned.map((pin) => ({
-            ...pin,
-            packageId: created.id,
-            questionId: ids.get(pin.questionId)!,
-            sectionId: pin.sectionId ? sectionIds.get(pin.sectionId)! : null,
-          })),
-        );
+      await tx.insert(tryoutPackageQuestions).values(
+        pinned.map((pin) => ({
+          ...pin,
+          packageId: created.id,
+          questionId: ids.get(pin.questionId)!,
+          sectionId: pin.sectionId ? sectionIds.get(pin.sectionId)! : null,
+        })),
+      );
     return {
       ...created,
       questionCount: qRows.length,

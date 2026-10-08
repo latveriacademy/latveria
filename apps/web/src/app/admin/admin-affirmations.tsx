@@ -142,7 +142,10 @@ export function AdminAffirmations() {
           <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>Memuat…</div>
         ) : loadError ? (
           <div role="alert" className="p-5 text-[var(--crimson)]">
-            <p>{loadError}</p><Button variant="outline" onClick={loadAffirmations}>Coba lagi</Button>
+            <p>{loadError}</p>
+            <Button variant="outline" onClick={loadAffirmations}>
+              Coba lagi
+            </Button>
           </div>
         ) : affirmations.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center", color: "var(--soft-ink)" }}>
