@@ -1,5 +1,20 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+export {
+  irtArtifactSchema,
+  type IrtDatasetItem,
+  type IrtDiagnostics,
+  type IrtCalibrationItem,
+} from "./irt-calibration";
+export { estimate2pl, type IrtParameter, type IrtEstimate } from "./irt";
+export {
+  scoreSimulationSubtest,
+  buildUtbkReport,
+  type SimulationItem,
+  type SimulationSubtest,
+  type UtbkScoreReport,
+  type SectionCalibration,
+} from "./utbk-scoring";
 export { normalizeTryoutImport, tryoutImportSchema, type TryoutImport } from "./tryout-import";
 export {
   createTryoutSchema,
