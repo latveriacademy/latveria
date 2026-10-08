@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { verifyBankSearch } from "./verify-bank-search";
 import { verifyLexicon } from "./verify-lexicon";
+import { createTryoutFixture } from "./verify-tryout-fixture";
 import { eq, inArray } from "drizzle-orm";
 import { app } from "../src/app";
 import { getDb } from "../src/lib/db";
@@ -9,8 +10,8 @@ import {
   questions,
   questionPackages,
   practiceAttempts,
-  tryoutPackageQuestions,
   tryoutSessions,
+  questionRevisions,
 } from "../src/lib/db/schema";
 import { pyramidQuestion } from "@latveria/shared";
 
@@ -285,34 +286,15 @@ try {
     .set({ submittedAt: new Date() })
     .where(eq(practiceAttempts.userId, learner.id));
   const beforeTryoutSummary = await (await request("/learner/summary", learner.cookie)).json();
-  const [fullTryout] = await getDb()
-    .select()
-    .from(questionPackages)
-    .where(eq(questionPackages.name, "Tryout Akbar UTBK-SNBT 2027"));
-  assert.ok(fullTryout?.isFullTryout);
-  const pinnedCount = await getDb()
-    .select({ id: tryoutPackageQuestions.questionId })
-    .from(tryoutPackageQuestions)
-    .where(eq(tryoutPackageQuestions.packageId, fullTryout.id));
-  assert.ok(pinnedCount.length > 0, "Seed should pin questions to the full tryout.");
-  const existingDrillingPackages = await getDb()
-    .select({ id: questions.id })
-    .from(questions)
-    .where(
-      inArray(
-        questions.id,
-        pinnedCount.map((question) => question.id),
-      ),
-    );
-  assert.equal(
-    existingDrillingPackages.length,
-    pinnedCount.length,
-    "Pinning tryout questions must not remove them from Drilling.",
-  );
+  const fixture = await createTryoutFixture(topics);
+  const fullTryout = fixture.pkg;
+  packageIds.push(fullTryout.id);
+  questionIds.push(...fixture.questionIds);
+  const pinnedCount = fixture.questionIds.length;
   const learnerPackageCatalog = await (await request("/learner/packages", learner.cookie)).json();
   assert.equal(
     learnerPackageCatalog.find((item: { id: string }) => item.id === fullTryout.id)?.questionCount,
-    pinnedCount.length,
+    pinnedCount,
   );
   const startedTryout = await request(
     `/learner/tryouts/start/${fullTryout.id}`,
@@ -424,7 +406,15 @@ try {
   assert.equal(edited.category, change.category);
   // Questions can be edited even after usage in attempts
   assert.equal(
-    (await request(`/admin/questions/${practice.items[0].id}`, other.cookie, change, "PUT")).status,
+    (
+      await request(`/learner/practice/${topics[0].slug}`, learner.cookie, {
+        answers: { [question.id]: 0 },
+      })
+    ).status,
+    201,
+  );
+  assert.equal(
+    (await request(`/admin/questions/${question.id}`, other.cookie, change, "PUT")).status,
     200,
   );
   const batch = {
@@ -728,6 +718,10 @@ try {
   if (tryoutSessionIds.length)
     await getDb().delete(tryoutSessions).where(inArray(tryoutSessions.id, tryoutSessionIds));
   if (users.length) await getDb().delete(user).where(inArray(user.id, users));
+  if (questionIds.length)
+    await getDb()
+      .delete(questionRevisions)
+      .where(inArray(questionRevisions.questionId, questionIds));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));
   if (packageIds.length)
     await getDb().delete(questionPackages).where(inArray(questionPackages.id, packageIds));
