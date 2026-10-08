@@ -20,6 +20,7 @@ import { analyticsHandler } from "./handlers/analytics.handler";
 import { auditHandler } from "./handlers/audit.handler";
 import { adminAudit } from "./handlers/admin-audit.middleware";
 import { exportHandler } from "./handlers/export.handler";
+import { irtHandler } from "./handlers/irt.handler";
 import { learnerAvatarHandler, publicAvatarHandler } from "./handlers/avatar.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
@@ -132,6 +133,7 @@ app.route("/", usersHandler);
 app.route("/", analyticsHandler);
 app.route("/", auditHandler);
 app.route("/", exportHandler);
+app.route("/", irtHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)

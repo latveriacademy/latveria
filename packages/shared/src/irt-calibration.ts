@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { IrtParameter } from "./irt";
 export const irtArtifactSchema = z
   .object({
     datasetId: z.uuid(),
@@ -39,4 +40,6 @@ export type IrtCalibrationItem = {
   sampleSize: number;
   createdAt: string;
   diagnostics: IrtDiagnostics;
+  parameters: IrtParameter[];
+  sourceVersion: string;
 };
