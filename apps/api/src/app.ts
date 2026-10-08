@@ -86,8 +86,7 @@ app.use("/api/*", async (c, next) => {
   const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
   const rawUser = session.user as typeof session.user & { isDeactivated?: boolean };
-  if (rawUser.isDeactivated)
-    throw new HTTPException(403, { message: "Akun dinonaktifkan." });
+  if (rawUser.isDeactivated) throw new HTTPException(403, { message: "Akun dinonaktifkan." });
   c.set("user", {
     id: session.user.id,
     email: session.user.email,
