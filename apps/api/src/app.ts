@@ -18,6 +18,8 @@ import { vocabularyHandler } from "./handlers/vocabulary.handler";
 import { usersHandler } from "./handlers/users.handler";
 import { analyticsHandler } from "./handlers/analytics.handler";
 import { auditHandler } from "./handlers/audit.handler";
+import { adminAudit } from "./handlers/admin-audit.middleware";
+import { exportHandler } from "./handlers/export.handler";
 import { learnerAvatarHandler, publicAvatarHandler } from "./handlers/avatar.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
@@ -109,6 +111,7 @@ app.use("/api/admin/*", async (c, next) => {
     throw new HTTPException(403, { message: "Akses khusus admin." });
   await next();
 });
+app.use("/api/admin/*", adminAudit);
 
 app.use("/api/learner/*", async (c, next) => {
   if (c.get("user").role === "admin")
@@ -129,6 +132,7 @@ app.route("/", learnerAvatarHandler);
 app.route("/", usersHandler);
 app.route("/", analyticsHandler);
 app.route("/", auditHandler);
+app.route("/", exportHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)

@@ -14,6 +14,9 @@ import {
 
 const leaderboardCache = new Map<string, { data: unknown; expiresAt: number }>();
 const CACHE_TTL_MS = 60_000;
+export function invalidateLeaderboardCache() {
+  leaderboardCache.clear();
+}
 
 function getCacheKey(
   userId: string,
@@ -52,7 +55,14 @@ export async function getLeaderboard(
       isDemo: accounts.isDemo,
     })
     .from(accounts)
-    .where(eq(accounts.isDemo, false));
+    .where(
+      and(
+        eq(accounts.isDemo, false),
+        eq(accounts.hideFromLeaderboard, false),
+        eq(accounts.isDeactivated, false),
+        eq(accounts.role, "user"),
+      ),
+    );
 
   const userMetrics: Map<
     string,

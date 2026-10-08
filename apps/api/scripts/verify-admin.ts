@@ -132,6 +132,27 @@ try {
   assert.ok(
     !analytics.rows.some((row: { questionId: string }) => row.questionId === created[1].id),
   );
+  for (const type of ["users", "questions", "leaderboard"]) {
+    const response = await request(`/admin/export/${type}?format=json`, admin.cookie);
+    assert.equal(response.status, 200);
+    assert.ok(Array.isArray(await response.json()));
+  }
+  const exported = await (await request(`/admin/users/${learner.id}/export`, admin.cookie)).json();
+  assert.equal(exported.stats.totalXP, expected.totalXP);
+  assert.equal(exported.stats.timeSpent, 100);
+  const audit = await (await request(`/admin/audit?admin_id=${admin.id}`, admin.cookie)).json();
+  assert.ok(audit.rows.some((row: { action: string }) => row.action === "user.status_changed"));
+  assert.ok(audit.rows.some((row: { action: string }) => row.action === "users.exported"));
+  assert.equal(
+    (await request(`/admin/users/${admin.id}/deactivate`, admin.cookie, { deactivate: true }))
+      .status,
+    409,
+  );
+  assert.equal(
+    (await request(`/admin/users/${learner.id}/deactivate`, admin.cookie, { deactivate: "false" }))
+      .status,
+    400,
+  );
   console.info("Verifikasi kontrol akun admin berhasil.");
 } finally {
   if (ids.length) await getDb().delete(user).where(inArray(user.id, ids));

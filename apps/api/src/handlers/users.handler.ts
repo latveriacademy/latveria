@@ -11,8 +11,71 @@ import {
 import { eq, sql, desc, asc, ilike, or, and, count, inArray } from "drizzle-orm";
 import { pagination } from "../lib/admin-query";
 import { getUserProgress } from "../services/admin-user-progress";
+import { toCsv } from "../lib/csv";
+import { invalidateLeaderboardCache } from "../services/leaderboard.service";
+import type { AppEnv } from "../types";
+import { z } from "zod";
+import { HTTPException } from "hono/http-exception";
 
-export const usersHandler = new Hono();
+export const usersHandler = new Hono<AppEnv>();
+usersHandler.use("/api/admin/users/*", async (c, next) => {
+  if (!["GET", "HEAD"].includes(c.req.method)) {
+    const body = await c.req.raw
+      .clone()
+      .json()
+      .catch(() => null);
+    const suffix = c.req.path.split("/").at(-1)!;
+    const schemas: Record<string, z.ZodType> = {
+      flags: z
+        .object({ isDemo: z.boolean().optional(), hideFromLeaderboard: z.boolean().optional() })
+        .strict(),
+      role: z.object({ role: z.enum(["user", "admin"]) }).strict(),
+      notes: z.object({ notes: z.string().max(5000) }).strict(),
+      deactivate: z.object({ deactivate: z.boolean() }).strict(),
+      "bulk-action": z
+        .object({
+          userIds: z.array(z.string().min(1).max(128)).min(1).max(100),
+          action: z.enum([
+            "setDemo",
+            "setHideFromLeaderboard",
+            "activate",
+            "deactivate",
+            "delete",
+            "resetProgress",
+          ]),
+          isDemo: z.boolean().optional(),
+          hide: z.boolean().optional(),
+        })
+        .strict(),
+    };
+    if (schemas[suffix] && !schemas[suffix].safeParse(body).success)
+      throw new HTTPException(400, { message: "Data perubahan user tidak valid." });
+    const target = c.req.path.split("/")[4];
+    if (target !== "bulk-action") {
+      const [found] = await getDb()
+        .select({ id: userTable.id })
+        .from(userTable)
+        .where(eq(userTable.id, target));
+      if (!found) throw new HTTPException(404, { message: "User tidak ditemukan." });
+    }
+    const actor = c.get("user").id;
+    if (
+      (target === actor &&
+        (c.req.method === "DELETE" ||
+          (suffix === "deactivate" && body?.deactivate) ||
+          (suffix === "role" && body?.role === "user"))) ||
+      (suffix === "bulk-action" &&
+        body?.userIds.includes(actor) &&
+        ["delete", "deactivate"].includes(body.action))
+    )
+      throw new HTTPException(409, {
+        message:
+          "Akun admin yang sedang digunakan tidak dapat dinonaktifkan, diturunkan, atau dihapus.",
+      });
+  }
+  await next();
+  if (c.res.ok && !["GET", "HEAD"].includes(c.req.method)) invalidateLeaderboardCache();
+});
 
 // Global stats overview
 usersHandler.get("/api/admin/users/stats/overview", async (c) => {
@@ -768,31 +831,21 @@ usersHandler.get("/api/admin/users/:id/export", async (c) => {
       lastLoginAt: u.lastLoginAt?.toISOString(),
     },
     stats: {
-      totalXP: correct * 10,
-      level: Math.floor((correct * 10) / 100) + 1,
+      ...(await getUserProgress([userId])).get(userId),
       answered,
       correct,
       accuracy,
-      timeSpent: Number(stats[0]?.timeSpent ?? 0),
+      timeSpent: (await getUserProgress([userId])).get(userId)!.timeSpent,
     },
     exportedAt: new Date().toISOString(),
   };
 
   if (format === "csv") {
-    const csv = [
-      "Field,Value",
-      `ID,${exportData.user.id}`,
-      `Name,${exportData.user.name}`,
-      `Email,${exportData.user.email}`,
-      `Role,${exportData.user.role}`,
-      `Created,${exportData.user.createdAt}`,
-      `Level,${exportData.stats.level}`,
-      `Total XP,${exportData.stats.totalXP}`,
-      `Questions Answered,${exportData.stats.answered}`,
-      `Correct,${exportData.stats.correct}`,
-      `Accuracy,${exportData.stats.accuracy}%`,
-      `Time Spent (seconds),${exportData.stats.timeSpent}`,
-    ].join("\n");
+    const csv = toCsv([
+      ["Field", "Value"],
+      ...Object.entries(exportData.user),
+      ...Object.entries(exportData.stats),
+    ]);
 
     return c.body(csv, 200, {
       "Content-Type": "text/csv",
