@@ -18,7 +18,7 @@ Simpan sebagai `contoh-impor-paket.json`, atau tempel ke editor impor:
       "questions": [
         {
           "prompt": "Berapakah 25 persen dari 80?",
-          "options": ["10", "15", "20", "25"],
+          "options": ["10", "15", "20", "25", "30"],
           "correctAnswer": 2,
           "explanation": "25 persen sama dengan seperempat. Seperempat dari 80 adalah 20.",
           "source": "Soal contoh buatan tim"
@@ -33,7 +33,7 @@ Simpan sebagai `contoh-impor-paket.json`, atau tempel ke editor impor:
 - `packageName`: nama paket pada subtes tersebut. Jika sudah ada, soal ditambahkan; jika belum ada, paket dibuat otomatis. Tanpa tujuan paket, soal masuk ke **Paket 1**.
 - `packageId`: UUID paket existing, sebagai pengganti `packageName`. Jangan isi keduanya. Tujuan paket berada pada **grup**, bukan tiap soal.
 - `category`: materi yang berlaku untuk seluruh soal dalam grup.
-- `correctAnswer`: indeks 0–3. Pada contoh, indeks `2` menunjuk opsi ketiga, yaitu `20`.
+- `correctAnswer`: indeks 0–4 untuk opsi A–E. Pada contoh, indeks `2` menunjuk opsi ketiga, yaitu `20`.
 
 Untuk beberapa paket atau materi, tambahkan grup ke array `groups`. Dua grup dengan `subtes` dan `packageName` sama masuk ke paket yang sama. Nama paket yang sama pada subtes berbeda dianggap paket berbeda.
 
@@ -44,7 +44,7 @@ Untuk beberapa paket atau materi, tambahkan grup ke array `groups`. Dua grup den
 3. Tekan **Periksa JSON**. Ringkasan menunjukkan nama paket, subtes, kategori, jumlah soal, dan paket yang akan dibuat.
 4. Tekan **Impor … soal**. Impor satu paket membuka halaman paket tersebut; impor beberapa paket kembali ke bank soal.
 
-Batas setiap impor: **100 soal dan 200 KB**, empat opsi unik per soal. Backend memvalidasi ulang tujuan paket dan isi soal. Semua pembuatan paket dan penyisipan soal dilakukan dalam satu transaksi; kegagalan tidak menyimpan sebagian batch. Mengimpor file yang sama lagi akan menambah salinan soal, bukan memperbarui soal sebelumnya.
+Batas setiap impor: **100 soal dan 200 KB**, lima opsi unik A–E per soal. Backend memvalidasi ulang tujuan paket dan isi soal. Semua pembuatan paket dan penyisipan soal dilakukan dalam satu transaksi; kegagalan tidak menyimpan sebagian batch. Mengimpor file yang sama lagi akan menambah salinan soal, bukan memperbarui soal sebelumnya.
 
 ## Menulis rumus agar mudah dibaca
 
@@ -74,7 +74,7 @@ Gunakan cuplikan berikut sebagai field pada objek soal, bukan sebagai keseluruha
 `2^+` berarti mendekati 2 dari kanan. `\displaystyle` membuat notasi limit dan pecahan lebih mudah dibaca. Contoh opsi:
 
 ```json
-"options": ["$+\\infty$", "$-\\infty$", "$0$", "$3$"],
+"options": ["$+\\infty$", "$-\\infty$", "$0$", "$3$", "$1$"],
 "correctAnswer": 0
 ```
 

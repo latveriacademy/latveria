@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { bulkDeleteSchema, questionSchema, submissionSchema } from "./index";
+import { bulkDeleteSchema, questionSchema, submissionSchema, questionImportSchema } from "./index";
 
 it("rejects invalid answers and duplicate options at both trust boundaries", () => {
   expect(
@@ -34,4 +34,22 @@ it("bounds bulk deletion and rejects duplicate identifiers", () => {
       ),
     }).success,
   ).toBe(false);
+});
+
+it("limits imports to 100 questions across all groups", () => {
+  const question = {
+    prompt: "Pertanyaan",
+    options: ["A", "B", "C", "D", "E"],
+    correctAnswer: 4,
+    explanation: "Penjelasan",
+    source: "Dummy",
+  };
+  const group = (count: number) => ({
+    subtes: "pengetahuan-kuantitatif",
+    category: "Aljabar",
+    questions: Array.from({ length: count }, () => question),
+  });
+  expect(questionImportSchema.safeParse({ groups: [group(100)] }).success).toBe(true);
+  expect(questionImportSchema.safeParse({ groups: [group(101)] }).success).toBe(false);
+  expect(questionImportSchema.safeParse({ groups: [group(50), group(51)] }).success).toBe(false);
 });

@@ -293,8 +293,8 @@ export function ImportQuestions() {
                 }}
               />
               <p id="json-help" className={styles.importHelp}>
-                Maksimal 100 soal dan 200 KB. Empat opsi per soal; <code>correctAnswer</code>: 0 =
-                opsi pertama, 1 = kedua, 2 = ketiga, 3 = keempat.
+                Maksimal 100 soal dan 200 KB. Lima opsi A–E per soal; <code>correctAnswer</code>: 0
+                = A, 1 = B, 2 = C, 3 = D, 4 = E.
               </p>
             </div>
             <div className={styles.field}>

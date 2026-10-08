@@ -334,7 +334,7 @@ export const questionImportSchema = z
                   }),
               )
               .min(1)
-              .max(160),
+              .max(100, "Maksimal 100 soal per impor."),
           })
           .refine((group) => !(group.packageId && group.packageName), {
             message: "Gunakan packageId atau packageName, jangan keduanya.",
@@ -345,8 +345,8 @@ export const questionImportSchema = z
       .max(30),
   })
   .refine(
-    (input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 200,
-    "Maksimal 200 soal per impor.",
+    (input) => input.groups.reduce((sum, group) => sum + group.questions.length, 0) <= 100,
+    "Maksimal 100 soal per impor.",
   );
 
 export const submissionSchema = z.object({
