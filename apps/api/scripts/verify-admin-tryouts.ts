@@ -161,6 +161,12 @@ export async function verifyAdminTryouts(
     assert.equal(restored.session.answers[questionIds[0]], "0");
     const history = await (await request("/learner/tryouts/history", learnerCookie)).json();
     assert.ok(history.some((row: { id: string }) => row.id === session.id));
+    const historyRow = history.find((row: { id: string }) => row.id === session.id);
+    assert.equal(historyRow.packageId, pkg.id);
+    assert.equal(historyRow.score, 143);
+    assert.equal(historyRow.method, "simulation");
+    assert.equal(historyRow.isCompleteUtbk, true);
+    assert.ok(!("answers" in historyRow) && !("scoringPlan" in historyRow));
     assert.equal(
       (await request(`/admin/questions/${questionIds[0]}`, adminCookie, undefined, "DELETE"))
         .status,

@@ -29,10 +29,10 @@ import {
   advanceTryoutSubtest,
   autosaveTryout,
   getTryoutSession,
-  getTryoutHistory,
   startTryout,
   submitTryoutSubtest,
 } from "../services/tryout.service";
+import { getTryoutHistory } from "../services/tryout-history.service";
 
 export const tryoutHandler = new Hono<AppEnv>();
 

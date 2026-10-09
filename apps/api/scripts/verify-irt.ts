@@ -212,6 +212,10 @@ export async function verifyIrt(
       "PUT",
     );
     const nextLearner = await signup();
+    assert.deepEqual(
+      await (await request("/learner/tryouts/history", nextLearner.cookie)).json(),
+      [],
+    );
     const calibrated = await (
       await request(`/learner/tryouts/start/${pkg.id}`, nextLearner.cookie, {})
     ).json();

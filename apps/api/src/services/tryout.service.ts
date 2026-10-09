@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, sql, desc } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { calculateLatveriaScore, idSchema } from "@latveria/shared";
 import { getDb } from "../lib/db";
@@ -11,21 +11,6 @@ import {
   publicTryoutSession,
 } from "./tryout-revisions";
 import { submitSimulationSubtest } from "./tryout-simulation";
-
-export async function getTryoutHistory(userId: string) {
-  return getDb()
-    .select({
-      id: tryoutSessions.id,
-      name: questionPackages.name,
-      completedAt: tryoutSessions.completedAt,
-      score: tryoutSessions.totalScore,
-      scoringVersion: tryoutSessions.scoringVersion,
-    })
-    .from(tryoutSessions)
-    .innerJoin(questionPackages, eq(questionPackages.id, tryoutSessions.packageId))
-    .where(and(eq(tryoutSessions.userId, userId), eq(tryoutSessions.state, "completed")))
-    .orderBy(desc(tryoutSessions.completedAt));
-}
 
 export async function startTryout(userId: string, packageId: string) {
   const pkgId = idSchema.safeParse(packageId);

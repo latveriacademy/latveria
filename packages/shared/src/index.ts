@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+export type { TryoutHistoryEntry } from "./tryout-history";
 export {
   irtArtifactSchema,
   type IrtDatasetItem,
