@@ -6,6 +6,8 @@ import { sound } from "../utils/audioFeedback";
 import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
 import { Button } from "../components/ui/button";
 import { AnimatedNumber } from "../lib/motion";
+import { useTryoutHistory } from "../lib/use-tryout-history";
+import { LatestTryout } from "../components/latest-tryout";
 
 // --- UTBK Countdown Hook ---
 function useUtbkCountdown() {
@@ -79,6 +81,7 @@ export const DashboardView = () => {
   const [chartMetric, setChartMetric] = useState("questions"); // 'questions' | 'xp' | 'accuracy'
   const countdown = useUtbkCountdown();
   const { affirmation, rotate, hasPool } = useAffirmation();
+  const tryoutHistory = useTryoutHistory();
 
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
 
@@ -193,6 +196,13 @@ export const DashboardView = () => {
           </div>
         </div>
       </section>
+
+      <LatestTryout
+        entry={tryoutHistory.rows[0]}
+        loading={tryoutHistory.loading}
+        error={tryoutHistory.error}
+        onRetry={tryoutHistory.reload}
+      />
 
       {/* Main Grid: Affirmation + UTBK Countdown & Weekly Analytics */}
       <div className="dashboard-grid-dual">

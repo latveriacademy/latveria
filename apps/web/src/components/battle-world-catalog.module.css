@@ -21,3 +21,46 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.completed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  color: var(--emerald);
+  font-size: 12px;
+  font-weight: 600;
+}
+.lastResult {
+  display: grid;
+  gap: 5px;
+  padding-top: 16px;
+  border-top: 1px solid var(--edge);
+}
+.lastResult > span {
+  color: var(--soft-ink);
+  font-size: 12px;
+}
+.lastResult > strong {
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lastResult small {
+  color: var(--soft-ink);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+}
+.lastResult a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 44px;
+  color: var(--emerald);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

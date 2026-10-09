@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Clock, FileText, Play, Swords } from "lucide-react";
+import { ArrowRight, Clock, FileText, Play, Swords, CheckCircle2 } from "lucide-react";
+import type { TryoutHistoryEntry } from "@latveria/shared";
 import { Button } from "./ui/button";
 import { PageHeading, Panel } from "./ui/dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import styles from "./battle-world-catalog.module.css";
+import { LatestTryout } from "./latest-tryout";
+import {
+  formatTryoutDate,
+  formatTryoutScore,
+  latestTryoutsByPackage,
+  tryoutResultPath,
+  tryoutScoreLabel,
+} from "../lib/tryout-results";
 
 export interface TryoutPackage {
   id: string;
@@ -29,6 +38,10 @@ export function BattleWorldCatalog({
   onStart,
   onResume,
   onHistory,
+  history = [],
+  historyLoading = false,
+  historyError = "",
+  onReloadHistory = () => {},
 }: {
   packages: TryoutPackage[];
   catalogError: string;
@@ -38,6 +51,10 @@ export function BattleWorldCatalog({
   onStart: (id: string) => void;
   onResume: (sessionId: string) => void;
   onHistory?: () => void;
+  history?: TryoutHistoryEntry[];
+  historyLoading?: boolean;
+  historyError?: string;
+  onReloadHistory?: () => void;
 }) {
   const categories = [
     { value: "utbk", label: "UTBK" },
@@ -53,6 +70,7 @@ export function BattleWorldCatalog({
     return pkgCat === category;
   });
   const categoryLabel = categories.find((item) => item.value === category)?.label;
+  const completed = latestTryoutsByPackage(history);
   return (
     <div className={`latveria-view-container motion-page-enter ${styles.catalog}`}>
       <PageHeading
@@ -65,6 +83,13 @@ export function BattleWorldCatalog({
             </Button>
           )
         }
+      />
+      <LatestTryout
+        entry={history[0]}
+        loading={historyLoading}
+        error={historyError}
+        onRetry={onReloadHistory}
+        onHistory={onHistory}
       />
       <Tabs value={category} onValueChange={setCategory}>
         <TabsList aria-label="Jenis ujian" className="max-w-full">
@@ -120,37 +145,62 @@ export function BattleWorldCatalog({
             </Panel>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {filteredPackages.map((pkg) => (
-                <Panel key={pkg.id} className={`${styles.card} flex min-w-0 flex-col gap-5 p-5`}>
-                  <div>
-                    <h2 className={`${styles.title} font-serif text-[var(--ink)]`}>{pkg.name}</h2>
-                    <p className="mb-0 mt-2 text-sm leading-relaxed text-[var(--soft-ink)]">
-                      {pkg.description}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--soft-ink)]">
-                    <span className="inline-flex items-center gap-2">
-                      <FileText size={16} aria-hidden="true" />
-                      {pkg.questionCount} soal
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <Clock size={16} aria-hidden="true" />
-                      {pkg.durationMinutes ?? pkg.duration ?? 30} menit
-                    </span>
-                    <span>{pkg.isFullTryout ? "7 subtes" : "1 subtes"}</span>
-                  </div>
-                  <div className="mt-auto border-t border-[var(--edge)] pt-4">
-                    <Button
-                      className="w-full"
-                      loading={starting}
-                      loadingText="Menyiapkan tryout…"
-                      onClick={() => onStart(pkg.id)}
-                    >
-                      <Play size={16} /> Mulai tryout
-                    </Button>
-                  </div>
-                </Panel>
-              ))}
+              {filteredPackages.map((pkg) => {
+                const previous = completed.get(pkg.id);
+                return (
+                  <Panel key={pkg.id} className={`${styles.card} flex min-w-0 flex-col gap-5 p-5`}>
+                    <div>
+                      {previous && (
+                        <p className={styles.completed}>
+                          <CheckCircle2 size={14} />
+                          Sudah dikerjakan · {previous.count}× selesai
+                        </p>
+                      )}
+                      <h2 className={`${styles.title} font-serif text-[var(--ink)]`}>{pkg.name}</h2>
+                      <p className="mb-0 mt-2 text-sm leading-relaxed text-[var(--soft-ink)]">
+                        {pkg.description}
+                      </p>
+                    </div>
+                    {previous && (
+                      <div className={styles.lastResult}>
+                        <span>
+                          {tryoutScoreLabel(previous.latest.method, previous.latest.isCompleteUtbk)}
+                        </span>
+                        <strong>
+                          {formatTryoutScore(previous.latest.score)}
+                          <small> / 1.000</small>
+                        </strong>
+                        <span>{formatTryoutDate(previous.latest.completedAt)}</span>
+                        <Link to={tryoutResultPath(previous.latest.id)}>
+                          Lihat hasil terakhir
+                          <ArrowRight size={14} />
+                        </Link>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--soft-ink)]">
+                      <span className="inline-flex items-center gap-2">
+                        <FileText size={16} aria-hidden="true" />
+                        {pkg.questionCount} soal
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <Clock size={16} aria-hidden="true" />
+                        {pkg.durationMinutes ?? pkg.duration ?? 30} menit
+                      </span>
+                      <span>{pkg.isFullTryout ? "7 subtes" : "1 subtes"}</span>
+                    </div>
+                    <div className="mt-auto border-t border-[var(--edge)] pt-4">
+                      <Button
+                        className="w-full"
+                        loading={starting}
+                        loadingText="Menyiapkan tryout…"
+                        onClick={() => onStart(pkg.id)}
+                      >
+                        <Play size={16} /> {previous ? "Kerjakan lagi" : "Mulai tryout"}
+                      </Button>
+                    </div>
+                  </Panel>
+                );
+              })}
             </div>
           )}
         </TabsContent>
