@@ -41,6 +41,7 @@ export function BattleWorldView() {
   const [timeSpentByQuestion, setTimeSpentByQuestion] = useState<Record<string, number>>({});
   const questionEnteredAt = useRef(Date.now());
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionLoadId = useRef(0);
   const latestDraftRef = useRef({
     answers: {} as Record<string, string>,
     flags: {} as Record<string, boolean>,
@@ -48,6 +49,12 @@ export function BattleWorldView() {
     currentQuestionIndex: 0,
   });
 
+  useEffect(
+    () => () => {
+      sessionLoadId.current++;
+    },
+    [requestedResult, showHistory],
+  );
   useEffect(() => {
     const controller = new AbortController();
     api<TryoutPackage[]>("/learner/packages", { signal: controller.signal })
@@ -64,32 +71,49 @@ export function BattleWorldView() {
   }, []);
 
   useEffect(() => {
-    if (!requestedResult) return;
+    if (!requestedResult) {
+      if (activeSessionData?.session.state === "completed") {
+        if (localStorage.getItem("latveria_tryout_session_id") === activeSessionData.session.id)
+          localStorage.removeItem("latveria_tryout_session_id");
+        setActiveSessionData(null);
+        setActiveSessionId(localStorage.getItem("latveria_tryout_session_id"));
+      }
+      setReviewing(false);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     void loadSession(requestedResult, { resultOnly: true, signal: controller.signal });
     return () => controller.abort();
   }, [requestedResult]);
   useEffect(() => {
-    if (showHistory) setActiveSessionData(null);
+    if (showHistory) {
+      setActiveSessionData(null);
+      setReviewing(false);
+      setLoading(false);
+    }
   }, [showHistory]);
 
   const loadSession = async (
     sessionId: string,
     options: { resumeOnly?: boolean; resultOnly?: boolean; signal?: AbortSignal } = {},
   ) => {
+    const requestId = ++sessionLoadId.current;
+    const current = () => requestId === sessionLoadId.current && !options.signal?.aborted;
     setLoading(true);
     setActionError("");
     try {
       const data: TryoutSessionState = await api(`/learner/tryouts/${sessionId}`, {
         signal: options.signal,
       });
-      if (options.signal?.aborted) return;
+      if (!current()) return;
       if (options.resultOnly && data.session.state !== "completed")
         throw new Error("Hasil tersedia setelah Tryout selesai.");
       if (options.resumeOnly && data.session.state === "completed") {
         if (localStorage.getItem("latveria_tryout_session_id") === sessionId)
           localStorage.removeItem("latveria_tryout_session_id");
         setActiveSessionId(null);
+        setActiveSessionData(null);
         return;
       }
       setActiveSessionData(data);
@@ -111,7 +135,7 @@ export function BattleWorldView() {
       };
       if (data.session.state === "active") setSubtestTimer(data.session.secondsRemaining);
     } catch (error) {
-      if (options.signal?.aborted) return;
+      if (!current()) return;
       if (!options.resultOnly && localStorage.getItem("latveria_tryout_session_id") === sessionId)
         localStorage.removeItem("latveria_tryout_session_id");
       setActiveSessionData(null);
@@ -120,7 +144,7 @@ export function BattleWorldView() {
         error instanceof Error ? error.message : "Sesi tryout tidak dapat dipulihkan.",
       );
     } finally {
-      if (!options.signal?.aborted) setLoading(false);
+      if (current()) setLoading(false);
     }
   };
 
@@ -353,7 +377,7 @@ export function BattleWorldView() {
       </div>
     );
   // 1. ACTIVE TRYOUT SESSION UI
-  if (activeSessionData) {
+  if (activeSessionData && (activeSessionData.session.state !== "completed" || requestedResult)) {
     const { session, currentSubtest, questions } = activeSessionData;
 
     // SCENARIO A: SECTION READY / TRANSITION STATE (NO FORCED BREAK)
@@ -490,7 +514,7 @@ export function BattleWorldView() {
       onStart={handleStartTryout}
       onResume={(id) => {
         navigate("/dashboard?tab=tryout", { replace: true });
-        void loadSession(id);
+        void loadSession(id, { resumeOnly: true });
       }}
       onHistory={() => navigate("/dashboard?tab=tryout&history=1")}
       history={history.rows}
