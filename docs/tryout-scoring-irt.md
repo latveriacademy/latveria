@@ -48,6 +48,8 @@ Rata-rata skor tujuh subtes dihitung dengan bobot subtes sama, bukan bobot jumla
 
 EXP dan progres latihan tetap terpisah. Skor simulasi dan skala IRT latveriacademy **bukan skor resmi atau prediksi skor UTBK**.
 
+Halaman hasil menampilkan radar tujuh subtes, ringkasan jawaban, dan rincian skor; status kalibrasi berada pada bagian yang dapat dibuka. Radar tidak mengisi subtes yang belum tersedia dengan skor nol. Nilai terakhir dapat dibuka dari panel **Tryout terakhir** di Basecamp/Battle World dan kartu paket yang ditandai **Sudah dikerjakan**. Tautan hasil mendukung reload dan tombol Back browser, tetap baca-saja, serta menjaga penunjuk sesi aktif lainnya.
+
 ## Versi soal, respons, dan hasil
 
 Saat sesi dimulai, backend menyimpan/reuse revisi konten soal berdasarkan hash, termasuk wacana resolved, kunci dan aturan penilaian. Perubahan penempatan/urutan saja tidak membuat revisi konten baru. Snapshot kunci tidak dikirim saat sesi aktif.
