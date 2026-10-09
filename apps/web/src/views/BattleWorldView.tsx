@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router";
-import { ArrowRight, CheckCircle2, Play, Layers } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router";
+import { Play, Layers } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Panel } from "../components/ui/dashboard";
+import { Panel, PageHeading } from "../components/ui/dashboard";
 import { api } from "../lib/api";
 import { isBattleWorldPackage } from "../lib/battle-world";
 import { ConfirmDialog } from "../components/confirm-dialog";
@@ -10,11 +10,16 @@ import { SubmissionSummary } from "../components/submission-summary";
 import { BattleWorldCatalog, type TryoutPackage } from "../components/battle-world-catalog";
 import { TryoutWorkspace, type TryoutSessionState } from "../components/tryout-workspace";
 import { TryoutReview } from "../components/tryout-review";
-import { TryoutScoreReport } from "../components/tryout-score-report";
+import { TryoutResultView } from "../components/tryout-result-view";
 import { TryoutHistory } from "../components/tryout-history";
+import { useTryoutHistory } from "../lib/use-tryout-history";
+import { tryoutResultPath } from "../lib/tryout-results";
 
 export function BattleWorldView() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const requestedResult = params.get("result");
+  const history = useTryoutHistory();
   const [packages, setPackages] = useState<TryoutPackage[]>([]);
   const [activeSessionData, setActiveSessionData] = useState<TryoutSessionState | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(() =>
@@ -31,9 +36,8 @@ export function BattleWorldView() {
   const [submittingSubtest, setSubmittingSubtest] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [actionError, setActionError] = useState("");
-  const [result, setResult] = useState<TryoutSessionState["score"]>(null);
   const [reviewing, setReviewing] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const showHistory = params.get("history") === "1";
   const [timeSpentByQuestion, setTimeSpentByQuestion] = useState<Record<string, number>>({});
   const questionEnteredAt = useRef(Date.now());
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,18 +57,48 @@ export function BattleWorldView() {
           setCatalogError(error instanceof Error ? error.message : "Gagal memuat tryout.");
       });
     const savedSessionId = localStorage.getItem("latveria_tryout_session_id");
-    if (savedSessionId) {
-      void loadSession(savedSessionId);
+    if (savedSessionId && !requestedResult && !showHistory) {
+      void loadSession(savedSessionId, { resumeOnly: true, signal: controller.signal });
     }
     return () => controller.abort();
   }, []);
 
-  const loadSession = async (sessionId: string) => {
+  useEffect(() => {
+    if (!requestedResult) return;
+    const controller = new AbortController();
+    void loadSession(requestedResult, { resultOnly: true, signal: controller.signal });
+    return () => controller.abort();
+  }, [requestedResult]);
+  useEffect(() => {
+    if (showHistory) setActiveSessionData(null);
+  }, [showHistory]);
+
+  const loadSession = async (
+    sessionId: string,
+    options: { resumeOnly?: boolean; resultOnly?: boolean; signal?: AbortSignal } = {},
+  ) => {
     setLoading(true);
+    setActionError("");
     try {
-      const data: TryoutSessionState = await api(`/learner/tryouts/${sessionId}`);
+      const data: TryoutSessionState = await api(`/learner/tryouts/${sessionId}`, {
+        signal: options.signal,
+      });
+      if (options.signal?.aborted) return;
+      if (options.resultOnly && data.session.state !== "completed")
+        throw new Error("Hasil tersedia setelah Tryout selesai.");
+      if (options.resumeOnly && data.session.state === "completed") {
+        if (localStorage.getItem("latveria_tryout_session_id") === sessionId)
+          localStorage.removeItem("latveria_tryout_session_id");
+        setActiveSessionId(null);
+        return;
+      }
       setActiveSessionData(data);
-      setActiveSessionId(sessionId);
+      setReviewing(false);
+      setActiveSessionId(
+        data.session.state === "completed"
+          ? localStorage.getItem("latveria_tryout_session_id")
+          : sessionId,
+      );
       setAnswers(data.session.answers || {});
       setFlags(data.session.flags || {});
       setTimeSpentByQuestion(data.session.questionTimes || {});
@@ -75,17 +109,18 @@ export function BattleWorldView() {
         questionTimes: data.session.questionTimes || {},
         currentQuestionIndex: data.session.currentQuestionIndex || 0,
       };
-      if (data.session.state === "completed") setResult(data.score ?? null);
       if (data.session.state === "active") setSubtestTimer(data.session.secondsRemaining);
     } catch (error) {
-      localStorage.removeItem("latveria_tryout_session_id");
+      if (options.signal?.aborted) return;
+      if (!options.resultOnly && localStorage.getItem("latveria_tryout_session_id") === sessionId)
+        localStorage.removeItem("latveria_tryout_session_id");
       setActiveSessionData(null);
-      setActiveSessionId(null);
+      setActiveSessionId(localStorage.getItem("latveria_tryout_session_id"));
       setActionError(
         error instanceof Error ? error.message : "Sesi tryout tidak dapat dipulihkan.",
       );
     } finally {
-      setLoading(false);
+      if (!options.signal?.aborted) setLoading(false);
     }
   };
 
@@ -124,6 +159,7 @@ export function BattleWorldView() {
         body: JSON.stringify({}),
       });
       localStorage.setItem("latveria_tryout_session_id", newSession.id);
+      navigate("/dashboard?tab=tryout", { replace: true });
       setActiveSessionId(newSession.id);
       setActionError("");
       await loadSession(newSession.id);
@@ -211,17 +247,21 @@ export function BattleWorldView() {
       }
       latestDraftRef.current = { ...latestDraftRef.current, answers, questionTimes: finalTimes };
       const response = await api<{
-        status: "break" | "completed";
+        status: "break" | "section_ready" | "completed";
         breakEndsAt?: string;
         score?: NonNullable<TryoutSessionState["score"]>;
       }>(`/learner/tryouts/${activeSessionData.session.id}/subtest-submit`, {
         method: "POST",
         body: JSON.stringify({ answers, timeSpentByQuestion: finalTimes }),
       });
-      if (response.status === "completed") setResult(response.score ?? null);
       setShowSubmitSubtestModal(false);
       setActionError("");
-      await loadSession(activeSessionData.session.id);
+      if (response.status === "completed") {
+        history.reload();
+        setActiveSessionData(null);
+        setLoading(true);
+        navigate(tryoutResultPath(activeSessionData.session.id), { replace: true });
+      } else await loadSession(activeSessionData.session.id);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Gagal mengumpulkan subtes.");
     } finally {
@@ -249,6 +289,17 @@ export function BattleWorldView() {
   const handleExitTryout = () => {
     setShowExitDialog(true);
   };
+  const leaveResult = (toHistory = false) => {
+    const id = activeSessionData?.session.id;
+    if (localStorage.getItem("latveria_tryout_session_id") === id)
+      localStorage.removeItem("latveria_tryout_session_id");
+    setActiveSessionData(null);
+    setReviewing(false);
+    setActionError("");
+    setActiveSessionId(localStorage.getItem("latveria_tryout_session_id"));
+    navigate(`/dashboard?tab=tryout${toHistory ? "&history=1" : ""}`);
+    history.reload();
+  };
 
   const exitDialog = (
     <ConfirmDialog
@@ -273,6 +324,34 @@ export function BattleWorldView() {
     return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
+  if (
+    requestedResult &&
+    (loading || !activeSessionData || activeSessionData.session.id !== requestedResult)
+  )
+    return (
+      <div className="latveria-view-container">
+        <PageHeading
+          title="Hasil Tryout"
+          actions={
+            <Button variant="outline" onClick={() => leaveResult()}>
+              Daftar Tryout
+            </Button>
+          }
+        />
+        <Panel>
+          {actionError ? (
+            <div role="alert">
+              <p>{actionError}</p>
+              <Button onClick={() => void loadSession(requestedResult, { resultOnly: true })}>
+                Coba lagi
+              </Button>
+            </div>
+          ) : (
+            <p role="status">Memuat hasil tersimpan…</p>
+          )}
+        </Panel>
+      </div>
+    );
   // 1. ACTIVE TRYOUT SESSION UI
   if (activeSessionData) {
     const { session, currentSubtest, questions } = activeSessionData;
@@ -342,44 +421,12 @@ export function BattleWorldView() {
       if (reviewing)
         return <TryoutReview data={activeSessionData} onBack={() => setReviewing(false)} />;
       return (
-        <div
-          className="latveria-view-container motion-fade-in"
-          style={{ maxWidth: 800, margin: "40px auto" }}
-        >
-          <Panel
-            style={{
-              textAlign: "center",
-              padding: "48px 32px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 20,
-            }}
-          >
-            <CheckCircle2 size={48} style={{ color: "#10b981" }} />
-            <span className="font-mono text-xs uppercase tracking-widest text-[var(--gold)]">
-              Battle World selesai
-            </span>
-            <h2 className="font-serif text-3xl font-semibold text-[var(--ink)]">
-              Selamat! Kamu Telah Menuntaskan Tryout
-            </h2>
-            {result ? <TryoutScoreReport report={result} /> : <p>Jawabanmu sudah tersimpan.</p>}
-
-            {activeSessionData.reviewQuestions?.length ? (
-              <Button onClick={() => setReviewing(true)}>Tinjau soal</Button>
-            ) : null}
-            <Button
-              onClick={() => {
-                localStorage.removeItem("latveria_tryout_session_id");
-                setActiveSessionData(null);
-                setActiveSessionId(null);
-                navigate("/dashboard?tab=tryout");
-              }}
-            >
-              Kembali ke Battle World <ArrowRight size={16} />
-            </Button>
-          </Panel>
-        </div>
+        <TryoutResultView
+          data={activeSessionData}
+          onBack={() => leaveResult()}
+          onReview={() => setReviewing(true)}
+          onHistory={() => leaveResult(true)}
+        />
       );
     }
 
@@ -396,7 +443,7 @@ export function BattleWorldView() {
           flags={flags}
           time={formatSeconds(subtestTimer)}
           timerWarning={subtestTimer < 120}
-          pending={submittingSubtest}
+          pending={submittingSubtest || loading}
           onExit={handleExitTryout}
           onSubmit={() => setShowSubmitSubtestModal(true)}
           onAnswer={handleSelectAnswer}
@@ -425,11 +472,12 @@ export function BattleWorldView() {
   if (showHistory)
     return (
       <TryoutHistory
-        onBack={() => setShowHistory(false)}
-        onOpen={(id) => {
-          setShowHistory(false);
-          void loadSession(id);
-        }}
+        rows={history.rows}
+        loading={history.loading}
+        error={history.error}
+        onReload={history.reload}
+        onBack={() => navigate("/dashboard?tab=tryout")}
+        onOpen={(id) => navigate(tryoutResultPath(id))}
       />
     );
   return (
@@ -440,8 +488,15 @@ export function BattleWorldView() {
       starting={starting}
       activeSessionId={activeSessionId}
       onStart={handleStartTryout}
-      onResume={loadSession}
-      onHistory={() => setShowHistory(true)}
+      onResume={(id) => {
+        navigate("/dashboard?tab=tryout", { replace: true });
+        void loadSession(id);
+      }}
+      onHistory={() => navigate("/dashboard?tab=tryout&history=1")}
+      history={history.rows}
+      historyLoading={history.loading}
+      historyError={history.error}
+      onReloadHistory={history.reload}
     />
   );
 }
