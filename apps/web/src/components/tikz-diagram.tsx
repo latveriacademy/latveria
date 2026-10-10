@@ -37,6 +37,8 @@ export function TikzDiagram({ source }: { source: string }) {
       minY = Math.min(...boxes.map((p) => p[1])) - 16;
     const width = Math.max(...boxes.map((p) => p[0])) - minX + 16,
       height = Math.max(...boxes.map((p) => p[1])) - minY + 16;
+    const arrowEndId = `${titleId}-arrow-end`;
+    const arrowStartId = `${titleId}-arrow-start`;
     return (
       <span className="tikz-diagram">
         <svg
@@ -47,7 +49,33 @@ export function TikzDiagram({ source }: { source: string }) {
           aria-labelledby={titleId}
         >
           <title id={titleId}>{diagram.description}</title>
+          <defs>
+            <marker
+              id={arrowEndId}
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="currentColor" />
+            </marker>
+            <marker
+              id={arrowStartId}
+              viewBox="0 0 10 10"
+              refX="2"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 9 1.5 L 0 5 L 9 8.5 z" fill="currentColor" />
+            </marker>
+          </defs>
           {diagram.shapes.map((shape, index) => {
+            const hasArrowEnd = shape.style.arrow === "->" || shape.style.arrow === "<->";
+            const hasArrowStart = shape.style.arrow === "<-" || shape.style.arrow === "<->";
             const props = {
               stroke: "currentColor",
               strokeWidth: shape.style.width,
@@ -56,6 +84,8 @@ export function TikzDiagram({ source }: { source: string }) {
               fillOpacity: shape.style.fill === "shade" ? 0.12 : 1,
               vectorEffect: "non-scaling-stroke" as const,
               strokeLinejoin: "round" as const,
+              markerEnd: hasArrowEnd ? `url(#${arrowEndId})` : undefined,
+              markerStart: hasArrowStart ? `url(#${arrowStartId})` : undefined,
             };
             if (shape.kind === "ellipse") {
               const [cx, cy] = project(shape.center);
@@ -81,6 +111,7 @@ export function TikzDiagram({ source }: { source: string }) {
               />
             );
           })}
+
           {labels.map((label, index) => (
             <foreignObject key={index} x={label.x - 80} y={label.y - 28} width={160} height={56}>
               <div className="tikz-label">

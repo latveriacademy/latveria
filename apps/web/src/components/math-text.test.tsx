@@ -66,6 +66,18 @@ it("uses author-provided TikZ alt text for the diagram title", async () => {
   expect(html).toContain("Segitiga ABC.");
 });
 
+it("renders TikZ arrow operator -> with marker elements", async () => {
+  const { TikzDiagram } = await import("./tikz-diagram");
+  const html = renderToStaticMarkup(
+    <TikzDiagram
+      source={String.raw`\begin{tikzpicture}\draw[->] (0,0) -- (4,0);\draw[->, thick] (0,0) -- (0,3);\end{tikzpicture}`}
+    />,
+  );
+  expect(html).toContain("<marker");
+  expect(html).toContain("marker-end");
+  expect(html).not.toContain("Diagram belum dapat ditampilkan");
+});
+
 it("shows the source with a useful message for unsupported TikZ commands", async () => {
   const source = String.raw`\begin{tikzpicture}\draw[red] (0,0)--(1,1);\end{tikzpicture}`;
   const { TikzDiagram } = await import("./tikz-diagram");
@@ -73,4 +85,46 @@ it("shows the source with a useful message for unsupported TikZ commands", async
   expect(html).toContain("Diagram belum dapat ditampilkan");
   expect(html).toContain("belum didukung");
   expect(html).toContain(source);
+});
+
+it("renders LaTeX array and tabular as structured table", async () => {
+  const { LatexTable } = await import("./latex-table");
+  const arraySource = String.raw`\begin{array}{|c|c|c|}
+\hline
+Nama & Nilai & Peringkat \\
+\hline
+A & 85 & 2 \\
+\hline
+\end{array}`;
+
+  const html = renderToStaticMarkup(<LatexTable source={arraySource} />);
+  expect(html).toContain("<table");
+  expect(html).toContain("<th");
+  expect(html).toContain("Nama");
+  expect(html).toContain("Nilai");
+  expect(html).toContain("Peringkat");
+  expect(html).toContain("<td");
+  expect(html).toContain("85");
+});
+
+it("renders LaTeX tabular with math in cells", async () => {
+  const { LatexTable } = await import("./latex-table");
+  const tabularSource = String.raw`\begin{tabular}{l|r}
+Variabel & Formula \\
+x & \frac{1}{2}
+\end{tabular}`;
+
+  const html = renderToStaticMarkup(<LatexTable source={tabularSource} />);
+  expect(html).toContain("<table");
+  expect(html).toContain("Variabel");
+  expect(html).toContain("Formula");
+  expect(html).toContain("katex");
+});
+
+it("renders fallback message on malformed LaTeX table", async () => {
+  const { LatexTable } = await import("./latex-table");
+  const malformed = String.raw`\begin{tabular}{c} malformed table without end`;
+  const html = renderToStaticMarkup(<LatexTable source={malformed} />);
+  expect(html).toContain("table-fallback");
+  expect(html).toContain("Tabel belum dapat ditampilkan");
 });

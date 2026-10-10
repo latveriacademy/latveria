@@ -1,5 +1,10 @@
 export type Point = [number, number, number];
-export type DrawStyle = { width: number; dash?: string; fill: "none" | "shade" | "solid" };
+export type DrawStyle = {
+  width: number;
+  dash?: string;
+  fill: "none" | "shade" | "solid";
+  arrow?: "->" | "<-" | "<->";
+};
 export type TikzShape =
   | { kind: "path"; points: Point[]; closed: boolean; style: DrawStyle }
   | { kind: "ellipse"; center: Point; rx: number; ry: number; style: DrawStyle };
@@ -58,6 +63,11 @@ function style(options: string | undefined, filled: boolean): DrawStyle {
     .map((s) => s.trim())
     .filter(Boolean)) {
     switch (option) {
+      case "->":
+      case "<-":
+      case "<->":
+        result.arrow = option;
+        break;
       case "thick":
         result.width = 3;
         break;

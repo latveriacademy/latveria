@@ -47,6 +47,29 @@ describe("parseTikz", () => {
     expect(diagram.shapes[1]).toMatchObject({ kind: "ellipse", style: { fill: "solid" } });
   });
 
+  it("supports arrow operator ->, <-, and <->", () => {
+    const diagram = parseTikz(String.raw`\begin{tikzpicture}
+\draw[->] (0,0) -- (4,0);
+\draw[->, thick] (0,0) -- (0,3);
+\draw[<->, dashed] (1,1) -- (2,2);
+\node at (4.2,0) {x};
+\node at (0,3.2) {y};
+\end{tikzpicture}`);
+    expect(diagram.shapes[0]).toMatchObject({
+      kind: "path",
+      style: { width: 2, arrow: "->" },
+    });
+    expect(diagram.shapes[1]).toMatchObject({
+      kind: "path",
+      style: { width: 3, arrow: "->" },
+    });
+    expect(diagram.shapes[2]).toMatchObject({
+      kind: "path",
+      style: { width: 2, arrow: "<->", dash: "8 6" },
+    });
+    expect(diagram.labels).toHaveLength(2);
+  });
+
   it("does not execute unsupported, oversized, or unsafe TeX", () => {
     expect(() =>
       parseTikz(String.raw`\begin{tikzpicture}\draw[red] (0,0)--(1,1);\end{tikzpicture}`),

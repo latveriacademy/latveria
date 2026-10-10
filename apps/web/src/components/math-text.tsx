@@ -7,6 +7,9 @@ const MathFormulaLazy = lazy(() =>
 const TikzDiagramLazy = lazy(() =>
   import("./tikz-diagram").then((module) => ({ default: module.TikzDiagram })),
 );
+const LatexTableLazy = lazy(() =>
+  import("./latex-table").then((module) => ({ default: module.LatexTable })),
+);
 
 export function MathText({
   children,
@@ -29,17 +32,29 @@ export function MathText({
               <TikzDiagramLazy source={part} />
             </Suspense>
           );
+        if (part.startsWith("\\begin{tabular}") || part.startsWith("\\begin{array}"))
+          return (
+            <Suspense fallback={<span className="table-pending">{part}</span>} key={index}>
+              <LatexTableLazy source={part} />
+            </Suspense>
+          );
         const displayMode = part.startsWith("$$") && part.endsWith("$$");
         const inline = part.startsWith("$") && part.endsWith("$");
         if (!displayMode && !inline)
           return renderText ? <span key={index}>{renderText(part, start)}</span> : part;
+
+        const inner = part.slice(displayMode ? 2 : 1, displayMode ? -2 : -1).trim();
+        if (inner.startsWith("\\begin{tabular}") || inner.startsWith("\\begin{array}")) {
+          return (
+            <Suspense fallback={<span className="table-pending">{part}</span>} key={index}>
+              <LatexTableLazy source={inner} />
+            </Suspense>
+          );
+        }
+
         return (
           <Suspense fallback={<span className="math-pending">{part}</span>} key={index}>
-            <MathFormulaLazy
-              source={part.slice(displayMode ? 2 : 1, displayMode ? -2 : -1)}
-              displayMode={displayMode}
-              fallback={part}
-            />
+            <MathFormulaLazy source={inner} displayMode={displayMode} fallback={part} />
           </Suspense>
         );
       })}
