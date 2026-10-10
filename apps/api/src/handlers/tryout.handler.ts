@@ -6,6 +6,7 @@ import {
   deleteAdminTryout,
   deleteTryoutSection,
   getAdminTryout,
+  importSectionQuestions,
   listAdminTryouts,
   removeQuestionFromSection,
   reorderSectionQuestions,
@@ -33,6 +34,7 @@ import {
   submitTryoutSubtest,
 } from "../services/tryout.service";
 import { getTryoutHistory } from "../services/tryout-history.service";
+import { generateTryoutCertificate } from "../services/tryout-certificate.service";
 
 export const tryoutHandler = new Hono<AppEnv>();
 
@@ -52,6 +54,18 @@ tryoutHandler.get("/api/learner/tryouts/history", async (c) =>
 tryoutHandler.get("/api/learner/tryouts/:sessionId", async (c) => {
   const result = await getTryoutSession(c.get("user").id, c.req.param("sessionId"));
   return c.json(result);
+});
+
+tryoutHandler.get("/api/learner/tryouts/:sessionId/certificate.pdf", async (c) => {
+  const { pdfBuffer, filename } = await generateTryoutCertificate(
+    c.get("user").id,
+    c.req.param("sessionId"),
+  );
+  c.header("Content-Disposition", `attachment; filename="${filename}"`);
+  c.header("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  return c.body(pdfBuffer.buffer as ArrayBuffer, 200, {
+    "Content-Type": "application/pdf",
+  });
 });
 
 tryoutHandler.post("/api/learner/tryouts/:sessionId/autosave", async (c) => {
@@ -127,6 +141,12 @@ tryoutHandler.post("/api/admin/tryouts/:id/import", async (c) =>
   c.json(await importTryoutBatch(c.req.param("id"), await readImport(c)), 201),
 );
 
+tryoutHandler.post("/api/admin/tryouts/:id/sections/:sectionId/import", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await importSectionQuestions(c.req.param("sectionId"), body);
+  return c.json(result);
+});
+
 tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId/questions/:questionId", async (c) => {
   const result = await removeQuestionFromSection(
     c.req.param("sectionId"),
@@ -134,6 +154,17 @@ tryoutHandler.delete("/api/admin/tryouts/sections/:sectionId/questions/:question
   );
   return c.json(result);
 });
+
+tryoutHandler.delete(
+  "/api/admin/tryouts/:id/sections/:sectionId/questions/:questionId",
+  async (c) => {
+    const result = await removeQuestionFromSection(
+      c.req.param("sectionId"),
+      c.req.param("questionId"),
+    );
+    return c.json(result);
+  },
+);
 
 tryoutHandler.put("/api/admin/tryouts/sections/:sectionId/reorder", async (c) => {
   const body = (await c.req.json().catch(() => null)) as { questionIds?: string[] };
