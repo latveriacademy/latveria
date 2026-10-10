@@ -35,6 +35,11 @@ import {
 } from "../services/tryout.service";
 import { getTryoutHistory } from "../services/tryout-history.service";
 import { generateTryoutCertificate } from "../services/tryout-certificate.service";
+import {
+  getAdminTryoutSection,
+  updateTryoutQuestion,
+  deleteScopedTryoutSection,
+} from "../services/tryout-question.service";
 
 export const tryoutHandler = new Hono<AppEnv>();
 
@@ -104,6 +109,22 @@ tryoutHandler.get("/api/admin/tryouts/:id", async (c) => {
   const result = await getAdminTryout(c.req.param("id"));
   return c.json(result);
 });
+tryoutHandler.get("/api/admin/tryouts/:id/sections/:sectionId", async (c) =>
+  c.json(await getAdminTryoutSection(c.req.param("id"), c.req.param("sectionId"))),
+);
+tryoutHandler.put("/api/admin/tryouts/:id/sections/:sectionId/questions/:questionId", async (c) =>
+  c.json(
+    await updateTryoutQuestion(
+      c.req.param("id"),
+      c.req.param("sectionId"),
+      c.req.param("questionId"),
+      await c.req.json().catch(() => null),
+    ),
+  ),
+);
+tryoutHandler.delete("/api/admin/tryouts/:id/sections/:sectionId", async (c) =>
+  c.json(await deleteScopedTryoutSection(c.req.param("id"), c.req.param("sectionId"))),
+);
 
 tryoutHandler.put("/api/admin/tryouts/:id", async (c) => {
   const body = await c.req.json().catch(() => null);

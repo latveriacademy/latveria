@@ -59,6 +59,31 @@ export async function verifyAdminTryouts(
       );
     }
     const section = pkg.sections[0];
+    const sectionDetail = await (
+      await request(`/admin/tryouts/${pkg.id}/sections/${section.id}`, adminCookie)
+    ).json();
+    assert.equal(sectionDetail.section.questions.length, 1);
+    const qToEdit = sectionDetail.section.questions[0];
+    const editPayload = {
+      type: "single_choice",
+      prompt: "Edited Tryout Prompt with Passage Ref",
+      options: ["one", "two", "three", "four", "five"],
+      correctAnswer: 0,
+      explanation: "Edited explanation",
+      source: "Edited Source",
+    };
+    const editRes = await request(
+      `/admin/tryouts/${pkg.id}/sections/${section.id}/questions/${qToEdit.id}`,
+      adminCookie,
+      editPayload,
+      "PUT",
+    );
+    assert.equal(editRes.status, 200);
+    const updatedSection = await (
+      await request(`/admin/tryouts/${pkg.id}/sections/${section.id}`, adminCookie)
+    ).json();
+    assert.equal(updatedSection.section.questions[0].prompt, editPayload.prompt);
+    assert.equal(updatedSection.section.questions[0].correctAnswer, 0);
     assert.equal(
       (
         await request(
@@ -188,6 +213,17 @@ export async function verifyAdminTryouts(
       (
         await request(
           `/admin/tryouts/sections/${section.id}/questions/${questionIds[0]}`,
+          adminCookie,
+          undefined,
+          "DELETE",
+        )
+      ).status,
+      200,
+    );
+    assert.equal(
+      (
+        await request(
+          `/admin/tryouts/${pkg.id}/sections/${section.id}`,
           adminCookie,
           undefined,
           "DELETE",

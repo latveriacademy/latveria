@@ -95,6 +95,7 @@ export {
   type TryoutSectionItem,
   type TryoutSectionQuestion,
   type TryoutSectionWithQuestions,
+  type AdminTryoutSectionDetail,
   type SectionImportQuestion,
   type SectionImportInput,
 } from "./questions";

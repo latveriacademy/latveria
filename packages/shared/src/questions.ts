@@ -154,11 +154,18 @@ export type TryoutSectionQuestion = {
   calculatorAllowed: boolean;
   stimulus?: QuestionStimulus | null;
   passage?: string | null;
+  passageId?: string | null;
+  scoring?: ScoringConfig | null;
+  annotations?: import("./lexicon").LexiconAnnotation[];
   options?: string[];
   statements?: TrueFalseStatementClient[] | null;
   correctAnswer?: number | null;
   explanation?: string | null;
   source?: string | null;
+};
+export type AdminTryoutSectionDetail = {
+  tryout: { id: string; name: string; published: boolean };
+  section: TryoutSectionWithQuestions;
 };
 
 export type TryoutSectionWithQuestions = TryoutSectionItem & {

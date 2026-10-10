@@ -20,6 +20,7 @@ import {
 import { catalog, invalidateCatalogCache } from "./topic.service";
 import { deletePackage } from "./package.service";
 import { buildTryoutConfig } from "./tryout-config";
+import { resolvePassages } from "./tryout-review.service";
 
 export async function listAdminTryouts() {
   const db = getDb();
@@ -120,29 +121,38 @@ export async function getAdminTryout(packageId: string) {
     .where(eq(tryoutSections.packageId, pkg.id))
     .orderBy(asc(tryoutSections.sectionOrder));
 
-  const questionsWithSection = await db
-    .select({
-      id: questions.id,
-      prompt: questions.prompt,
-      questionType: questions.questionType,
-      category: questions.category,
-      itemWeight: questions.itemWeight,
-      calculatorAllowed: questions.calculatorAllowed,
-      stimulus: questions.stimulus,
-      passage: questions.passage,
-      options: questions.options,
-      statements: questions.statements,
-      correctAnswer: questions.correctAnswer,
-      explanation: questions.explanation,
-      source: questions.source,
-      sectionId: tryoutPackageQuestions.sectionId,
-      position: tryoutPackageQuestions.position,
-      order: tryoutPackageQuestions.order,
-    })
-    .from(tryoutPackageQuestions)
-    .innerJoin(questions, eq(tryoutPackageQuestions.questionId, questions.id))
-    .where(eq(tryoutPackageQuestions.packageId, pkg.id))
-    .orderBy(asc(tryoutPackageQuestions.position), asc(tryoutPackageQuestions.order));
+  const questionsWithSection = await resolvePassages(
+    await db
+      .select({
+        id: questions.id,
+        prompt: questions.prompt,
+        questionType: questions.questionType,
+        category: questions.category,
+        itemWeight: questions.itemWeight,
+        calculatorAllowed: questions.calculatorAllowed,
+        stimulus: questions.stimulus,
+        passage: questions.passage,
+        passageId: questions.passageId,
+        annotations: questions.annotations,
+        scoring: questions.scoringConfig,
+        options: questions.options,
+        statements: questions.statements,
+        correctAnswer: questions.correctAnswer,
+        explanation: questions.explanation,
+        source: questions.source,
+        sectionId: tryoutPackageQuestions.sectionId,
+        position: tryoutPackageQuestions.position,
+        order: tryoutPackageQuestions.order,
+      })
+      .from(tryoutPackageQuestions)
+      .innerJoin(questions, eq(tryoutPackageQuestions.questionId, questions.id))
+      .where(eq(tryoutPackageQuestions.packageId, pkg.id))
+      .orderBy(
+        asc(tryoutPackageQuestions.position),
+        asc(tryoutPackageQuestions.order),
+        asc(questions.id),
+      ),
+  );
 
   const sectionItems: (TryoutSectionItem & { questions: TryoutSectionQuestion[] })[] = sections.map(
     (sec) => {
@@ -160,6 +170,9 @@ export async function getAdminTryout(packageId: string) {
           calculatorAllowed: q.calculatorAllowed,
           stimulus: q.stimulus,
           passage: q.passage,
+          passageId: q.passageId,
+          annotations: q.annotations,
+          scoring: q.scoring,
           options: q.options,
           statements: q.statements,
           correctAnswer: q.correctAnswer,
@@ -388,8 +401,25 @@ export async function removeQuestionFromSection(sectionId: string, questionId: s
   if (!sId.success || !qId.success)
     throw new HTTPException(400, { message: "ID section atau soal tidak valid." });
 
-  const db = getDb();
-  await db.transaction(async (tx) => {
+  return getDb().transaction(async (tx) => {
+    const [section] = await tx.select().from(tryoutSections).where(eq(tryoutSections.id, sId.data));
+    if (!section) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+    await tx
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, section.packageId))
+      .for("update");
+    const [dependent] = await tx
+      .select({ id: questions.id })
+      .from(questions)
+      .innerJoin(tryoutPackageQuestions, eq(tryoutPackageQuestions.questionId, questions.id))
+      .where(and(eq(tryoutPackageQuestions.sectionId, sId.data), eq(questions.passageId, qId.data)))
+      .limit(1);
+    if (dependent)
+      throw new HTTPException(409, {
+        message:
+          "Wacana soal ini masih digunakan dalam subtes. Lepaskan referensi sebelum mengeluarkan sumber.",
+      });
     await tx
       .delete(tryoutPackageQuestions)
       .where(
@@ -416,9 +446,9 @@ export async function removeQuestionFromSection(sectionId: string, questionId: s
           ),
         );
     }
-  });
 
-  return { success: true };
+    return { success: true };
+  });
 }
 
 export async function reorderSectionQuestions(sectionId: string, questionIds: string[]) {
