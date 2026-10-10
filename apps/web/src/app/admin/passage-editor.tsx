@@ -24,6 +24,7 @@ export function PassageEditor({
   onChangePassageId,
   availablePassages,
   disabled,
+  maxLength = 10000,
 }: {
   passage: string;
   onChangePassage: (val: string) => void;
@@ -31,6 +32,7 @@ export function PassageEditor({
   onChangePassageId: (val: string | null) => void;
   availablePassages: AvailablePassage[];
   disabled?: boolean;
+  maxLength?: number;
 }) {
   const [mode, setMode] = useState<"none" | "new" | "reuse">(() => {
     if (passageId) return "reuse";
@@ -115,16 +117,18 @@ export function PassageEditor({
       {mode === "new" && (
         <div className="space-y-2 rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-3.5">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--ink)]">
-            <label htmlFor="passage-input">Teks Wacana Baru (Maks 10.000 karakter)</label>
+            <label htmlFor="passage-input">
+              Teks Wacana Baru (Maks {maxLength.toLocaleString("id-ID")} karakter)
+            </label>
             <span className="font-mono text-[11px] text-[var(--text-muted)]">
-              {passage.length} / 10.000 karakter
+              {passage.length} / {maxLength.toLocaleString("id-ID")} karakter
             </span>
           </div>
           <Textarea
             id="passage-input"
             name="passage"
             rows={5}
-            maxLength={10000}
+            maxLength={maxLength}
             disabled={disabled}
             value={passage}
             onChange={(e) => onChangePassage(e.target.value)}
@@ -163,7 +167,7 @@ export function PassageEditor({
             }}
             disabled={disabled}
           >
-            <SelectTrigger id="passage-select">
+            <SelectTrigger id="passage-select" aria-label="Wacana sumber">
               <SelectValue placeholder="Pilih wacana..." />
             </SelectTrigger>
             <SelectContent>
