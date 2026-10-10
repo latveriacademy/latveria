@@ -19,6 +19,7 @@ import type {
   Result,
   QuestionPackage,
   PackageDetail,
+  AdminTryoutSectionDetail,
 } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { Login } from "./app/login";
@@ -30,6 +31,8 @@ import { AdminLayout } from "./app/admin/admin-layout";
 import { ImportQuestions } from "./app/admin/import-questions";
 import { TryoutImportPage } from "./app/admin/tryout-import-page";
 import { AdminIrt } from "./app/admin/admin-irt";
+import { AdminTryoutSection } from "./app/admin/admin-tryout-section";
+import { TryoutQuestionEditor } from "./app/admin/tryout-question-editor";
 import { QuestionPreview } from "./app/admin/question-preview";
 import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
@@ -282,6 +285,24 @@ export const router = createBrowserRouter([
       { path: "tryouts", element: <AdminTryouts /> },
       { path: "tryouts/kalibrasi", element: <AdminIrt /> },
       { path: "tryouts/:id", element: <AdminTryoutDetail /> },
+      {
+        path: "tryouts/:id/subtes/:sectionId",
+        loader: ({ params }) =>
+          api<AdminTryoutSectionDetail>(`/admin/tryouts/${params.id}/sections/${params.sectionId}`),
+        element: <AdminTryoutSection />,
+      },
+      {
+        path: "tryouts/:id/subtes/:sectionId/soal/:questionId/edit",
+        loader: async ({ params }) => {
+          const detail = await api<AdminTryoutSectionDetail>(
+            `/admin/tryouts/${params.id}/sections/${params.sectionId}`,
+          );
+          const question = detail.section.questions.find((q) => q.id === params.questionId);
+          if (!question) throw new Response(null, { status: 404 });
+          return { ...detail, question };
+        },
+        element: <TryoutQuestionEditor />,
+      },
       {
         path: "tryouts/:id/impor",
         loader: ({ params }) => api(`/admin/tryouts/${params.id}`),
