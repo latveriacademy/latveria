@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const mathSourcePattern =
-  /(\\begin\{tikzpicture\}[\s\S]*?(?:\\end\{tikzpicture\}|$)|\$\$[\s\S]+?\$\$|\$(?!\s)[^$\n]+?\$)/g;
+  /(\\begin\{tikzpicture\}[\s\S]*?(?:\\end\{tikzpicture\}|$)|\$\$[\s\S]+?\$\$|\\begin\{(?:tabular|array)\}[\s\S]*?(?:\\end\{(?:tabular|array)\}|$)?|\$(?!\s)[^$\n]+?\$)/g;
 
 export const lexiconAnnotationInputSchema = z.object({
   id: z.string().uuid().optional(),

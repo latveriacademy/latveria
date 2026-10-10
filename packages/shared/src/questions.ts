@@ -169,10 +169,25 @@ export type TryoutSectionWithQuestions = TryoutSectionItem & {
 // SECTION IMPORT SCHEMAS
 // ==========================================
 
+export const passageImportItemSchema = z
+  .object({
+    externalId: z.string().trim().min(1).max(100),
+    title: z.string().trim().max(300).optional(),
+    content: z.string().trim().max(20000).optional(),
+    blocks: z.array(contentBlockSchema).max(30).optional(),
+  })
+  .refine(
+    (p) =>
+      Boolean(p.content && p.content.trim()) || (Array.isArray(p.blocks) && p.blocks.length > 0),
+    "Passage harus memiliki content teks atau blocks.",
+  );
+
+export type PassageImportItem = z.infer<typeof passageImportItemSchema>;
+
 const baseSectionImportQuestion = z.object({
-  passageId: z.uuid().optional().nullable(),
   annotations: z.array(lexiconAnnotationInputSchema).max(20).default([]),
   externalId: z.string().trim().max(50).optional(),
+  passageId: z.string().trim().max(100).optional().nullable(),
   prompt: z.string().trim().min(3).max(5000),
   stimulus: stimulusSchema.optional().nullable(),
   passage: z.string().trim().max(20000).optional().nullable(),
@@ -217,14 +232,30 @@ export const sectionImportQuestionSchema = z
     "Anotasi tidak sesuai dengan pertanyaan.",
   );
 
-export const sectionImportSchema = z.object({
-  schemaVersion: z.coerce.number().int().min(1).max(2).default(2),
-  subtest: z.string().trim().max(50).optional(),
-  questions: z
-    .array(sectionImportQuestionSchema)
-    .min(1, "Minimal 1 soal untuk diimpor.")
-    .max(100, "Maksimal 100 soal per subtes."),
-});
+export const sectionImportSchema = z
+  .object({
+    schemaVersion: z.coerce.number().int().min(1).max(2).default(2),
+    subtest: z.string().trim().max(50).optional(),
+    passages: z.array(passageImportItemSchema).max(50).optional(),
+    questions: z
+      .array(sectionImportQuestionSchema)
+      .min(1, "Minimal 1 soal untuk diimpor.")
+      .max(100, "Maksimal 100 soal per subtes."),
+  })
+  .superRefine((data, ctx) => {
+    if (data.passages && data.passages.length > 0) {
+      const passageIds = new Set(data.passages.map((p) => p.externalId));
+      data.questions.forEach((q, idx) => {
+        if (q.passageId && !passageIds.has(q.passageId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Referensi passageId "${q.passageId}" tidak ditemukan pada daftar passages.`,
+            path: ["questions", idx, "passageId"],
+          });
+        }
+      });
+    }
+  });
 
 export type SectionImportQuestion = z.infer<typeof sectionImportQuestionSchema>;
 export type SectionImportInput = z.infer<typeof sectionImportSchema>;

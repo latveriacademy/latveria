@@ -381,20 +381,42 @@ export async function deleteTryoutSection(sectionId: string) {
   return { success: true };
 }
 
+export { importSectionQuestions } from "./admin-tryout-import.service";
 export async function removeQuestionFromSection(sectionId: string, questionId: string) {
   const sId = idSchema.safeParse(sectionId);
   const qId = idSchema.safeParse(questionId);
   if (!sId.success || !qId.success)
     throw new HTTPException(400, { message: "ID section atau soal tidak valid." });
 
-  await getDb()
-    .delete(tryoutPackageQuestions)
-    .where(
-      and(
-        eq(tryoutPackageQuestions.sectionId, sId.data),
-        eq(tryoutPackageQuestions.questionId, qId.data),
-      ),
-    );
+  const db = getDb();
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(tryoutPackageQuestions)
+      .where(
+        and(
+          eq(tryoutPackageQuestions.sectionId, sId.data),
+          eq(tryoutPackageQuestions.questionId, qId.data),
+        ),
+      );
+
+    const remaining = await tx
+      .select({ questionId: tryoutPackageQuestions.questionId })
+      .from(tryoutPackageQuestions)
+      .where(eq(tryoutPackageQuestions.sectionId, sId.data))
+      .orderBy(asc(tryoutPackageQuestions.position), asc(tryoutPackageQuestions.order));
+
+    for (const [idx, item] of remaining.entries()) {
+      await tx
+        .update(tryoutPackageQuestions)
+        .set({ position: idx + 1, order: idx + 1 })
+        .where(
+          and(
+            eq(tryoutPackageQuestions.sectionId, sId.data),
+            eq(tryoutPackageQuestions.questionId, item.questionId),
+          ),
+        );
+    }
+  });
 
   return { success: true };
 }

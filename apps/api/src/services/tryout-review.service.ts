@@ -3,27 +3,42 @@ import { getDb } from "../lib/db";
 import { questions, topics } from "../lib/db/schema";
 
 export async function resolvePassages<
-  T extends { id: string; passage?: string | null; passageId?: string | null },
+  T extends {
+    id: string;
+    passage?: string | null;
+    passageId?: string | null;
+    stimulus?: unknown | null;
+  },
 >(items: T[]): Promise<T[]> {
   const passageMap = new Map<string, string>();
+  const stimulusMap = new Map<string, unknown>();
   for (const item of items) {
     if (item.passage) passageMap.set(item.id, item.passage);
+    if (item.stimulus) stimulusMap.set(item.id, item.stimulus);
   }
   const missing = items
-    .filter((item) => !item.passage && item.passageId && !passageMap.has(item.passageId))
+    .filter(
+      (item) =>
+        (!item.passage || !item.stimulus) &&
+        item.passageId &&
+        (!passageMap.has(item.passageId) || !stimulusMap.has(item.passageId)),
+    )
     .map((item) => item.passageId!);
   if (missing.length > 0) {
     const parentRows = await getDb()
-      .select({ id: questions.id, passage: questions.passage })
+      .select({ id: questions.id, passage: questions.passage, stimulus: questions.stimulus })
       .from(questions)
       .where(inArray(questions.id, missing));
     for (const p of parentRows) {
       if (p.passage) passageMap.set(p.id, p.passage);
+      if (p.stimulus) stimulusMap.set(p.id, p.stimulus);
     }
   }
   return items.map((item) => ({
     ...item,
     passage: item.passage || (item.passageId ? (passageMap.get(item.passageId) ?? null) : null),
+    stimulus: (item.stimulus ||
+      (item.passageId ? (stimulusMap.get(item.passageId) ?? null) : null)) as T["stimulus"],
   }));
 }
 

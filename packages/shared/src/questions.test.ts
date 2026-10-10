@@ -126,6 +126,76 @@ describe("Section Import Question Schema", () => {
     const parsed = sectionImportSchema.safeParse(importPayload);
     expect(parsed.success).toBe(true);
   });
+
+  it("validates shared passages schema and questions linking via passageId", () => {
+    const payload = {
+      schemaVersion: 2,
+      subtest: "Penalaran Umum",
+      passages: [
+        {
+          externalId: "PASS-001",
+          title: "Bacaan PU 01",
+          blocks: [
+            {
+              type: "text",
+              content: "Teks panjang stimulus bacaan nomor 1 sampai 4.",
+            },
+          ],
+        },
+      ],
+      questions: [
+        {
+          externalId: "PU-001",
+          type: "single_choice",
+          passageId: "PASS-001",
+          prompt: "Berdasarkan bacaan tersebut, simpulan yang tepat adalah...",
+          options: ["Opsi A", "Opsi B", "Opsi C", "Opsi D", "Opsi E"],
+          correctAnswer: "A",
+        },
+        {
+          externalId: "PU-002",
+          type: "single_choice",
+          passageId: "PASS-001",
+          prompt: "Kelemahan argumen pada paragraf kedua adalah...",
+          options: ["Opsi A", "Opsi B", "Opsi C", "Opsi D", "Opsi E"],
+          correctAnswer: "B",
+        },
+      ],
+    };
+
+    const parsed = sectionImportSchema.safeParse(payload);
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects invalid passageId reference with clear issue path", () => {
+    const payload = {
+      schemaVersion: 2,
+      passages: [
+        {
+          externalId: "PASS-001",
+          content: "Teks bacaan.",
+        },
+      ],
+      questions: [
+        {
+          externalId: "PU-001",
+          type: "single_choice",
+          passageId: "PASS-TIDAK-ADA",
+          prompt: "Pertanyaan dengan passage tidak valid...",
+          options: ["A", "B", "C", "D", "E"],
+          correctAnswer: "A",
+        },
+      ],
+    };
+
+    const parsed = sectionImportSchema.safeParse(payload);
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      const issue = parsed.error.issues.find((i) => i.path.includes("passageId"));
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain("PASS-TIDAK-ADA");
+    }
+  });
 });
 
 describe("True/False Scoring with Partial Credit", () => {

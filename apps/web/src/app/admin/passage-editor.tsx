@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { MathText } from "../../components/math-text";
 
 export interface AvailablePassage {
   id: string;
@@ -131,15 +132,26 @@ export function PassageEditor({
           />
           <p className="text-[11px] text-[var(--soft-ink)]">
             Soal lain dalam paket ini nanti dapat memilih opsi "Gunakan wacana dari soal lain" untuk
-            memakai teks ini tanpa perlu menyalin ulang.
+            memakai teks ini tanpa perlu menyalin ulang. Formula dan tabel LaTeX dapat ditulis di
+            sini.
           </p>
+          {passage.trim() && (
+            <div className="mt-3 rounded border border-[var(--edge)] bg-[var(--surface)] p-3 text-xs">
+              <span className="font-mono text-[10px] text-[var(--gold)] uppercase block mb-1">
+                Pratinjau Teks Wacana (LaTeX):
+              </span>
+              <div className="font-serif text-sm leading-relaxed text-[var(--ink)] max-h-48 overflow-y-auto whitespace-pre-line">
+                <MathText>{passage}</MathText>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Mode: Reuse passage from another question */}
       {mode === "reuse" && (
-        <div className="space-y-3 rounded-lg border border-[var(--accent-gold)] bg-[var(--surface-elevated)] p-3.5">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-gold)] font-mono uppercase tracking-wider">
+        <div className="space-y-3 rounded-lg border border-[var(--gold)] bg-[var(--surface-elevated)] p-3.5">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--gold)] font-mono uppercase tracking-wider">
             <Sparkles size={14} />
             <span>Pilih Wacana yang Sudah Ada di Paket Ini</span>
           </div>
@@ -165,13 +177,13 @@ export function PassageEditor({
           </Select>
 
           {selectedReusedPassage && (
-            <div className="rounded border border-[var(--edge)] bg-[var(--bg-app)] p-3 text-xs">
-              <span className="font-mono text-[10px] text-[var(--text-muted)] uppercase block mb-1">
+            <div className="rounded border border-[var(--edge)] bg-[var(--surface)] p-3 text-xs">
+              <span className="font-mono text-[10px] text-[var(--soft-ink)] uppercase block mb-1">
                 Pratinjau Wacana Terhubung:
               </span>
-              <p className="font-serif text-sm leading-relaxed text-[var(--text-primary)] max-h-36 overflow-y-auto whitespace-pre-line">
-                {selectedReusedPassage.passage}
-              </p>
+              <div className="font-serif text-sm leading-relaxed text-[var(--ink)] max-h-36 overflow-y-auto whitespace-pre-line">
+                <MathText>{selectedReusedPassage.passage}</MathText>
+              </div>
             </div>
           )}
           <input type="hidden" name="passageId" value={passageId ?? ""} />
