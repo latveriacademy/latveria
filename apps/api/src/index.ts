@@ -1,5 +1,8 @@
 import { serveStatic } from "hono/bun";
 import { app } from "./app";
+import { authenticateWarriorWs } from "./services/warrior-auth-ws.service";
+import type { WarriorSocketData } from "./services/warrior-room.manager";
+import { onSocketClose, onSocketMessage, onSocketOpen } from "./services/warrior-ws.service";
 
 // Jaga proses tetap hidup jika ada unhandled rejection (mis. Supabase statement timeout)
 process.on("unhandledRejection", (reason) => {
@@ -16,5 +19,30 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 const port = Number(process.env.PORT ?? (process.env.NODE_ENV === "production" ? 3000 : 3001));
-const server = Bun.serve({ fetch: app.fetch, port });
+
+const server = Bun.serve<WarriorSocketData>({
+  port,
+  async fetch(req, bunServer) {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith("/api/warrior/battles/") && url.pathname.endsWith("/ws")) {
+      const authResult = await authenticateWarriorWs(req);
+      if (!authResult.success) {
+        return new Response(JSON.stringify({ error: authResult.reason }), {
+          status: authResult.status,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const upgraded = bunServer.upgrade(req, { data: authResult.data });
+      if (upgraded) return undefined as unknown as Response;
+      return new Response("WebSocket upgrade failed", { status: 400 });
+    }
+    return app.fetch(req);
+  },
+  websocket: {
+    open: onSocketOpen,
+    message: onSocketMessage,
+    close: onSocketClose,
+  },
+});
+
 console.info(`Latveria API listening on http://localhost:${server.port}`);
