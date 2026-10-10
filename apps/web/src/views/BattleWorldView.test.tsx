@@ -10,12 +10,14 @@ it("offers Drilling and Battle World navigation and an empty state backed by liv
   expect(learnerMobileNavigation.map((item) => item.id)).toEqual([
     "dashboard",
     "practice",
+    "warrior",
     "library",
     "tryout",
     "leaderboard",
     "profile",
     "settings",
   ]);
+
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
   const html = renderToStaticMarkup(
     <MemoryRouter>

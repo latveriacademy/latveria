@@ -12,6 +12,7 @@ import { LeaderboardView } from "./views/LeaderboardView";
 import { ProfileView } from "./views/ProfileView";
 import { SettingsView } from "./views/SettingsView";
 import { BattleWorldView } from "./views/BattleWorldView";
+import { WarriorBattleView } from "./views/WarriorBattleView";
 import "./learner-copy.css";
 import { useMatch, useNavigation, useOutlet } from "react-router";
 import { DashboardShell } from "./components/ui/dashboard-shell";
@@ -32,6 +33,8 @@ function AppShell() {
         return <DashboardView />;
       case "practice":
         return <PracticeView />;
+      case "warrior":
+        return <WarriorBattleView />;
       case "library":
         return <LibraryView />;
       case "tryout":

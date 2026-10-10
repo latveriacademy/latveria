@@ -231,12 +231,14 @@ export const router = createBrowserRouter([
     ],
   },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
+  { path: "/battle", element: <Navigate to="/dashboard?tab=warrior" replace /> },
   { path: "/library", element: <Navigate to="/dashboard?tab=library" replace /> },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
   { path: "/profile", element: <Navigate to="/dashboard?tab=profile" replace /> },
   { path: "/settings", element: <Navigate to="/dashboard?tab=settings" replace /> },
   { path: "/dashboard/topik", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/dashboard/topik/:slug", element: <Navigate to="/dashboard?tab=practice" replace /> },
+
   {
     id: "admin",
     path: "/admin",
