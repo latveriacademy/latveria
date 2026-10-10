@@ -1,3 +1,4 @@
+import { Award } from "lucide-react";
 import type { TryoutHistoryEntry } from "@latveria/shared";
 import { formatTryoutDate, formatTryoutScore, tryoutScoreLabel } from "../lib/tryout-results";
 import { PageHeading, Panel } from "./ui/dashboard";
@@ -52,9 +53,20 @@ export function TryoutHistory({
                     {tryoutScoreLabel(row.method, row.isCompleteUtbk)}
                   </p>
                 </div>
-                <Button variant="outline" onClick={() => onOpen(row.id)}>
-                  Buka hasil
-                </Button>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/api/learner/tryouts/${row.id}/certificate.pdf`}
+                    download
+                    className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--edge)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--ink)] shadow-sm hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--emerald)]"
+                    title="Unduh Sertifikat PDF"
+                  >
+                    <Award size={14} />
+                    Sertifikat
+                  </a>
+                  <Button variant="outline" onClick={() => onOpen(row.id)}>
+                    Buka hasil
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
