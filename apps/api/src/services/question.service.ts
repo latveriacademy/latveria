@@ -288,6 +288,7 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
       prompt: questions.prompt,
       passage: questions.passage,
       passageId: questions.passageId,
+      stimulus: questions.stimulus,
       annotations: questions.annotations,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
@@ -303,13 +304,13 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
     .where(eq(questions.id, id.data));
   if (!item) throw new HTTPException(404);
 
-  let resolvedPassage = item.passage;
+  let resolvedPassage = item.passage || item.stimulus?.passage || null;
   if (!resolvedPassage && item.passageId) {
     const [ref] = await getDb()
-      .select({ passage: questions.passage })
+      .select({ passage: questions.passage, stimulus: questions.stimulus })
       .from(questions)
       .where(eq(questions.id, item.passageId));
-    resolvedPassage = ref?.passage ?? null;
+    resolvedPassage = ref?.passage || ref?.stimulus?.passage || null;
   }
 
   const [usage] = await getDb()
@@ -340,7 +341,8 @@ export async function updateQuestion(idParam: string, body: unknown) {
     if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
     await validatePassage(tx, parsed.data, id.data);
     if (
-      ((!parsed.data.passage || parsed.data.passageId) && existing.passage) ||
+      ((!parsed.data.passage || parsed.data.passageId) &&
+        (existing.passage || existing.stimulus?.passage)) ||
       existing.topicId !== parsed.data.topicId ||
       existing.packageId !== (parsed.data.packageId ?? null)
     )
@@ -374,6 +376,9 @@ export async function updateQuestion(idParam: string, body: unknown) {
         category: parsed.data.category ?? null,
         passage: parsed.data.passageId ? null : (parsed.data.passage ?? null),
         passageId: parsed.data.passageId ?? null,
+        ...(existing.stimulus?.passage
+          ? { stimulus: { ...existing.stimulus, passage: undefined } }
+          : {}),
       })
       .where(eq(questions.id, id.data));
     return topic.slug;

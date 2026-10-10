@@ -20,7 +20,12 @@ export async function snapshotTryoutQuestions(db: Writer, sets: Record<string, s
   const records = rows.map((q) => {
     const snapshot = {
       ...q,
-      passage: q.passage || sources.find((source) => source.id === q.passageId)?.passage || null,
+      passage:
+        q.passage ||
+        q.stimulus?.passage ||
+        sources.find((source) => source.id === q.passageId)?.passage ||
+        sources.find((source) => source.id === q.passageId)?.stimulus?.passage ||
+        null,
     };
     const { packageId, order, subtestOrder, passageId, ...content } = snapshot;
     void packageId;

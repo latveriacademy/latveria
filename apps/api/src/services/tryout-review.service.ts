@@ -13,7 +13,12 @@ export async function resolvePassages<
   const passageMap = new Map<string, string>();
   const stimulusMap = new Map<string, unknown>();
   for (const item of items) {
-    if (item.passage) passageMap.set(item.id, item.passage);
+    const text =
+      item.passage ||
+      (item.stimulus && typeof item.stimulus === "object" && "passage" in item.stimulus
+        ? ((item.stimulus as { passage?: string | null }).passage ?? null)
+        : null);
+    if (text) passageMap.set(item.id, text);
     if (item.stimulus) stimulusMap.set(item.id, item.stimulus);
   }
   const missing = items
@@ -30,13 +35,23 @@ export async function resolvePassages<
       .from(questions)
       .where(inArray(questions.id, missing));
     for (const p of parentRows) {
-      if (p.passage) passageMap.set(p.id, p.passage);
+      const text =
+        p.passage ||
+        (p.stimulus && typeof p.stimulus === "object" && "passage" in p.stimulus
+          ? ((p.stimulus as { passage?: string | null }).passage ?? null)
+          : null);
+      if (text) passageMap.set(p.id, text);
       if (p.stimulus) stimulusMap.set(p.id, p.stimulus);
     }
   }
   return items.map((item) => ({
     ...item,
-    passage: item.passage || (item.passageId ? (passageMap.get(item.passageId) ?? null) : null),
+    passage:
+      item.passage ||
+      (item.stimulus && typeof item.stimulus === "object" && "passage" in item.stimulus
+        ? ((item.stimulus as { passage?: string | null }).passage ?? null)
+        : null) ||
+      (item.passageId ? (passageMap.get(item.passageId) ?? null) : null),
     stimulus: (item.stimulus ||
       (item.passageId ? (stimulusMap.get(item.passageId) ?? null) : null)) as T["stimulus"],
   }));

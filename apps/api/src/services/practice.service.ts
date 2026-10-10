@@ -10,6 +10,7 @@ import {
   type Result,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
+import { resolvePassages } from "./tryout-review.service";
 import {
   practiceAnswers,
   practiceAttempts,
@@ -58,31 +59,6 @@ export async function getLearnerHistory(userId: string): Promise<HistoryItem[]> 
     submittedAt: row.submittedAt.toISOString(),
     earnedXP: practiceXP(row.correct),
     scoreBreakdown: row.scoreBreakdown ? JSON.parse(row.scoreBreakdown) : null,
-  }));
-}
-
-async function resolvePassages<
-  T extends { id: string; passage?: string | null; passageId?: string | null },
->(items: T[]): Promise<T[]> {
-  const passageMap = new Map<string, string>();
-  for (const item of items) {
-    if (item.passage) passageMap.set(item.id, item.passage);
-  }
-  const missing = items
-    .filter((item) => !item.passage && item.passageId && !passageMap.has(item.passageId))
-    .map((item) => item.passageId!);
-  if (missing.length > 0) {
-    const parentRows = await getDb()
-      .select({ id: questions.id, passage: questions.passage })
-      .from(questions)
-      .where(inArray(questions.id, missing));
-    for (const p of parentRows) {
-      if (p.passage) passageMap.set(p.id, p.passage);
-    }
-  }
-  return items.map((item) => ({
-    ...item,
-    passage: item.passage || (item.passageId ? (passageMap.get(item.passageId) ?? null) : null),
   }));
 }
 

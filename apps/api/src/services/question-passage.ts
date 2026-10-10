@@ -1,13 +1,14 @@
 import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { getDb } from "../lib/db";
-import { questions } from "../lib/db/schema";
+import { questions, tryoutPackageQuestions } from "../lib/db/schema";
 
 type Reader = Pick<ReturnType<typeof getDb>, "select">;
 export async function validatePassage(
   db: Reader,
   input: { topicId: string; packageId?: string | null; passageId?: string | null },
   id?: string,
+  scope?: { packageId: string; sectionId: string },
 ) {
   if (!input.passageId) return;
   if (input.passageId === id)
@@ -19,14 +20,37 @@ export async function validatePassage(
     .from(questions)
     .where(eq(questions.id, input.passageId))
     .for("key share");
+  const [member] = scope
+    ? await db
+        .select()
+        .from(tryoutPackageQuestions)
+        .where(
+          and(
+            eq(tryoutPackageQuestions.packageId, scope.packageId),
+            eq(tryoutPackageQuestions.sectionId, scope.sectionId),
+            eq(tryoutPackageQuestions.questionId, input.passageId),
+          ),
+        )
+    : [];
+  const [target] =
+    id && !scope
+      ? await db
+          .select({ passageId: questions.passageId })
+          .from(questions)
+          .where(eq(questions.id, id))
+      : [];
   if (
-    !source?.passage ||
+    !(source?.passage || source?.stimulus?.passage) ||
     source.passageId ||
     source.topicId !== input.topicId ||
-    source.packageId !== (input.packageId ?? null)
+    (scope
+      ? !member
+      : source.packageId !== (input.packageId ?? null) && target?.passageId !== input.passageId)
   )
     throw new HTTPException(400, {
-      message: "Pilih soal sumber dengan wacana asli pada subtes dan paket yang sama.",
+      message: scope
+        ? "Pilih wacana asli dari soal lain pada subtes Tryout yang sama."
+        : "Pilih soal sumber dengan wacana asli pada subtes dan paket yang sama.",
     });
 }
 export async function protectPassageSources(db: Reader, ids: string[]) {
