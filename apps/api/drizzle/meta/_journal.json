@@ -162,6 +162,13 @@
       "when": 1791481194688,
       "tag": "0022_new_marvel_zombies",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791490000000,
+      "tag": "0023_warrior_battle_system",
+      "breakpoints": true
     }
   ]
 }

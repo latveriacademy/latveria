@@ -406,3 +406,5 @@ export const irtCalibrations = pgTable(
       .where(sql`${table.active} = true`),
   ],
 ).enableRLS();
+
+export * from "./warrior-schema";

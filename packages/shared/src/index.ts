@@ -74,7 +74,9 @@ export {
   singleChoiceImportQuestionSchema,
   trueFalseImportQuestionSchema,
   sectionImportQuestionSchema,
+  passageImportItemSchema,
   sectionImportSchema,
+  type PassageImportItem,
   type TextBlock,
   type LatexBlock,
   type TableBlock,
@@ -504,3 +506,5 @@ export type PackageDetail = QuestionPackage & {
     usage: number;
   }[];
 };
+
+export * from "./warrior";
