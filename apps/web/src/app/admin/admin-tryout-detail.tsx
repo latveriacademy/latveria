@@ -6,23 +6,17 @@ import {
   Clock,
   Layers,
   Upload,
-  Eye,
-  Trash2,
   FileQuestion,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type {
-  TryoutSectionWithQuestions,
-  TryoutSectionQuestion,
-  AdminTryoutDetail,
-} from "@latveria/shared";
+import type { AdminTryoutDetail } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { Button } from "../../components/ui/button";
 import { AppDialog } from "../../components/app-dialog";
-import { ConfirmDialog } from "../../components/confirm-dialog";
-import { QuestionRenderer } from "../../components/question-renderer";
+import { TryoutQuestionTable } from "./tryout-question-table";
+import { DeleteTryoutSection } from "./delete-tryout-section";
 
 type TryoutDetailData = AdminTryoutDetail;
 
@@ -33,20 +27,6 @@ export function AdminTryoutDetail() {
   const [error, setError] = useState("");
 
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
-  // Import modal state
-
-  // Preview modal state
-  const [previewQuestion, setPreviewQuestion] = useState<
-    TryoutSectionWithQuestions["questions"][number] | null
-  >(null);
-
-  // Delete question from section state
-  const [deleteTarget, setDeleteTarget] = useState<{
-    sectionId: string;
-    questionId: string;
-  } | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   // Add section dialog
   const [addSectionOpen, setAddSectionOpen] = useState(false);
@@ -85,30 +65,13 @@ export function AdminTryoutDetail() {
           subtestCode: newSubtestCode,
           title: newTitle,
           durationSeconds: Number(newDurationMin) * 60,
-          sectionOrder: (data?.sections.length || 0) + 1,
+          sectionOrder: Math.max(0, ...(data?.sections.map((s) => s.sectionOrder) ?? [])) + 1,
         }),
       });
       setAddSectionOpen(false);
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menambah subtes.");
-    }
-  };
-
-  const handleRemoveQuestion = async () => {
-    if (!id || !deleteTarget) return;
-    setDeleting(true);
-    try {
-      await api(
-        `/admin/tryouts/sections/${deleteTarget.sectionId}/questions/${deleteTarget.questionId}`,
-        { method: "DELETE" },
-      );
-      setDeleteTarget(null);
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menghapus soal dari subtes.");
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -226,12 +189,19 @@ export function AdminTryoutDetail() {
                   </div>
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button asChild size="sm" variant="outline" className="flex items-center gap-1.5">
                     <Link to={`/admin/tryouts/${id}/impor?section=${section.id}`}>
                       <Upload size={13} /> Impor Soal
                     </Link>
                   </Button>
+                  <DeleteTryoutSection
+                    packageId={data.id}
+                    sectionId={section.id}
+                    title={section.title}
+                    questionCount={section.questionCount}
+                    onDeleted={loadData}
+                  />
                   <Button
                     size="sm"
                     variant="ghost"
@@ -259,82 +229,15 @@ export function AdminTryoutDetail() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm border-collapse">
-                        <thead>
-                          <tr className="border-b border-[var(--edge)] font-mono text-xs text-[var(--soft-ink)]">
-                            <th className="py-2 px-3 w-12">No</th>
-                            <th className="py-2 px-3 w-28">Tipe</th>
-                            <th className="py-2 px-3">Teks Soal</th>
-                            <th className="py-2 px-3 w-24">Stimulus</th>
-                            <th className="py-2 px-3 w-28 text-right">Aksi</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {section.questions.map((q: TryoutSectionQuestion, qIdx: number) => {
-                            const hasStimulus = Boolean(
-                              q.stimulus?.passage ||
-                              (q.stimulus?.blocks && q.stimulus.blocks.length > 0) ||
-                              q.passage,
-                            );
-
-                            return (
-                              <tr
-                                key={q.id}
-                                className="border-b border-[var(--edge)]/40 hover:bg-[var(--surface-muted)]/50"
-                              >
-                                <td className="py-2.5 px-3 font-mono text-xs text-[var(--gold)]">
-                                  {qIdx + 1}
-                                </td>
-                                <td className="py-2.5 px-3 font-mono text-xs">
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono border border-[var(--edge)] bg-[var(--surface-muted)]">
-                                    {q.type === "true_false_group"
-                                      ? "Benar/Salah"
-                                      : "Pilihan Ganda"}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-3 font-serif text-xs text-[var(--ink)] line-clamp-1">
-                                  {q.prompt}
-                                </td>
-                                <td className="py-2.5 px-3 font-mono text-xs">
-                                  {hasStimulus ? (
-                                    <span className="text-[var(--emerald)]">Ada</span>
-                                  ) : (
-                                    <span className="text-[var(--soft-ink)]">-</span>
-                                  )}
-                                </td>
-                                <td className="py-2.5 px-3 text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      title="Pratinjau Soal"
-                                      onClick={() => setPreviewQuestion(q)}
-                                    >
-                                      <Eye size={14} />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-[var(--crimson)] hover:bg-[var(--crimson)]/10"
-                                      title="Hapus dari Subtes"
-                                      onClick={() =>
-                                        setDeleteTarget({
-                                          sectionId: section.id,
-                                          questionId: q.id,
-                                        })
-                                      }
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <>
+                      <TryoutQuestionTable
+                        packageId={data.id}
+                        sectionId={section.id}
+                        rows={section.questions}
+                        previewOnly
+                        onChange={loadData}
+                      />
+                    </>
                   )}
                 </div>
               )}
@@ -342,36 +245,6 @@ export function AdminTryoutDetail() {
           );
         })}
       </div>
-
-      {/* Import Modal */}
-
-      {/* Question Preview Modal */}
-      <AppDialog
-        open={Boolean(previewQuestion)}
-        onOpenChange={(open) => !open && setPreviewQuestion(null)}
-        title="Pratinjau Soal"
-        description="Tampilan evaluasi lengkap seperti yang dilihat peserta saat sesi review."
-      >
-        {previewQuestion && (
-          <div className="pt-2 max-h-[75vh] overflow-y-auto">
-            <QuestionRenderer
-              question={{
-                id: previewQuestion.id,
-                prompt: previewQuestion.prompt,
-                questionType: previewQuestion.type,
-                stimulus: previewQuestion.stimulus,
-                passage: previewQuestion.passage,
-                statements: previewQuestion.statements,
-                options: previewQuestion.options,
-                correctAnswer: previewQuestion.correctAnswer,
-                explanation: previewQuestion.explanation,
-              }}
-              evaluated
-              disabled
-            />
-          </div>
-        )}
-      </AppDialog>
 
       {/* Add Section Dialog */}
       <AppDialog
@@ -394,7 +267,7 @@ export function AdminTryoutDetail() {
               required
               value={newSubtestCode}
               onChange={(e) => setNewSubtestCode(e.target.value.toUpperCase())}
-              placeholder="Contoh: PU, PK, LBI"
+              placeholder="Contoh: PU, PK, BI"
               className="w-full rounded-md border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
             />
           </div>
@@ -442,18 +315,6 @@ export function AdminTryoutDetail() {
           </div>
         </form>
       </AppDialog>
-
-      {/* Confirm Delete Question from Section */}
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Hapus Soal dari Subtes?"
-        description="Soal akan dilepaskan dari subtes ini. Riwayat jawaban masa lalu tetap terjaga."
-        confirmLabel="Hapus dari Subtes"
-        pending={deleting}
-        error={error}
-        onConfirm={handleRemoveQuestion}
-      />
     </>
   );
 }
