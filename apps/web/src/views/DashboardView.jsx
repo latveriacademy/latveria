@@ -18,8 +18,11 @@ function useUtbkCountdown() {
     fetch("/api/learner/config")
       .then((res) => (res.ok ? res.json().catch(() => null) : null))
       .then((cfg) => {
-        if (cfg?.utbk_target_date) {
-          setTargetDate(new Date(cfg.utbk_target_date));
+        const rawDate = cfg?.utbkTargetDate || cfg?.utbk_target_date;
+        if (rawDate) {
+          // Parse sebagai tanggal lokal WIB jika hanya YYYY-MM-DD
+          const iso = rawDate.includes("T") ? rawDate : `${rawDate}T00:00:00+07:00`;
+          setTargetDate(new Date(iso));
         }
       })
       .catch(() => {});
@@ -211,7 +214,9 @@ export const DashboardView = () => {
           {/* UTBK Countdown Panel */}
           <Panel className="utbk-countdown-panel">
             <PanelHeader title="Hitung mundur UTBK">
-              <span className="meta-tag-id font-mono">SNPMB 2027</span>
+              <span className="font-mono text-xs font-semibold text-[var(--accent-gold)]">
+                SNPMB 2027
+              </span>
             </PanelHeader>
             {countdown ? (
               countdown.passed ? (
