@@ -209,17 +209,16 @@ export async function verifyAdminTryouts(
         .length,
       0,
     );
-    assert.equal(
-      (
-        await request(
-          `/admin/tryouts/sections/${section.id}/questions/${questionIds[0]}`,
-          adminCookie,
-          undefined,
-          "DELETE",
-        )
-      ).status,
-      200,
+    // Bulk remove questions from section
+    const bulkRemoveRes = await request(
+      `/admin/tryouts/sections/${section.id}/questions/bulk-delete`,
+      adminCookie,
+      { ids: [questionIds[0]] },
     );
+    assert.equal(bulkRemoveRes.status, 200);
+    const bulkRemoveData = await bulkRemoveRes.json();
+    assert.equal(bulkRemoveData.count, 1);
+
     assert.equal(
       (
         await request(

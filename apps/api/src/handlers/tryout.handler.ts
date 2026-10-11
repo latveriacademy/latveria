@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../types";
 import {
+  bulkRemoveQuestionsFromSection,
   createAdminTryout,
   createTryoutSection,
   deleteAdminTryout,
@@ -165,6 +166,12 @@ tryoutHandler.post("/api/admin/tryouts/:id/import", async (c) =>
 tryoutHandler.post("/api/admin/tryouts/:id/sections/:sectionId/import", async (c) => {
   const body = await c.req.json().catch(() => null);
   const result = await importSectionQuestions(c.req.param("sectionId"), body);
+  return c.json(result);
+});
+
+tryoutHandler.post("/api/admin/tryouts/sections/:sectionId/questions/bulk-delete", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const result = await bulkRemoveQuestionsFromSection(c.req.param("sectionId"), body);
   return c.json(result);
 });
 

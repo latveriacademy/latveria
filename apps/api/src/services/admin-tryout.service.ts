@@ -1,6 +1,7 @@
-import { and, asc, count, desc, eq, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, notInArray, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
+  bulkDeleteSchema,
   idSchema,
   utbkSubtests,
   createTryoutSchema,
@@ -448,6 +449,70 @@ export async function removeQuestionFromSection(sectionId: string, questionId: s
     }
 
     return { success: true };
+  });
+}
+
+export async function bulkRemoveQuestionsFromSection(sectionId: string, body: unknown) {
+  const sId = idSchema.safeParse(sectionId);
+  const parsed = bulkDeleteSchema.safeParse(body);
+  if (!sId.success || !parsed.success)
+    throw new HTTPException(400, { message: "ID section atau daftar soal tidak valid." });
+
+  const qIds = parsed.data.ids;
+  return getDb().transaction(async (tx) => {
+    const [section] = await tx.select().from(tryoutSections).where(eq(tryoutSections.id, sId.data));
+    if (!section) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+    await tx
+      .select()
+      .from(questionPackages)
+      .where(eq(questionPackages.id, section.packageId))
+      .for("update");
+    const [dependent] = await tx
+      .select({ id: questions.id })
+      .from(questions)
+      .innerJoin(tryoutPackageQuestions, eq(tryoutPackageQuestions.questionId, questions.id))
+      .where(
+        and(
+          eq(tryoutPackageQuestions.sectionId, sId.data),
+          inArray(questions.passageId, qIds),
+          notInArray(questions.id, qIds),
+        ),
+      )
+      .limit(1);
+    if (dependent)
+      throw new HTTPException(409, {
+        message:
+          "Salah satu soal yang dipilih wacananya masih digunakan oleh soal lain dalam subtes ini. Lepaskan referensi sebelum mengeluarkannya.",
+      });
+
+    await tx
+      .delete(tryoutPackageQuestions)
+      .where(
+        and(
+          eq(tryoutPackageQuestions.sectionId, sId.data),
+          inArray(tryoutPackageQuestions.questionId, qIds),
+        ),
+      );
+
+    const remaining = await tx
+      .select({ questionId: tryoutPackageQuestions.questionId })
+      .from(tryoutPackageQuestions)
+      .where(eq(tryoutPackageQuestions.sectionId, sId.data))
+      .orderBy(asc(tryoutPackageQuestions.position), asc(tryoutPackageQuestions.order));
+
+    for (const [idx, item] of remaining.entries()) {
+      await tx
+        .update(tryoutPackageQuestions)
+        .set({ position: idx + 1, order: idx + 1 })
+        .where(
+          and(
+            eq(tryoutPackageQuestions.sectionId, sId.data),
+            eq(tryoutPackageQuestions.questionId, item.questionId),
+          ),
+        );
+    }
+
+    return { count: qIds.length, success: true };
   });
 }
 
