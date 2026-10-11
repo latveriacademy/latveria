@@ -1,0 +1,40 @@
+.selectionBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0 16px;
+  padding: 10px 16px;
+  border: 1px solid var(--emerald);
+  border-radius: 8px;
+  background: var(--emerald-tint);
+  color: var(--ink);
+}
+
+.selectionBar strong {
+  margin-right: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--emerald);
+}
+
+.rowCheckbox {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: var(--emerald);
+}
+
+.selectedRow {
+  background: var(--emerald-tint) !important;
+}
+
+.previewLabel {
+  margin-left: 6px;
+}
+
+@media (max-width: 640px) {
+  .previewLabel {
+    display: none;
+  }
+}
