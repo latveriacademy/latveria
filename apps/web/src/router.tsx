@@ -29,10 +29,6 @@ import { QuestionForm } from "./app/admin/question-form";
 import { QuestionJsonEditor } from "./app/admin/question-json-editor";
 import { AdminLayout } from "./app/admin/admin-layout";
 import { ImportQuestions } from "./app/admin/import-questions";
-import { TryoutImportPage } from "./app/admin/tryout-import-page";
-import { AdminIrt } from "./app/admin/admin-irt";
-import { AdminTryoutSection } from "./app/admin/admin-tryout-section";
-import { TryoutQuestionEditor } from "./app/admin/tryout-question-editor";
 import { QuestionPreview } from "./app/admin/question-preview";
 import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
@@ -88,6 +84,31 @@ const AdminTryouts = lazy(() =>
 const AdminTryoutDetail = lazy(() =>
   import("./app/admin/admin-tryout-detail").then((module) => ({
     default: module.AdminTryoutDetail,
+  })),
+);
+const AdminIrt = lazy(() =>
+  import("./app/admin/admin-irt").then((module) => ({
+    default: module.AdminIrt,
+  })),
+);
+const AdminTryoutSection = lazy(() =>
+  import("./app/admin/admin-tryout-section").then((module) => ({
+    default: module.AdminTryoutSection,
+  })),
+);
+const TryoutQuestionPreview = lazy(() =>
+  import("./app/admin/tryout-question-preview").then((module) => ({
+    default: module.TryoutQuestionPreview,
+  })),
+);
+const TryoutQuestionEditor = lazy(() =>
+  import("./app/admin/tryout-question-editor").then((module) => ({
+    default: module.TryoutQuestionEditor,
+  })),
+);
+const TryoutImportPage = lazy(() =>
+  import("./app/admin/tryout-import-page").then((module) => ({
+    default: module.TryoutImportPage,
   })),
 );
 
@@ -290,6 +311,18 @@ export const router = createBrowserRouter([
         loader: ({ params }) =>
           api<AdminTryoutSectionDetail>(`/admin/tryouts/${params.id}/sections/${params.sectionId}`),
         element: <AdminTryoutSection />,
+      },
+      {
+        path: "tryouts/:id/subtes/:sectionId/soal/:questionId",
+        loader: async ({ params }) => {
+          const detail = await api<AdminTryoutSectionDetail>(
+            `/admin/tryouts/${params.id}/sections/${params.sectionId}`,
+          );
+          const question = detail.section.questions.find((q) => q.id === params.questionId);
+          if (!question) throw new Response(null, { status: 404 });
+          return { ...detail, question };
+        },
+        element: <TryoutQuestionPreview />,
       },
       {
         path: "tryouts/:id/subtes/:sectionId/soal/:questionId/edit",
