@@ -1,4 +1,4 @@
-import { serveStatic } from "@hono/bun";
+import { serveStatic } from "hono/bun";
 import { app } from "./app";
 import { authenticateWarriorWs } from "./services/warrior-auth-ws.service";
 import type { WarriorSocketData } from "./services/warrior-room.manager";
