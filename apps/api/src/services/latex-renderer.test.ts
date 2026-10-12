@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import { app } from "../app";
 import { computeLatexHash, renderLatex } from "./latex-renderer.service";
 
@@ -9,6 +10,9 @@ describe("LaTeX Renderer Service", () => {
     const hash2 = computeLatexHash(src, "pdflatex", ["amsmath", "circuitikz"]);
     expect(hash1).toBe(hash2);
     expect(hash1).toMatch(/^[a-f0-9]{64}$/);
+    expect(hash1).not.toBe(
+      createHash("sha256").update(`pdflatex|amsmath,circuitikz|${src}`).digest("hex"),
+    );
   });
 
   it("produces valid SVG output with metadata and graceful fallback", async () => {

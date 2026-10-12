@@ -27,7 +27,8 @@ export function computeLatexHash(
 ): string {
   const normSource = source.trim();
   const normPkgs = [...packages].sort().join(",");
-  const payload = `${compiler}|${normPkgs}|${normSource}`;
+  // Invalidate SVGs generated before strict PGFPlots parsing and XML escaping.
+  const payload = `svg-v2|${compiler}|${normPkgs}|${normSource}`;
   return createHash("sha256").update(payload).digest("hex");
 }
 
@@ -153,7 +154,12 @@ export async function getCachedLatex(hash: string) {
     const db = getDb();
     const [cached] = await db.select().from(latexRenders).where(eq(latexRenders.hash, hash));
 
-    return cached || null;
+    if (
+      !cached ||
+      computeLatexHash(cached.source, cached.compiler, JSON.parse(cached.packages)) !== hash
+    )
+      return null;
+    return cached;
   } catch {
     return null;
   }
