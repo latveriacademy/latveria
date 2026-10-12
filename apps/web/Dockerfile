@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
+COPY apps/tex-worker/package.json ./apps/tex-worker/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 RUN bun install --frozen-lockfile --filter @latveria/web --filter @latveria/shared
 COPY apps/web ./apps/web

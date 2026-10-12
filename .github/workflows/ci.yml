@@ -105,6 +105,15 @@ jobs:
           tags: latveria-frontend:ci
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+      - name: Build TeX worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/tex-worker/Dockerfile
+          load: true
+          tags: latveria-tex-worker:ci
+          cache-from: type=gha,scope=tex-worker
+          cache-to: type=gha,mode=max,scope=tex-worker
       - run: docker compose -f compose.production.yaml up -d --wait postgres
       # Migrate dan seed dijalankan dua kali dengan sengaja: run kedua memverifikasi idempotensi.
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
@@ -132,6 +141,8 @@ jobs:
             dockerfile: apps/api/Dockerfile
           - component: frontend
             dockerfile: apps/web/Dockerfile
+          - component: tex-worker
+            dockerfile: apps/tex-worker/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3

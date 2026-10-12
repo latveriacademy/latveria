@@ -11,6 +11,10 @@
 !apps/api/scripts/**
 !apps/api/drizzle/
 !apps/api/drizzle/**
+!apps/tex-worker/
+!apps/tex-worker/package.json
+!apps/tex-worker/src/
+!apps/tex-worker/src/**
 !apps/web/
 !apps/web/**
 !packages/
