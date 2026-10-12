@@ -169,6 +169,13 @@
       "when": 1791490000000,
       "tag": "0023_warrior_battle_system",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791550000000,
+      "tag": "0024_latex_renders_cache",
+      "breakpoints": true
     }
   ]
 }

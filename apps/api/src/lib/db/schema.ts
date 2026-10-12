@@ -408,3 +408,4 @@ export const irtCalibrations = pgTable(
 ).enableRLS();
 
 export * from "./warrior-schema";
+export * from "./latex-schema";
