@@ -30,6 +30,19 @@
         "vitest": "5.0.2",
       },
     },
+    "apps/tex-worker": {
+      "name": "@latveria/tex-worker",
+      "version": "0.1.0",
+      "dependencies": {
+        "@latveria/shared": "workspace:*",
+        "hono": "^4.13.11",
+      },
+      "devDependencies": {
+        "@types/bun": "~1.3.14",
+        "typescript": "~5.9.3",
+        "vitest": "5.0.2",
+      },
+    },
     "apps/web": {
       "name": "@latveria/web",
       "version": "0.1.0",
@@ -221,6 +234,8 @@
     "@latveria/api": ["@latveria/api@workspace:apps/api"],
 
     "@latveria/shared": ["@latveria/shared@workspace:packages/shared"],
+
+    "@latveria/tex-worker": ["@latveria/tex-worker@workspace:apps/tex-worker"],
 
     "@latveria/web": ["@latveria/web@workspace:apps/web"],
 

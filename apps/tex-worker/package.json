@@ -1,0 +1,21 @@
+{
+  "name": "@latveria/tex-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "bun run --bun tsc --noEmit",
+    "test": "bun run --bun vitest run"
+  },
+  "dependencies": {
+    "@latveria/shared": "workspace:*",
+    "hono": "^4.13.11"
+  },
+  "devDependencies": {
+    "@types/bun": "~1.3.14",
+    "typescript": "~5.9.3",
+    "vitest": "5.0.2"
+  }
+}
