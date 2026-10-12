@@ -46,6 +46,16 @@ services:
       timeout: 5s
       retries: 15
 
+  tex-worker:
+    build:
+      context: .
+      dockerfile: apps/tex-worker/Dockerfile
+    environment:
+      PORT: 3002
+    ports:
+      - "127.0.0.1:3002:3002"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   minio_data:

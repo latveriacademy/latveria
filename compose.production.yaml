@@ -14,6 +14,14 @@ services:
       timeout: 5s
       retries: 15
 
+  tex-worker:
+    image: ${IMAGE_PREFIX:-ghcr.io/latveriacademy/latveria}-tex-worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+    expose:
+      - "3002"
+
   backend:
     image: ${IMAGE_PREFIX:-ghcr.io/latveriacademy/latveria}-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
@@ -22,6 +30,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       SERVE_WEB: "false"
+      TEX_WORKER_URL: http://tex-worker:3002
       DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL}
       DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?Isi DATABASE_MIGRATION_URL}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Isi BETTER_AUTH_SECRET}
@@ -29,6 +38,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      tex-worker:
+        condition: service_started
     expose:
       - "3001"
 

@@ -23,6 +23,7 @@ import { exportHandler } from "./handlers/export.handler";
 import { irtHandler } from "./handlers/irt.handler";
 import { learnerAvatarHandler, publicAvatarHandler } from "./handlers/avatar.handler";
 import { warriorHandler } from "./handlers/warrior.handler";
+import { latexHandler } from "./handlers/latex.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -31,6 +32,7 @@ export const app = new Hono<AppEnv>();
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 app.route("/", publicAvatarHandler);
+app.route("/", latexHandler);
 
 // CORS headers for Better Auth
 function setCorsHeaders(c: { header: (name: string, value: string) => void }, origin: string) {
