@@ -3,6 +3,21 @@ import { describe, expect, it } from "vitest";
 import { HtmlTable } from "./html-table";
 
 describe("HtmlTable component", () => {
+  it("renders caption, row header, decoded text and actual line breaks without active HTML", () => {
+    const html = renderToStaticMarkup(
+      <HtmlTable
+        source={`<table><caption>Units: kg</caption><tr><th scope="row">A &amp; B</th><td rowspan = "2">10<br>20 &lt;img src=x onerror=alert(1)&gt;</td></tr></table>`}
+      />,
+    );
+    expect(html).toContain("<caption>Units: kg</caption>");
+    expect(html).toContain('scope="row"');
+    expect(html).toContain('rowSpan="2"');
+    expect(html).toContain("A &amp; B");
+    expect(html).not.toContain("&amp;amp;");
+    expect(html).toContain("<br/>");
+    expect(html).not.toContain("<img");
+  });
+
   it("renders visual table with customized colors and borders", () => {
     const source = `<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; text-align:center; width:100%;">
 <tr style="background-color:#f0f0f0;">

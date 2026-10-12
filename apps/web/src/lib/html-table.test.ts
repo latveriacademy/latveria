@@ -2,6 +2,31 @@ import { describe, expect, it } from "vitest";
 import { isHtmlTable, parseHtmlTable, parseSafeStyle } from "./html-table";
 
 describe("HTML Table Parser and Sanitizer", () => {
+  it("preserves captions, entities, line breaks, row headers and spaced spans safely", () => {
+    const parsed = parseHtmlTable(
+      `<table><caption>Units: kg &amp; m&#178;</caption><tr><th scope = 'row'>A &amp; B</th><td rowspan = "2" colspan = 3>10<br>20 &#xD7; 2<script>alert(1)</script><img src=x onerror=alert(1)></td></tr></table>`,
+    );
+    expect(parsed?.caption).toBe("Units: kg & m²");
+    expect(parsed?.rows[0].cells[0]).toMatchObject({ scope: "row", content: "A & B" });
+    expect(parsed?.rows[0].cells[1]).toMatchObject({
+      rowSpan: 2,
+      colSpan: 3,
+      content: "10\n20 × 2",
+    });
+    expect(
+      parseHtmlTable(
+        `<table><tr><th>Default</th><td rowspan="nope" colspan="-2">X</td></tr></table>`,
+      )?.rows[0].cells[0].scope,
+    ).toBeUndefined();
+  });
+
+  it("keeps comparisons and multiline math intact while removing inline HTML", () => {
+    const content = "<b>Bandingkan</b> x < 5 dan y > 2: $a<b>c$ $$\nx < y\n$$";
+    expect(
+      parseHtmlTable(`<table><tr><td>${content}</td></tr></table>`)?.rows[0].cells[0].content,
+    ).toBe("Bandingkan x < 5 dan y > 2: $a<b>c$ $$\nx < y\n$$");
+  });
+
   it("detects valid HTML table blocks and ignores plain text with < and >", () => {
     expect(isHtmlTable("<table><tr><td>A</td></tr></table>")).toBe(true);
     expect(isHtmlTable('<TABLE border="1"><tr><th>T</th></tr></TABLE>')).toBe(true);

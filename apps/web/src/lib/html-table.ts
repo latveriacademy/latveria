@@ -1,4 +1,5 @@
 import type React from "react";
+import { mathSourcePattern } from "@latveria/shared";
 
 export interface HtmlTableCell {
   kind: "th" | "td";
@@ -6,7 +7,7 @@ export interface HtmlTableCell {
   colSpan?: number;
   rowSpan?: number;
   style: React.CSSProperties;
-  scope?: "col" | "row";
+  scope?: "col" | "row" | "colgroup" | "rowgroup";
 }
 
 export interface HtmlTableRow {
@@ -15,6 +16,7 @@ export interface HtmlTableRow {
 }
 
 export interface HtmlTableData {
+  caption?: string;
   rows: HtmlTableRow[];
   tableStyle: React.CSSProperties;
 }
@@ -67,6 +69,63 @@ export function isHtmlTable(source: string): boolean {
   return /^<table\b[\s\S]*?<\/table>$/i.test(trimmed);
 }
 
+function attribute(attrs: string, name: string): string | undefined {
+  const match = attrs.match(
+    new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>]+))`, "i"),
+  );
+  return match ? (match[1] ?? match[2] ?? match[3]) : undefined;
+}
+
+function tableText(html: string): string {
+  const text = html
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .split(mathSourcePattern)
+    .map((part, index) =>
+      index % 2
+        ? part
+        : part
+            .replace(/<br\b[^>]*>/gi, "\n")
+            .replace(/<\/?[a-z][\w:-]*(?:\s+[^<>]*)?\s*\/?>/gi, ""),
+    )
+    .join("");
+  if (typeof document !== "undefined") {
+    const decoder = document.createElement("textarea");
+    decoder.innerHTML = text;
+    return decoder.value.trim();
+  }
+  // ponytail: SSR tests decode common/numeric entities; the SPA uses the browser's full decoder.
+  const entities: Record<string, string> = {
+    amp: "&",
+    lt: "<",
+    gt: ">",
+    quot: '"',
+    apos: "'",
+    nbsp: "\u00a0",
+    times: "×",
+    deg: "°",
+    le: "≤",
+    ge: "≥",
+    minus: "−",
+  };
+  return text
+    .replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, key: string) => {
+      if (!key.startsWith("#")) return entities[key] ?? entity;
+      const code = key[1].toLowerCase() === "x" ? parseInt(key.slice(2), 16) : Number(key.slice(1));
+      return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)
+        ? String.fromCodePoint(code)
+        : "\ufffd";
+    })
+    .trim();
+}
+
+function spanAttribute(attrs: string, name: "colspan" | "rowspan"): number | undefined {
+  const value = attribute(attrs, name);
+  if (value === undefined || !/^\d+$/.test(value)) return undefined;
+  const span = Number(value);
+  if (!Number.isFinite(span) || (name === "colspan" && span === 0)) return undefined;
+  return Math.min(span, name === "colspan" ? 1000 : 65534);
+}
+
 export function parseHtmlTable(html: string): HtmlTableData | null {
   const tableMatch = html.match(/<table\b([^>]*)>([\s\S]*?)<\/table>/i);
   if (!tableMatch) return null;
@@ -74,8 +133,8 @@ export function parseHtmlTable(html: string): HtmlTableData | null {
   const tableAttrs = tableMatch[1];
   const tableContent = tableMatch[2];
 
-  const tableStyleMatch = tableAttrs.match(/style=["']([^"']*)["']/i);
-  const tableStyle = parseSafeStyle(tableStyleMatch ? tableStyleMatch[1] : "");
+  const tableStyle = parseSafeStyle(attribute(tableAttrs, "style"));
+  const captionMatch = tableContent.match(/<caption\b[^>]*>([\s\S]*?)<\/caption>/i);
 
   const rowRegex = /<tr\b([^>]*)>([\s\S]*?)<\/tr>/gi;
   const rows: HtmlTableRow[] = [];
@@ -84,8 +143,7 @@ export function parseHtmlTable(html: string): HtmlTableData | null {
   while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
     const rowAttrs = rowMatch[1];
     const rowContent = rowMatch[2];
-    const rowStyleMatch = rowAttrs.match(/style=["']([^"']*)["']/i);
-    const rowStyle = parseSafeStyle(rowStyleMatch ? rowStyleMatch[1] : "");
+    const rowStyle = parseSafeStyle(attribute(rowAttrs, "style"));
 
     const cellRegex = /<(th|td)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
     const cells: HtmlTableCell[] = [];
@@ -94,21 +152,22 @@ export function parseHtmlTable(html: string): HtmlTableData | null {
     while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
       const kind = cellMatch[1].toLowerCase() as "th" | "td";
       const cellAttrs = cellMatch[2];
-      const cellText = cellMatch[3].trim();
+      const cellText = tableText(cellMatch[3]);
 
-      const cellStyleMatch = cellAttrs.match(/style=["']([^"']*)["']/i);
-      const cellStyle = parseSafeStyle(cellStyleMatch ? cellStyleMatch[1] : "");
-
-      const colSpanMatch = cellAttrs.match(/colspan=["']?(\d+)["']?/i);
-      const rowSpanMatch = cellAttrs.match(/rowspan=["']?(\d+)["']?/i);
+      const cellStyle = parseSafeStyle(attribute(cellAttrs, "style"));
+      const scope = attribute(cellAttrs, "scope");
 
       cells.push({
         kind,
         content: cellText,
         style: cellStyle,
-        colSpan: colSpanMatch ? Number(colSpanMatch[1]) : undefined,
-        rowSpan: rowSpanMatch ? Number(rowSpanMatch[1]) : undefined,
-        scope: kind === "th" ? "col" : undefined,
+        colSpan: spanAttribute(cellAttrs, "colspan"),
+        rowSpan: spanAttribute(cellAttrs, "rowspan"),
+        scope:
+          kind === "th" &&
+          (scope === "col" || scope === "row" || scope === "colgroup" || scope === "rowgroup")
+            ? scope
+            : undefined,
       });
     }
 
@@ -117,5 +176,5 @@ export function parseHtmlTable(html: string): HtmlTableData | null {
     }
   }
 
-  return { tableStyle, rows };
+  return { tableStyle, rows, caption: captionMatch ? tableText(captionMatch[1]) : undefined };
 }

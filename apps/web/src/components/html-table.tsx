@@ -33,7 +33,18 @@ export function HtmlTable({ source }: { source: string }) {
         style={cell.style}
         className={baseClass}
       >
-        <MathText>{cell.content}</MathText>
+        <MathText
+          renderText={(text) =>
+            text.split("\n").map((line, index) => (
+              <span key={index}>
+                {index > 0 && <br />}
+                {line}
+              </span>
+            ))
+          }
+        >
+          {cell.content}
+        </MathText>
       </Component>
     );
   };
@@ -49,6 +60,11 @@ export function HtmlTable({ source }: { source: string }) {
         role="table"
         style={parsed.tableStyle}
       >
+        {parsed.caption !== undefined && (
+          <caption>
+            <MathText>{parsed.caption}</MathText>
+          </caption>
+        )}
         <tbody>
           {parsed.rows.map((row, rIdx) => (
             <tr
