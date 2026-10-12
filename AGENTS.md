@@ -163,9 +163,13 @@ bun run --filter @latveria/api test src/lib/env.test.ts
 
 ## Konvensi kerja dan Git
 
-- Perubahan kecil tidak memerlukan issue. Untuk pekerjaan lebih besar, buat issue terlebih dahulu dan tautkan Project jika token mengizinkan.
+- AI agent dan developer wajib membuat atau memakai issue yang relevan **sebelum mengerjakan setiap fitur baru atau fix bug**, termasuk perubahan kecil. Cari issue yang sudah ada agar tidak membuat duplikat; tautkan Project jika token mengizinkan.
+- Issue fitur mencantumkan tujuan, scope, dan kriteria selesai. Issue bug mencantumkan langkah reproduksi, perilaku aktual/yang diharapkan, serta rencana verifikasi.
+- Tautkan commit/PR dengan `Refs #<nomor>`; hindari penutupan otomatis sebelum verifikasi CI selesai.
 - Periksa `git status`, `git diff`, dan riwayat commit sebelum commit. Stage hanya perubahan yang memang ditargetkan.
 - Jangan stage atau commit perubahan lokal pengguna yang berada di luar lingkup tugas.
 - Jalankan pemeriksaan yang sesuai dengan perubahan. Gunakan `bun run check` untuk verifikasi penuh dan tes integrasi saat mengubah API/database.
-- Push perubahan dan tutup issue setelah verifikasi, jika ada.
+- Setelah verifikasi lokal dan push, periksa semua workflow CI yang berjalan untuk **SHA commit yang baru dipush**, lalu tunggu hingga seluruh job wajib berhasil. Gunakan `gh run list --commit <sha>` dan `gh run watch <run-id> --exit-status`.
+- Jika CI gagal, baca log job yang gagal, perbaiki penyebabnya, buat commit baru, push, dan periksa CI lagi. Jangan melewati atau menonaktifkan pemeriksaan untuk membuat CI hijau.
+- Tutup issue hanya setelah perubahan dipush dan CI wajib berhasil; sertakan commit serta bukti verifikasi. Jika CI terblokir, biarkan issue terbuka dan laporkan blocker beserta URL run. Ringkasan akhir menyertakan status dan URL CI.
 - Gunakan Playwright hanya ketika interaksi atau tampilan memang perlu diperiksa.

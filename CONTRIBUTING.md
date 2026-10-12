@@ -6,7 +6,8 @@ Aturan ini berlaku untuk developer dan AI agent. Baca dokumen ini serta [ARCHITE
 
 - Periksa `git status`, diff lokal, dan kode terkait. Jangan menimpa, menghapus, atau memasukkan pekerjaan orang lain ke commit.
 - Telusuri caller dan alur data sampai batas API/database. Perbaiki akar masalah pada lapisan yang tepat, bukan gejalanya pada satu halaman.
-- Untuk pekerjaan lintas concern, buat issue dengan tujuan, batas scope, dan kriteria selesai. Kerjakan satu concern dahulu sebelum menambah yang lain.
+- AI agent dan developer wajib membuat atau memakai issue yang relevan sebelum mengerjakan **setiap fitur baru atau fix bug**, termasuk perubahan kecil. Cari issue yang sudah ada agar tidak membuat duplikat; tautkan Project jika akses memungkinkan.
+- Issue fitur memuat tujuan, batas scope, dan kriteria selesai. Issue bug memuat langkah reproduksi, perilaku aktual/yang diharapkan, serta rencana verifikasi. Kerjakan satu concern dahulu sebelum menambah yang lain.
 - Jangan menambah fitur, dependency, abstraksi, atau refactor yang tidak dibutuhkan oleh tugas. Cari komponen/helper yang sudah ada terlebih dahulu.
 
 ## 2. Ukuran file dan pemisahan concern
@@ -72,6 +73,7 @@ ESLint menolak import backend dari frontend/shared, native alert/confirm, `<dial
 - Sebelum commit periksa `git status`, `git diff`, riwayat pesan, dan `git diff --cached`. Stage path yang dituju secara eksplisit; jangan menggunakan `git add .` tanpa review seluruh perubahan.
 - Jangan commit `.env`, secret, hasil build/cache, atau catatan agent pribadi. Jangan force-push, skip hooks, atau amend commit yang sudah dibagikan.
 - Setelah membuat commit jalankan `bun run check:commits`; untuk seluruh rangkaian sebelum push gunakan `bun run check:commits -- origin/main..HEAD`.
+- Tautkan commit/PR ke issue menggunakan `Refs #<nomor>`. Hindari keyword penutupan otomatis sebelum verifikasi CI selesai.
 
 CI memeriksa format pesan dan batas diff. Aturan ukuran berlaku sejak dokumen ini diperkenalkan; commit lama tidak dinilai ulang. Menghapus dokumen aturan tidak menonaktifkan pemeriksaan untuk commit yang sudah berada setelah adopsi.
 
@@ -88,4 +90,7 @@ bun run check:commits -- origin/main..HEAD
 - Bug atau logika non-trivial harus memiliki check yang gagal pada bug tersebut: tes terarah atau script integrasi yang dapat dijalankan ulang. Jangan menambah tes yang hanya menyalin implementasi.
 - Untuk UI, verifikasi interaksi nyata saat diperlukan: keyboard/fokus, desktop/mobile, pending/error, dan console. Jangan mengklaim pengujian yang tidak dijalankan.
 - Jika check gagal, perbaiki atau jelaskan blocker. Jangan menutup issue atau menyatakan selesai hanya karena kode sudah ditulis.
-- Ringkasan akhir menyebut perubahan, pemeriksaan yang benar-benar dijalankan, dan batasan yang masih ada. Push setelah verifikasi; tidak perlu watch CI kecuali diminta.
+- Push setelah verifikasi lokal. Setelah **setiap push**, cari workflow untuk SHA commit yang baru dipush (`gh run list --commit <sha>`) dan tunggu semua job wajib berhasil (`gh run watch <run-id> --exit-status`). CI commit sebelumnya bukan bukti keberhasilan commit terbaru.
+- Jika CI gagal, baca log job yang gagal, perbaiki penyebabnya, buat commit baru, push, dan verifikasi CI lagi. Jangan melewati atau menonaktifkan pemeriksaan untuk membuat CI hijau.
+- Tutup issue hanya setelah perubahan dipush dan CI wajib berhasil; sertakan commit dan bukti verifikasi. Jika CI terblokir atau tidak terpicu, biarkan issue terbuka dan laporkan blocker, bukan mengklaim berhasil.
+- Ringkasan akhir menyebut perubahan, pemeriksaan yang benar-benar dijalankan, status/URL CI, dan batasan yang masih ada.
