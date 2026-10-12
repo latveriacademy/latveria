@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { questionSchema, questionImportSchema } from "./index";
-import { lexiconAnnotationSchema, validLexiconRanges } from "./lexicon";
+import { lexiconAnnotationSchema, mathSourcePattern, validLexiconRanges } from "./lexicon";
 
 const prompt = "The phone was fried. The egg was fried.";
 const annotation = lexiconAnnotationSchema.parse({
@@ -21,6 +21,21 @@ const question = {
   source: "Contoh tim",
   annotations: [annotation],
 };
+
+it("keeps matching nested diagrams and bare tables intact without shifting text offsets", () => {
+  for (const source of [
+    String.raw`\begin{tikzpicture}\begin{axis}\addplot {x^2};\end{axis}\end{tikzpicture}`,
+    String.raw`\begin{array}{cc}A & B \\ 1 & 2\end{array}`,
+    String.raw`\begin{tabular}{cc}A & B\end{tabular}`,
+    String.raw`\[x^2\]`,
+  ]) {
+    const text = `Before ${source} fried`;
+    expect(text.split(mathSourcePattern)).toEqual(["Before ", source, " fried"]);
+    expect(
+      validLexiconRanges(text, [{ ...annotation, start: text.length - 5, end: text.length }]),
+    ).toBe(true);
+  }
+});
 
 it("validates exact contextual ranges, duplicates, overlap, and stale offsets", () => {
   expect(questionSchema.safeParse(question).success).toBe(true);

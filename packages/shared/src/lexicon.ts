@@ -1,7 +1,20 @@
 import { z } from "zod";
 
-export const mathSourcePattern =
-  /(<table\b[\s\S]*?<\/table>|\\begin\{(?:tikzpicture|circuitikz|forest|pspicture|axis)\}[\s\S]*?(?:\\end\{(?:tikzpicture|circuitikz|forest|pspicture|axis)\}|$)|\$\$[\s\S]+?\$\$|\\begin\{(?:tabular|array)\}[\s\S]*?(?:\\end\{(?:tabular|array)\}|$)?|\\chemfig\{[\s\S]*?\}|\$(?!\s)[^$\n]+?\$)/gi;
+const environmentPatterns = [
+  "tikzpicture",
+  "circuitikz",
+  "forest",
+  "pspicture",
+  "axis",
+  "tabular",
+  "array",
+].map((name) => String.raw`\\begin\{${name}\}[\s\S]*?(?:\\end\{${name}\}|$)`);
+
+// Keep exactly one capture: split callers use alternating text/source ranges.
+export const mathSourcePattern = new RegExp(
+  String.raw`(<table\b[\s\S]*?<\/table>|${environmentPatterns.join("|")}|\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\chemfig\{[\s\S]*?\}|\$(?!\s)[^$\n]+?\$)`,
+  "gi",
+);
 
 export const lexiconAnnotationInputSchema = z.object({
   id: z.string().uuid().optional(),

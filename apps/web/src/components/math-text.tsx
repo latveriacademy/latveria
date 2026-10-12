@@ -47,7 +47,8 @@ export function MathText({
               <LatexTableLazy source={part} />
             </Suspense>
           );
-        const displayMode = part.startsWith("$$") && part.endsWith("$$");
+        const bracketMode = part.startsWith("\\[") && part.endsWith("\\]");
+        const displayMode = bracketMode || (part.startsWith("$$") && part.endsWith("$$"));
         const inline = part.startsWith("$") && part.endsWith("$");
         if (!displayMode && !inline)
           return renderText ? <span key={index}>{renderText(part, start)}</span> : part;
