@@ -128,3 +128,13 @@ it("renders fallback message on malformed LaTeX table", async () => {
   expect(html).toContain("table-fallback");
   expect(html).toContain("Tabel belum dapat ditampilkan");
 });
+
+it("routes circuitikz and chemfig to diagram renderer in MathText", () => {
+  const circuit = String.raw`Perhatikan rangkaian: \begin{circuitikz}\draw (0,0) to[R] (2,0);\end{circuitikz}`;
+  const htmlCircuit = renderToStaticMarkup(<MathText>{circuit}</MathText>);
+  expect(htmlCircuit).toMatch(/(tikz-pending|latex-diagram-loading|latex-diagram)/);
+
+  const chem = String.raw`Reaksi: \chemfig{A=B}`;
+  const htmlChem = renderToStaticMarkup(<MathText>{chem}</MathText>);
+  expect(htmlChem).toMatch(/(tikz-pending|latex-diagram-loading|latex-diagram)/);
+});

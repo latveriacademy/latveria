@@ -4,12 +4,22 @@ import { mathSourcePattern } from "@latveria/shared";
 const MathFormulaLazy = lazy(() =>
   import("./math-formula").then((module) => ({ default: module.MathFormula })),
 );
-const TikzDiagramLazy = lazy(() =>
-  import("./tikz-diagram").then((module) => ({ default: module.TikzDiagram })),
+const LatexDiagramLazy = lazy(() =>
+  import("./latex-diagram").then((module) => ({ default: module.LatexDiagram })),
 );
 const LatexTableLazy = lazy(() =>
   import("./latex-table").then((module) => ({ default: module.LatexTable })),
 );
+
+function isLatexDiagramEnvironment(text: string) {
+  return (
+    text.startsWith("\\begin{tikzpicture}") ||
+    text.startsWith("\\begin{circuitikz}") ||
+    text.startsWith("\\begin{forest}") ||
+    text.startsWith("\\begin{pspicture}") ||
+    text.startsWith("\\chemfig")
+  );
+}
 
 export function MathText({
   children,
@@ -26,10 +36,10 @@ export function MathText({
       {parts.map((part, index) => {
         const start = offset;
         offset += part.length;
-        if (part.startsWith("\\begin{tikzpicture}"))
+        if (isLatexDiagramEnvironment(part))
           return (
             <Suspense fallback={<span className="tikz-pending">{part}</span>} key={index}>
-              <TikzDiagramLazy source={part} />
+              <LatexDiagramLazy source={part} />
             </Suspense>
           );
         if (part.startsWith("\\begin{tabular}") || part.startsWith("\\begin{array}"))
@@ -44,6 +54,13 @@ export function MathText({
           return renderText ? <span key={index}>{renderText(part, start)}</span> : part;
 
         const inner = part.slice(displayMode ? 2 : 1, displayMode ? -2 : -1).trim();
+        if (isLatexDiagramEnvironment(inner)) {
+          return (
+            <Suspense fallback={<span className="tikz-pending">{part}</span>} key={index}>
+              <LatexDiagramLazy source={inner} />
+            </Suspense>
+          );
+        }
         if (inner.startsWith("\\begin{tabular}") || inner.startsWith("\\begin{array}")) {
           return (
             <Suspense fallback={<span className="table-pending">{part}</span>} key={index}>

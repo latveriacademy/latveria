@@ -1,0 +1,51 @@
+.latex-diagram {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  margin: 0.75rem auto;
+  overflow-x: auto;
+}
+
+.latex-diagram svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.latex-diagram-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  min-width: 240px;
+  padding: 1rem;
+  background-color: var(--surface-subtle, rgba(201, 163, 71, 0.05));
+  border: 1px dashed var(--edge, #d4af37);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: var(--soft-ink, #666);
+}
+
+.latex-diagram-error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+  margin: 0.5rem 0;
+}
+
+.latex-diagram-error pre {
+  margin: 0;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
