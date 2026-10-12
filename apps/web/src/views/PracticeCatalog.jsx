@@ -18,6 +18,7 @@ import { useApp } from "../context/AppContext";
 import { api } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { PageHeading, Panel } from "../components/ui/dashboard";
+import { SubtestIcon } from "../components/subtest-icon";
 import styles from "./practice-catalog.module.css";
 
 const PAGE_SIZE = 9;
@@ -243,7 +244,10 @@ export function PracticeCatalog() {
                   className={subtest === topic.slug ? styles.filterActive : ""}
                   onClick={() => setSubtest(topic.slug)}
                 >
-                  {topic.name}
+                  <span className={styles.subtestName}>
+                    <SubtestIcon slug={topic.slug} size={18} />
+                    {topic.name}
+                  </span>
                   {subtest === topic.slug && <Check size={14} />}
                 </button>
               ))}
@@ -366,8 +370,13 @@ export function PracticeCatalog() {
                             )}
                           </span>
                         </div>
-                        <p className={styles.topicLabel}>{pkg.topicName}</p>
-                        <h3>{pkg.name}</h3>
+                        <div className={styles.cardHeading}>
+                          <SubtestIcon slug={pkg.topicSlug} size={32} />
+                          <div>
+                            <p className={styles.topicLabel}>{pkg.topicName}</p>
+                            <h3>{pkg.name}</h3>
+                          </div>
+                        </div>
                         <p className={styles.cardDescription}>
                           {pkg.description || "Latihan soal dengan pembahasan setelah selesai."}
                         </p>

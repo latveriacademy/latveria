@@ -86,6 +86,8 @@ it("preserves a subtest deep link as the selected package filter", () => {
       <PracticeView />
     </MemoryRouter>,
   );
-  expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*>Penalaran Umum/);
+  expect(html).toMatch(
+    /<button[^>]*aria-pressed="true"[^>]*>(?:(?!<\/button>)[\s\S])*Penalaran Umum/,
+  );
   expect(html).toContain('<option value="penalaran-umum" selected="">');
 });
