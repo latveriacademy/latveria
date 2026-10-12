@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { mathSourcePattern } from "@latveria/shared";
+import { isLatexDiagramEnvironment, mathSourcePattern } from "@latveria/shared";
 
 const MathFormulaLazy = lazy(() =>
   import("./math-formula").then((module) => ({ default: module.MathFormula })),
@@ -10,16 +10,9 @@ const LatexDiagramLazy = lazy(() =>
 const LatexTableLazy = lazy(() =>
   import("./latex-table").then((module) => ({ default: module.LatexTable })),
 );
-
-function isLatexDiagramEnvironment(text: string) {
-  return (
-    text.startsWith("\\begin{tikzpicture}") ||
-    text.startsWith("\\begin{circuitikz}") ||
-    text.startsWith("\\begin{forest}") ||
-    text.startsWith("\\begin{pspicture}") ||
-    text.startsWith("\\chemfig")
-  );
-}
+const HtmlTableLazy = lazy(() =>
+  import("./html-table").then((module) => ({ default: module.HtmlTable })),
+);
 
 export function MathText({
   children,
@@ -36,6 +29,12 @@ export function MathText({
       {parts.map((part, index) => {
         const start = offset;
         offset += part.length;
+        if (/^<table\b/i.test(part.trim()))
+          return (
+            <Suspense fallback={<span className="table-pending">{part}</span>} key={index}>
+              <HtmlTableLazy source={part} />
+            </Suspense>
+          );
         if (isLatexDiagramEnvironment(part))
           return (
             <Suspense fallback={<span className="tikz-pending">{part}</span>} key={index}>
@@ -58,6 +57,13 @@ export function MathText({
           return (
             <Suspense fallback={<span className="tikz-pending">{part}</span>} key={index}>
               <LatexDiagramLazy source={inner} />
+            </Suspense>
+          );
+        }
+        if (/^<table\b/i.test(inner)) {
+          return (
+            <Suspense fallback={<span className="table-pending">{part}</span>} key={index}>
+              <HtmlTableLazy source={inner} />
             </Suspense>
           );
         }

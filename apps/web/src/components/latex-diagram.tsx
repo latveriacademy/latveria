@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isComplexLatexDiagram } from "@latveria/shared";
+import { isComplexLatexDiagram, renderPgfplotsSvg } from "@latveria/shared";
 import { parseTikz } from "../lib/tikz";
 import { TikzDiagram } from "./tikz-diagram";
 import "./latex-diagram.css";
@@ -7,13 +7,25 @@ import "./latex-diagram.css";
 const memorySvgCache = new Map<string, string>();
 
 export function LatexDiagram({ source }: { source: string }) {
-  const trimmed = source.trim();
+  let cleanSource = source.trim();
+
+  // Strip wrapping delimiters if present
+  if (cleanSource.startsWith("$$") && cleanSource.endsWith("$$")) {
+    cleanSource = cleanSource.slice(2, -2).trim();
+  } else if (cleanSource.startsWith("\\[") && cleanSource.endsWith("\\]")) {
+    cleanSource = cleanSource.slice(2, -2).trim();
+  }
+
+  // Wrap raw axis in tikzpicture if needed
+  if (cleanSource.startsWith("\\begin{axis}") && !cleanSource.startsWith("\\begin{tikzpicture}")) {
+    cleanSource = `\\begin{tikzpicture}\n${cleanSource}\n\\end{tikzpicture}`;
+  }
 
   // 1. Fast-Path: Zero-latency client-side rendering for simple TikZ shapes
   let canUseLocalFastPath = false;
-  if (!isComplexLatexDiagram(trimmed)) {
+  if (!isComplexLatexDiagram(cleanSource)) {
     try {
-      parseTikz(trimmed);
+      parseTikz(cleanSource);
       canUseLocalFastPath = true;
     } catch {
       canUseLocalFastPath = false;
@@ -21,11 +33,22 @@ export function LatexDiagram({ source }: { source: string }) {
   }
 
   if (canUseLocalFastPath) {
-    return <TikzDiagram source={trimmed} />;
+    return <TikzDiagram source={cleanSource} />;
   }
 
-  // 2. Full LaTeX Engine Path: Fetch from backend LaTeX rendering service / cache
-  return <UniversalLatexEngineView source={trimmed} />;
+  // 2. Fast-Path for PGFPlots native visualizer
+  const pgfplotsSvg = renderPgfplotsSvg(cleanSource);
+  if (pgfplotsSvg) {
+    return (
+      <span
+        className="latex-diagram pgfplots-visual-diagram flex justify-center my-3 overflow-x-auto"
+        dangerouslySetInnerHTML={{ __html: pgfplotsSvg }}
+      />
+    );
+  }
+
+  // 3. Full LaTeX Engine Path: Fetch from backend LaTeX rendering service / cache
+  return <UniversalLatexEngineView source={cleanSource} />;
 }
 
 function UniversalLatexEngineView({ source }: { source: string }) {

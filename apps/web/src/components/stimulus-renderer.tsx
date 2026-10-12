@@ -1,7 +1,7 @@
 import React, { useId } from "react";
 import type { ContentBlock, QuestionStimulus, TableBlock, ChartBlock } from "@latveria/shared";
 import { MathText } from "./math-text";
-import { TikzDiagram } from "./tikz-diagram";
+import { LatexDiagram } from "./latex-diagram";
 
 // ==========================================
 // TABLE RENDERER (JSON & LATEX ARRAY)
@@ -10,10 +10,6 @@ import { TikzDiagram } from "./tikz-diagram";
 export function TableRenderer({ block }: { block: TableBlock }) {
   // If block has source string in latex \begin{array} format, render via MathText
   if (block.source && (!block.columns || !block.rows)) {
-    const wrapped =
-      block.source.startsWith("$$") || block.source.startsWith("$")
-        ? block.source
-        : `$$${block.source}$$`;
     return (
       <div className="table-block-container my-3 overflow-x-auto rounded border border-[var(--edge)] bg-[var(--surface-elevated)] p-4">
         {block.title && (
@@ -22,7 +18,7 @@ export function TableRenderer({ block }: { block: TableBlock }) {
           </h4>
         )}
         <div className="flex justify-center">
-          <MathText>{wrapped}</MathText>
+          <MathText>{block.source}</MathText>
         </div>
       </div>
     );
@@ -324,7 +320,7 @@ export function StimulusRenderer({
               case "diagram":
                 return (
                   <figure key={idx} className="my-3 flex flex-col items-center">
-                    <TikzDiagram source={block.source} />
+                    <LatexDiagram source={block.source} />
                     {block.caption && (
                       <figcaption className="mt-1 font-mono text-xs text-[var(--soft-ink)]">
                         {block.caption}

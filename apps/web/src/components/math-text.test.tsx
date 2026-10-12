@@ -138,3 +138,55 @@ it("routes circuitikz and chemfig to diagram renderer in MathText", () => {
   const htmlChem = renderToStaticMarkup(<MathText>{chem}</MathText>);
   expect(htmlChem).toMatch(/(tikz-pending|latex-diagram-loading|latex-diagram)/);
 });
+
+it("renders HTML table visually within passage text", () => {
+  const passage = `(Teks untuk soal nomor 13-16)
+
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; text-align:center; width:100%;">
+<tr style="background-color:#f0f0f0;">
+<th>Tahun</th>
+<th style="background-color:#ffe6f2; color:#cc0066;">Kentang (kuintal)</th>
+<th style="background-color:#e6f2ff; color:#0055ff;">Jagung (kuintal)</th>
+</tr>
+<tr><td>2019</td><td>50</td><td>65</td></tr>
+</table>
+
+Tabel di atas memuat data hasil panen.`;
+
+  const html = renderToStaticMarkup(<MathText>{passage}</MathText>);
+  expect(html).toContain("Teks untuk soal nomor 13-16");
+  expect(html).toContain("Tabel di atas memuat data hasil panen.");
+  expect(html).toMatch(/(table-pending|<table)/);
+});
+
+it("renders PGFPlots bar chart diagram within passage text even when wrapped in $$", () => {
+  const passage = `(Teks untuk soal nomor 13-16)
+
+$$
+\\begin{tikzpicture}
+\\begin{axis}[
+title={Hasil Panen Kentang dan Jagung (kuintal)},
+xlabel={Tahun},
+ylabel={Jumlah (kuintal)},
+symbolic x coords={2019, 2020, 2021},
+]
+\\addplot[fill=pink!80!white,draw=pink] coordinates {(2019,50) (2020,75) (2021,40)};
+\\legend{Kentang}
+\\end{axis}
+\\end{tikzpicture}
+$$
+
+Grafik di atas memuat data hasil panen.`;
+
+  const html = renderToStaticMarkup(<MathText>{passage}</MathText>);
+  expect(html).toContain("Teks untuk soal nomor 13-16");
+  expect(html).toContain("Grafik di atas memuat data hasil panen.");
+  expect(html).toMatch(/(tikz-pending|latex-diagram-loading|latex-diagram)/);
+});
+
+it("preserves plain text containing < and > without false-positive HTML table matching", () => {
+  const text = "Jika $x < 5$ dan nilai y > 2 serta a < b, tentukan solusinya.";
+  const html = renderToStaticMarkup(<MathText>{text}</MathText>);
+  expect(html).not.toContain("<table");
+  expect(html).toContain("nilai y &gt; 2");
+});
