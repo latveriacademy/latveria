@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { renderPgfplotsSvg } from "@latveria/shared";
 import { sanitizeSvg, type SanitizedSvgResult } from "./sanitizer";
 
 export interface CompileOptions {
@@ -38,9 +39,21 @@ export function detectRequiredPackages(source: string): string[] {
  * Wraps a LaTeX snippet into a standalone document if not already complete.
  */
 export function assembleDocument(source: string, additionalPackages: string[] = []): string {
-  const trimmed = source.trim();
+  let trimmed = source.trim();
   if (trimmed.startsWith("\\documentclass")) {
     return trimmed;
+  }
+
+  // Strip wrapping $$ or \[ if provided
+  if (trimmed.startsWith("$$") && trimmed.endsWith("$$")) {
+    trimmed = trimmed.slice(2, -2).trim();
+  } else if (trimmed.startsWith("\\[") && trimmed.endsWith("\\]")) {
+    trimmed = trimmed.slice(2, -2).trim();
+  }
+
+  // Wrap raw axis in tikzpicture if needed
+  if (trimmed.startsWith("\\begin{axis}") && !trimmed.startsWith("\\begin{tikzpicture}")) {
+    trimmed = `\\begin{tikzpicture}\n${trimmed}\n\\end{tikzpicture}`;
   }
 
   const detected = detectRequiredPackages(trimmed);
@@ -49,7 +62,7 @@ export function assembleDocument(source: string, additionalPackages: string[] = 
   const packageImports = allPackages
     .map((p) => {
       if (p === "pgfplots") {
-        return "\\usepackage{pgfplots}\n\\pgfplotsset{compat=newest}";
+        return "\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}";
       }
       return `\\usepackage{${p}}`;
     })
@@ -137,9 +150,10 @@ export async function compileLatex(options: CompileOptions): Promise<CompileResu
     try {
       compileRes = await runProcess(compiler, compileArgs, tempDir, timeoutMs);
     } catch {
-      // Fallback: If compiler binary is not present on current host,
-      // generate a standards-compliant fallback SVG
-      const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 180" width="480" height="180" role="img" class="latex-fallback-svg">
+      const pgfSvg = renderPgfplotsSvg(options.source);
+      const fallbackSvg =
+        pgfSvg ||
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 180" width="480" height="180" role="img" class="latex-fallback-svg">
   <rect width="100%" height="100%" fill="#faf7f0" stroke="#c9a347" stroke-width="1.5" rx="6"/>
   <text x="24" y="45" font-family="system-ui, sans-serif" font-weight="bold" font-size="14" fill="#143d2b">UNIVERSAL LATEX ENGINE [STANDALONE]</text>
   <text x="24" y="75" font-family="system-ui, sans-serif" font-size="12" fill="#555">Kompilasi TeX Live terisolasi (Compiler: ${compiler})</text>

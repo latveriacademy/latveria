@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { renderPgfplotsSvg } from "@latveria/shared";
 import { getDb } from "../lib/db";
 import { latexRenders } from "../lib/db/latex-schema";
 
@@ -134,10 +135,10 @@ export async function renderLatex(options: RenderLatexOptions): Promise<RenderLa
   }
 
   // 3. Graceful fallback when TeX Worker container is offline
-  const fallbackSvg = generateFallbackSvg(
-    source,
-    "Diagram LaTeX akademik siap dikompilasi oleh TeX Live Worker.",
-  );
+  const pgfSvg = renderPgfplotsSvg(source);
+  const fallbackSvg =
+    pgfSvg ||
+    generateFallbackSvg(source, "Diagram LaTeX akademik siap dikompilasi oleh TeX Live Worker.");
 
   return {
     hash,

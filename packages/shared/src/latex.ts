@@ -58,3 +58,17 @@ export function isComplexLatexDiagram(source: string): boolean {
 
   return false;
 }
+
+export function isLatexDiagramEnvironment(text: string): boolean {
+  const s = text.trim();
+  return (
+    s.startsWith("\\begin{tikzpicture}") ||
+    s.startsWith("\\begin{axis}") ||
+    s.startsWith("\\begin{circuitikz}") ||
+    s.startsWith("\\begin{forest}") ||
+    s.startsWith("\\begin{pspicture}") ||
+    s.startsWith("\\chemfig")
+  );
+}
+
+export * from "./pgfplots-svg";

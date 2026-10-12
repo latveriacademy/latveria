@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const mathSourcePattern =
-  /(\\begin\{(?:tikzpicture|circuitikz|forest|pspicture)\}[\s\S]*?(?:\\end\{(?:tikzpicture|circuitikz|forest|pspicture)\}|$)|\$\$[\s\S]+?\$\$|\\begin\{(?:tabular|array)\}[\s\S]*?(?:\\end\{(?:tabular|array)\}|$)?|\\chemfig\{[\s\S]*?\}|\$(?!\s)[^$\n]+?\$)/g;
+  /(<table\b[\s\S]*?<\/table>|\\begin\{(?:tikzpicture|circuitikz|forest|pspicture|axis)\}[\s\S]*?(?:\\end\{(?:tikzpicture|circuitikz|forest|pspicture|axis)\}|$)|\$\$[\s\S]+?\$\$|\\begin\{(?:tabular|array)\}[\s\S]*?(?:\\end\{(?:tabular|array)\}|$)?|\\chemfig\{[\s\S]*?\}|\$(?!\s)[^$\n]+?\$)/gi;
 
 export const lexiconAnnotationInputSchema = z.object({
   id: z.string().uuid().optional(),
