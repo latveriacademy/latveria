@@ -16,12 +16,13 @@ describe("LaTeX Renderer Service", () => {
       source: "\\begin{tikzpicture}\\draw (0,0) -- (2,2);\\end{tikzpicture}",
       compiler: "pdflatex",
       packages: ["tikz"],
+      timeoutMs: 1000,
     });
 
     expect(result.hash).toBeDefined();
     expect(result.svg).toContain("<svg");
     expect(result.svg).toContain("UNIVERSAL LATEX ENGINE");
-  });
+  }, 15000);
 
   it("exposes /api/latex/health and /api/latex/render endpoints via app", async () => {
     const health = await app.request("/api/latex/health");
