@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { renderPgfplotsSvg } from "@latveria/shared";
+import { isLatexRenderPlaceholder, renderPgfplotsSvg } from "@latveria/shared";
+import { HTTPException } from "hono/http-exception";
 import { getDb } from "../../lib/db";
 import { latexRenders } from "../../lib/db/latex-schema";
 
@@ -27,21 +28,9 @@ export function computeLatexHash(
 ): string {
   const normSource = source.trim();
   const normPkgs = [...packages].sort().join(",");
-  // Invalidate SVGs generated before strict PGFPlots parsing and XML escaping.
-  const payload = `svg-v2|${compiler}|${normPkgs}|${normSource}`;
+  // Invalidate earlier entries that may contain a success-shaped error placeholder.
+  const payload = `svg-v3|${compiler}|${normPkgs}|${normSource}`;
   return createHash("sha256").update(payload).digest("hex");
-}
-
-function generateFallbackSvg(source: string, reason: string): string {
-  const safeSource = source.slice(0, 100).replace(/[<>&"']/g, (m) => `&#${m.charCodeAt(0)};`);
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 140" width="450" height="140" role="img" class="latex-placeholder-svg">
-  <rect width="100%" height="100%" fill="#faf7f0" stroke="#c9a347" stroke-width="1.5" rx="6"/>
-  <text x="20" y="35" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" font-size="13" fill="#143d2b">UNIVERSAL LATEX ENGINE</text>
-  <text x="20" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="11" fill="#666">${reason}</text>
-  <rect x="20" y="75" width="410" height="45" fill="#ffffff" stroke="#e2d9c2" rx="4"/>
-  <text x="30" y="102" font-family="monospace" font-size="10" fill="#2d3748">${safeSource}...</text>
-</svg>`;
 }
 
 export async function renderLatex(options: RenderLatexOptions): Promise<RenderLatexResult> {
@@ -56,7 +45,7 @@ export async function renderLatex(options: RenderLatexOptions): Promise<RenderLa
   try {
     const [cached] = await db.select().from(latexRenders).where(eq(latexRenders.hash, hash));
 
-    if (cached) {
+    if (cached && !isLatexRenderPlaceholder(cached.svg)) {
       return {
         hash,
         svg: cached.svg,
@@ -73,6 +62,7 @@ export async function renderLatex(options: RenderLatexOptions): Promise<RenderLa
   // 2. Request compilation from isolated TeX Worker microservice
   const workerUrl = process.env.TEX_WORKER_URL || "http://127.0.0.1:3002";
   const startTime = Date.now();
+  let failureStatus: 422 | 503 = 503;
 
   try {
     const controller = new AbortController();
@@ -99,7 +89,7 @@ export async function renderLatex(options: RenderLatexOptions): Promise<RenderLa
         height?: string;
       };
 
-      if (data.success && data.svg) {
+      if (data.success && data.svg && !isLatexRenderPlaceholder(data.svg)) {
         const compileTimeMs = data.compileTimeMs || Date.now() - startTime;
 
         // Persist to database cache
@@ -130,20 +120,26 @@ export async function renderLatex(options: RenderLatexOptions): Promise<RenderLa
           height: data.height,
         };
       }
+    } else if (res.status === 422) {
+      failureStatus = 422;
     }
   } catch (err) {
     console.warn(`[latex-renderer] TeX Worker tidak dapat dihubungi di ${workerUrl}:`, err);
   }
 
-  // 3. Graceful fallback when TeX Worker container is offline
+  // Native rendering is a real diagram; a placeholder must never count as success.
   const pgfSvg = renderPgfplotsSvg(source);
-  const fallbackSvg =
-    pgfSvg ||
-    generateFallbackSvg(source, "Diagram LaTeX akademik siap dikompilasi oleh TeX Live Worker.");
+  if (!pgfSvg)
+    throw new HTTPException(failureStatus, {
+      message:
+        failureStatus === 422
+          ? "Diagram LaTeX tidak dapat dikompilasi. Periksa kode sumber."
+          : "Layanan render LaTeX belum tersedia. Coba lagi nanti.",
+    });
 
   return {
     hash,
-    svg: fallbackSvg,
+    svg: pgfSvg,
     cached: false,
     compileTimeMs: Date.now() - startTime,
   };
@@ -156,6 +152,7 @@ export async function getCachedLatex(hash: string) {
 
     if (
       !cached ||
+      isLatexRenderPlaceholder(cached.svg) ||
       computeLatexHash(cached.source, cached.compiler, JSON.parse(cached.packages)) !== hash
     )
       return null;

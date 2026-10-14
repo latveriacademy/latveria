@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { app } from "../../app";
 import { computeLatexHash, renderLatex } from "./latex-renderer.service";
 
 describe("LaTeX Renderer Service", () => {
+  const chart = String.raw`\begin{axis}[ybar,xtick=data,symbolic x coords={A},grid style=dashed]\addplot coordinates {(A,5)};\end{axis}`;
+  afterEach(() => vi.unstubAllGlobals());
   it("computes deterministic SHA-256 hashes for LaTeX snippets", () => {
     const src = "\\begin{circuitikz}\\draw (0,0) to[R] (2,0);\\end{circuitikz}";
     const hash1 = computeLatexHash(src, "pdflatex", ["circuitikz", "amsmath"]);
@@ -15,9 +17,10 @@ describe("LaTeX Renderer Service", () => {
     );
   });
 
-  it("produces valid SVG output with metadata and graceful fallback", async () => {
+  it("produces an actual native SVG when the worker is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Worker offline")));
     const result = await renderLatex({
-      source: "\\begin{tikzpicture}\\draw (0,0) -- (2,2);\\end{tikzpicture}",
+      source: chart,
       compiler: "pdflatex",
       packages: ["tikz"],
       timeoutMs: 1000,
@@ -25,10 +28,12 @@ describe("LaTeX Renderer Service", () => {
 
     expect(result.hash).toBeDefined();
     expect(result.svg).toContain("<svg");
-    expect(result.svg).toContain("UNIVERSAL LATEX ENGINE");
+    expect(result.svg).toContain("pgfplots-bar-chart");
+    expect(result.svg).not.toContain("UNIVERSAL LATEX ENGINE");
   }, 15000);
 
   it("exposes /api/latex/health and /api/latex/render endpoints via app", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Worker offline")));
     const health = await app.request("/api/latex/health");
     expect(health.status).toBe(200);
     const healthJson = await health.json();
@@ -39,7 +44,7 @@ describe("LaTeX Renderer Service", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        source: "\\chemfig{A-B=C}",
+        source: chart,
         compiler: "pdflatex",
       }),
     });

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { isComplexLatexDiagram, renderPgfplotsSvg } from "@latveria/shared";
+import {
+  isComplexLatexDiagram,
+  isLatexRenderPlaceholder,
+  renderPgfplotsSvg,
+} from "@latveria/shared";
 import { parseTikz } from "../../lib/math/tikz";
 import { TikzDiagram } from "./tikz-diagram";
 import "./latex-diagram.css";
@@ -73,19 +77,26 @@ function UniversalLatexEngineView({ source }: { source: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source }),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) {
-          throw new Error(`Kompilasi LaTeX gagal (HTTP ${res.status}).`);
+          const body = await res.json().catch(() => null);
+          throw new Error(
+            typeof body?.error === "string"
+              ? body.error
+              : `Kompilasi LaTeX gagal (HTTP ${res.status}).`,
+          );
         }
         return res.json() as Promise<{ svg: string; hash: string }>;
       })
       .then((data) => {
         if (!isMounted) return;
-        if (data.svg) {
+        if (data.svg && !isLatexRenderPlaceholder(data.svg)) {
           memorySvgCache.set(source, data.svg);
           setSvg(data.svg);
         } else {
-          throw new Error("SVG output tidak ditemukan.");
+          throw new Error(
+            "Diagram belum dapat dirender. Coba lagi nanti atau periksa kode sumber.",
+          );
         }
       })
       .catch((err: unknown) => {
@@ -112,7 +123,7 @@ function UniversalLatexEngineView({ source }: { source: string }) {
   if (error || !svg) {
     return (
       <span className="latex-diagram-error">
-        <span>Ilustrasi akademik belum dapat ditampilkan: {error}</span>
+        <span>Diagram belum dapat ditampilkan: {error}</span>
         <button
           type="button"
           onClick={() => setShowSource(!showSource)}
