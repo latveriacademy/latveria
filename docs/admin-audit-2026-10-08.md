@@ -8,6 +8,8 @@ P1 berarti fungsi inti, keamanan, atau integritas data membutuhkan perbaikan seg
 
 ## Cakupan dan metode
 
+Path dan nomor baris dalam bukti berikut mengacu pada struktur repo saat audit, sebelum pengelompokan folder fitur. Struktur sumber terbaru dijelaskan di `ARCHITECTURE.md`.
+
 - Menelusuri router, guard sesi/role/Origin, handler, service, kontrak shared, dan foreign key yang terkait menu admin.
 - Membuka Ringkasan, Tryout, Bank soal, Laporan soal, Afirmasi, User, Analytics, Log Aktivitas, Ekspor, dan Sistem pada desktop 1440 px dan mobile 390 px.
 - Memeriksa halaman subtes/paket, tambah/edit/pratinjau soal, impor JSON, detail Tryout, serta detail user. Pemeriksaan ini berupa smoke test dan pemeriksaan terarah, bukan seluruh kombinasi interaksi/data.

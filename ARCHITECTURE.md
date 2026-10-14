@@ -44,16 +44,17 @@ EXP, persentase jawaban benar, dan Latveria Score adalah ukuran yang berbeda. Ti
 
 ### Bun sebagai runtime workspace
 
-Web dan API **menggunakan Bun sebagai package manager, task runner, dan runtime JavaScript/TypeScript**. Script Vite, Vitest, ESLint, TypeScript, oxfmt, dan Drizzle Kit menggunakan `bun run --bun` secara eksplisit agar shebang CLI tidak berpindah ke Node. Backend memakai server native `Bun.serve`; `tsx` dan adapter server Node tidak diperlukan.
+Web dan API menggunakan **Bun sebagai package manager dan task runner**, serta runtime backend melalui `Bun.serve`. Vite development dijalankan dengan **Node.js 22, minimal 22.12**: proxy WebSocket Vite tidak kompatibel dengan implementasi HTTP/socket Bun 1.3.14. Build Vite, Vitest, ESLint, TypeScript, oxfmt, dan Drizzle Kit tetap memakai Bun. Backend tidak memerlukan `tsx` atau adapter server Node.
 
-| Proses                      | Runtime aktual                             | Bukti implementasi                                                |
-| --------------------------- | ------------------------------------------ | ----------------------------------------------------------------- |
-| React SPA                   | Browser                                    | `apps/web/src/main.tsx` memakai `createRoot` dan `RouterProvider` |
-| Dev server/build web        | Bun menjalankan CLI Vite                   | `apps/web/package.json`, `apps/web/Dockerfile`                    |
-| API development             | Bun dengan `--watch` dan `Bun.serve`       | `apps/api/package.json`, `apps/api/src/index.ts`                  |
-| API produksi container      | Bun 1.3.14 menjalankan TypeScript langsung | `apps/api/Dockerfile`                                             |
-| Frontend produksi container | Nginx menyajikan hasil build statis        | `apps/web/Dockerfile`, `deploy/nginx.conf`                        |
-| CLI database                | Bun menjalankan TypeScript/Drizzle Kit     | Script `db:*` di `apps/api/package.json`                          |
+| Proses                      | Runtime aktual                                   | Bukti implementasi                                                |
+| --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| React SPA                   | Browser                                          | `apps/web/src/main.tsx` memakai `createRoot` dan `RouterProvider` |
+| Dev server web              | Node.js menjalankan CLI Vite dan proxy WebSocket | `apps/web/package.json`                                           |
+| Build web                   | Bun menjalankan CLI Vite                         | `apps/web/package.json`, `apps/web/Dockerfile`                    |
+| API development             | Bun dengan `--watch` dan `Bun.serve`             | `apps/api/package.json`, `apps/api/src/index.ts`                  |
+| API produksi container      | Bun 1.3.14 menjalankan TypeScript langsung       | `apps/api/Dockerfile`                                             |
+| Frontend produksi container | Nginx menyajikan hasil build statis              | `apps/web/Dockerfile`, `deploy/nginx.conf`                        |
+| CLI database                | Bun menjalankan TypeScript/Drizzle Kit           | Script `db:*` di `apps/api/package.json`                          |
 
 Bun 1.3.14 adalah runtime yang diperlukan; versinya tercatat di `package.json` dan `.bun-version`. Import `node:*` yang masih ada adalah API kompatibilitas yang disediakan Bun, bukan penggunaan proses Node.js. Backend `build` melakukan typecheck; backend belum dibundle menjadi artefak JavaScript terpisah. React/GSAP tetap berjalan di browser setelah hasil build dikirim; runtime Bun digunakan untuk tooling dan server, bukan mengganti mesin JavaScript browser.
 
@@ -64,11 +65,15 @@ apps/web/src/
   main.tsx                 Bootstrap React, stylesheet, dan font
   router.tsx               Route, loader, guard, redirect, dan error halaman
   app/                     Landing, login, dan controller halaman admin
+  app/admin/{soal,tryout,users,packages,import}/ Halaman admin menurut fitur
   views/                   Controller halaman peserta
+  views/{practice,history,tryout,library}/ Controller fitur, tes, dan stylesheet
   components/ui/           Primitive shadcn/Radix dan kerangka dashboard bersama
   components/              Komposisi UI dan komponen fitur
+  components/{practice,tryout,warrior,question,math,lexicon}/ Modul fitur, tes, dan stylesheet
   context/AppContext.jsx   Koordinasi state peserta dan operasi frontend
   lib/                     HTTP client, renderer/parser, import, dan motion
+  lib/{practice,tryout,question,math}/ Helper fitur beserta tes
   assets/, data/, utils/   Aset, data pendukung, dan utilitas browser
 
 apps/api/
@@ -76,6 +81,7 @@ apps/api/
   src/app.ts               Aplikasi Hono, middleware, auth, dan pemasangan router
   src/handlers/            Route domain, parsing/validasi request, response HTTP
   src/services/            Logika domain, query database, transaksi, dan cache
+  src/services/{warrior,tryout,latex,question,storage}/ Service fitur beserta tes
   src/lib/                 Auth, environment, koneksi/schema DB, utilitas domain
   scripts/                 Migrasi, seed, promosi admin, dan verifikasi integrasi
   drizzle/                 SQL migrasi dan metadata Drizzle
@@ -133,9 +139,9 @@ Animasi dashboard memakai kelas CSS dalam `lib/motion/motion.css`, token di `lib
 
 ### Rumus dan diagram
 
-`components/math-text.tsx` mengenali `$...$` inline, `$$...$$` blok, dan blok `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`. Rumus dirender dengan KaTeX `trust: false`; sumber tidak valid tetap ditampilkan.
+`components/math/math-text.tsx` mengenali `$...$` inline, `$$...$$` blok, dan blok `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`. Rumus dirender dengan KaTeX `trust: false`; sumber tidak valid tetap ditampilkan.
 
-TikZ dirender sebagai SVG lokal oleh `components/tikz-diagram.tsx` dan parser `lib/tikz.ts`. Subset mencakup garis/poligon, rectangle, circle, ellipse, gaya garis, label node, dan koordinat 2D/3D dengan proyeksi. Parser membatasi panjang sumber, jumlah perintah, dan rentang koordinat. Sintaks yang belum didukung menampilkan source serta pesan. Renderer yang sama digunakan di preview admin, latihan, dan review.
+TikZ dirender sebagai SVG lokal oleh `components/math/tikz-diagram.tsx` dan parser `lib/math/tikz.ts`. Subset mencakup garis/poligon, rectangle, circle, ellipse, gaya garis, label node, dan koordinat 2D/3D dengan proyeksi. Parser membatasi panjang sumber, jumlah perintah, dan rentang koordinat. Sintaks yang belum didukung menampilkan source serta pesan. Renderer yang sama digunakan di preview admin, latihan, dan review.
 
 ## 5. Backend dan kontrak HTTP
 

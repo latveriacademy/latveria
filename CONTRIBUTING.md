@@ -21,6 +21,7 @@ Aturan ini berlaku untuk developer dan AI agent. Baca dokumen ini serta [ARCHITE
 Baris kode pada ESLint tidak menghitung baris kosong atau komentar. Pengecualian legacy tercatat eksplisit di `eslint.config.mjs`, dengan plafon masing-masing; plafon tidak boleh dinaikkan hanya agar lint lolos. File legacy yang disentuh harus diarahkan ke batas normal melalui pemisahan concern.
 
 - Katalog, controller sesi, renderer soal, form/dialog, dan data statis tidak digabung menjadi satu file.
+- File dengan domain/prefix fitur yang sama dikelompokkan dalam folder fitur; tes dan stylesheet berdekatan dengan modulnya. Gunakan folder fitur yang sudah ada untuk penambahan berikutnya.
 - Renderer menerima data/callback; request API dan koordinasi state berada di controller atau komponen fitur.
 - Jangan membuat komponen untuk setiap `<div>` atau memindahkan kode hanya untuk menyembunyikan pelanggaran ukuran.
 - Jangan menggabungkan dependency cycle atau membuat barrel export yang menyamarkan batas paket.

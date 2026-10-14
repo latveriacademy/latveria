@@ -12,6 +12,8 @@ Tersedia: landing page, akun lokal, dashboard peserta, latsol satu-soal dengan n
 
 Navigasi peserta memakai **Basecamp** (dashboard), **Drilling** (katalog paket latihan dengan pencarian, filter, dan paginasi), dan **Drill Log** (riwayat). **Battle World** membuka alur tryout pada `/dashboard?tab=tryout`, termasuk sesi lintas subtes dan jeda. **Library** diperuntukkan materi dan menampilkan empty state saat materi belum tersedia. Ketersediaan paket mengikuti data server.
 
+**Warrior Battle** pada `/dashboard?tab=warrior` menyediakan room 1v1/2v2, bergabung lewat kode, lobby siap, ronde berwaktu, hasil, riwayat, dan rematch melalui WebSocket. Terapkan migrasi database sebelum menjalankannya. Pengujian dua/empat akun melalui WebSocket termasuk dalam `bun run test:integration`; fixture dibersihkan berdasarkan ID.
+
 Gambaran sistem, batas paket, runtime Bun, atomic design, GSAP, dan alur data dijelaskan di [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Aturan developer/AI agent, batas ukuran file dan commit, style, serta verifikasi ada di [CONTRIBUTING.md](CONTRIBUTING.md). ESLint memeriksa batas file; CI memeriksa format dan ukuran commit sejak aturan tersebut diadopsi.
@@ -20,7 +22,7 @@ Sidebar memakai kartu profil ringkas di bagian bawah; klik untuk membuka Profil/
 
 ## Pengembangan lokal
 
-Bun 1.3.14 dan Docker Compose. Bun mengelola dependensi sekaligus menjadi runtime API, CLI database, Vite, Vitest, lint, typecheck, dan formatter. Script CLI memakai `bun run --bun` agar tidak mengikuti shebang Node. Node.js tidak perlu dipasang. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.
+Bun 1.3.14, Node.js 22 (minimal 22.12), dan Docker Compose. Bun mengelola dependensi dan task serta menjadi runtime API, CLI database, build Vite, Vitest, lint, typecheck, dan formatter. Vite development memakai Node.js karena proxy WebSocket belum kompatibel dengan Bun 1.3.14. Versi Bun tercatat di `.bun-version`, workspace didefinisikan di `package.json`, dan lockfile tunggal adalah `bun.lock`.
 
 ```sh
 bun install --frozen-lockfile
@@ -102,7 +104,7 @@ Formatter proyek adalah **oxfmt**. Aturan ada di `.oxfmtrc.json`: 2 spasi, lebar
 bun run format                      # format kode dan dokumentasi
 bun run format:check                # periksa tanpa mengubah berkas
 bun run check                       # format check → lint → semua tipe → semua tes → build
-bun run --filter @latveria/web test src/components/math-text.test.tsx
+bun run --filter @latveria/web test src/components/math/math-text.test.tsx
 bun run --filter @latveria/api test src/lib/env.test.ts
 bun run test:integration            # API dan PostgreSQL lokal
 bun run db:generate                 # SQL luring

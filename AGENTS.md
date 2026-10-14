@@ -23,7 +23,7 @@ Baca `PLAN.md` untuk arah produk dan `ARCHITECTURE.md` untuk keputusan teknis.
 | Lokasi            | Isi dan tanggung jawab                                                     |
 | ----------------- | -------------------------------------------------------------------------- |
 | `apps/web`        | React/Vite SPA, React Router, Tailwind, shadcn/ui, dan renderer matematika |
-| `apps/api`        | Hono di Node.js, Better Auth, Drizzle, database, migrasi, dan CLI          |
+| `apps/api`        | Hono di Bun, Better Auth, Drizzle, database, migrasi, dan CLI          |
 | `packages/shared` | Skema request Zod, tipe API, dan katalog subtes UTBK                       |
 
 Frontend dan shared tidak boleh mengimpor database atau secret server.
@@ -32,7 +32,7 @@ Validasi input di backend tetap wajib, meskipun frontend sudah memvalidasinya.
 ## Tooling dan perintah kerja
 
 Gunakan **Bun 1.3.14** dan **Node.js 22, minimal 22.12**.
-Bun adalah package manager dan task runner; runtime backend tetap Node.js.
+Bun adalah package manager, task runner, dan runtime backend. Vite development memakai Node.js agar proxy WebSocket berfungsi; jangan memaksanya memakai `--bun` pada Bun 1.3.14.
 
 | Perintah                        | Kegunaan                                                                          |
 | ------------------------------- | --------------------------------------------------------------------------------- |
@@ -46,12 +46,12 @@ Bun adalah package manager dan task runner; runtime backend tetap Node.js.
 | `bun run test`                  | Menjalankan tes Vitest                                                            |
 | `bun run test:integration`      | Menguji backend lokal; membutuhkan migrasi/seed dan membersihkan data tes sendiri |
 | `bun run check`                 | Menjalankan lint → typecheck semua paket → tes → build                            |
-| `bun run start`                 | Menjalankan backend produksi melalui tsx dan melayani SPA dist                    |
+| `bun run start`                 | Menjalankan backend produksi melalui Bun dan melayani SPA dist                    |
 
 Contoh tes terarah:
 
 ```sh
-bun run --filter @latveria/web test src/components/math-text.test.tsx
+bun run --filter @latveria/web test src/components/math/math-text.test.tsx
 bun run --filter @latveria/api test src/lib/env.test.ts
 ```
 
@@ -156,12 +156,14 @@ bun run --filter @latveria/api test src/lib/env.test.ts
 
 ### Rumus dan diagram geometri
 
-- Gunakan `apps/web/src/components/math-text.tsx` untuk menampilkan sumber LaTeX: `$...$` inline dan `$$...$$` blok.
+- Gunakan `apps/web/src/components/math/math-text.tsx` untuk menampilkan sumber LaTeX: `$...$` inline dan `$$...$$` blok.
 - KaTeX harus tetap memakai `trust: false`. Sintaks salah mempertahankan teks sumber.
 - TikZ dasar memakai blok `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`, lalu dirender sebagai SVG lokal.
 - Sintaks diagram yang belum didukung menampilkan sumber beserta pesan yang jelas. Renderer ini React client, bukan Next Server Component.
 
 ## Konvensi kerja dan Git
+
+- Kelompokkan file satu fitur/prefix dalam folder domain yang sudah tersedia, termasuk tes dan CSS terkait. Service API memakai `services/{warrior,tryout,latex,question,storage}`; komponen/helper frontend dan halaman admin mengikuti folder fiturnya. Import langsung ke modul yang diperlukan.
 
 - AI agent dan developer wajib membuat atau memakai issue yang relevan **sebelum mengerjakan setiap fitur baru atau fix bug**, termasuk perubahan kecil. Cari issue yang sudah ada agar tidak membuat duplikat; tautkan Project jika token mengizinkan.
 - Issue fitur mencantumkan tujuan, scope, dan kriteria selesai. Issue bug mencantumkan langkah reproduksi, perilaku aktual/yang diharapkan, serta rencana verifikasi.
