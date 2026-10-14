@@ -2,7 +2,11 @@ import { serveStatic } from "hono/bun";
 import { app } from "./app";
 import { authenticateWarriorWs } from "./services/warrior/warrior-auth-ws.service";
 import type { WarriorSocketData } from "./services/warrior/warrior-room.manager";
-import { onSocketClose, onSocketMessage, onSocketOpen } from "./services/warrior/warrior-ws.service";
+import {
+  onSocketClose,
+  onSocketMessage,
+  onSocketOpen,
+} from "./services/warrior/warrior-ws.service";
 
 // Jaga proses tetap hidup jika ada unhandled rejection (mis. Supabase statement timeout)
 process.on("unhandledRejection", (reason) => {
@@ -20,7 +24,7 @@ if (process.env.NODE_ENV === "production") {
 }
 const port = Number(process.env.PORT ?? (process.env.NODE_ENV === "production" ? 3000 : 3001));
 
-const server = Bun.serve<WarriorSocketData>({
+export const server = Bun.serve<WarriorSocketData>({
   port,
   async fetch(req, bunServer) {
     const url = new URL(req.url);
