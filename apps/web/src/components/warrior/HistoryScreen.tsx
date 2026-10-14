@@ -1,92 +1,140 @@
-import React, { useEffect, useState } from "react";
-import { ArrowLeft, Trophy } from "lucide-react";
-
+import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { BattleSummaryDto } from "@latveria/shared";
-import { api } from "@/lib/api";
-import { Button } from "@/components/ui/button";
+import { api } from "../../lib/api";
+import { Button } from "../ui/button";
+import { PageHeading, Panel } from "../ui/dashboard";
+import styles from "./battle.module.css";
 
-interface HistoryScreenProps {
+export function HistoryScreen({
+  onBack,
+  onReview,
+}: {
   onBack: () => void;
-}
-
-export function HistoryScreen({ onBack }: HistoryScreenProps) {
+  onReview?: (battleId: string) => void;
+}) {
   const [history, setHistory] = useState<BattleSummaryDto[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    api<BattleSummaryDto[]>("/warrior/history")
-      .then((data: BattleSummaryDto[]) => setHistory(data))
-      .catch((err: unknown) => console.error("Failed to load battle history:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
-
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    api<BattleSummaryDto[]>("/warrior/history", { signal: controller.signal })
+      .then((data) => {
+        if (!Array.isArray(data)) throw new Error("Data riwayat tidak valid.");
+        if (!controller.signal.aborted) setHistory(data);
+      })
+      .catch((failure: unknown) => {
+        if (!controller.signal.aborted)
+          setError(failure instanceof Error ? failure.message : "Riwayat belum dapat dimuat.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [retry]);
   return (
-    <div className="mx-auto max-w-2xl space-y-6 py-4">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={onBack} className="flex items-center gap-1.5">
-          <ArrowLeft className="size-4" /> Kembali
-        </Button>
-        <h2 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-          <Trophy className="size-5 text-[var(--gold)]" /> Riwayat Warrior Battle
-        </h2>
-      </div>
-
-      {isLoading ? (
-        <div className="py-12 text-center text-sm text-[var(--soft-ink)]">
-          Memuat riwayat duel...
-        </div>
-      ) : history.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/80 p-12 text-center text-sm text-[var(--soft-ink)]">
-          Belum ada duel yang tercatat. Buat room dan tantang kawan belajarmu sekarang!
-        </div>
+    <div className={styles.screen}>
+      <PageHeading
+        title="Riwayat Warrior Battle"
+        actions={
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            Kembali
+          </Button>
+        }
+      />
+      {loading ? (
+        <Panel className={styles.panel} role="status">
+          <p className={styles.muted}>Memuat riwayat battle…</p>
+        </Panel>
+      ) : error ? (
+        <Panel className={styles.panel}>
+          <p className={`${styles.notice} ${styles.error}`} role="alert">
+            {error}
+          </p>
+          <div>
+            <Button variant="outline" onClick={() => setRetry((value) => value + 1)}>
+              Coba lagi
+            </Button>
+          </div>
+        </Panel>
+      ) : !history.length ? (
+        <Panel className={styles.panel}>
+          <p>Belum ada battle yang selesai.</p>
+          <p className={styles.muted}>Hasil pertandingan akan muncul di sini.</p>
+        </Panel>
       ) : (
-        <div className="space-y-3">
+        <ol className={styles.list} aria-label="Riwayat pertandingan">
           {history.map((item) => {
-            const team1 = item.teams.find((t) => t.teamNumber === 1);
-            const team2 = item.teams.find((t) => t.teamNumber === 2);
+            const first =
+              item.teams.find((team) => team.teamNumber === item.myTeamNumber) ??
+              item.teams.find((team) => team.teamNumber === 1);
+            const second = item.teams.find((team) => team.id !== first?.id);
+            const duel = item.mode === "1v1";
             return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between rounded-xl border border-border/60 bg-[var(--surface)] p-4 shadow-sm"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
-                        item.isDraw
-                          ? "bg-zinc-500/10 text-zinc-400"
+              <li key={item.id}>
+                <Panel className={styles.panel}>
+                  <div className={styles.historyRow}>
+                    <div className={styles.historyMeta}>
+                      <h2>
+                        {duel ? "Duel 1 vs 1" : "Battle tim 2 vs 2"} · {item.questionCount} soal
+                      </h2>
+                      <span className={item.isWinner ? styles.ready : styles.muted}>
+                        {item.isDraw
+                          ? duel
+                            ? "Duel seri"
+                            : "Tim seri"
                           : item.isWinner
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-rose-500/10 text-rose-500"
-                      }`}
-                    >
-                      {item.isDraw ? "SERI" : item.isWinner ? "MENANG" : "KALAH"}
-                    </span>
-                    <span className="text-xs font-mono text-[var(--soft-ink)]">
-                      {item.mode} · {item.questionCount} Soal
-                    </span>
+                            ? duel
+                              ? "Kamu menang"
+                              : "Tim kamu menang"
+                            : duel
+                              ? "Kamu kalah"
+                              : "Tim kamu kalah"}{" "}
+                        · {item.code}
+                      </span>
+                      <time className={styles.date} dateTime={item.endedAt ?? item.createdAt}>
+                        {new Date(item.endedAt ?? item.createdAt).toLocaleString("id-ID", {
+                          timeZone: "Asia/Jakarta",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        WIB
+                      </time>
+                    </div>
+                    <div className={styles.historyMeta}>
+                      <strong className={styles.historyScore}>
+                        {first?.score ?? 0} – {second?.score ?? 0}
+                      </strong>
+                      <span className={styles.muted}>
+                        {item.myTeamNumber
+                          ? duel
+                            ? "Poin kamu – lawan"
+                            : "Poin tim kamu – tim lawan"
+                          : duel
+                            ? "Poin pemain 1 – pemain 2"
+                            : "Poin Tim 1 – Tim 2"}
+                      </span>
+                    </div>
                   </div>
-                  <div className="mt-1.5 text-xs text-[var(--soft-ink)]">
-                    {new Date(item.endedAt ?? item.createdAt).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                </div>
-
-                <div className="text-right font-mono">
-                  <div className="text-base font-black text-[var(--ink)]">
-                    {team1?.score ?? 0} - {team2?.score ?? 0}
-                  </div>
-                  <div className="text-[11px] text-[var(--soft-ink)]">Skor Akhir</div>
-                </div>
-              </div>
+                  {onReview && (
+                    <div>
+                      <Button variant="outline" onClick={() => onReview(item.id)}>
+                        Lihat pembahasan
+                      </Button>
+                    </div>
+                  )}
+                </Panel>
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
     </div>
   );

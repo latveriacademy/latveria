@@ -7,11 +7,17 @@ import { LobbyScreen } from "../components/warrior/LobbyScreen";
 import { ArenaScreen } from "../components/warrior/ArenaScreen";
 import { ResultScreen } from "../components/warrior/ResultScreen";
 import { HistoryScreen } from "../components/warrior/HistoryScreen";
+import { ReviewScreen } from "../components/warrior/ReviewScreen";
+import styles from "../components/warrior/battle.module.css";
+import { Button } from "../components/ui/button";
+import { PageHeading, Panel } from "../components/ui/dashboard";
 
 export function WarriorBattleView() {
   const [activeBattleId, setActiveBattleId] = useState<string | null>(null);
   const [viewState, setViewState] = useState<"setup" | "history">("setup");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState<"create" | "join" | null>(null);
+  const [reviewBattleId, setReviewBattleId] = useState<string | null>(null);
 
   const {
     battleState,
@@ -19,6 +25,7 @@ export function WarriorBattleView() {
     questionResult,
     summary,
     isReconnecting,
+    isConnected,
     lastLockedPlayer,
     toggleReady,
     submitAnswer,
@@ -26,6 +33,9 @@ export function WarriorBattleView() {
   } = useWarriorBattle({
     battleId: activeBattleId ?? "",
     onError: (err) => setErrorMessage(err),
+    onRematchCreated: (code) => {
+      void handleJoinBattle(code);
+    },
   });
 
   const handleCreateBattle = async (params: {
@@ -33,6 +43,8 @@ export function WarriorBattleView() {
     questionCount: number;
     timePerQuestionSeconds: number;
   }) => {
+    if (pending) return;
+    setPending("create");
     try {
       setErrorMessage(null);
       const res = await api<{ battle: { id: string } }>("/warrior/battles", {
@@ -42,10 +54,14 @@ export function WarriorBattleView() {
       setActiveBattleId(res.battle.id);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Gagal membuat room battle.");
+    } finally {
+      setPending(null);
     }
   };
 
   const handleJoinBattle = async (code: string) => {
+    if (pending) return;
+    setPending("join");
     try {
       setErrorMessage(null);
       const res = await api<{ battle: { id: string } }>("/warrior/battles/join", {
@@ -55,6 +71,8 @@ export function WarriorBattleView() {
       setActiveBattleId(res.battle.id);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Gagal bergabung ke room battle.");
+    } finally {
+      setPending(null);
     }
   };
 
@@ -63,15 +81,50 @@ export function WarriorBattleView() {
     setViewState("setup");
   };
 
-  // If no active battle, show Setup or History
+  if (reviewBattleId)
+    return (
+      <div className="latveria-view-container">
+        <ReviewScreen battleId={reviewBattleId} onBack={() => setReviewBattleId(null)} />
+      </div>
+    );
+  if (activeBattleId && !battleState) {
+    return (
+      <div className={`latveria-view-container ${styles.screen}`}>
+        <PageHeading
+          title="Warrior Battle"
+          actions={
+            <Button variant="outline" onClick={handleExit}>
+              Kembali
+            </Button>
+          }
+        />
+        <div className={styles.stack}>
+          {errorMessage && (
+            <p className={`${styles.notice} ${styles.error}`} role="alert">
+              {errorMessage}
+            </p>
+          )}
+          <Panel className={styles.panel} role="status">
+            <p className={styles.muted}>
+              {isReconnecting ? "Menghubungkan ulang ke room…" : "Menghubungkan ke room…"}
+            </p>
+          </Panel>
+        </div>
+      </div>
+    );
+  }
   if (!activeBattleId || !battleState) {
     if (viewState === "history") {
-      return <HistoryScreen onBack={() => setViewState("setup")} />;
+      return (
+        <div className="latveria-view-container">
+          <HistoryScreen onBack={() => setViewState("setup")} onReview={setReviewBattleId} />
+        </div>
+      );
     }
     return (
-      <div className="space-y-4">
+      <div className="latveria-view-container space-y-4">
         {errorMessage && (
-          <div className="mx-auto max-w-2xl rounded-lg bg-rose-500/10 p-3 text-center text-sm font-semibold text-rose-500 border border-rose-500/20">
+          <div className={`${styles.notice} ${styles.error}`} role="alert">
             {errorMessage}
           </div>
         )}
@@ -79,6 +132,7 @@ export function WarriorBattleView() {
           onCreateBattle={handleCreateBattle}
           onJoinBattle={handleJoinBattle}
           onOpenHistory={() => setViewState("history")}
+          pending={pending}
         />
       </div>
     );
@@ -86,21 +140,29 @@ export function WarriorBattleView() {
 
   // Active Battle Views
   return (
-    <div className="space-y-4">
+    <div className="latveria-view-container space-y-4">
       {isReconnecting && (
-        <div className="rounded-lg bg-amber-500/10 p-2 text-center text-xs font-semibold text-amber-500 animate-pulse border border-amber-500/20">
+        <div className={styles.notice} role="status">
           Koneksi terputus. Menghubungkan ulang ke server...
         </div>
       )}
 
       {errorMessage && (
-        <div className="rounded-lg bg-rose-500/10 p-2 text-center text-xs font-semibold text-rose-500 border border-rose-500/20">
+        <div className={`${styles.notice} ${styles.error}`} role="alert">
           {errorMessage}
         </div>
       )}
 
       {battleState.status === "completed" && summary ? (
-        <ResultScreen summary={summary} onRequestRematch={requestRematch} onExit={handleExit} />
+        <ResultScreen
+          summary={summary}
+          myTeamNumber={
+            battleState.teams.find((team) => team.id === battleState.myTeamId)?.teamNumber
+          }
+          onRequestRematch={requestRematch}
+          onExit={handleExit}
+          onReview={() => setReviewBattleId(battleState.id)}
+        />
       ) : activeQuestion &&
         (battleState.status === "active" || battleState.status === "question_result") ? (
         <ArenaScreen
@@ -108,10 +170,16 @@ export function WarriorBattleView() {
           activeQuestion={activeQuestion}
           questionResult={questionResult}
           lastLockedPlayer={lastLockedPlayer}
+          disabled={!isConnected}
           onSubmitAnswer={(sel) => submitAnswer(activeQuestion.id, activeQuestion.position, sel)}
         />
       ) : (
-        <LobbyScreen battleState={battleState} onToggleReady={toggleReady} onLeave={handleExit} />
+        <LobbyScreen
+          battleState={battleState}
+          onToggleReady={toggleReady}
+          onLeave={handleExit}
+          connected={isConnected}
+        />
       )}
     </div>
   );
