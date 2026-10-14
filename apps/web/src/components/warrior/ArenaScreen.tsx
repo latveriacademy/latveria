@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Zap, Clock, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import type { BattleActiveQuestion, BattleStateDto, QuestionResultDto } from "@latveria/shared";
-import { QuestionRenderer } from "../question-renderer";
+import { QuestionRenderer } from "../question/question-renderer";
 import { sound } from "../../utils/audioFeedback";
 
 interface ArenaScreenProps {

@@ -18,8 +18,8 @@ import {
   practiceAttempts,
 } from "../lib/db/schema";
 import { invalidateCatalogCache, resolveTopic } from "./topic.service";
-import { protectPassageSources, validatePassage } from "./question-passage";
-import { resolvePassages } from "./tryout-review.service";
+import { protectPassageSources, validatePassage } from "./question/question-passage";
+import { resolvePassages } from "./tryout/tryout-review.service";
 import { tryoutSections } from "../lib/db/schema";
 
 export async function getSubtestPackages(subtestId: string): Promise<QuestionPackage[]> {

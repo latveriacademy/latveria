@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { AppEnv } from "../types";
-import { deleteAvatar, getAvatarStream, uploadAvatar } from "../services/storage.service";
+import { deleteAvatar, getAvatarStream, uploadAvatar } from "../services/storage/storage.service";
 
 export const publicAvatarHandler = new Hono<AppEnv>();
 

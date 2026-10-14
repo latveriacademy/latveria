@@ -6,8 +6,8 @@ import { sound } from "../utils/audioFeedback";
 import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
 import { Button } from "../components/ui/button";
 import { AnimatedNumber } from "../lib/motion";
-import { useTryoutHistory } from "../lib/use-tryout-history";
-import { LatestTryout } from "../components/latest-tryout";
+import { useTryoutHistory } from "../lib/tryout/use-tryout-history";
+import { LatestTryout } from "../components/tryout/latest-tryout";
 
 // --- UTBK Countdown Hook ---
 function useUtbkCountdown() {

@@ -8,7 +8,7 @@ import {
   getQuestionDetail,
   importQuestions,
   updateQuestion,
-} from "../services/question.service";
+} from "../services/question/question.service";
 
 export const questionHandler = new Hono<AppEnv>();
 

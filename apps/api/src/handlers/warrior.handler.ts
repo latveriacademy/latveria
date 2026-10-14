@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { createBattleSchema, idSchema, joinBattleSchema } from "@latveria/shared";
 import type { AppEnv } from "../types";
-import { createBattle, getBattleState, joinBattleByCode } from "../services/warrior-battle.service";
-import { togglePlayerReady, submitAnswer } from "../services/warrior-engine.service";
-import { createRematch, getUserBattleHistory } from "../services/warrior-history.service";
+import { createBattle, getBattleState, joinBattleByCode } from "../services/warrior/warrior-battle.service";
+import { togglePlayerReady, submitAnswer } from "../services/warrior/warrior-engine.service";
+import { createRematch, getUserBattleHistory } from "../services/warrior/warrior-history.service";
 
 export const warriorHandler = new Hono<AppEnv>();
 

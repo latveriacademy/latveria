@@ -10,7 +10,7 @@ import {
   type Result,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import { resolvePassages } from "./tryout-review.service";
+import { resolvePassages } from "./tryout/tryout-review.service";
 import {
   practiceAnswers,
   practiceAttempts,

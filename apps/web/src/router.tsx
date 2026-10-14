@@ -24,30 +24,32 @@ import type {
 import { api, ApiError } from "./lib/api";
 import { Login } from "./app/login";
 import { AdminSummary } from "./app/admin/admin-summary";
-import { BankPage } from "./app/admin/question-bank";
-import { QuestionForm } from "./app/admin/question-form";
-import { QuestionJsonEditor } from "./app/admin/question-json-editor";
+import { BankPage } from "./app/admin/soal/question-bank";
+import { QuestionForm } from "./app/admin/soal/question-form";
+import { QuestionJsonEditor } from "./app/admin/soal/question-json-editor";
 import { AdminLayout } from "./app/admin/admin-layout";
-import { ImportQuestions } from "./app/admin/import-questions";
-import { QuestionPreview } from "./app/admin/question-preview";
+import { ImportQuestions } from "./app/admin/import/import-questions";
+import { QuestionPreview } from "./app/admin/soal/question-preview";
 import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
-import { HistoryView, HistoryErrorView } from "./views/HistoryView";
+import { HistoryView, HistoryErrorView } from "./views/history/HistoryView";
 
 const Home = lazy(() => import("./app/landing"));
 const LatveriaOSApp = lazy(() =>
   import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })),
 );
 const HistoryResultView = lazy(() =>
-  import("./views/HistoryResultView").then((module) => ({ default: module.HistoryResultView })),
+  import("./views/history/HistoryResultView").then((module) => ({
+    default: module.HistoryResultView,
+  })),
 );
 const AdminSubtestPackages = lazy(() =>
-  import("./app/admin/admin-subtest-packages").then((module) => ({
+  import("./app/admin/packages/admin-subtest-packages").then((module) => ({
     default: module.AdminSubtestPackages,
   })),
 );
 const AdminPackageDetail = lazy(() =>
-  import("./app/admin/admin-package-detail").then((module) => ({
+  import("./app/admin/packages/admin-package-detail").then((module) => ({
     default: module.AdminPackageDetail,
   })),
 );
@@ -60,7 +62,7 @@ const AdminAffirmations = lazy(() =>
   })),
 );
 const AdminUsers = lazy(() =>
-  import("./app/admin/admin-users").then((module) => ({ default: module.AdminUsers })),
+  import("./app/admin/users/admin-users").then((module) => ({ default: module.AdminUsers })),
 );
 const AdminAnalytics = lazy(() =>
   import("./app/admin/admin-analytics").then((module) => ({ default: module.AdminAnalytics })),
@@ -77,12 +79,12 @@ const AdminSystemHealth = lazy(() =>
   })),
 );
 const AdminTryouts = lazy(() =>
-  import("./app/admin/admin-tryouts").then((module) => ({
+  import("./app/admin/tryout/admin-tryouts").then((module) => ({
     default: module.AdminTryouts,
   })),
 );
 const AdminTryoutDetail = lazy(() =>
-  import("./app/admin/admin-tryout-detail").then((module) => ({
+  import("./app/admin/tryout/admin-tryout-detail").then((module) => ({
     default: module.AdminTryoutDetail,
   })),
 );
@@ -92,22 +94,22 @@ const AdminIrt = lazy(() =>
   })),
 );
 const AdminTryoutSection = lazy(() =>
-  import("./app/admin/admin-tryout-section").then((module) => ({
+  import("./app/admin/tryout/admin-tryout-section").then((module) => ({
     default: module.AdminTryoutSection,
   })),
 );
 const TryoutQuestionPreview = lazy(() =>
-  import("./app/admin/tryout-question-preview").then((module) => ({
+  import("./app/admin/tryout/tryout-question-preview").then((module) => ({
     default: module.TryoutQuestionPreview,
   })),
 );
 const TryoutQuestionEditor = lazy(() =>
-  import("./app/admin/tryout-question-editor").then((module) => ({
+  import("./app/admin/tryout/tryout-question-editor").then((module) => ({
     default: module.TryoutQuestionEditor,
   })),
 );
 const TryoutImportPage = lazy(() =>
-  import("./app/admin/tryout-import-page").then((module) => ({
+  import("./app/admin/tryout/tryout-import-page").then((module) => ({
     default: module.TryoutImportPage,
   })),
 );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { List } from "lucide-react";
-import { MathText } from "../../components/math-text";
+import { MathText } from "../../components/math/math-text";
 import type { PracticeQuestion, ReviewQuestion } from "@latveria/shared";
 import styles from "./dashboard.module.css";
 import { AppDialog } from "../../components/app-dialog";

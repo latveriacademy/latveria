@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { latexRenderRequestSchema } from "@latveria/shared";
 import type { AppEnv } from "../types";
-import { getCachedLatex, renderLatex } from "../services/latex-renderer.service";
+import { getCachedLatex, renderLatex } from "../services/latex/latex-renderer.service";
 
 export const latexHandler = new Hono<AppEnv>();
 

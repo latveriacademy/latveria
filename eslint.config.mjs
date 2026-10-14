@@ -43,9 +43,9 @@ export default tseslint.config(
   ...Object.entries({
     "apps/api/scripts/seed-db.ts": 620,
     "apps/api/scripts/verify-api.ts": 699,
-    "apps/api/src/services/tryout.service.ts": 537,
+    "apps/api/src/services/tryout/tryout.service.ts": 537,
     "apps/api/src/handlers/users.handler.ts": 780,
-    "apps/web/src/app/admin/admin-users.tsx": 1200,
+    "apps/web/src/app/admin/users/admin-users.tsx": 1200,
     "apps/web/src/context/AppContext.jsx": 600,
   }).map(([file, max]) => ({
     files: [file],

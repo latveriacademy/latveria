@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { utbkSubtests, type IrtCalibrationItem } from "@latveria/shared";
 import { api } from "../../lib/api";
-import { downloadJson } from "../../lib/question-export";
+import { downloadJson } from "../../lib/question/question-export";
 import { PageHeading, Panel, PanelHeader } from "../../components/ui/dashboard";
 import { Button } from "../../components/ui/button";
 import { ConfirmDialog } from "../../components/confirm-dialog";

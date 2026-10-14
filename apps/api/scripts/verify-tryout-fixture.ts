@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { inArray } from "drizzle-orm";
 import { getDb } from "../src/lib/db";
 import { questions, questionPackages, tryoutPackageQuestions } from "../src/lib/db/schema";
-import { resolvePassages } from "../src/services/tryout-review.service";
+import { resolvePassages } from "../src/services/tryout/tryout-review.service";
 
 export function tryoutDummyAnswers(
   rows: { id: string; questionType?: string; statements?: { id: string }[] }[],

@@ -1,8 +1,8 @@
 import { serveStatic } from "hono/bun";
 import { app } from "./app";
-import { authenticateWarriorWs } from "./services/warrior-auth-ws.service";
-import type { WarriorSocketData } from "./services/warrior-room.manager";
-import { onSocketClose, onSocketMessage, onSocketOpen } from "./services/warrior-ws.service";
+import { authenticateWarriorWs } from "./services/warrior/warrior-auth-ws.service";
+import type { WarriorSocketData } from "./services/warrior/warrior-room.manager";
+import { onSocketClose, onSocketMessage, onSocketOpen } from "./services/warrior/warrior-ws.service";
 
 // Jaga proses tetap hidup jika ada unhandled rejection (mis. Supabase statement timeout)
 process.on("unhandledRejection", (reason) => {

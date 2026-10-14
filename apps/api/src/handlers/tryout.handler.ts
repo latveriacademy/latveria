@@ -13,8 +13,8 @@ import {
   reorderSectionQuestions,
   updateAdminTryout,
   updateTryoutSection,
-} from "../services/admin-tryout.service";
-import { importTryoutBatch, importSectionBatch } from "../services/tryout-import.service";
+} from "../services/tryout/admin-tryout.service";
+import { importTryoutBatch, importSectionBatch } from "../services/tryout/tryout-import.service";
 import { HTTPException } from "hono/http-exception";
 
 async function readImport(c: import("hono").Context) {
@@ -33,14 +33,14 @@ import {
   getTryoutSession,
   startTryout,
   submitTryoutSubtest,
-} from "../services/tryout.service";
-import { getTryoutHistory } from "../services/tryout-history.service";
-import { generateTryoutCertificate } from "../services/tryout-certificate.service";
+} from "../services/tryout/tryout.service";
+import { getTryoutHistory } from "../services/tryout/tryout-history.service";
+import { generateTryoutCertificate } from "../services/tryout/tryout-certificate.service";
 import {
   getAdminTryoutSection,
   updateTryoutQuestion,
   deleteScopedTryoutSection,
-} from "../services/tryout-question.service";
+} from "../services/tryout/tryout-question.service";
 
 export const tryoutHandler = new Hono<AppEnv>();
 
