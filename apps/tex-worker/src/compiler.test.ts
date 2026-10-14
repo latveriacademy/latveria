@@ -1,10 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as childProcess from "node:child_process";
 import { assembleDocument, compileLatex, detectRequiredPackages } from "./compiler";
 import { LATEX_TEST_CORPUS } from "./corpus";
 import { app } from "./index";
 import { sanitizeSvg } from "./sanitizer";
+vi.mock("node:child_process", { spy: true });
 
 describe("Universal LaTeX Worker Engine", () => {
+  afterEach(() => vi.restoreAllMocks());
+  it("returns a clear failure without a placeholder when the compiler cannot start", async () => {
+    vi.mocked(childProcess.spawn).mockImplementationOnce(() => {
+      throw new Error("Compiler unavailable");
+    });
+    const result = await compileLatex({
+      source: String.raw`\begin{axis}\addplot {x^2};\end{axis}`,
+    });
+    expect(result).toMatchObject({ success: false, svg: "", status: 503 });
+    expect(result.error).toContain("Compiler");
+  });
   it("detects specialized LaTeX packages automatically", () => {
     expect(detectRequiredPackages("\\begin{circuitikz}\\draw (0,0);\\end{circuitikz}")).toContain(
       "circuitikz",
@@ -16,6 +29,18 @@ describe("Universal LaTeX Worker Engine", () => {
     expect(detectRequiredPackages("\\begin{pspicture}(0,0)(2,2)\\end{pspicture}")).toContain(
       "pstricks",
     );
+  });
+
+  it("renders a supported native bar chart when the compiler cannot start", async () => {
+    vi.mocked(childProcess.spawn).mockImplementationOnce(() => {
+      throw new Error("Compiler unavailable");
+    });
+    const result = await compileLatex({
+      source: String.raw`\begin{axis}[ybar,xtick=data,symbolic x coords={A},grid style=dashed]\addplot coordinates {(A,5)};\end{axis}`,
+    });
+    expect(result.success).toBe(true);
+    expect(result.svg).toContain("pgfplots-bar-chart");
+    expect(result.svg).not.toContain("latex-fallback-svg");
   });
 
   it("assembles complete documents from snippets", () => {
@@ -61,6 +86,9 @@ describe("Universal LaTeX Worker Engine", () => {
     expect(corpusJson.total).toBe(LATEX_TEST_CORPUS.length);
     expect(corpusJson.total).toBeGreaterThanOrEqual(10);
 
+    vi.mocked(childProcess.spawn).mockImplementationOnce(() => {
+      throw new Error("Compiler unavailable");
+    });
     const renderRes = await app.request("/render", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,21 +96,27 @@ describe("Universal LaTeX Worker Engine", () => {
         source: LATEX_TEST_CORPUS[0]!.source,
       }),
     });
-    expect(renderRes.status).toBe(200);
-    const renderJson = (await renderRes.json()) as { success: boolean; svg: string };
-    expect(renderJson.success).toBe(true);
-    expect(renderJson.svg).toContain("<svg");
+    const renderJson = await renderRes.json();
+    expect(renderRes.status).toBe(503);
+    expect(renderJson).toMatchObject({ success: false, svg: "", error: expect.any(String) });
   });
 
-  it("compiles each item in the visual test corpus without runtime errors", async () => {
+  it("reports compiler-unavailable errors honestly for corpus snippets", async () => {
     for (const item of LATEX_TEST_CORPUS.slice(0, 5)) {
+      vi.mocked(childProcess.spawn).mockImplementationOnce(() => {
+        throw new Error("Compiler unavailable");
+      });
       const res = await compileLatex({
         source: item.source,
         compiler: item.recommendedCompiler,
         packages: item.requiredPackages,
       });
-      expect(res.success).toBe(true);
-      expect(res.svg).toContain("<svg");
+      expect(res).toMatchObject({
+        success: false,
+        svg: "",
+        status: 503,
+        error: expect.any(String),
+      });
     }
   });
 });

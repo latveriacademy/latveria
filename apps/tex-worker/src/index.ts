@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { compileLatex } from "./compiler";
 import { LATEX_TEST_CORPUS } from "./corpus";
+import { latexRenderRequestSchema } from "@latveria/shared";
 
 export const app = new Hono();
 
@@ -21,27 +22,16 @@ app.get("/corpus", (c) => {
 });
 
 app.post("/render", async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
-    source?: string;
-    compiler?: "pdflatex" | "xelatex" | "lualatex" | "latex";
-    packages?: string[];
-    timeoutMs?: number;
-  } | null;
-
-  if (!body || !body.source || typeof body.source !== "string" || !body.source.trim()) {
-    return c.json({ success: false, error: "Parameter 'source' wajib diisi." }, 400);
+  const parsed = latexRenderRequestSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) {
+    return c.json({ success: false, error: "Payload request LaTeX tidak valid." }, 400);
   }
 
   try {
-    const result = await compileLatex({
-      source: body.source,
-      compiler: body.compiler,
-      packages: body.packages,
-      timeoutMs: body.timeoutMs,
-    });
+    const result = await compileLatex(parsed.data);
 
     if (!result.success) {
-      return c.json(result, 422);
+      return c.json(result, result.status ?? 422);
     }
 
     return c.json(result);

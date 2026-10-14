@@ -18,6 +18,7 @@ export interface CompileResult extends SanitizedSvgResult {
   compiler: string;
   error?: string;
   log?: string;
+  status?: 503;
 }
 
 /**
@@ -151,16 +152,16 @@ export async function compileLatex(options: CompileOptions): Promise<CompileResu
       compileRes = await runProcess(compiler, compileArgs, tempDir, timeoutMs);
     } catch {
       const pgfSvg = renderPgfplotsSvg(options.source);
-      const fallbackSvg =
-        pgfSvg ||
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 180" width="480" height="180" role="img" class="latex-fallback-svg">
-  <rect width="100%" height="100%" fill="#faf7f0" stroke="#c9a347" stroke-width="1.5" rx="6"/>
-  <text x="24" y="45" font-family="system-ui, sans-serif" font-weight="bold" font-size="14" fill="#143d2b">UNIVERSAL LATEX ENGINE [STANDALONE]</text>
-  <text x="24" y="75" font-family="system-ui, sans-serif" font-size="12" fill="#555">Kompilasi TeX Live terisolasi (Compiler: ${compiler})</text>
-  <rect x="24" y="95" width="432" height="60" fill="#fff" stroke="#e0d7c0" rx="4"/>
-  <text x="36" y="130" font-family="monospace" font-size="11" fill="#2d3748">${options.source.slice(0, 50).replace(/[<>&]/g, "")}...</text>
-</svg>`;
-      const sanitized = sanitizeSvg(fallbackSvg);
+      if (!pgfSvg)
+        return {
+          success: false,
+          svg: "",
+          compileTimeMs: Date.now() - startTime,
+          compiler,
+          status: 503,
+          error: "Compiler LaTeX belum tersedia atau gagal dijalankan.",
+        };
+      const sanitized = sanitizeSvg(pgfSvg);
       return {
         success: true,
         compileTimeMs: Date.now() - startTime,
