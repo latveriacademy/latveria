@@ -3,7 +3,9 @@ import { expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { PracticeResultsDialog } from "./practice-results-dialog";
 
-vi.mock("../app-dialog", () => ({ AppDialog: ({ children }: { children: ReactNode }) => children }));
+vi.mock("../app-dialog", () => ({
+  AppDialog: ({ children }: { children: ReactNode }) => children,
+}));
 
 it("labels the result as accuracy and separates correct, incorrect, unanswered, and EXP", () => {
   const html = renderToStaticMarkup(

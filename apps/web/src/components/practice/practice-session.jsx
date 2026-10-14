@@ -22,6 +22,7 @@ import { PracticeResultsDialog } from "./practice-results-dialog";
 import { QuestionReportDialog } from "../question/question-report-dialog";
 import { ConfirmDialog } from "../confirm-dialog";
 import { SubmissionSummary } from "./submission-summary";
+import { practiceOptionKeys } from "../../lib/practice/practice-answers";
 
 export function PracticeSession({
   activeSession: session,
@@ -81,9 +82,13 @@ export function PracticeSession({
         return;
       const key = event.key.toUpperCase();
       if (!locked) {
-        if (["A", "B", "C", "D"].includes(key)) selectAnswer(index, key);
-        else if (["1", "2", "3", "4"].includes(key))
-          selectAnswer(index, ["A", "B", "C", "D"][Number(key) - 1]);
+        if (
+          practiceOptionKeys.includes(key) &&
+          practiceOptionKeys.indexOf(key) < question.options.length
+        )
+          selectAnswer(index, key);
+        else if (/^[1-5]$/.test(key) && Number(key) <= question.options.length)
+          selectAnswer(index, practiceOptionKeys[Number(key) - 1]);
         else if (key === "F") toggleFlag(index);
       }
       const next =
@@ -95,7 +100,16 @@ export function PracticeSession({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [index, total, locked, overlayOpen, selectAnswer, toggleFlag, setActiveSession]);
+  }, [
+    index,
+    total,
+    locked,
+    overlayOpen,
+    selectAnswer,
+    toggleFlag,
+    setActiveSession,
+    question.options.length,
+  ]);
 
   const jump = (next) => {
     sound.playClick();

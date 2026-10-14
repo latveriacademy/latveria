@@ -4,12 +4,12 @@ import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { DEFAULT_USER } from "../data/userData";
 import { practiceXP } from "@latveria/shared";
 import { sound } from "../utils/audioFeedback";
+import {
+  practiceOptionKeys as INDEX_TO_KEY,
+  practiceAnswersToPayload,
+} from "../lib/practice/practice-answers";
 
 const AppContext = createContext();
-
-// ponytail: map between API index 0-3 and view letter keys A-D
-const INDEX_TO_KEY = ["A", "B", "C", "D"];
-const KEY_TO_INDEX = { A: 0, B: 1, C: 2, D: 3 };
 
 // ponytail: map between API slugs and view short codes
 const SLUG_TO_SHORT = {
@@ -378,7 +378,7 @@ export const AppProvider = ({ children }) => {
           totalQuestions: sessionQuestions.length,
           currentIndex: 0,
           questions: sessionQuestions,
-          answers: {}, // { [questionIndex]: 'A' | 'B' | 'C' | 'D' }
+          answers: {}, // { [questionIndex]: 'A' | 'B' | 'C' | 'D' | 'E' }
           flagged: {}, // { [questionIndex]: true }
           timeRemainingSeconds: mode === "Timed Practice" ? sessionQuestions.length * 90 : null,
           isTimerRunning: mode === "Timed Practice",
@@ -437,19 +437,8 @@ export const AppProvider = ({ children }) => {
   const finishSession = useCallback(async () => {
     if (!activeSession || activeSession.isEvaluated || submitLock.current) return;
 
-    // Build API submission: { answers: Record<uuid, 0-3> }
-    const apiAnswers = {};
-    let allAnswered = true;
-    activeSession.questions.forEach((q, idx) => {
-      const letterKey = activeSession.answers[idx];
-      if (letterKey && KEY_TO_INDEX[letterKey] !== undefined) {
-        apiAnswers[q.id] = KEY_TO_INDEX[letterKey];
-      } else {
-        allAnswered = false;
-      }
-    });
-
-    if (!allAnswered) {
+    const apiAnswers = practiceAnswersToPayload(activeSession.questions, activeSession.answers);
+    if (!apiAnswers) {
       setSubmissionError(
         "Jawab semua soal dalam sesi sebelum dikumpulkan. Jawabanmu tetap tersimpan selama sesi ini terbuka.",
       );
@@ -486,7 +475,7 @@ export const AppProvider = ({ children }) => {
                 answer.id === q.id &&
                 Number.isInteger(answer.correctAnswer) &&
                 answer.correctAnswer >= 0 &&
-                answer.correctAnswer <= 3 &&
+                answer.correctAnswer < q.options.length &&
                 typeof answer.explanation === "string",
             ),
         )
@@ -507,7 +496,7 @@ export const AppProvider = ({ children }) => {
         const reviewQ = reviewData.answers.find((ra) => ra.id === q.id);
         if (!userAns) {
           unansweredCount++;
-        } else if (reviewQ && KEY_TO_INDEX[userAns] === reviewQ.correctAnswer) {
+        } else if (reviewQ && INDEX_TO_KEY.indexOf(userAns) === reviewQ.correctAnswer) {
           correctCount++;
         } else {
           incorrectCount++;

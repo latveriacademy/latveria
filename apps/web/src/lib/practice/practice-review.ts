@@ -1,6 +1,5 @@
 import { utbkSubtests, type Result } from "@latveria/shared";
-
-const letters = ["A", "B", "C", "D", "E"];
+import { practiceOptionKeys as letters } from "./practice-answers";
 
 export function reviewResultToSession(result: Result) {
   if (!result.answers.length || result.answers.length !== result.attempt.total)
