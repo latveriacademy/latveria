@@ -20,6 +20,7 @@ import {
 } from "../../lib/db/schema";
 import { broadcastToBattle, clearRoomTimer, setRoomTimer } from "./warrior-room.manager";
 import { calculateBattleScore } from "./warrior-scoring";
+import { submitBattleAnswerSchema } from "@latveria/shared";
 import { getBattleState } from "./warrior-battle.service";
 
 export async function togglePlayerReady(battleId: string, userId: string, isReady: boolean) {
@@ -176,11 +177,19 @@ export async function submitAnswer(
   userId: string,
   input: SubmitBattleAnswerInput,
 ) {
+  const parsed = submitBattleAnswerSchema.safeParse(input);
+  if (!parsed.success || parsed.data.selectedAnswer === undefined)
+    throw new HTTPException(400, { message: "Data jawaban tidak valid." });
+  input = parsed.data;
   const db = getDb();
   const now = new Date();
 
   return await db.transaction(async (tx) => {
-    const [battle] = await tx.select().from(warriorBattles).where(eq(warriorBattles.id, battleId));
+    const [battle] = await tx
+      .select()
+      .from(warriorBattles)
+      .where(eq(warriorBattles.id, battleId))
+      .for("update");
 
     if (!battle) throw new HTTPException(404, { message: "Battle tidak ditemukan." });
     if (battle.status !== "active") {
@@ -189,6 +198,17 @@ export async function submitAnswer(
     if (battle.currentQuestionIndex !== input.position) {
       throw new HTTPException(400, { message: "Soal yang dijawab tidak sesuai ronde aktif." });
     }
+    const [activeQuestion] = await tx
+      .select({ id: warriorBattleQuestions.questionId })
+      .from(warriorBattleQuestions)
+      .where(
+        and(
+          eq(warriorBattleQuestions.battleId, battleId),
+          eq(warriorBattleQuestions.position, input.position),
+        ),
+      );
+    if (!activeQuestion || activeQuestion.id !== input.questionId)
+      throw new HTTPException(400, { message: "Soal yang dijawab tidak sesuai ronde aktif." });
 
     // Server-authoritative deadline validation
     if (battle.questionDeadlineAt && now.getTime() > battle.questionDeadlineAt.getTime() + 1000) {
@@ -229,9 +249,12 @@ export async function submitAnswer(
     const [questionRow] = await tx
       .select()
       .from(questions)
-      .where(eq(questions.id, input.questionId));
+      .where(eq(questions.id, input.questionId))
+      .for("update");
 
     if (!questionRow) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
+    if (input.selectedAnswer === undefined || input.selectedAnswer >= questionRow.options.length)
+      throw new HTTPException(400, { message: "Pilihan jawaban tidak valid." });
 
     const isCorrect = input.selectedAnswer === questionRow.correctAnswer;
     const elapsedMs = battle.questionStartedAt
@@ -339,11 +362,6 @@ export async function resolveQuestion(battleId: string, position: number) {
 
   if (!qRelation) return;
 
-  const [questionRow] = await db
-    .select()
-    .from(questions)
-    .where(eq(questions.id, qRelation.questionId));
-
   const participants = await db
     .select({
       id: warriorBattleParticipants.id,
@@ -381,7 +399,6 @@ export async function resolveQuestion(battleId: string, position: number) {
       isCorrect: ans ? ans.isCorrect : false,
       points: ans ? ans.points : 0,
       elapsedMs: ans ? ans.elapsedMs : null,
-      selectedAnswer: ans ? ans.selectedAnswer : null,
     };
   });
 
@@ -396,8 +413,6 @@ export async function resolveQuestion(battleId: string, position: number) {
   const resultDto: QuestionResultDto = {
     questionId: qRelation.questionId,
     position,
-    correctAnswer: questionRow.correctAnswer,
-    explanation: questionRow.explanation,
     participants: participantResults,
     teamScores,
     nextTransitionEndsAt,

@@ -1,7 +1,7 @@
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { getDb } from "../../lib/db";
-import { questions, tryoutPackageQuestions } from "../../lib/db/schema";
+import { questions, tryoutPackageQuestions, warriorBattleAnswers } from "../../lib/db/schema";
 
 type Reader = Pick<ReturnType<typeof getDb>, "select">;
 export async function validatePassage(
@@ -63,5 +63,18 @@ export async function protectPassageSources(db: Reader, ids: string[]) {
     throw new HTTPException(409, {
       message:
         "Wacana soal masih digunakan oleh soal lain. Lepaskan referensi sebelum menghapus atau memindahkan sumber.",
+    });
+}
+
+export async function protectWarriorAnswers(db: Reader, ids: string[]) {
+  const found = await db
+    .select({ id: warriorBattleAnswers.questionId })
+    .from(warriorBattleAnswers)
+    .innerJoin(questions, eq(questions.id, warriorBattleAnswers.questionId))
+    .where(or(inArray(warriorBattleAnswers.questionId, ids), inArray(questions.passageId, ids)))
+    .limit(1);
+  if (found.length)
+    throw new HTTPException(409, {
+      message: "Soal sudah dijawab dalam battle dan tidak dapat diubah atau dihapus.",
     });
 }

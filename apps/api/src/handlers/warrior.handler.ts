@@ -2,9 +2,17 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { createBattleSchema, idSchema, joinBattleSchema } from "@latveria/shared";
 import type { AppEnv } from "../types";
-import { createBattle, getBattleState, joinBattleByCode } from "../services/warrior/warrior-battle.service";
+import {
+  createBattle,
+  getBattleState,
+  joinBattleByCode,
+} from "../services/warrior/warrior-battle.service";
 import { togglePlayerReady, submitAnswer } from "../services/warrior/warrior-engine.service";
-import { createRematch, getUserBattleHistory } from "../services/warrior/warrior-history.service";
+import {
+  createRematch,
+  getUserBattleHistory,
+  getBattleReview,
+} from "../services/warrior/warrior-history.service";
 
 export const warriorHandler = new Hono<AppEnv>();
 
@@ -51,8 +59,10 @@ warriorHandler.get("/api/warrior/battles/:id", async (c) => {
 warriorHandler.post("/api/warrior/battles/:id/ready", async (c) => {
   const user = c.get("user");
   const battleId = c.req.param("id");
-  const body = await c.req.json().catch(() => ({}));
-  const isReady = body.isReady !== false;
+  const body = await c.req.json().catch(() => null);
+  if (!idSchema.safeParse(battleId).success || typeof body?.isReady !== "boolean")
+    throw new HTTPException(400, { message: "Status siap tidak valid." });
+  const isReady = body.isReady;
 
   await togglePlayerReady(battleId, user.id, isReady);
   return c.json({ success: true, isReady });
@@ -80,6 +90,8 @@ warriorHandler.post("/api/warrior/battles/:id/answer", async (c) => {
 warriorHandler.post("/api/warrior/battles/:id/rematch", async (c) => {
   const user = c.get("user");
   const battleId = c.req.param("id");
+  if (!idSchema.safeParse(battleId).success)
+    throw new HTTPException(400, { message: "ID battle tidak valid." });
   const result = await createRematch(battleId, user.id);
   return c.json(result, 201);
 });
@@ -89,4 +101,9 @@ warriorHandler.get("/api/warrior/history", async (c) => {
   const user = c.get("user");
   const history = await getUserBattleHistory(user.id);
   return c.json(history);
+});
+warriorHandler.get("/api/warrior/battles/:id/review", async (c) => {
+  const parsed = idSchema.safeParse(c.req.param("id"));
+  if (!parsed.success) throw new HTTPException(400, { message: "ID battle tidak valid." });
+  return c.json(await getBattleReview(parsed.data, c.get("user").id));
 });

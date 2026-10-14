@@ -13,7 +13,7 @@ import {
 import { getDb } from "../../lib/db";
 import { practiceAnswers, questionPackages, questions, topics } from "../../lib/db/schema";
 import { catalog, invalidateCatalogCache } from "../topic.service";
-import { validatePassage, protectPassageSources } from "./question-passage";
+import { validatePassage, protectPassageSources, protectWarriorAnswers } from "./question-passage";
 
 export async function getAdminQuestions(
   queryParams: Record<string, string | undefined>,
@@ -339,6 +339,7 @@ export async function updateQuestion(idParam: string, body: unknown) {
       .where(eq(questions.id, id.data))
       .for("update");
     if (!existing) throw new HTTPException(404, { message: "Soal tidak ditemukan." });
+    await protectWarriorAnswers(tx, [id.data]);
     await validatePassage(tx, parsed.data, id.data);
     if (
       ((!parsed.data.passage || parsed.data.passageId) &&
@@ -404,6 +405,7 @@ export async function bulkDeleteQuestions(body: unknown) {
         message: "Sebagian soal tidak ditemukan. Muat ulang bank soal.",
       });
     await protectPassageSources(tx, ids);
+    await protectWarriorAnswers(tx, ids);
     return tx.delete(questions).where(inArray(questions.id, ids)).returning({ id: questions.id });
   });
   invalidateCatalogCache();
@@ -421,6 +423,7 @@ export async function deleteQuestion(idParam: string) {
         .where(eq(questions.id, id.data))
         .for("update");
       await protectPassageSources(tx, [id.data]);
+      await protectWarriorAnswers(tx, [id.data]);
       return tx.delete(questions).where(eq(questions.id, id.data)).returning({ id: questions.id });
     });
     if (!deleted.length) throw new HTTPException(404);

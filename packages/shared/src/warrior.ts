@@ -159,6 +159,26 @@ export const battleSummaryDtoSchema = z.object({
 });
 export type BattleSummaryDto = z.infer<typeof battleSummaryDtoSchema>;
 
+export type BattleReviewQuestion = {
+  id: string;
+  position: number;
+  prompt: string;
+  options: string[];
+  passage: string | null;
+  stimulus: QuestionStimulus | null;
+  correctAnswer: number;
+  explanation: string;
+  selectedAnswer: number | null;
+  isCorrect: boolean;
+  points: number;
+};
+export type BattleReviewDto = {
+  id: string;
+  code: string;
+  mode: BattleMode;
+  items: BattleReviewQuestion[];
+};
+
 // Client -> Server WS message
 export const clientWsMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("battle:ready"), isReady: z.boolean() }),

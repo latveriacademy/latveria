@@ -1,8 +1,15 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { HTTPException } from "hono/http-exception";
-import type { BattleSummaryDto } from "@latveria/shared";
+import type { BattleSummaryDto, BattleReviewDto } from "@latveria/shared";
 import { getDb } from "../../lib/db";
-import { warriorBattleParticipants, warriorBattles } from "../../lib/db/schema";
+import {
+  questions,
+  warriorBattleAnswers,
+  warriorBattleQuestions,
+  warriorBattleParticipants,
+  warriorBattles,
+} from "../../lib/db/schema";
 import { createBattle, getBattleState } from "./warrior-battle.service";
 import { broadcastToBattle } from "./warrior-room.manager";
 
@@ -78,6 +85,8 @@ export async function createRematch(oldBattleId: string, userId: string) {
   if (!participant) {
     throw new HTTPException(403, { message: "Hanya peserta yang dapat membuat rematch." });
   }
+  if (oldBattle.status !== "completed")
+    throw new HTTPException(400, { message: "Battle harus selesai sebelum tanding ulang." });
 
   // Create brand new immutable battle instance
   const newBattleRes = await createBattle(userId, {
@@ -95,4 +104,67 @@ export async function createRematch(oldBattleId: string, userId: string) {
   });
 
   return newBattleRes;
+}
+
+export async function getBattleReview(battleId: string, userId: string): Promise<BattleReviewDto> {
+  const db = getDb();
+  const [participant] = await db
+    .select({ id: warriorBattleParticipants.id })
+    .from(warriorBattleParticipants)
+    .where(
+      and(
+        eq(warriorBattleParticipants.battleId, battleId),
+        eq(warriorBattleParticipants.userId, userId),
+      ),
+    );
+  if (!participant) throw new HTTPException(403, { message: "Anda bukan peserta battle ini." });
+  const [battle] = await db.select().from(warriorBattles).where(eq(warriorBattles.id, battleId));
+  if (!battle || battle.status !== "completed")
+    throw new HTTPException(409, { message: "Pembahasan tersedia setelah battle selesai." });
+  const source = alias(questions, "battle_passage_source");
+  const rows = await db
+    .select({
+      id: questions.id,
+      position: warriorBattleQuestions.position,
+      prompt: questions.prompt,
+      options: questions.options,
+      passage: questions.passage,
+      stimulus: questions.stimulus,
+      correctAnswer: questions.correctAnswer,
+      explanation: questions.explanation,
+      selectedAnswer: warriorBattleAnswers.selectedAnswer,
+      isCorrect: warriorBattleAnswers.isCorrect,
+      points: warriorBattleAnswers.points,
+      sourcePassage: source.passage,
+      sourceStimulus: source.stimulus,
+    })
+    .from(warriorBattleQuestions)
+    .innerJoin(questions, eq(questions.id, warriorBattleQuestions.questionId))
+    .leftJoin(source, eq(source.id, questions.passageId))
+    .leftJoin(
+      warriorBattleAnswers,
+      and(
+        eq(warriorBattleAnswers.battleId, battleId),
+        eq(warriorBattleAnswers.questionId, questions.id),
+        eq(warriorBattleAnswers.participantId, participant.id),
+      ),
+    )
+    .where(eq(warriorBattleQuestions.battleId, battleId))
+    .orderBy(asc(warriorBattleQuestions.position));
+  if (rows.length !== battle.questionCount)
+    throw new HTTPException(409, { message: "Riwayat soal battle belum lengkap." });
+  return {
+    id: battle.id,
+    code: battle.code,
+    mode: battle.mode as BattleReviewDto["mode"],
+    items: rows.map(({ sourcePassage, sourceStimulus, ...row }) => ({
+      ...row,
+      passage:
+        row.passage || row.stimulus?.passage || sourcePassage || sourceStimulus?.passage || null,
+      stimulus: row.stimulus ?? null,
+      selectedAnswer: row.selectedAnswer ?? null,
+      isCorrect: row.isCorrect ?? false,
+      points: row.points ?? 0,
+    })),
+  };
 }
