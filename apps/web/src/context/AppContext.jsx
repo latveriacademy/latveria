@@ -124,9 +124,17 @@ export const AppProvider = ({ children }) => {
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
       const next = !prev;
-      localStorage.setItem("latveria_sidebar", String(next));
+      if (window.innerWidth > 768) localStorage.setItem("latveria_sidebar", String(next));
       return next;
     });
+  }, []);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 768px)");
+    const syncSidebar = () =>
+      setSidebarOpen(mobile.matches ? false : localStorage.getItem("latveria_sidebar") !== "false");
+    mobile.addEventListener("change", syncSidebar);
+    return () => mobile.removeEventListener("change", syncSidebar);
   }, []);
 
   // Theme State
