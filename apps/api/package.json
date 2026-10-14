@@ -9,7 +9,7 @@
     "typecheck": "bun run --bun tsc --noEmit",
     "build": "bun run --bun tsc --noEmit",
     "test": "bun run --bun vitest run",
-    "test:integration": "NODE_ENV=development bun scripts/verify-api.ts && NODE_ENV=development bun scripts/verify-admin.ts",
+    "test:integration": "NODE_ENV=development bun scripts/verify-api.ts && NODE_ENV=development bun scripts/verify-admin.ts && NODE_ENV=development bun scripts/verify-warrior.ts",
     "db:generate": "bun run --bun drizzle-kit generate",
     "db:migrate": "bun scripts/migrate-db.ts",
     "db:seed": "bun scripts/seed-db.ts",
