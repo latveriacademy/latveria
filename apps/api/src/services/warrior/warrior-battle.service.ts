@@ -119,7 +119,11 @@ export async function createBattle(userId: string, input: CreateBattleInput) {
 export async function joinBattleByCode(userId: string, code: string) {
   const db = getDb();
   return await db.transaction(async (tx) => {
-    const [battle] = await tx.select().from(warriorBattles).where(eq(warriorBattles.code, code));
+    const [battle] = await tx
+      .select()
+      .from(warriorBattles)
+      .where(eq(warriorBattles.code, code))
+      .for("update");
 
     if (!battle) {
       throw new HTTPException(404, { message: "Battle room tidak ditemukan." });
@@ -224,6 +228,9 @@ export async function getBattleState(
     .from(warriorBattleParticipants)
     .innerJoin(user, eq(warriorBattleParticipants.userId, user.id))
     .where(eq(warriorBattleParticipants.battleId, battleId));
+
+  if (forUserId && !rawParticipants.some((participant) => participant.userId === forUserId))
+    throw new HTTPException(403, { message: "Anda bukan peserta battle ini." });
 
   // Check which participants answered current question
   const currentAnswers =

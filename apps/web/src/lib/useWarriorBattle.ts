@@ -13,6 +13,7 @@ export interface UseWarriorBattleOptions {
   onQuestionResult?: (result: QuestionResultDto) => void;
   onCompleted?: (summary: BattleSummaryDto) => void;
   onError?: (error: string) => void;
+  onRematchCreated?: (code: string) => void;
 }
 
 export function useWarriorBattle({
@@ -20,6 +21,7 @@ export function useWarriorBattle({
   onQuestionResult,
   onCompleted,
   onError,
+  onRematchCreated,
 }: UseWarriorBattleOptions) {
   const [battleState, setBattleState] = useState<BattleStateDto | null>(null);
   const [activeQuestion, setActiveQuestion] = useState<BattleActiveQuestion | null>(null);
@@ -36,6 +38,10 @@ export function useWarriorBattle({
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const unmountedRef = useRef(false);
+  const callbacksRef = useRef({ onQuestionResult, onCompleted, onError, onRematchCreated });
+  useEffect(() => {
+    callbacksRef.current = { onQuestionResult, onCompleted, onError, onRematchCreated };
+  }, [onQuestionResult, onCompleted, onError, onRematchCreated]);
 
   const connect = useCallback(() => {
     if (unmountedRef.current || !battleId) return;
@@ -48,7 +54,7 @@ export function useWarriorBattle({
     socketRef.current = ws;
 
     ws.onopen = () => {
-      if (unmountedRef.current) {
+      if (unmountedRef.current || socketRef.current !== ws) {
         ws.close();
         return;
       }
@@ -57,7 +63,7 @@ export function useWarriorBattle({
     };
 
     ws.onmessage = (event) => {
-      if (unmountedRef.current) return;
+      if (unmountedRef.current || socketRef.current !== ws) return;
       try {
         const msg: ServerWsMessage = JSON.parse(event.data);
         switch (msg.type) {
@@ -132,7 +138,7 @@ export function useWarriorBattle({
 
           case "battle:question_result":
             setQuestionResult(msg.result);
-            onQuestionResult?.(msg.result);
+            callbacksRef.current.onQuestionResult?.(msg.result);
             setBattleState((prev) => {
               if (!prev) return prev;
               return {
@@ -160,11 +166,14 @@ export function useWarriorBattle({
           case "battle:completed":
             setSummary(msg.summary);
             setBattleState((prev) => (prev ? { ...prev, status: "completed" } : prev));
-            onCompleted?.(msg.summary);
+            callbacksRef.current.onCompleted?.(msg.summary);
             break;
 
           case "battle:error":
-            onError?.(msg.message);
+            callbacksRef.current.onError?.(msg.message);
+            break;
+          case "battle:rematch_created":
+            callbacksRef.current.onRematchCreated?.(msg.code);
             break;
         }
       } catch (err) {
@@ -173,7 +182,7 @@ export function useWarriorBattle({
     };
 
     ws.onclose = () => {
-      if (unmountedRef.current) return;
+      if (unmountedRef.current || socketRef.current !== ws) return;
       setIsConnected(false);
       setIsReconnecting(true);
       // Attempt reconnect after 2 seconds
@@ -183,13 +192,21 @@ export function useWarriorBattle({
     };
 
     ws.onerror = (err) => {
+      if (unmountedRef.current || socketRef.current !== ws) return;
       console.warn("[useWarriorBattle] WebSocket error:", err);
       ws.close();
     };
-  }, [battleId, onQuestionResult, onCompleted, onError]);
+  }, [battleId]);
 
   useEffect(() => {
     unmountedRef.current = false;
+    setBattleState(null);
+    setActiveQuestion(null);
+    setQuestionResult(null);
+    setSummary(null);
+    setLastLockedPlayer(null);
+    setIsConnected(false);
+    setIsReconnecting(false);
     connect();
 
     // Heartbeat every 20s
@@ -204,8 +221,9 @@ export function useWarriorBattle({
       clearInterval(pingInterval);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (socketRef.current) {
-        socketRef.current.close();
+        const socket = socketRef.current;
         socketRef.current = null;
+        socket.close();
       }
     };
   }, [connect]);

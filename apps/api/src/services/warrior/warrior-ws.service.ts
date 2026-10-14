@@ -8,6 +8,7 @@ import {
   registerSocket,
   sendToSocket,
   unregisterSocket,
+  getRoomSockets,
   type WarriorWebSocket,
 } from "./warrior-room.manager";
 
@@ -16,7 +17,7 @@ import { submitAnswer, togglePlayerReady } from "./warrior-engine.service";
 import { createRematch } from "./warrior-history.service";
 
 export async function onSocketOpen(ws: WarriorWebSocket) {
-  const { battleId, participantId, userId } = ws.data;
+  const { battleId, participantId } = ws.data;
   registerSocket(battleId, ws);
 
   // Mark participant as connected in DB
@@ -30,12 +31,11 @@ export async function onSocketOpen(ws: WarriorWebSocket) {
       })
       .where(eq(warriorBattleParticipants.id, participantId));
 
-    // Send full current state to reconnected/connecting client
-    const currentState = await getBattleState(battleId, userId);
-    sendToSocket(ws, {
-      type: "battle:state",
-      state: currentState,
-    });
+    // Refresh everyone's personalized state when someone joins or reconnects.
+    for (const socket of getRoomSockets(battleId)) {
+      const currentState = await getBattleState(battleId, socket.data.userId);
+      sendToSocket(socket, { type: "battle:state", state: currentState });
+    }
   } catch (err) {
     console.error(`[WarriorSocket] Error in onSocketOpen for battle ${battleId}:`, err);
   }
@@ -79,7 +79,7 @@ export async function onSocketMessage(ws: WarriorWebSocket, message: string | Bu
         break;
 
       case "battle:heartbeat":
-        // Keep-alive acknowledgment
+        ws.ping();
         break;
     }
   } catch (err: unknown) {
@@ -91,6 +91,8 @@ export async function onSocketMessage(ws: WarriorWebSocket, message: string | Bu
 export async function onSocketClose(ws: WarriorWebSocket) {
   const { battleId, participantId } = ws.data;
   unregisterSocket(battleId, ws);
+  if (getRoomSockets(battleId).some((socket) => socket.data.participantId === participantId))
+    return;
 
   try {
     const db = getDb();

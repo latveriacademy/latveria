@@ -100,9 +100,16 @@ export const AppProvider = ({ children }) => {
   const tab = params.get("tab") || "dashboard";
   const currentTab = pathname.startsWith("/dashboard/riwayat")
     ? "practice"
-    : ["dashboard", "practice", "library", "tryout", "leaderboard", "profile", "settings"].includes(
-          tab,
-        )
+    : [
+          "dashboard",
+          "practice",
+          "warrior",
+          "library",
+          "tryout",
+          "leaderboard",
+          "profile",
+          "settings",
+        ].includes(tab)
       ? tab
       : "dashboard";
   const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}`), [navigate]);

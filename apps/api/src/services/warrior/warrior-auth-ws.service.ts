@@ -3,6 +3,8 @@ import { getAuth } from "../../lib/auth";
 import { getDb } from "../../lib/db";
 import { warriorBattleParticipants, warriorBattles, warriorBattleTeams } from "../../lib/db/schema";
 import type { WarriorSocketData } from "./warrior-room.manager";
+import { idSchema } from "@latveria/shared";
+import { allowedOrigins } from "../../lib/origins";
 
 export async function authenticateWarriorWs(
   req: Request,
@@ -14,7 +16,11 @@ export async function authenticateWarriorWs(
   if (!match) {
     return { success: false, status: 404, reason: "Not Found" };
   }
-  const battleId = match[1];
+  const parsed = idSchema.safeParse(match[1]);
+  if (!parsed.success) return { success: false, status: 400, reason: "ID battle tidak valid." };
+  const battleId = parsed.data;
+  if (!allowedOrigins().includes(req.headers.get("origin") ?? ""))
+    return { success: false, status: 403, reason: "Origin tidak diizinkan." };
 
   // 1. Session verification via Better Auth
   const session = await getAuth().api.getSession({ headers: req.headers });
