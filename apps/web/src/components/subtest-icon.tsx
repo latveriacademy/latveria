@@ -1,5 +1,9 @@
 import {
   BookOpenText,
+  Atom,
+  ChartNoAxesCombined,
+  FunctionSquare,
+  SquareRadical,
   Brain,
   Calculator,
   Languages,
@@ -17,6 +21,10 @@ const icons: Record<string, LucideIcon> = {
   "literasi-bahasa-indonesia": SpellCheck,
   "literasi-bahasa-inggris": Languages,
   "penalaran-matematika": Sigma,
+  ekonomi: ChartNoAxesCombined,
+  "fisika-dasar": Atom,
+  kalkulus: FunctionSquare,
+  "matematika-dasar": SquareRadical,
 };
 
 export function SubtestIcon({ slug, size = 24 }: { slug: string; size?: number }) {

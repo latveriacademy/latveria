@@ -126,9 +126,31 @@
   outline-offset: 2px;
 }
 .resultCount {
-  margin: 0 0 18px;
+  margin: 0;
   color: var(--text-secondary);
   font: 12px var(--font-mono);
+}
+.resultsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.timerToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.timerToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-gold);
 }
 .cardGrid {
   display: grid;
@@ -137,56 +159,30 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  align-items: start;
+  align-items: stretch;
 }
 .catalogCard {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 290px;
-  padding: 18px;
+  min-height: 210px;
+  padding: 20px;
   border: 1px solid var(--border-subtle);
-  border-top: 3px solid var(--accent-gold);
   border-radius: var(--radius-xs);
   background: var(--bg-card);
   box-shadow: 0 2px 3px rgb(0 0 0 / 0.03);
 }
-.cardTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-.cardType {
-  min-width: 0;
-  color: var(--text-secondary);
-  font: 600 10px/1.5 var(--font-mono);
-  text-transform: uppercase;
-}
-.completed,
-.newBadge {
+.completed {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  padding: 3px 7px;
-  border: 1px solid var(--border-medium);
-  border-radius: 20px;
-  color: var(--text-secondary);
-  font: 600 10px var(--font-mono);
-  text-transform: uppercase;
-}
-.completed {
   color: var(--accent-sage);
-  border-color: var(--accent-sage);
-  background: var(--accent-sage-dim);
 }
 .topicLabel {
   margin: 0 0 6px;
   color: var(--text-secondary);
-  font: 600 10px/1.5 var(--font-mono);
-  text-transform: uppercase;
+  font: 500 12px/1.5 var(--font-sans);
 }
 .cardHeading {
   display: flex;
@@ -206,23 +202,15 @@
   font: 600 18px/1.35 var(--font-serif);
   overflow-wrap: anywhere;
 }
-.cardDescription {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  margin: 12px 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.6;
-}
 .cardMeta {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 22px;
+  margin: 16px 0 20px;
   color: var(--text-secondary);
-  font: 11px var(--font-mono);
+  font: 12px var(--font-mono);
 }
 .cardMeta span {
   display: inline-flex;
@@ -231,13 +219,11 @@
 }
 .cardFooter {
   margin-top: auto;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 14px;
 }
 .lastResult {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   margin: 0 0 12px;
   color: var(--accent-sage);
@@ -245,6 +231,11 @@
 }
 .lastResult strong {
   font-weight: 600;
+}
+.lastResult a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .cardActions {
   display: flex;
@@ -255,29 +246,8 @@
   flex: 1 1 125px;
   min-width: 0;
   padding-inline: 8px;
-  font: 600 11px var(--font-mono);
-  text-transform: uppercase;
-}
-.cardSetup {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-subtle);
-}
-.compactMode {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  font-size: 12px;
-  line-height: 1.5;
-  cursor: pointer;
-}
-.compactMode input {
-  accent-color: var(--accent-gold);
-}
-.cardSetup > button {
-  width: 100%;
-  margin-top: 12px;
+  min-height: 44px;
+  font: 600 13px var(--font-sans);
 }
 .catalogControls {
   display: flex;
@@ -349,18 +319,6 @@
   color: var(--accent-gold);
   border-color: var(--accent-gold);
   background: var(--accent-gold-dim);
-}
-.modeGroup {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-}
-.modeGroup legend {
-  font-weight: 600;
-  font-size: 14px;
-  padding: 0;
-  margin-bottom: 12px;
 }
 .state {
   align-items: center;
@@ -475,9 +433,6 @@
   }
   .cardGrid {
     grid-template-columns: 1fr;
-  }
-  .catalogCard {
-    min-height: 260px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

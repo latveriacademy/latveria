@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   AlertTriangle,
-  BarChart2,
   BookOpen,
   Check,
   ChevronDown,
@@ -55,8 +54,8 @@ export function PracticeCatalog() {
   };
   const [status, setStatus] = useState("semua");
   const [type, setType] = useState("semua");
-  const [selected, setSelected] = useState(null);
   const [mode, setMode] = useState("Practice");
+  const [startingPackage, setStartingPackage] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -120,7 +119,6 @@ export function PracticeCatalog() {
   const pagePackages = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const changePage = (nextPage) => {
     setPage(nextPage);
-    setSelected(null);
     resultsRef.current?.scrollIntoView({ block: "start" });
   };
   const reset = () => {
@@ -330,9 +328,22 @@ export function PracticeCatalog() {
             </Panel>
           ) : (
             <>
-              <p className={styles.resultCount} role="status">
-                {visible.length} paket soal tersedia
-              </p>
+              <div className={styles.resultsToolbar}>
+                <p className={styles.resultCount} role="status">
+                  {visible.length} paket soal tersedia
+                </p>
+                <label className={styles.timerToggle}>
+                  <input
+                    type="checkbox"
+                    checked={mode === "Timed Practice"}
+                    disabled={loading}
+                    onChange={(event) =>
+                      setMode(event.target.checked ? "Timed Practice" : "Practice")
+                    }
+                  />
+                  Dengan timer
+                </label>
+              </div>
               {visible.length === 0 ? (
                 <Panel className={styles.state}>
                   <BookOpen size={28} />
@@ -352,117 +363,75 @@ export function PracticeCatalog() {
                 <ul className={styles.cardGrid} aria-label="Paket drilling">
                   {pagePackages.map((pkg) => {
                     const result = latestResults.get(pkg.id);
-                    const expanded = selected === pkg.id;
                     return (
                       <li key={pkg.id} className={styles.catalogCard}>
-                        <div className={styles.cardTop}>
-                          <span className={styles.cardType}>
-                            {pkg.packageType || "Paket latihan"}
-                          </span>
-                          <span className={result ? styles.completed : styles.newBadge}>
-                            {result ? (
-                              <>
-                                <Check size={12} />
-                                Selesai
-                              </>
-                            ) : (
-                              "Baru"
-                            )}
-                          </span>
-                        </div>
                         <div className={styles.cardHeading}>
-                          <SubtestIcon slug={pkg.topicSlug} size={32} />
+                          <SubtestIcon slug={pkg.topicSlug} size={28} />
                           <div>
                             <p className={styles.topicLabel}>{pkg.topicName}</p>
                             <h3>{pkg.name}</h3>
                           </div>
                         </div>
-                        <p className={styles.cardDescription}>
-                          {pkg.description || "Latihan soal dengan pembahasan setelah selesai."}
-                        </p>
                         <div className={styles.cardMeta}>
                           <span>
-                            <BookOpen size={12} />
                             {pkg.questionCount} soal
+                            {mode === "Timed Practice" && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <Clock size={12} aria-hidden="true" />
+                                {(pkg.questionCount * 1.5).toLocaleString("id-ID")} menit
+                              </>
+                            )}
                           </span>
-                          <span>
-                            <Clock size={12} />
-                            Timer opsional
-                          </span>
+                          {result && (
+                            <span className={styles.completed}>
+                              <Check size={12} aria-hidden="true" />
+                              Selesai
+                            </span>
+                          )}
                         </div>
                         <div className={styles.cardFooter}>
                           {result && (
-                            <p className={styles.lastResult}>
-                              <span>Hasil terakhir</span>
-                              <strong>
-                                {result.correct}/{result.total} benar
-                              </strong>
+                            <p className={styles.lastResult} aria-label="Hasil terakhir">
+                              <span>
+                                <strong>
+                                  {result.correct}/{result.total} benar
+                                </strong>
+                              </span>
+                              <Link to={`/dashboard/riwayat/${result.id}`}>Lihat hasil</Link>
                             </p>
                           )}
                           <div className={styles.cardActions}>
-                            {result && (
-                              <Button asChild variant="outline">
-                                <Link to={`/dashboard/riwayat/${result.id}`}>
-                                  <BarChart2 size={14} />
-                                  Lihat hasil
-                                </Link>
-                              </Button>
-                            )}
                             <Button
                               className="btn-gold-solid"
                               disabled={!pkg.questionCount || loading}
-                              aria-expanded={expanded}
-                              aria-controls={`catalog-setup-${pkg.id}`}
-                              onClick={() => setSelected(expanded ? null : pkg.id)}
+                              onClick={async () => {
+                                if (loading) return;
+                                setStartingPackage(pkg.id);
+                                try {
+                                  await startPractice(
+                                    pkg.topicSlug,
+                                    mode,
+                                    pkg.questionCount,
+                                    "",
+                                    pkg.id,
+                                  );
+                                } finally {
+                                  setStartingPackage(null);
+                                }
+                              }}
                             >
                               {result ? <RotateCcw size={14} /> : <Play size={14} />}
                               {!pkg.questionCount
                                 ? "Belum tersedia"
-                                : expanded
-                                  ? "Tutup pengaturan"
+                                : loading && startingPackage === pkg.id
+                                  ? "Menyiapkan soal…"
                                   : result
                                     ? "Kerjakan lagi"
                                     : "Mulai paket"}
                             </Button>
                           </div>
                         </div>
-                        {expanded && (
-                          <form
-                            id={`catalog-setup-${pkg.id}`}
-                            className={styles.cardSetup}
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              if (!loading)
-                                startPractice(pkg.topicSlug, mode, pkg.questionCount, "", pkg.id);
-                            }}
-                          >
-                            <fieldset disabled={loading} className={styles.modeGroup}>
-                              <legend>Waktu pengerjaan</legend>
-                              {[
-                                ["Practice", "Tanpa batas waktu"],
-                                [
-                                  "Timed Practice",
-                                  `Dengan timer · ${(pkg.questionCount * 1.5).toLocaleString("id-ID")} menit`,
-                                ],
-                              ].map(([id, label]) => (
-                                <label key={id} className={styles.compactMode}>
-                                  <input
-                                    type="radio"
-                                    name={`mode-${pkg.id}`}
-                                    value={id}
-                                    checked={mode === id}
-                                    onChange={() => setMode(id)}
-                                  />
-                                  {label}
-                                </label>
-                              ))}
-                            </fieldset>
-                            <Button className="btn-gold-solid" type="submit" disabled={loading}>
-                              <Play size={14} />
-                              {loading ? "Menyiapkan soal…" : "Gas drilling"}
-                            </Button>
-                          </form>
-                        )}
                       </li>
                     );
                   })}
