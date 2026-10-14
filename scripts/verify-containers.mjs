@@ -39,6 +39,23 @@ assert.equal(
   "EMAIL_PASSWORD_SIGN_UP_DISABLED",
   "Signup harus ditutup di produksi.",
 );
+// This function plot requires real TeX compilation, not the native bar-chart fallback.
+const diagram = await fetch(`${origin}/api/latex/render`, {
+  method: "POST",
+  headers: { Origin: origin, "Content-Type": "application/json" },
+  body: JSON.stringify({
+    source: String.raw`\begin{tikzpicture}\begin{axis}\addplot[domain=-3:3,samples=50] {x^2};\end{axis}\end{tikzpicture}`,
+  }),
+  signal: AbortSignal.timeout(30_000),
+});
+assert.equal(
+  diagram.status,
+  200,
+  "Worker harus mengompilasi diagram yang tidak didukung renderer native.",
+);
+const rendered = await diagram.json();
+assert.match(rendered.svg, /<svg\b/);
+assert.doesNotMatch(rendered.svg, /latex-(?:placeholder|fallback)-svg/);
 console.info(
-  "Smoke test container: SPA, asset, proxy API, autentikasi, dan signup produksi lolos.",
+  "Smoke test container: SPA, asset, proxy API, autentikasi, signup produksi, dan kompilasi TeX nyata lolos.",
 );
