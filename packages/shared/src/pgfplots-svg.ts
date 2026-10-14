@@ -26,7 +26,7 @@ export function renderPgfplotsSvg(source: string): string | null {
   const number = "[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?";
   // ponytail: only grouped categorical bars; everything else goes to the TeX worker.
   const supported = new RegExp(
-    `^(?:ybar|(?:bar width|width|height)=\\d+(?:\\.\\d+)?(?:pt|cm|mm|in)|(?:title|xlabel|ylabel|symbolic x coords)=\\{[^{}\\\\]*\\}|xtick=data|(?:ymin|ymax)=${number}|ytick=\\{[^{}]*\\}|legend pos=north west|ymajorgrids=(?:true|false)|grid style=\\{dashed\\})$`,
+    `^(?:ybar|(?:bar width|width|height)=\\d+(?:\\.\\d+)?(?:pt|cm|mm|in)|(?:title|xlabel|ylabel|symbolic x coords)=\\{[^{}\\\\]*\\}|xtick=data|(?:ymin|ymax)=${number}|ytick=\\{[^{}]*\\}|legend pos=north west|ymajorgrids=(?:true|false)|grid style=(?:dashed|\\{dashed\\}))$`,
   );
   if (
     !options.includes("ybar") ||

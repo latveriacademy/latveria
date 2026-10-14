@@ -22,6 +22,10 @@ export const latexRenderResponseSchema = z.object({
 });
 export type LatexRenderResponse = z.infer<typeof latexRenderResponseSchema>;
 
+export function isLatexRenderPlaceholder(svg: string): boolean {
+  return /class=["'][^"']*\blatex-(?:placeholder|fallback)-svg\b/.test(svg);
+}
+
 export const LATEX_DIAGRAM_ENVIRONMENTS = [
   "tikzpicture",
   "circuitikz",

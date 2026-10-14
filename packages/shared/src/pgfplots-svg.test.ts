@@ -81,7 +81,7 @@ ymax=120,
 ytick={0,10,20,30,40,50,60,70,80,90,100,110,120},
 legend pos=north west,
 ymajorgrids=true,
-grid style={dashed},
+ grid style=dashed,
 ]
 \\addplot[fill=pink!80!white,draw=pink]
 coordinates {
