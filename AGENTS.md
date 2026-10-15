@@ -7,7 +7,7 @@ Baca `PLAN.md` untuk arah produk dan `ARCHITECTURE.md` untuk keputusan teknis.
 
 - Produk ini adalah platform latihan UTBK-SNBT Indonesia.
 - EXP dan skor resmi UTBK adalah dua konsep terpisah. Jangan menyajikan EXP atau persentase jawaban benar sebagai skor resmi UTBK.
-- PvP, peringkat kompetitif, musim, jenjang, dan lencana belum masuk MVP.
+- Warrior Battle menyediakan PvP 1v1/2v2; leaderboard latihan juga tersedia. Ranked PvP/Elo, musim, jenjang kompetitif, dan lencana belum menjadi sistem kompetitif aktif.
 
 ## Identitas dan desain antarmuka
 
@@ -75,7 +75,7 @@ bun run --filter @latveria/api test src/lib/env.test.ts
 
 - Migrasi berada di `apps/api/drizzle`. Jangan reset database atau membuat ulang baseline migrasi.
 - Migrasi tidak berjalan otomatis saat build atau start.
-- CLI menggunakan `node:process.loadEnvFile`.
+- Bun memuat `apps/api/.env.local` otomatis saat menjalankan CLI dari workspace API.
 - Seed mengisi tujuh subtes SNPMB 2026 dan soal dummy secara idempoten, termasuk contoh geometri.
 - Empat slug topik lama dipindahkan dengan ID tetap agar riwayat dan soal admin tetap terhubung.
 - Acuan nama subtes: https://snpmb.id/utbk-snbt/informasi-umum.
@@ -96,7 +96,7 @@ bun run --filter @latveria/api test src/lib/env.test.ts
 - Baca dan simpan melalui `GET/PUT /api/learner/profile` dengan `profileSchema` shared.
 - Nama, panggilan, target PTN, bio, dan motto disimpan di database.
 - ID, email, dan role bukan field yang bisa diedit.
-- Foto profil menggunakan placeholder ikon pengguna.
+- Foto profil diunggah melalui API avatar ke object storage; ikon pengguna menjadi fallback jika foto belum tersedia.
 - Jangan menyimpan perubahan profil hanya di localStorage.
 
 ### Bank soal dan impor admin

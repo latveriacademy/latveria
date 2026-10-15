@@ -1,5 +1,7 @@
 # Audit dashboard admin — 8 Oktober 2026
 
+Status: arsip temuan sebelum perbaikan, bukan daftar bug aktif. Tindak lanjut ditangani pada issue #68–#71; gunakan issue GitHub untuk status pekerjaan terkini. Bukti reproduksi di bawah dipertahankan sebagai konteks regresi.
+
 ## Ringkasan
 
 Audit menemukan **8 temuan P1 dan 12 temuan P2**. Tidak ada temuan P0 yang terverifikasi dalam cakupan ini. Masalah utama: penonaktifan akun tidak membatasi akses, alur impor Tryout gagal, Analytics salah menghitung jawaban, Ekspor belum memiliki endpoint, dan operasi admin tidak menghasilkan audit log.

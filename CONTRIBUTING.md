@@ -29,7 +29,7 @@ Baris kode pada ESLint tidak menghitung baris kosong atau komentar. Pengecualian
 
 ## 3. Arsitektur dan runtime
 
-- Bun 1.3.14 adalah runtime, package manager, dan task runner. CLI Vite/Vitest/ESLint/TypeScript/oxfmt memakai script `bun run --bun` yang tersedia.
+- Bun 1.3.14 adalah runtime backend, package manager, dan task runner. Vite development memakai Node.js 22 (minimal 22.12) agar proxy WebSocket berfungsi; build Vite, Vitest, ESLint, TypeScript, oxfmt, dan Drizzle Kit tetap memakai Bun.
 - Gunakan hanya `bun.lock`. Dependency baru harus menyelesaikan kebutuhan nyata yang belum ditangani stdlib, platform, atau dependency yang terpasang.
 - `apps/web` dan `packages/shared` tidak mengimpor database atau secret server. `packages/shared` tidak mengimpor backend.
 - Backend: handler menangani HTTP/validasi; service menangani invariant domain, database, dan transaksi. Hindari class/factory/interface untuk satu implementasi.

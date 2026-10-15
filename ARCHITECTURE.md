@@ -20,7 +20,7 @@ PostgreSQL: akun, soal, paket, latihan, sesi tryout, progres
 apps/web ──imports──> packages/shared <──imports── apps/api
 ```
 
-EXP, persentase jawaban benar, dan Latveria Score adalah ukuran yang berbeda. Tidak satu pun merupakan skor resmi atau prediksi skor UTBK. Drilling adalah latihan per subtes; Battle World adalah alur tryout dengan state dan timer tersendiri.
+EXP, persentase jawaban benar, skor simulasi Tryout, dan poin Warrior Battle adalah ukuran yang berbeda. Tidak satu pun merupakan skor resmi atau prediksi skor UTBK. Drilling adalah latihan per subtes; Battle World adalah Tryout; Warrior Battle adalah PvP 1v1/2v2.
 
 ## 2. Stack dan runtime
 
@@ -99,7 +99,7 @@ Frontend/shared tidak boleh mengimpor database atau secret server. Shared tidak 
 
 `main.tsx` memasang React StrictMode, Suspense, dan React Router. Route memakai loader untuk data halaman dan guard awal. Halaman besar seperti shell peserta, hasil riwayat, dan beberapa halaman admin dimuat secara lazy. Vite memisahkan vendor React ke chunk tersendiri.
 
-Navigasi peserta meliputi Basecamp, Drilling, Library, Battle World, Rank, Profil, dan Setelan. Drilling menampilkan katalog paket, pencarian, filter, dan paginasi. Library diperuntukkan materi; tampil sebagai empty state saat konten belum tersedia. Riwayat dan hasil memakai `/dashboard/riwayat` dan `/dashboard/riwayat/:id`.
+Navigasi peserta meliputi Basecamp, Drilling, Library, Battle World, Warrior Battle, Rank, Profil, dan Setelan. Drilling menampilkan katalog paket, pencarian, filter, dan paginasi. Library diperuntukkan materi; tampil sebagai empty state saat konten belum tersedia. Riwayat dan hasil memakai `/dashboard/riwayat` dan `/dashboard/riwayat/:id`.
 
 ### Atomic design pragmatis
 
@@ -141,7 +141,9 @@ Animasi dashboard memakai kelas CSS dalam `lib/motion/motion.css`, token di `lib
 
 `components/math/math-text.tsx` mengenali `$...$` inline, `$$...$$` blok, dan blok `\begin{tikzpicture} ... \end{tikzpicture}` tanpa pembungkus `$$`. Rumus dirender dengan KaTeX `trust: false`; sumber tidak valid tetap ditampilkan.
 
-TikZ dirender sebagai SVG lokal oleh `components/math/tikz-diagram.tsx` dan parser `lib/math/tikz.ts`. Subset mencakup garis/poligon, rectangle, circle, ellipse, gaya garis, label node, dan koordinat 2D/3D dengan proyeksi. Parser membatasi panjang sumber, jumlah perintah, dan rentang koordinat. Sintaks yang belum didukung menampilkan source serta pesan. Renderer yang sama digunakan di preview admin, latihan, dan review.
+TikZ dasar dirender sebagai SVG lokal oleh `components/math/tikz-diagram.tsx` dan parser `lib/math/tikz.ts`. Subset mencakup garis/poligon, rectangle, circle, ellipse, gaya garis, label node, dan koordinat 2D/3D dengan proyeksi. Parser membatasi panjang sumber, jumlah perintah, dan rentang koordinat. PGFPlots memiliki renderer lokal untuk subset grafik batang.
+
+`components/math/latex-diagram.tsx` meneruskan diagram kompleks ke `/api/latex/render`. API memakai cache SVG berversi dan worker `apps/tex-worker` melalui `TEX_WORKER_URL`. Worker menjalankan compiler TeX dan sanitasi SVG. Jika kompilasi tidak tersedia, hanya diagram yang benar-benar didukung renderer native yang boleh menjadi fallback; kegagalan lain mengembalikan error, bukan placeholder sukses. Renderer yang sama digunakan di preview admin, latihan, dan review.
 
 ## 5. Backend dan kontrak HTTP
 
@@ -186,7 +188,15 @@ Tryout memiliki state `active`, `break`, dan `completed`. Saat sesi dimulai, ser
 
 Frontend melakukan autosave draft ke API dan menyimpan ID sesi terakhir di localStorage sebagai penunjuk resume. Data sesi tetap di PostgreSQL. Server menghitung waktu tersisa dari timestamp subtes/jeda; countdown frontend menampilkan waktu tersebut. Submit subtes mengunci bagian yang selesai dan menggerakkan state sesi. Tryout tidak menambah EXP Drilling.
 
-`packages/shared/src/scoring.ts` menghitung Latveria Score 0–1.000 dari jawaban, bobot soal/statistik, dan faktor waktu terbatas. Akurasi dan breakdown disimpan/ditampilkan terpisah. Ini bukan konversi skor resmi UTBK.
+Sesi baru memakai `utbk-simulation-v1`: poin diperoleh dibagi poin maksimum, dikalikan 1.000, tanpa bonus waktu. Model IRT yang memenuhi syarat dapat di-snapshot saat sesi dimulai. Sesi `legacy` tetap memakai Latveria Score lama dari `packages/shared/src/scoring.ts`; hasil lama tidak dikonversi. Rincian rumus, revisi soal, dan kalibrasi ada di [docs/tryout-scoring-irt.md](docs/tryout-scoring-irt.md).
+
+### Warrior Battle
+
+`services/warrior/` menangani room 1v1/2v2, kesiapan peserta, ronde, penilaian server, riwayat, dan rematch. HTTP `/api/warrior/*` memerlukan sesi; handshake WebSocket juga memeriksa Origin, ID battle, dan keanggotaan. Nginx dan proxy Vite meneruskan upgrade WebSocket ke `Bun.serve`.
+
+Battle, tim, peserta, soal, dan jawaban disimpan di PostgreSQL. Socket dan timer room berada dalam memori satu proses API, sehingga restart dan multi-instance belum memiliki pemulihan/koordinasi pertandingan. Backend memvalidasi ronde, questionId, opsi, serta tenggat sebelum menyimpan jawaban dalam transaksi.
+
+Kunci dan pembahasan tidak dikirim selama ronde. Endpoint `/api/warrior/battles/:id/review` hanya tersedia untuk peserta setelah battle selesai, tanpa mengubah skor atau memberi EXP. Hasil/riwayat membuka review personal baca-saja; soal terjawab dan sumber wacananya dilindungi dari edit/hapus admin. Ranked/Elo dan musim belum aktif.
 
 ### Leaderboard dan administrasi konten
 
@@ -225,7 +235,7 @@ Browser → Bun/Hono → /api → PostgreSQL
 
 Image Docker frontend memiliki build stage Bun dan runtime Nginx. Image backend memiliki dependency stage dan runtime Bun 1.3.14, dengan user non-root `bun`. Kedua image tidak memerlukan instalasi Node. `SERVE_WEB=false` mematikan static SPA pada backend container; produksi langsung Hono dapat melayani API dan SPA sekaligus memakai middleware static `hono/bun`. Lokasi dist ditentukan relatif terhadap source server, bukan cwd proses. Health endpoint: `/api/health` untuk API dan `/healthz` untuk Nginx.
 
-GitHub Actions memasang Bun, menjalankan `bun install --frozen-lockfile`, pemeriksaan workspace, migrasi berulang untuk memeriksa idempotensi, seed, tes integrasi PostgreSQL, build dua image, dan smoke test container. Migrasi/seed di container dijalankan dengan Bun; workflow tidak memasang Node. Image frontend/backend dipublikasikan terpisah ke GHCR setelah pemeriksaan berhasil. Detail operasional ada di [deploy/README.md](deploy/README.md).
+GitHub Actions memasang Bun, menjalankan `bun install --frozen-lockfile`, pemeriksaan workspace, migrasi/seed berulang untuk memeriksa idempotensi, serta tes integrasi PostgreSQL dan WebSocket. Tiga image aplikasi dibangun: frontend, backend, dan TeX worker. Smoke test container memeriksa SPA/API dan kompilasi grafik fungsi yang membutuhkan TeX nyata. Setelah berhasil, ketiga image dipublikasikan ke GHCR untuk AMD64 dan ARM64. Detail operasional ada di [deploy/README.md](deploy/README.md).
 
 ## 9. Formatting dan verifikasi
 
@@ -243,4 +253,4 @@ Tes unit/component menggunakan Vitest. Interaksi dan tampilan UI diperiksa denga
 
 ## 10. Batas implementasi saat ini
 
-Drilling sudah memiliki hasil/riwayat, submit idempoten, dan progres server, tetapi draftnya belum autosave lintas reload. Tryout sudah memiliki draft/state di server. Sebagian konten/data pendukung masih contoh; bukan seluruh materi yang telah ditinjau. Versi soal immutable, verifikasi email produksi, dan verifikasi deployment database Supabase tetap memerlukan pekerjaan tersendiri. PvP, musim, jenjang kompetitif, dan lencana bukan bagian dari alur MVP yang sudah selesai.
+Drilling sudah memiliki hasil/riwayat, submit idempoten, dan progres server, tetapi draftnya belum autosave lintas reload. Tryout memiliki draft/state dan snapshot revisi soal di server. Warrior Battle tersedia dengan batas satu proses API. Sebagian konten masih contoh; kalibrasi IRT nyata, verifikasi email, dan deployment database produksi perlu verifikasi pada lingkungan tujuan. Ranked PvP/Elo, musim, jenjang kompetitif, dan lencana belum aktif. Prioritas produk tercatat di [PLAN.md](PLAN.md).

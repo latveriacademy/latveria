@@ -1,13 +1,14 @@
 # Deployment image terpisah
 
-GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL, lalu membangun dan menguji kedua container. Setelah seluruh pemeriksaan lolos, push `main` atau tag `v*` menerbitkan image AMD64 dan ARM64:
+GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL dan WebSocket, lalu membangun dan menguji container aplikasi. Setelah seluruh pemeriksaan lolos, push `main` atau tag `v*` menerbitkan tiga image AMD64 dan ARM64:
 
 - `ghcr.io/latveriacademy/latveria-frontend`
 - `ghcr.io/latveriacademy/latveria-backend`
+- `ghcr.io/latveriacademy/latveria-tex-worker`
 
-Tag `latest` mengikuti `main`; `sha-<SHA lengkap>` menunjuk commit tertentu; tag Git seperti `v1.0.0` dipakai pada kedua image. Publish memakai `GITHUB_TOKEN` bawaan Actions dengan izin `packages: write`.
+Tag `latest` mengikuti `main`; `sha-<SHA lengkap>` menunjuk commit tertentu; tag Git seperti `v1.0.0` dipakai pada ketiga image. Publish memakai `GITHUB_TOKEN` bawaan Actions dengan izin `packages: write`.
 
-Frontend Nginx melayani SPA pada port 8080 dan meneruskan `/api/*` ke backend Bun 1.3.14 pada port 3001. Browser memakai satu origin; tidak diperlukan URL API pada build frontend. Image backend berisi Bun, dependency runtime, shared, CLI, dan migrasi, tanpa frontend dist. Build frontend juga memakai Bun. Build/start tidak menerapkan migrasi secara otomatis.
+Frontend Nginx melayani SPA pada port 8080 dan meneruskan `/api/*` serta upgrade WebSocket ke backend Bun 1.3.14 pada port 3001. Browser memakai satu origin; tidak diperlukan URL API pada build frontend. Image backend berisi Bun, dependency runtime, shared, CLI, dan migrasi, tanpa frontend dist. Build frontend juga memakai Bun. TeX worker menyediakan compiler pada port internal 3002; Compose menetapkan `TEX_WORKER_URL=http://tex-worker:3002` untuk backend. Build/start tidak menerapkan migrasi secara otomatis.
 
 ## Penyiapan server
 
@@ -25,7 +26,7 @@ Set `BETTER_AUTH_URL` ke origin publik, misalnya `https://belajar.example.com`. 
 
 Jika package GHCR privat, login dengan token `read:packages` melalui `docker login ghcr.io -u USER --password-stdin`. Package juga dapat dibuat public pada pengaturan GitHub Packages agar server bisa pull tanpa token.
 
-Untuk deployment yang dapat diulang, isi `IMAGE_TAG=sha-<SHA lengkap>` dari workflow yang berhasil. Kedua service menggunakan tag yang sama.
+Untuk deployment yang dapat diulang, isi `IMAGE_TAG=sha-<SHA lengkap>` dari workflow yang berhasil. Ketiga service aplikasi menggunakan tag yang sama.
 
 ```sh
 docker compose --env-file apps/api/.env.local -f compose.production.yaml pull
@@ -55,10 +56,10 @@ docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d -
 docker compose --env-file apps/api/.env.local -f compose.production.yaml ps
 ```
 
-Untuk rollback aplikasi, kembalikan `IMAGE_TAG` ke tag sebelumnya lalu pull dan up. Ini mengganti kedua image, bukan membatalkan migrasi SQL. Jika migrasi versi baru tidak kompatibel dengan aplikasi lama, pemulihan database memakai backup sebelum update.
+Untuk rollback aplikasi, kembalikan `IMAGE_TAG` ke tag sebelumnya lalu pull dan up. Ini mengganti ketiga image aplikasi, bukan membatalkan migrasi SQL. Jika migrasi versi baru tidak kompatibel dengan aplikasi lama, pemulihan database memakai backup sebelum update.
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml logs --tail=100 backend frontend
+docker compose --env-file apps/api/.env.local -f compose.production.yaml logs --tail=100 backend frontend tex-worker
 curl --fail https://belajar.example.com/api/health
 ```
 
@@ -67,6 +68,7 @@ curl --fail https://belajar.example.com/api/health
 ```sh
 docker build -f apps/api/Dockerfile -t latveria-backend:local .
 docker build -f apps/web/Dockerfile -t latveria-frontend:local .
+docker build -f apps/tex-worker/Dockerfile -t latveria-tex-worker:local .
 ```
 
-Gunakan env produksi untuk database uji terpisah dengan `IMAGE_PREFIX=latveria`, `IMAGE_TAG=local`, dan `BETTER_AUTH_URL=http://127.0.0.1:8080`. Jalankan Compose dengan project name khusus, misalnya `-p latveria-smoke`, lalu migrasi/seed dan `up -d --wait` seperti di atas. `bun run test:containers` memeriksa asset, deep link, proxy API, sesi wajib, dan signup produksi yang tertutup. `SMOKE_URL` dapat mengganti URL target tes.
+Gunakan env produksi untuk database uji terpisah dengan `IMAGE_PREFIX=latveria`, `IMAGE_TAG=local`, dan `BETTER_AUTH_URL=http://127.0.0.1:8080`. Jalankan Compose dengan project name khusus, misalnya `-p latveria-smoke`, lalu migrasi/seed dan `up -d --wait` seperti di atas. `bun run test:containers` memeriksa asset, deep link, proxy API, sesi wajib, signup produksi yang tertutup, dan kompilasi TeX nyata. `SMOKE_URL` dapat mengganti URL target tes.
