@@ -1,95 +1,36 @@
-# Latveria — Rencana situs belajar UTBK
+# Rencana produk latveriacademy
 
-Status: landing page, dashboard ber-route, database dan akun lokal, latsol minimum dengan hasil/riwayat, bank soal admin dengan impor JSON 5 opsi (A–E), serta manajemen user admin dengan statistik lengkap, bulk actions, tab detail, dan fitur keamanan telah dibuat. Stack sudah dimigrasikan ke React/Vite + Hono dengan kontrak Zod shared; Supabase sebagai database produksi sudah diverifikasi.
+Platform latihan UTBK-SNBT berbahasa Indonesia untuk berlatih, meninjau kesalahan, dan membangun kebiasaan belajar. EXP, akurasi, skor simulasi Tryout, dan poin Warrior Battle adalah ukuran berbeda; semuanya bukan skor resmi atau prediksi nilai UTBK.
 
-Rekomendasi stack TypeScript, arsitektur MVP, model data, dan urutan penyiapan tersedia di `ARCHITECTURE.md`.
+Dokumen ini merangkum status dan arah produk. Detail implementasi ada di [ARCHITECTURE.md](ARCHITECTURE.md), prosedur kerja di [CONTRIBUTING.md](CONTRIBUTING.md), dan penyiapan di [README.md](README.md). Issue GitHub menjadi sumber pekerjaan aktif, bukan checklist implementasi duplikat di dokumen.
 
-## Tujuan dan acuan
+## Sudah tersedia
 
-Membantu peserta UTBK berlatih, memahami kesalahan, dan melihat perkembangan melalui poin pengalaman (EXP) dan level. Pengguna memberikan foto papan perencanaan (`Project.jpg`); ide yang terbaca mencakup latihan berbatas waktu, kartu belajar (flashcard), kosakata, matematika dasar, pembahasan soal, papan peringkat, profil, dan kamus kontekstual.
+- **Fondasi:** monorepo Bun, React/Vite, Hono, PostgreSQL/Drizzle, Better Auth, kontrak Zod, dan CI untuk tes serta image container.
+- **Drilling:** katalog paket per subtes, mulai langsung, timer opsional, jawaban A–E, hasil/pembahasan, riwayat, submit idempoten, dan EXP/level/streak WIB dari data server.
+- **Battle World:** Tryout lintas subtes, jeda, draft server dan resume, snapshot revisi soal, hasil/radar/review baca-saja, serta impor soal admin. Skor dasar dan alur kalibrasi IRT dijelaskan di [panduan scoring](docs/tryout-scoring-irt.md).
+- **Warrior Battle:** room 1v1/2v2 dengan kode, lobby siap, ronde berwaktu melalui WebSocket, hasil, riwayat, rematch, serta pembahasan personal setelah pertandingan selesai.
+- **Profil dan preferensi:** profil tersimpan di database, unggah avatar melalui object storage, tema gelap/perkamen, dan preferensi suara lokal.
+- **Leaderboard:** periode WIB, filter subtes/metrik, jawaban pertama per soal, dan pengecualian akun demo.
+- **Lexicon:** anotasi kosakata dan koleksi pribadi. **Library** masih berupa halaman materi dengan empty state.
+- **Admin:** pengelolaan paket/soal, impor JSON, Tryout/IRT, user, laporan, afirmasi, analytics, log aktivitas, ekspor, dan kesehatan sistem.
+- **Rumus/diagram:** KaTeX, subset TikZ/PGFPlots lokal, dan worker TeX untuk diagram yang membutuhkan kompilasi.
 
-Usulan bahasa utama: Bahasa Indonesia untuk navigasi dan penjelasan, dengan Bahasa Inggris tetap digunakan jika diperlukan oleh materi pembelajaran.
+## Prioritas berikutnya
 
-## Tahapan pengembangan
+1. **Konten yang ditinjau — issue #2:** pilih topik awal, sumber/izin penggunaan, dan penanggung jawab peninjauan soal. Seed adalah contoh, bukan bank soal resmi yang siap dipublikasikan.
+2. **Draft Drilling lintas reload — issue #5:** tetapkan penyimpanan, masa berlaku, dan alur melanjutkan latihan. Draft saat ini masih di memori browser.
 
-### P0. Fondasi proyek
+## Batas saat ini
 
-- [x] Monorepo Bun: React/Vite di `apps/web`, Hono di `apps/api`, Zod/tipe API di `packages/shared`, TypeScript strict, Tailwind CSS, dan lockfile bersama.
-- [x] Landing page berbahasa Indonesia yang menjelaskan tujuan produk, alur belajar yang direncanakan, dan status pengembangan.
-- [x] Koneksi database khusus server, validasi konfigurasi, dan migrasi awal tabel topik dengan RLS.
-- [x] Perintah lint, pemeriksaan tipe, pengujian, dan build; seluruh pemeriksaan lokal lolos.
-- [x] PostgreSQL dan Adminer lokal, seed soal dummy, serta autentikasi/otorisasi awal.
-- [ ] Verifikasi koneksi dan penerapan migrasi pada Supabase terpisah. Menunggu kredensial proyek.
+- Signup hanya aktif di development; penyiapan akun dan verifikasi email produksi perlu keputusan operasional sebelum rilis.
+- Kalibrasi IRT nyata membutuhkan data respons yang memadai, mesin R/mirt, dan peninjauan model. Fixture sintetis pengujian bukan model produksi.
+- Room socket dan timer Warrior berada dalam satu proses API; pemulihan pertandingan setelah restart dan koordinasi multi-instance belum tersedia.
+- Tryout memiliki snapshot revisi soal; Drilling dan Warrior melindungi soal terjawab dari perubahan. Jangan menyamakan mekanisme keduanya.
+- Deployment database produksi harus diverifikasi pada lingkungan tujuan; CI menggunakan PostgreSQL uji.
 
-P0 adalah fondasi teknis, belum alur latihan. Panduan menjalankan aplikasi dan menyiapkan database tersedia di `README.md`.
+## Ide yang belum menjadi komitmen implementasi
 
-### 1. Satu alur latihan yang lengkap
+Rekomendasi area lemah, bookmark/review berkala, spaced repetition, rencana belajar, tantangan harian, analytics waktu, kelas/grup, onboarding/notifikasi, berbagi progres, referral, ekspor PDF, PWA offline, asisten belajar AI, dan dashboard wali perlu scope serta kriteria selesai dalam issue sebelum dikerjakan. Voice input tidak masuk rencana.
 
-Alur minimum lokal sudah tersedia untuk data dummy: pilih topik → jawab semua soal → kumpulkan → lihat hasil/pembahasan → buka riwayat. Pekerjaan berikutnya adalah versi soal immutable, penyimpanan jawaban selama sesi, status belum dijawab, dan konten yang benar-benar ditinjau.
-
-- Pilih satu topik UTBK dan sejumlah kecil soal yang sudah ditinjau sebelum memperluas cakupan. Sesuaikan dengan kategori ujian terkini yang telah diverifikasi; contoh kosakata/matematika pada papan bukan silabus lengkap.
-- Bangun alur pemilihan topik → sesi latihan → pengumpulan jawaban → hasil → tinjauan tiap soal.
-- Mulai dengan soal pilihan ganda yang memiliki satu jawaban benar. Setiap soal memerlukan identitas tetap, topik, pertanyaan, pilihan jawaban, kunci jawaban, pembahasan, dan sumber materi.
-- Tinjauan menampilkan jawaban peserta, jawaban benar, dan `Pembahasan`. Sertakan teks/ikon selain pembeda warna hijau/merah pada papan.
-- Jawaban dapat diubah sebelum dikumpulkan, sedangkan hasil tetap setelahnya. Tentukan secara jelas cara menangani soal yang tidak dijawab.
-- Kriteria selesai: peserta dapat menyelesaikan sesi dan meninjau soal yang benar, salah, serta tidak dijawab, dengan jumlah yang konsisten.
-
-### 2. Penyimpanan perkembangan dan EXP
-
-Implementasi awal tersedia: EXP hanya dari attempt latihan tersimpan (30 + 15 per jawaban benar), level 1 dengan ambang awal 300 EXP dan kenaikan 35%, serta streak kalender WIB. Summary/hasil/riwayat server menjadi sumber progres, termasuk latihan lama. Retry sesi memakai UUID yang sama agar tidak menggandakan attempt/EXP; sesi latihan baru tetap boleh mendapat EXP. Membuka ulang hasil dan reset preferensi tidak mengubah progres.
-
-- Tambahkan identitas peserta, penyimpanan hasil sesi, riwayat per topik, dan tampilan EXP/level setelah alur latihan berjalan.
-- Tentukan besaran EXP, syarat perolehan EXP saat mengulang latihan, dan ambang kenaikan level sebelum implementasi. Berikan hadiah sekali untuk setiap sesi yang memenuhi syarat; memuat ulang halaman atau mengumpulkan ulang jawaban tidak boleh menggandakan hadiah.
-- Tampilkan persentase jawaban benar secara terpisah dari EXP. Jangan menyajikan keduanya sebagai nilai resmi atau prediksi nilai UTBK.
-- Kriteria selesai: riwayat dan perkembangan level tetap tersimpan saat peserta kembali; pengumpulan ulang tidak mengubah hadiah yang sudah tercatat.
-
-### 3. Latihan berbatas waktu dan alat bantu belajar
-
-- Tambahkan sesi berbatas waktu, lalu tryout. Pastikan durasi, bagian ujian, aturan perpindahan soal, dan tindakan saat waktu habis sebelum menyebut suatu mode sebagai simulasi ujian.
-- Tambahkan kartu belajar untuk mengulang materi tertentu dan kamus kontekstual yang memuat arti, bentuk kata, serta contoh penggunaan.
-- Kartu belajar merupakan latihan tambahan, bukan bukti bahwa seluruh materi UTBK sudah tercakup.
-- Kriteria selesai: saat waktu habis, halaman dimuat ulang, dan hasil ditinjau, sistem mengikuti aturan sesi yang dipilih tanpa kehilangan jawaban yang sudah dikumpulkan.
-
-### 4. Motivasi sosial dan personalisasi
-
-- [x] Papan peringkat lengkap (harian, mingguan, bulanan, semua) dengan metrik XP, soal dijawab, soal benar, akurasi, dan streak.
-- [x] Filter subtes: semua, PU, PPU, PBM, PK, BI, EN, PM.
-- [x] Perhitungan metrik di server dari log jawaban per soal; hanya percobaan pertama yang dihitung.
-- [x] Akurasi membutuhkan minimal 50 soal (semua) atau 20 soal (subtes individual) untuk tampil.
-- [x] Zona waktu WIB untuk periode; tiebreaker berdasarkan timestamp jawaban terakhir.
-- [x] Pengecualian akun demo dari leaderboard publik.
-- [x] Frontend dengan filter tab metrik, dropdown subtes/periode, podium top 3, tampilan tabel, dan posisi user sendiri.
-- [ ] Pengaturan nama pengguna, nama tampilan, foto profil, serta tampilan terang/gelap.
-- [ ] Papan peringkat bersama memerlukan perhitungan hadiah yang dikendalikan sistem, bukan perangkat peserta, serta pembatasan akses ke peserta.
-- Kriteria selesai: peringkat menggunakan ukuran dan periode yang terdokumentasi secara konsisten; peserta tidak dapat mengubah hasil atau hadiah milik peserta lain.
-
-### Ide lanjutan dari papan
-
-PvP (kompetisi antarpemain), peringkat kompetitif, musim kompetisi, jenjang, lencana, dan kejutan tersembunyi bertema Latveria. Bahas kembali setelah peserta dapat berlatih dan meninjau kesalahan dengan lancar.
-
-## Keputusan sebelum implementasi
-
-- Topik awal, penyedia soal, izin penggunaan ulang, dan penanggung jawab peninjauan materi.
-- Tahun ujian yang dituju dan sumber resmi format UTBK; keberadaan kalkulator pada sketsa bukan bukti bahwa penggunaannya diizinkan dalam simulasi ujian.
-- Apakah peserta boleh berlatih sebagai tamu atau wajib masuk akun, serta apakah perkembangan awal disimpan di perangkat atau dikaitkan dengan akun.
-- Aturan EXP/pengulangan latihan dan apakah papan peringkat menggunakan EXP atau ukuran lain yang ditetapkan secara jelas.
-- PostgreSQL melalui Supabase telah disetujui dan fondasi teknis sudah tersedia. Autentikasi, layanan hosting, serta anggaran operasional di `ARCHITECTURE.md` masih perlu ditetapkan sebelum rilis.
-
-Target implementasi pertama: sejumlah kecil soal yang sudah ditinjau, dapat dikerjakan dari awal sampai akhir, dan memiliki pembahasan yang membantu peserta memahami jawabannya. Catat perintah penyiapan dan pemeriksaan terarah yang benar-benar tersedia di `AGENTS.md` setelah perangkat pengembangan disiapkan.
-
-## 5. Manajemen User Admin
-
-Panel manajemen user menyediakan kontrol lengkap untuk admin:
-
-- **Statistik platform**: total user, aktif hari ini, baru minggu ini, dinonaktifkan, rata-rata akurasi, dan growth data 30 hari.
-- **Daftar user terfilter**: pencarian, filter demo/normal/aktif/nonaktif, sorting, dan pagination.
-- **Bulk actions**: tampilkan/sembunyikan leaderboard, aktifkan/nonaktifkan, hapus massal.
-- **Detail user tabbed**:
-  - Overview dengan level, XP, akurasi, streak, weekly activity chart, weak areas, favorite topics, subtest stats.
-  - Aktivitas dengan riwayat login dan laporan soal.
-  - Keamanan dengan role, aktifkan/nonaktifkan, reset progres, hapus permanen.
-- **Catatan admin** per user untuk dokumentasi internal.
-
-- [x] Implementasi backend dengan endpoint baru dan field database
-- [x] Frontend dengan UI tabbed, statistik, dan bulk actions
-- [x] Statistik lengkap per user (streak, weekly activity, weak areas, improvement rate)
+Ranked PvP, Elo, musim, jenjang, dan lencana belum menjadi sistem kompetitif aktif. Navigasi saat ini tetap memisahkan Drilling, Battle World (Tryout), dan Warrior Battle; rancangan lama lobby 2–8 pemain dan tab PvP di Battle World telah digantikan implementasi 1v1/2v2.
