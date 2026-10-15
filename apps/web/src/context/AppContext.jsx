@@ -35,7 +35,7 @@ const SECTION_MAP = {
   PM: "Tes Literasi",
 };
 
-/** Convert API topic to the shape UTBK_SUBJECTS expects */
+/** Convert API topics to the learner catalog shape. */
 function topicToSubject(topic) {
   const short = SLUG_TO_SHORT[topic.slug] || topic.short || topic.slug;
   const category =
@@ -152,7 +152,7 @@ export const AppProvider = ({ children }) => {
   // User State
   const [user, setUser] = useState(DEFAULT_USER);
 
-  // Real topics from API (replaces UTBK_SUBJECTS)
+  // Topics from the API are the source of the learner catalog.
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
   const [topicsError, setTopicsError] = useState("");
