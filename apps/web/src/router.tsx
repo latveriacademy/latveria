@@ -34,7 +34,8 @@ import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
 import { HistoryView, HistoryErrorView } from "./views/history/HistoryView";
 
-const Home = lazy(() => import("./app/landing"));
+const Home = lazy(() => import("./app/landing/landing"));
+const About = lazy(() => import("./app/landing/about"));
 const LatveriaOSApp = lazy(() =>
   import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })),
 );
@@ -232,6 +233,7 @@ function LoadingPage({ message }: { message: string }) {
 
 export const router = createBrowserRouter([
   { path: "/", element: <Home />, errorElement: <ErrorPage /> },
+  { path: "/tentang", element: <About />, errorElement: <ErrorPage /> },
   { path: "/login", element: <Login />, errorElement: <ErrorPage /> },
   { path: "/forbidden", element: <NotFound /> },
   {

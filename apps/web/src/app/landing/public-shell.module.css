@@ -1,0 +1,112 @@
+.landing {
+  overflow: clip;
+}
+.landing ::selection {
+  background: var(--emerald);
+  color: var(--bg);
+}
+.landing :focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 6px;
+}
+.landing :global(.site-header) {
+  height: 88px;
+  padding-inline: 5%;
+  background: transparent;
+  backdrop-filter: none;
+}
+.landing :global(.nav-links a) {
+  position: relative;
+  min-height: 44px;
+}
+.landing :global(.nav-links a[aria-current="page"])::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--emerald);
+}
+.footer {
+  padding: 35px 5%;
+  border-top: 1px solid var(--edge);
+}
+.footerTop,
+.footerBottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 25px;
+  align-items: center;
+}
+.footerTop nav {
+  display: flex;
+  gap: 28px;
+}
+.footerTop nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.footerTop nav a:hover {
+  color: var(--emerald);
+}
+.footerBottom {
+  margin-top: 35px;
+  color: var(--soft-ink);
+  font-size: 12px;
+}
+@media (max-width: 767px) {
+  .landing :global(.site-header) {
+    height: auto;
+    min-height: 76px;
+    flex-wrap: wrap;
+    padding-block: 14px;
+    gap: 10px;
+  }
+  .landing :global(.wordmark) {
+    font-size: 18px;
+    gap: 5px;
+  }
+  .landing :global(.nav-links) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .landing :global(.nav-links a) {
+    display: grid;
+    min-height: 44px;
+    padding-inline: 0;
+  }
+  .landing :global(.nav-links a[aria-current="page"])::after {
+    left: 0;
+    right: 0;
+  }
+  .footerTop,
+  .footerBottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .footerTop nav {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .footerBottom {
+    margin-top: 22px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing *,
+  .landing *::before,
+  .landing *::after {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
