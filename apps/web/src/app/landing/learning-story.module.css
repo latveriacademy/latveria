@@ -1,0 +1,239 @@
+.story {
+  background: #234f38;
+  color: #f2f2df;
+  padding: 80px 5% 0;
+}
+.story button:focus-visible {
+  outline-color: #d8eabf;
+}
+.storyHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  padding-bottom: 80px;
+}
+.story .storyHeading h2 {
+  font-size: clamp(58px, 7.2vw, 100px);
+}
+.story .storyHeading em,
+.story h3 em {
+  color: #c1db9e;
+}
+.storyHeading > p {
+  color: #d2dfce;
+  font-size: 16px;
+  line-height: 1.7;
+  padding-bottom: 10px;
+}
+.storyBody {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12%;
+  position: relative;
+}
+.stage {
+  position: sticky;
+  top: max(80px, calc((100svh - 480px) / 2));
+  align-self: start;
+  aspect-ratio: 1.1;
+  margin-top: 60px;
+  perspective: 1000px;
+}
+.paper,
+.paperBack {
+  position: absolute;
+  inset: 0;
+  background: #e5e6ce;
+  transform: rotate(-5deg);
+  box-shadow: 12px 25px 35px #0d231c33;
+}
+.paperBack {
+  transform: rotate(4deg);
+  background: #b6c4a1;
+}
+.paper {
+  padding: 32px 7%;
+  color: #294f36;
+}
+.paperTitle {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-style: italic;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #82937966;
+}
+.sequence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 40px;
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 4vw, 58px);
+}
+.sequence em {
+  font-style: italic;
+  color: #356c44;
+}
+.connections {
+  width: 100%;
+  stroke: #638456;
+  stroke-width: 1.5;
+}
+.connections text {
+  fill: #486c3c;
+  stroke: none;
+  font-family: var(--font-serif);
+  font-size: 20px;
+}
+.paperQuestion {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.3vw, 32px);
+  line-height: 1.2;
+  margin-top: 10px;
+}
+.paperAnswer {
+  position: relative;
+  width: fit-content;
+  margin-top: 25px;
+  font-family: var(--font-serif);
+  font-size: 27px;
+}
+.paperAnswer svg {
+  position: absolute;
+  inset: -12px -20px;
+  width: calc(100% + 40px);
+  stroke: #497c44;
+  stroke-width: 2;
+}
+.marginNote {
+  position: absolute;
+  bottom: -50px;
+  right: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  color: #d6e3c0;
+  transform: rotate(-7deg);
+}
+.chapters {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.chapters li {
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 70px;
+}
+.step {
+  font-size: 12px;
+  color: #c8d8bd;
+  margin-bottom: 30px;
+}
+.chapters h3 {
+  font-size: clamp(40px, 4.4vw, 62px);
+  line-height: 1.08;
+}
+.chapters p {
+  max-width: 33ch;
+  color: #d5e0cf;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-top: 25px;
+}
+.tryIt {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12%;
+  border-top: 1px solid #8da78266;
+  padding: 80px 0 100px;
+  margin-top: 50px;
+}
+.tryIt h3 {
+  font-size: clamp(48px, 5.4vw, 76px);
+  line-height: 1.06;
+}
+.tryIt > div > p {
+  color: #d5e0cf;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-top: 20px;
+  max-width: 30ch;
+}
+@media (max-width: 1023px) {
+  .storyBody {
+    gap: 8%;
+  }
+  .stage {
+    aspect-ratio: 0.86;
+  }
+  .paper {
+    padding: 22px;
+  }
+  .paperQuestion {
+    font-size: 23px;
+  }
+}
+@media (max-width: 767px) {
+  .story {
+    padding: 60px 6% 0;
+  }
+  .storyHeading {
+    display: block;
+    padding-bottom: 40px;
+  }
+  .story .storyHeading h2 {
+    font-size: 57px;
+  }
+  .storyHeading > p {
+    font-size: 14px;
+    margin-top: 25px;
+  }
+  .storyBody {
+    display: block;
+  }
+  .stage {
+    position: relative;
+    top: auto;
+    max-width: 440px;
+    margin: 20px auto 75px;
+    width: 100%;
+    aspect-ratio: auto;
+    height: 440px;
+  }
+  .sequence {
+    font-size: 42px;
+    margin-top: 28px;
+  }
+  .paperQuestion {
+    font-size: 25px;
+  }
+  .marginNote {
+    font-size: 19px;
+  }
+  .chapters li {
+    min-height: auto;
+    padding-block: 35px 40px;
+    border-top: 1px solid #8da78266;
+  }
+  .chapters h3 {
+    font-size: 42px;
+  }
+  .chapters p {
+    font-size: 15px;
+  }
+  .step {
+    margin-bottom: 20px;
+  }
+  .tryIt {
+    grid-template-columns: 1fr;
+    padding: 45px 0 60px;
+    margin-top: 20px;
+    gap: 35px;
+  }
+}
