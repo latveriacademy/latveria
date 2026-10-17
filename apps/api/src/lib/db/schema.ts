@@ -95,8 +95,25 @@ export const questions = pgTable(
     imageUrl: text("image_url"),
     order: integer("order").notNull().default(0),
     subtestOrder: integer("subtest_order").notNull().default(0),
+    contentFingerprint: text("content_fingerprint"),
+    workflowStatus: text("workflow_status").notNull().default("published"),
+    difficulty: text("difficulty").notNull().default("medium"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    sourceQuestionId: uuid("source_question_id").references((): AnyPgColumn => questions.id, {
+      onDelete: "set null",
+    }),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    reviewerNotes: text("reviewer_notes"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    index("questions_fingerprint_idx").on(table.contentFingerprint),
+    index("questions_workflow_status_idx").on(table.workflowStatus),
+    index("questions_difficulty_idx").on(table.difficulty),
+    index("questions_source_idx").on(table.sourceQuestionId),
     check(
       "questions_five_options",
       sql`${table.questionType} != 'single_choice' or (array_ndims(${table.options}) = 1 and cardinality(${table.options}) = 5 and array_position(${table.options}, null) is null)`,
@@ -334,9 +351,16 @@ export const questionRevisions = pgTable(
       .references(() => topics.id),
     contentHash: text("content_hash").notNull(),
     snapshot: jsonb("snapshot").$type<typeof questions.$inferSelect>().notNull(),
+    versionNumber: integer("version_number").notNull().default(1),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    changeSummary: text("change_summary"),
+    changeReason: text("change_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [unique("question_revision_hash_unique").on(table.questionId, table.contentHash)],
+  (table) => [
+    unique("question_revision_hash_unique").on(table.questionId, table.contentHash),
+    index("question_revisions_question_idx").on(table.questionId, table.createdAt),
+  ],
 ).enableRLS();
 
 export const tryoutResponses = pgTable(
@@ -409,3 +433,4 @@ export const irtCalibrations = pgTable(
 
 export * from "./warrior-schema";
 export * from "./latex-schema";
+export * from "./question-intelligence-schema";

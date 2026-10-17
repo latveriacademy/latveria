@@ -7,8 +7,11 @@ import {
   questionImportSchema,
   questionSchema,
   utbkSubtests,
+  computeQuestionFingerprint,
   type Bank,
   type QuestionDetail,
+  type QuestionWorkflowStatus,
+  type QuestionDifficulty,
 } from "@latveria/shared";
 import { getDb } from "../../lib/db";
 import { practiceAnswers, questionPackages, questions, topics } from "../../lib/db/schema";
@@ -83,6 +86,9 @@ export async function getAdminQuestions(
         topic: topics.name,
         source: questions.source,
         annotations: questions.annotations,
+        workflowStatus: questions.workflowStatus,
+        difficulty: questions.difficulty,
+        tags: questions.tags,
       })
       .from(questions)
       .innerJoin(topics, eq(questions.topicId, topics.id))
@@ -109,6 +115,9 @@ export async function getAdminQuestions(
             topic: topics.name,
             source: questions.source,
             annotations: questions.annotations,
+            workflowStatus: questions.workflowStatus,
+            difficulty: questions.difficulty,
+            tags: questions.tags,
           })
           .from(questions)
           .innerJoin(topics, eq(questions.topicId, topics.id))
@@ -117,9 +126,11 @@ export async function getAdminQuestions(
           .orderBy(topics.name, questions.id)
           .limit(15)
           .offset((page - 1) * 15)
-  ).map(({ annotations, ...row }) => ({
+  ).map(({ annotations, workflowStatus, difficulty, ...row }) => ({
     ...row,
     annotationsCount: annotations?.length || 0,
+    workflowStatus: workflowStatus as QuestionWorkflowStatus,
+    difficulty: difficulty as QuestionDifficulty,
   }));
 
   return {
@@ -167,10 +178,16 @@ export async function createQuestion(body: unknown) {
 
   const created = await getDb().transaction(async (tx) => {
     await validatePassage(tx, parsed.data);
+    const fingerprint = computeQuestionFingerprint({
+      prompt: parsed.data.prompt,
+      passage: parsed.data.passage,
+      options: parsed.data.options,
+    });
     const [row] = await tx
       .insert(questions)
       .values({
         ...parsed.data,
+        contentFingerprint: fingerprint,
         passage: parsed.data.passageId ? null : (parsed.data.passage ?? null),
         passageId: parsed.data.passageId ?? null,
       })
@@ -295,6 +312,11 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
       explanation: questions.explanation,
       category: questions.category,
       source: questions.source,
+      workflowStatus: questions.workflowStatus,
+      difficulty: questions.difficulty,
+      tags: questions.tags,
+      sourceQuestionId: questions.sourceQuestionId,
+      reviewerNotes: questions.reviewerNotes,
       topic: topics.name,
       slug: topics.slug,
     })
@@ -319,6 +341,8 @@ export async function getQuestionDetail(idParam: string): Promise<QuestionDetail
     .where(eq(practiceAnswers.questionId, id.data));
   return {
     ...item,
+    workflowStatus: item.workflowStatus as QuestionWorkflowStatus,
+    difficulty: item.difficulty as QuestionDifficulty,
     passage: resolvedPassage ?? undefined,
     passageId: item.passageId ?? undefined,
     category: item.category ?? undefined,
@@ -369,14 +393,21 @@ export async function updateQuestion(idParam: string, body: unknown) {
       }
     }
 
+    const fingerprint = computeQuestionFingerprint({
+      prompt: parsed.data.prompt,
+      passage: parsed.data.passage,
+      options: parsed.data.options,
+    });
     await tx
       .update(questions)
       .set({
         ...parsed.data,
+        contentFingerprint: fingerprint,
         packageId: parsed.data.packageId ?? null,
         category: parsed.data.category ?? null,
         passage: parsed.data.passageId ? null : (parsed.data.passage ?? null),
         passageId: parsed.data.passageId ?? null,
+        updatedAt: new Date(),
         ...(existing.stimulus?.passage
           ? { stimulus: { ...existing.stimulus, passage: undefined } }
           : {}),
