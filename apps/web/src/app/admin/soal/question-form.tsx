@@ -12,6 +12,8 @@ import {
 import { LexiconEditor } from "./lexicon-editor";
 import { PassageEditor, type AvailablePassage } from "./passage-editor";
 import { TikzHelp } from "./tikz-help";
+import { QuestionDuplicateChecker } from "./question-duplicate-checker";
+import { QuestionQualityIndicator } from "./question-quality-indicator";
 import { api } from "../../../lib/api";
 import { ArrowLeft, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "../../../components/ui/button";
@@ -387,6 +389,8 @@ export function QuestionForm({
             <MathText>{prompt}</MathText>
           </div>
         )}
+        <QuestionDuplicateChecker prompt={prompt} excludeId={question?.id} />
+        <QuestionQualityIndicator prompt={prompt} explanation={question?.explanation} />
       </fieldset>
       {isLbe && (
         <fieldset className={styles.formSection}>
