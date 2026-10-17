@@ -1,0 +1,477 @@
+.landing {
+  overflow: clip;
+}
+.landing ::selection {
+  background: var(--emerald);
+  color: var(--bg);
+}
+.landing :focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 6px;
+}
+.landing :global(.site-header) {
+  height: 88px;
+  padding-inline: 5%;
+  background: transparent;
+  backdrop-filter: none;
+}
+.landing :global(.nav-links a) {
+  position: relative;
+  min-height: 44px;
+}
+.landing :global(.nav-links a[aria-current="page"])::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--emerald);
+}
+.landing h1,
+.landing h2,
+.landing h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+.landing h1 {
+  font-size: clamp(82px, 11.5vw, 168px);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+}
+.landing h2 {
+  font-size: clamp(48px, 5.8vw, 84px);
+  line-height: 1.04;
+}
+.landing h1 em,
+.landing h2 em,
+.landing h3 em {
+  color: var(--emerald);
+  font-weight: 400;
+  font-style: italic;
+}
+.lineMask {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.04em 0.14em;
+  margin-bottom: -0.12em;
+}
+.landing :global(.main-link) {
+  gap: 26px;
+  min-height: 54px;
+  padding: 15px 24px;
+  margin-top: 25px;
+  border-radius: 2px;
+}
+.landing :global(.main-link svg) {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing :global(.main-link:hover svg) {
+  transform: translate(4px, -4px);
+}
+.textLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: fit-content;
+  margin: 24px auto 0;
+  min-height: 44px;
+  color: var(--soft-ink);
+  font-size: 14px;
+  text-decoration: none;
+}
+.textLink:hover {
+  color: var(--emerald);
+}
+.hero {
+  padding: 38px 5% 0;
+}
+.hero h1 {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+}
+.secondLine {
+  margin-left: 13%;
+}
+.heroBottom {
+  min-height: 395px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 35px 0 60px;
+}
+.heroIntro {
+  align-self: center;
+  max-width: 330px;
+  position: relative;
+  z-index: 3;
+}
+.heroIntro p {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--soft-ink);
+}
+.heroIntro em {
+  color: var(--emerald);
+  font-style: normal;
+}
+.heroArtStage {
+  width: 370px;
+  position: absolute;
+  right: 9%;
+  top: -10px;
+}
+.scrollCue {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-height: 44px;
+  color: var(--soft-ink);
+  text-decoration: none;
+  font-size: 12px;
+}
+.artwork {
+  width: 100%;
+  margin: 0;
+  isolation: isolate;
+}
+.book {
+  position: absolute;
+  width: 105%;
+  top: 11%;
+  left: -2%;
+  filter: drop-shadow(12px 28px 19px #0a24151c);
+  transform: rotate(-12deg);
+  z-index: 2;
+}
+.artShadow {
+  position: absolute;
+  width: 65%;
+  height: 12%;
+  bottom: 9%;
+  left: 22%;
+  background: #153b2521;
+  border-radius: 50%;
+  filter: blur(25px);
+  transform: rotate(-12deg);
+}
+.noteSheet {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 25%;
+  width: 42%;
+  padding: 20px 16px 12px;
+  background: #e3e8d5;
+  color: #315e40;
+  transform: rotate(13deg);
+  border: 1px solid #bdcbb2;
+  box-shadow: 5px 14px 25px #0d281214;
+}
+.noteSheet span {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+}
+.noteSheet svg {
+  width: 100%;
+  margin-top: 12px;
+  stroke: #678369;
+  stroke-width: 1.5;
+}
+.noteSheet text {
+  fill: #315e40;
+  stroke: none;
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.answerSheet {
+  position: absolute;
+  z-index: 3;
+  width: 46%;
+  left: 0;
+  bottom: 15%;
+  padding: 18px;
+  background: #f6f2df;
+  color: #315b3b;
+  box-shadow: 6px 16px 24px #0d28121a;
+  transform: rotate(-9deg);
+}
+.answerSheet > span {
+  font-size: 12px;
+}
+.answerSheet strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 27px;
+  font-weight: 400;
+  margin-top: 10px;
+  white-space: nowrap;
+}
+.answerSheet svg {
+  width: 75%;
+  margin-top: 12px;
+  stroke: #4e8059;
+  stroke-width: 1.5;
+}
+.artSeal {
+  position: absolute;
+  z-index: 4;
+  right: 5%;
+  top: 14%;
+  width: 16%;
+  height: auto;
+  transform: rotate(17deg);
+}
+.artCaption {
+  position: absolute;
+  bottom: 2%;
+  right: 8%;
+  font-size: 11px;
+  color: var(--soft-ink);
+}
+.example {
+  max-width: 460px;
+  width: 100%;
+  color: #f1f2de;
+}
+.exampleLabel {
+  font-size: 13px;
+  color: #cadbc9;
+}
+.exampleQuestion {
+  margin-top: 20px;
+  font-family: var(--font-serif);
+  font-size: 45px;
+  line-height: 1.4;
+}
+.exampleQuestion em {
+  font-size: 25px;
+  color: #c1db9e;
+}
+.exampleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 20px;
+  border: 0;
+  border-bottom: 1px solid #9fbe91;
+  background: none;
+  color: #e8efd5;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+.exampleButton:hover {
+  color: white;
+}
+.explanation {
+  padding-top: 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.explanation:not([hidden]) {
+  animation: unfold 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.explanation p {
+  color: #d0dfc8;
+  margin-top: 8px;
+}
+.practiceModes {
+  padding: 115px 5%;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 12%;
+}
+.modeIntro > p {
+  max-width: 31ch;
+  font-size: 16px;
+  line-height: 1.7;
+  margin-top: 25px;
+  color: var(--soft-ink);
+}
+.modeLinks {
+  padding-top: 12px;
+}
+.modeLinks > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--edge);
+  padding: 32px 0;
+  text-decoration: none;
+  color: var(--ink);
+}
+.modeLinks > a:last-child {
+  border-bottom: 1px solid var(--edge);
+}
+.modeLinks strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: clamp(32px, 3.5vw, 48px);
+  font-weight: 400;
+  transition: color 0.2s;
+}
+.modeLinks small {
+  display: block;
+  margin-top: 9px;
+  font-size: 14px;
+  color: var(--soft-ink);
+}
+.modeLinks svg {
+  flex-shrink: 0;
+  transition: transform 0.3s;
+  color: var(--emerald);
+}
+.modeLinks > a:hover strong {
+  color: var(--emerald);
+}
+.modeLinks > a:hover svg {
+  transform: translate(5px, -5px);
+}
+.homeClosing {
+  padding: 90px 5% 100px;
+  text-align: center;
+  border-top: 1px solid var(--edge);
+}
+.closingPrompt {
+  display: block;
+  margin-bottom: 22px;
+  font-size: 16px;
+  color: var(--soft-ink);
+}
+.homeClosing h2 {
+  font-size: clamp(70px, 10.5vw, 146px);
+}
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1023px) {
+  .heroArtStage {
+    width: 350px;
+    right: 0;
+    top: -35px;
+  }
+  .heroIntro {
+    max-width: 290px;
+  }
+  .secondLine {
+    margin-left: 4%;
+  }
+  .practiceModes {
+    gap: 6%;
+  }
+}
+@media (max-width: 767px) {
+  .landing :global(.site-header) {
+    height: auto;
+    min-height: 76px;
+    flex-wrap: wrap;
+    padding-block: 14px;
+    gap: 10px;
+  }
+  .landing :global(.wordmark) {
+    font-size: 18px;
+    gap: 5px;
+  }
+  .landing :global(.nav-links) {
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .landing :global(.nav-links a) {
+    display: grid;
+    min-height: 44px;
+    padding-inline: 0;
+  }
+  .landing :global(.nav-links a[aria-current="page"])::after {
+    left: 0;
+    right: 0;
+  }
+  .landing h1 {
+    font-size: clamp(44px, 10.5vw, 80px);
+  }
+  .hero {
+    padding: 32px 6% 0;
+  }
+  .secondLine {
+    margin-left: 0;
+  }
+  .heroBottom {
+    grid-template-columns: 1fr;
+    padding: 25px 0 65px;
+  }
+  .heroIntro {
+    max-width: 34ch;
+  }
+  .heroIntro p {
+    font-size: 15px;
+  }
+  .heroArtStage {
+    position: relative;
+    top: 0;
+    right: auto;
+    width: min(100%, 360px);
+    justify-self: center;
+    margin-block: 20px;
+  }
+  .landing :global(.hero-art) {
+    width: 100%;
+    max-width: none;
+  }
+  .noteSheet {
+    padding: 15px;
+  }
+  .noteSheet span {
+    font-size: 13px;
+  }
+  .answerSheet {
+    padding: 17px;
+  }
+  .answerSheet strong {
+    font-size: 23px;
+  }
+  .landing :global(.main-link) {
+    min-height: 50px;
+    font-size: 14px;
+  }
+  .practiceModes {
+    grid-template-columns: 1fr;
+    padding: 65px 6%;
+    gap: 40px;
+  }
+  .homeClosing {
+    padding: 65px 6%;
+  }
+  .homeClosing h2 {
+    font-size: clamp(57px, 13vw, 95px);
+  }
+  .textLink {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing *,
+  .landing *::before,
+  .landing *::after {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
