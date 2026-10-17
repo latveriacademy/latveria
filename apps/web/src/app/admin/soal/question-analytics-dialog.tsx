@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, BarChart3, Clock, Loader2, Target, Users } from "lucide-react";
 import type { QuestionPerformanceAnalytics } from "@latveria/shared";
-import { api } from "../../lib/api";
-import { AppDialog } from "../../components/app-dialog";
+import { api } from "../../../lib/api";
+import { AppDialog } from "../../../components/app-dialog";
 
 export function QuestionAnalyticsDialog({
   questionId,

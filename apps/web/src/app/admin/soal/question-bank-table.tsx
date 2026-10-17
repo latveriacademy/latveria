@@ -368,7 +368,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
         <QuestionUsageDialog
           questionId={usageQuestionId}
           open={Boolean(usageQuestionId)}
-          onOpenChange={(open) => !open && setUsageQuestionId(null)}
+          onOpenChange={(open: boolean) => !open && setUsageQuestionId(null)}
           onDeleted={() => window.location.reload()}
         />
       )}
@@ -378,7 +378,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
         <QuestionVersionDialog
           questionId={versionQuestionId}
           open={Boolean(versionQuestionId)}
-          onOpenChange={(open) => !open && setVersionQuestionId(null)}
+          onOpenChange={(open: boolean) => !open && setVersionQuestionId(null)}
           onRollbackComplete={() => window.location.reload()}
         />
       )}
@@ -388,7 +388,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
         <QuestionAnalyticsDialog
           questionId={analyticsQuestionId}
           open={Boolean(analyticsQuestionId)}
-          onOpenChange={(open) => !open && setAnalyticsQuestionId(null)}
+          onOpenChange={(open: boolean) => !open && setAnalyticsQuestionId(null)}
         />
       )}
     </>

@@ -133,3 +133,10 @@ export function downloadJson(data: unknown, filename: string) {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+export const IMPORT_EXAMPLE_KINDS = [
+  { kind: "basic", label: "Gunakan contoh sederhana" },
+  { kind: "math", label: "Gunakan contoh rumus" },
+  { kind: "geometry", label: "Gunakan contoh geometri" },
+  { kind: "lexicon", label: "Gunakan contoh Lexicon LBE" },
+] as const;

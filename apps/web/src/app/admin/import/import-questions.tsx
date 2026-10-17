@@ -10,7 +10,12 @@ import {
 } from "@latveria/shared";
 import { Download, FileCheck, Loader2, Sparkles, Upload } from "lucide-react";
 import { api } from "../../../lib/api";
-import { downloadJson, importExample, parseQuestionImport } from "../../../lib/question/question-import";
+import {
+  downloadJson,
+  importExample,
+  parseQuestionImport,
+  IMPORT_EXAMPLE_KINDS,
+} from "../../../lib/question/question-import";
 import { ImportGuide } from "./import-guide";
 import { ImportDryRunDialog } from "./import-dryrun-dialog";
 import { Button } from "../../../components/ui/button";
@@ -309,36 +314,29 @@ export function ImportQuestions({
             Mulai dari contoh format, lalu ganti pertanyaan, jawaban, dan sumber sesuai soalmu.
           </p>
           <div className={packageStyles.toolbar}>
-            {[
-              { kind: "basic", label: "Gunakan contoh sederhana" },
-              { kind: "math", label: "Gunakan contoh rumus" },
-              { kind: "geometry", label: "Gunakan contoh geometri" },
-              { kind: "lexicon", label: "Gunakan contoh Lexicon LBE" },
-            ]
-              .filter(
-                ({ kind }) =>
-                  kind !== "lexicon" ||
-                  !tryout ||
-                  mode !== "section" ||
-                  subtest === "literasi-bahasa-inggris",
-              )
-              .map(({ kind, label }) => (
-                <Button
-                  key={kind}
-                  variant="outline"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => {
-                    setExampleKind(kind);
-                    setText(JSON.stringify(example(kind), null, 2));
-                    setBatch(null);
-                    setError("");
-                    setFileName("");
-                  }}
-                >
-                  {label}
-                </Button>
-              ))}
+            {IMPORT_EXAMPLE_KINDS.filter(
+              ({ kind }) =>
+                kind !== "lexicon" ||
+                !tryout ||
+                mode !== "section" ||
+                subtest === "literasi-bahasa-inggris",
+            ).map(({ kind, label }) => (
+              <Button
+                key={kind}
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => {
+                  setExampleKind(kind);
+                  setText(JSON.stringify(example(kind), null, 2));
+                  setBatch(null);
+                  setError("");
+                  setFileName("");
+                }}
+              >
+                {label}
+              </Button>
+            ))}
             <Button
               variant="ghost"
               size="sm"

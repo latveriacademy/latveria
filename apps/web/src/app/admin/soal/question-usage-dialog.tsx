@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, Archive, Box, CheckCircle, Layers, Loader2, Trash2 } from "lucide-react";
 import type { QuestionUsageMap } from "@latveria/shared";
-import { api } from "../../lib/api";
-import { Button } from "../../components/ui/button";
-import { AppDialog } from "../../components/app-dialog";
-import { ConfirmDialog } from "../../components/confirm-dialog";
+import { api } from "../../../lib/api";
+import { Button } from "../../../components/ui/button";
+import { AppDialog } from "../../../components/app-dialog";
+import { ConfirmDialog } from "../../../components/confirm-dialog";
 
 export function QuestionUsageDialog({
   questionId,
