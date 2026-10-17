@@ -1,5 +1,5 @@
 import { Link, useLoaderData, useNavigation, useSearchParams } from "react-router";
-import { Loader2, Plus, Search, Upload } from "lucide-react";
+import { FileText, Loader2, Plus, Search, Upload } from "lucide-react";
 import type { Bank } from "@latveria/shared";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -75,6 +75,12 @@ export function BankPage() {
         }
         actions={
           <>
+            <Button asChild variant="outline">
+              <Link to="/admin/passages">
+                <FileText />
+                Stimulus Wacana
+              </Link>
+            </Button>
             <Button asChild variant="outline">
               <Link to="/admin/soal/impor">
                 <Upload />

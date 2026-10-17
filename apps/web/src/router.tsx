@@ -113,6 +113,11 @@ const TryoutImportPage = lazy(() =>
     default: module.TryoutImportPage,
   })),
 );
+const PassageLibraryPage = lazy(() =>
+  import("./app/admin/passage-library").then((module) => ({
+    default: module.PassageLibraryPage,
+  })),
+);
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -366,6 +371,7 @@ export const router = createBrowserRouter([
         loader: ({ params }) => api<QuestionDetail>(`/admin/questions/${params.id}`),
         element: <QuestionPreview />,
       },
+      { path: "passages", element: <PassageLibraryPage /> },
       { path: "laporan", element: <AdminReports /> },
       { path: "afirmasi", element: <AdminAffirmations /> },
       { path: "users", element: <AdminUsers /> },
