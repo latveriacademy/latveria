@@ -24,6 +24,8 @@ import { irtHandler } from "./handlers/irt.handler";
 import { learnerAvatarHandler, publicAvatarHandler } from "./handlers/avatar.handler";
 import { warriorHandler } from "./handlers/warrior.handler";
 import { latexHandler } from "./handlers/latex.handler";
+import { questionIntelligenceHandler } from "./handlers/question-intelligence.handler";
+import { passageHandler } from "./handlers/passage.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -138,6 +140,8 @@ app.route("/", auditHandler);
 app.route("/", exportHandler);
 app.route("/", irtHandler);
 app.route("/", warriorHandler);
+app.route("/", questionIntelligenceHandler);
+app.route("/", passageHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)
