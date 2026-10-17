@@ -8,10 +8,11 @@ import {
   type QuestionImport,
   type QuestionPackage,
 } from "@latveria/shared";
-import { Download, FileCheck, Loader2, Upload } from "lucide-react";
+import { Download, FileCheck, Loader2, Sparkles, Upload } from "lucide-react";
 import { api } from "../../../lib/api";
-import { importExample, parseQuestionImport } from "../../../lib/question/question-import";
+import { downloadJson, importExample, parseQuestionImport } from "../../../lib/question/question-import";
 import { ImportGuide } from "./import-guide";
+import { ImportDryRunDialog } from "./import-dryrun-dialog";
 import { Button } from "../../../components/ui/button";
 import { Panel, PanelHeader } from "../../../components/ui/dashboard";
 import styles from "../admin.module.css";
@@ -46,6 +47,7 @@ export function ImportQuestions({
   const [checking, setChecking] = useState(false);
   const [fileName, setFileName] = useState("");
   const [exampleKind, setExampleKind] = useState("basic");
+  const [dryRunOpen, setDryRunOpen] = useState(false);
   const busy = pending || reading || checking || loadingPackages;
   const selectedPackage = packages.find((pkg) => pkg.id === packageId);
   const count = batch?.groups.reduce((sum, group) => sum + group.questions.length, 0) ?? 0;
@@ -72,13 +74,12 @@ export function ImportQuestions({
     return () => controller.abort();
   }, [subtest, mode, packagesRetry, tryout]);
 
-  function example(kind: string): QuestionImport {
-    return importExample(
+  const example = (kind: string): QuestionImport =>
+    importExample(
       kind,
       mode === "package" || (tryout && mode === "section") ? subtest : undefined,
       mode === "package" ? selectedPackage?.name : undefined,
     );
-  }
 
   async function check(source: string) {
     setError("");
@@ -140,6 +141,33 @@ export function ImportQuestions({
       setError(error instanceof Error ? error.message : "JSON tidak dapat diperiksa.");
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function handleImport() {
+    if (!batch || busy) return;
+    setPending(true);
+    setError("");
+    try {
+      const endpoint = tryout
+        ? mode === "section"
+          ? `/admin/tryouts/sections/${tryout.sections.find((s) => s.subtestCode === utbkSubtests.find((t) => t.slug === subtest)?.short)!.id}/import`
+          : `/admin/tryouts/${tryout.id}/import`
+        : "/admin/questions/import";
+      const result = await api<{ count: number; packages?: { id: string }[] }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(batch),
+      });
+      const redirectPath = tryout
+        ? `/admin/tryouts/${tryout.id}?imported=${result.count}`
+        : result.packages?.length === 1
+          ? `/admin/paket/${result.packages[0].id}?imported=${result.count}`
+          : `/admin/soal?imported=${result.count}`;
+      navigate(redirectPath);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impor gagal. Coba lagi.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -315,18 +343,7 @@ export function ImportQuestions({
               variant="ghost"
               size="sm"
               disabled={busy}
-              onClick={() => {
-                const url = URL.createObjectURL(
-                  new Blob([JSON.stringify(example(exampleKind), null, 2)], {
-                    type: "application/json",
-                  }),
-                );
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "contoh-impor-paket.json";
-                link.click();
-                setTimeout(() => URL.revokeObjectURL(url), 0);
-              }}
+              onClick={() => downloadJson(example(exampleKind), "contoh-impor-paket.json")}
             >
               <Download />
               Unduh contoh JSON
@@ -397,14 +414,25 @@ export function ImportQuestions({
                     : "Isi file akan masuk ke editor; periksa ringkasannya sebelum menyimpan."}
               </p>
             </div>
-            <Button
-              variant="outline"
-              disabled={!text.trim() || busy || (mode === "package" && !selectedPackage)}
-              onClick={() => check(text)}
-            >
-              {checking ? <Loader2 className="animate-spin" /> : <FileCheck />}
-              {checking ? "Memeriksa…" : "Periksa JSON"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                disabled={!text.trim() || busy || (mode === "package" && !selectedPackage)}
+                onClick={() => check(text)}
+              >
+                {checking ? <Loader2 className="animate-spin" /> : <FileCheck />}
+                {checking ? "Memeriksa…" : "Periksa JSON"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!text.trim() || busy}
+                onClick={() => setDryRunOpen(true)}
+              >
+                <Sparkles className="size-4 mr-1 text-[var(--gold)]" />
+                Uji Coba Dry Run
+              </Button>
+            </div>
             {error && (
               <p id="json-error" className={styles.formError} role="alert">
                 {error}
@@ -448,35 +476,7 @@ export function ImportQuestions({
           disimpan.
         </p>
         <div className={styles.importActions}>
-          <Button
-            disabled={!batch || busy}
-            onClick={async () => {
-              if (!batch || busy) return;
-              setPending(true);
-              setError("");
-              try {
-                const result = await api<{ count: number; packages?: { id: string }[] }>(
-                  tryout
-                    ? mode === "section"
-                      ? `/admin/tryouts/sections/${tryout.sections.find((s) => s.subtestCode === utbkSubtests.find((t) => t.slug === subtest)?.short)!.id}/import`
-                      : `/admin/tryouts/${tryout.id}/import`
-                    : "/admin/questions/import",
-                  { method: "POST", body: JSON.stringify(batch) },
-                );
-                navigate(
-                  tryout
-                    ? `/admin/tryouts/${tryout.id}?imported=${result.count}`
-                    : result.packages?.length === 1
-                      ? `/admin/paket/${result.packages[0].id}?imported=${result.count}`
-                      : `/admin/soal?imported=${result.count}`,
-                );
-              } catch (error) {
-                setError(error instanceof Error ? error.message : "Impor gagal. Coba lagi.");
-              } finally {
-                setPending(false);
-              }
-            }}
-          >
+          <Button disabled={!batch || busy} onClick={handleImport}>
             {pending ? <Loader2 className="animate-spin" /> : <Upload />}
             {pending ? "Mengimpor…" : batch ? `Impor ${count} soal` : "Impor soal"}
           </Button>
@@ -495,6 +495,12 @@ export function ImportQuestions({
           </Button>
         </div>
       </Panel>
+      <ImportDryRunDialog
+        text={text}
+        open={dryRunOpen}
+        onOpenChange={setDryRunOpen}
+        onProceed={() => check(text)}
+      />
     </div>
   );
 }
