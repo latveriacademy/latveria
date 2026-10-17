@@ -131,7 +131,7 @@ Kembangkan primitive atau komposisi yang sudah ada sebelum membuat komponen baru
 
 Nama produk adalah **latveriacademy**, dengan logo `assets/latveria.webp`. Token warna, tipografi, radius, dan layout bersama berada di `latveria-os.css`; utility Tailwind dan CSS modules dipakai untuk styling komponen. Dashboard/login/admin menggunakan hijau gelap, emas, dan perkamen; landing memakai aksen hijau. Font web dimuat di `main.tsx` melalui `@fontsource`.
 
-GSAP dipakai di `app/landing-motion.tsx`: timeline intro, animasi elemen hero, parallax logo, dan reveal bagian halaman dengan ScrollTrigger. `gsap.matchMedia()` menjalankan animasi ketika `prefers-reduced-motion: no-preference`; cleanup memakai `media.revert()`.
+Halaman publik `/` dan `/tentang` berada di `app/landing/`, dengan navigasi, footer, judul halaman, dan scroll antarroute melalui `public-shell.tsx`. GSAP di `landing-motion.tsx` mengatur intro, parallax, reveal, dan catatan belajar sticky yang berkembang mengikuti scroll pada desktop. `gsap.matchMedia()` menjalankan animasi ketika `prefers-reduced-motion: no-preference`; cleanup memakai `media.revert()`. Mobile dan reduced motion menampilkan catatan lengkap tanpa perlu mengikuti animasi.
 
 Animasi dashboard memakai kelas CSS dalam `lib/motion/motion.css`, token di `lib/motion/tokens.ts`, dan primitive React di `lib/motion/primitives.tsx`. `AnimatedNumber` memakai requestAnimationFrame dan menghormati reduced motion. GSAP tidak menjadi pengelola state domain atau timer ujian.
 
