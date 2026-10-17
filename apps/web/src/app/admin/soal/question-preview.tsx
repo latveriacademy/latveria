@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
-import { ArrowLeft, Download, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Copy,
+  Download,
+  History,
+  Layers,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import type { LexiconAnnotation, QuestionDetail } from "@latveria/shared";
 import { api } from "../../../lib/api";
 import {
@@ -15,6 +24,9 @@ import { AppDialog } from "../../../components/app-dialog";
 import { MathText } from "../../../components/math/math-text";
 import { AnnotatedText } from "../../../components/lexicon/annotated-text";
 import { LexiconContent } from "../../../components/lexicon/lexicon-content";
+import { QuestionUsageDialog } from "./question-usage-dialog";
+import { QuestionVersionDialog } from "./question-version-dialog";
+import { QuestionAnalyticsDialog } from "./question-analytics-dialog";
 import styles from "../admin.module.css";
 
 export function QuestionPreview() {
@@ -23,7 +35,11 @@ export function QuestionPreview() {
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [selectedAnnotation, setSelectedAnnotation] = useState<LexiconAnnotation | null>(null);
+  const [usageOpen, setUsageOpen] = useState(false);
+  const [versionOpen, setVersionOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   return (
     <>
       <PageHeading
@@ -39,7 +55,21 @@ export function QuestionPreview() {
         }
       />
       <Panel className={styles.preview}>
-        <div className={styles.previewHeader}>{item.source}</div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--edge)] bg-[var(--surface-elevated)] p-4 text-xs font-mono text-[var(--soft-ink)]">
+          <div>{item.source}</div>
+          <div className="flex items-center gap-2">
+            {item.workflowStatus && (
+              <span className="rounded bg-[var(--surface)] px-2 py-0.5 uppercase font-bold text-[var(--gold)] border border-[var(--edge)]">
+                {item.workflowStatus}
+              </span>
+            )}
+            {item.difficulty && (
+              <span className="rounded bg-[var(--surface)] px-2 py-0.5 uppercase font-bold text-[var(--ink)] border border-[var(--edge)]">
+                {item.difficulty}
+              </span>
+            )}
+          </div>
+        </div>
         {item.passage && (
           <div className="border-b border-[var(--edge)] bg-[var(--surface)] p-6">
             <div className="flex items-center justify-between text-xs font-mono text-[var(--soft-ink)] mb-2 uppercase tracking-wider">
@@ -149,6 +179,38 @@ export function QuestionPreview() {
         </Button>
         <Button
           variant="outline"
+          disabled={duplicating}
+          onClick={async () => {
+            setDuplicating(true);
+            try {
+              const res = await api<{ id: string }>(`/admin/questions/${item.id}/duplicate`, {
+                method: "POST",
+              });
+              navigate(`/admin/soal/${res.id}/edit`);
+            } catch {
+              setError("Gagal menduplikasi soal.");
+            } finally {
+              setDuplicating(false);
+            }
+          }}
+        >
+          <Copy className="size-4 mr-1 text-[var(--gold)]" />
+          Duplikat Soal
+        </Button>
+        <Button variant="outline" onClick={() => setUsageOpen(true)}>
+          <Layers className="size-4 mr-1" />
+          Peta Dependensi
+        </Button>
+        <Button variant="outline" onClick={() => setVersionOpen(true)}>
+          <History className="size-4 mr-1" />
+          Histori Versi
+        </Button>
+        <Button variant="outline" onClick={() => setAnalyticsOpen(true)}>
+          <BarChart3 className="size-4 mr-1" />
+          Analitik
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => downloadJson(questionFilename(item), questionToJson(item))}
         >
           <Download />
@@ -197,6 +259,23 @@ export function QuestionPreview() {
             setDeleting(false);
           }
         }}
+      />
+      <QuestionUsageDialog
+        questionId={item.id}
+        open={usageOpen}
+        onOpenChange={setUsageOpen}
+        onDeleted={() => navigate(`/admin/soal?subtes=${item.slug}&deleted=1`)}
+      />
+      <QuestionVersionDialog
+        questionId={item.id}
+        open={versionOpen}
+        onOpenChange={setVersionOpen}
+        onRollbackComplete={() => window.location.reload()}
+      />
+      <QuestionAnalyticsDialog
+        questionId={item.id}
+        open={analyticsOpen}
+        onOpenChange={setAnalyticsOpen}
       />
     </>
   );
