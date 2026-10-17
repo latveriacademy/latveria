@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
+import type { QuestionWorkflowStatus, QuestionDifficulty } from "./question-intelligence";
 export type { TryoutHistoryEntry } from "./tryout-history";
 export {
   irtArtifactSchema,
@@ -442,6 +443,11 @@ export type QuestionDetail = NewQuestion & {
   slug: string;
   packageName?: string | null;
   usage: number;
+  workflowStatus?: QuestionWorkflowStatus;
+  difficulty?: QuestionDifficulty;
+  tags?: string[];
+  sourceQuestionId?: string | null;
+  reviewerNotes?: string | null;
 };
 export type Bank = {
   rows: {
@@ -455,6 +461,9 @@ export type Bank = {
     annotationsCount?: number;
     passage?: string | null;
     passageId?: string | null;
+    workflowStatus?: QuestionWorkflowStatus;
+    difficulty?: QuestionDifficulty;
+    tags?: string[];
   }[];
   total: number;
   page: number;
@@ -510,3 +519,5 @@ export type PackageDetail = QuestionPackage & {
 
 export * from "./warrior";
 export * from "./latex";
+export * from "./question-intelligence";
+export { sha256 } from "./sha256";
