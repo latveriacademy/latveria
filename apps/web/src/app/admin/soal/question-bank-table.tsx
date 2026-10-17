@@ -1,10 +1,20 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Eye, Trash2, X } from "lucide-react";
-import { ConfirmDialog } from "../../../components/confirm-dialog";
+import {
+  Archive,
+  BarChart3,
+  CheckCircle,
+  Copy,
+  Eye,
+  History,
+  Layers,
+  Trash2,
+  X,
+} from "lucide-react";
 import { bulkDeleteSchema, type Bank } from "@latveria/shared";
 import { api } from "../../../lib/api";
 import { Button } from "../../../components/ui/button";
+import { ConfirmDialog } from "../../../components/confirm-dialog";
 import {
   Table,
   TableBody,
@@ -14,7 +24,49 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { MathText } from "../../../components/math/math-text";
+import { QuestionUsageDialog } from "./question-usage-dialog";
+import { QuestionVersionDialog } from "./question-version-dialog";
+import { QuestionAnalyticsDialog } from "./question-analytics-dialog";
 import styles from "../admin.module.css";
+
+function StatusBadge({ status }: { status?: string }) {
+  if (!status || status === "published") {
+    return (
+      <span className="rounded bg-[var(--emerald-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--emerald)] border border-[var(--emerald-border)] font-semibold">
+        Publik
+      </span>
+    );
+  }
+  if (status === "draft") {
+    return (
+      <span className="rounded bg-[var(--surface-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--soft-ink)] border border-[var(--edge)]">
+        Draft
+      </span>
+    );
+  }
+  if (status === "in_review") {
+    return (
+      <span className="rounded bg-[var(--gold-surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--gold)] border border-[var(--gold-border)]">
+        Review
+      </span>
+    );
+  }
+  if (status === "approved") {
+    return (
+      <span className="rounded bg-[var(--surface-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ink)] border border-[var(--edge)]">
+        Disetujui
+      </span>
+    );
+  }
+  if (status === "archived") {
+    return (
+      <span className="rounded bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--soft-ink)] border border-[var(--edge)] line-through">
+        Arsip
+      </span>
+    );
+  }
+  return null;
+}
 
 export function QuestionBankTable({ bank }: { bank: Bank }) {
   const [params, setParams] = useSearchParams();
@@ -22,12 +74,52 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
   const [confirm, setConfirm] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  const [usageQuestionId, setUsageQuestionId] = useState<string | null>(null);
+  const [versionQuestionId, setVersionQuestionId] = useState<string | null>(null);
+  const [analyticsQuestionId, setAnalyticsQuestionId] = useState<string | null>(null);
+
   const all = bank.rows.length > 0 && selected.length === bank.rows.length;
+
   function choose(ids: string[]) {
     setSelected(ids);
     setConfirm(false);
     setError("");
   }
+
+  const handleDuplicate = async (id: string) => {
+    setPending(true);
+    try {
+      const res = await api<{ id: string; slug: string }>(`/admin/questions/${id}/duplicate`, {
+        method: "POST",
+      });
+      window.location.href = `/admin/soal/${res.id}`;
+    } catch {
+      setError("Gagal menduplikasi soal.");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const handleBulkStatus = async (status: "published" | "archived") => {
+    setPending(true);
+    try {
+      await api("/admin/questions/bulk-action", {
+        method: "POST",
+        body: JSON.stringify({
+          questionIds: selected,
+          action: status === "archived" ? "archive" : "set_status",
+          payload: { status },
+        }),
+      });
+      window.location.reload();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Operasi massal gagal.");
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
     <>
       {selected.length > 0 && (
@@ -35,7 +127,25 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
           <strong>{selected.length} soal terpilih di halaman ini</strong>
           <Button type="button" variant="ghost" disabled={pending} onClick={() => choose([])}>
             <X aria-hidden="true" />
-            Batalkan pilihan
+            Batal
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => handleBulkStatus("published")}
+          >
+            <CheckCircle className="size-3.5 text-[var(--emerald)] mr-1" />
+            Publikasikan
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => handleBulkStatus("archived")}
+          >
+            <Archive className="size-3.5 text-[var(--gold)] mr-1" />
+            Arsipkan
           </Button>
           <Button
             type="button"
@@ -48,11 +158,18 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
           </Button>
         </div>
       )}
+
+      {error && (
+        <div className="my-2 rounded border border-[var(--error-border)] bg-[var(--error-surface)] p-2.5 text-xs text-[var(--error)]">
+          {error}
+        </div>
+      )}
+
       <ConfirmDialog
         open={confirm}
         onOpenChange={setConfirm}
         title={`Hapus ${selected.length} soal terpilih?`}
-        description="Tindakan ini tidak dapat dibatalkan. Riwayat jawaban peserta yang terkait dengan soal-soal ini akan otomatis dibersihkan."
+        description="Tindakan ini tidak dapat dibatalkan. Soal yang telah dikerjakan peserta tidak akan dihapus untuk menjaga integritas rekam jejak."
         confirmLabel="Ya, hapus"
         pendingLabel="Menghapus…"
         destructive
@@ -75,13 +192,14 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
             next.delete("updated");
             next.set("deleted", String(result.count));
             setParams(next);
-          } catch (error) {
-            setError(error instanceof Error ? error.message : "Penghapusan gagal. Coba lagi.");
+          } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Penghapusan gagal. Coba lagi.");
           } finally {
             setPending(false);
           }
         }}
       />
+
       <Table className={styles.questionTable}>
         <caption className="sr-only">Daftar soal sesuai filter, {bank.total} soal.</caption>
         <TableHeader>
@@ -139,11 +257,20 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                   <MathText>{row.prompt}</MathText>
                 </div>
                 <div className={styles.questionMeta}>
+                  <StatusBadge status={row.workflowStatus} />
                   <span>{row.topic}</span>
                   {row.packageName && (
                     <>
                       <span aria-hidden="true">·</span>
                       <span className="font-medium text-[var(--emerald)]">{row.packageName}</span>
+                    </>
+                  )}
+                  {row.difficulty && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono text-[11px] uppercase text-[var(--gold)]">
+                        {row.difficulty}
+                      </span>
                     </>
                   )}
                   {row.category && (
@@ -171,15 +298,58 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                 </div>
               </TableCell>
               <TableCell>
-                <Button asChild size="sm" variant="ghost">
-                  <Link
-                    to={`/admin/soal/${row.id}`}
-                    aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}
+                <div className="flex items-center gap-1">
+                  <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+                    <Link
+                      to={`/admin/soal/${row.id}`}
+                      aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}
+                    >
+                      <Eye aria-hidden="true" className="size-3.5 mr-1" />
+                      <span className={styles.previewLabel}>Pratinjau</span>
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-[var(--gold)]"
+                    title="Duplikat sebagai soal baru"
+                    onClick={() => handleDuplicate(row.id)}
+                    disabled={pending}
                   >
-                    <Eye aria-hidden="true" />
-                    <span className={styles.previewLabel}>Pratinjau</span>
-                  </Link>
-                </Button>
+                    <Copy className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    title="Peta Dependensi & Keamanan"
+                    onClick={() => setUsageQuestionId(row.id)}
+                  >
+                    <Layers className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    title="Histori Versi & Diff"
+                    onClick={() => setVersionQuestionId(row.id)}
+                  >
+                    <History className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    title="Analitik Performa"
+                    onClick={() => setAnalyticsQuestionId(row.id)}
+                  >
+                    <BarChart3 className="size-3.5" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -192,6 +362,35 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
           )}
         </TableBody>
       </Table>
+
+      {/* Usage Dialog */}
+      {usageQuestionId && (
+        <QuestionUsageDialog
+          questionId={usageQuestionId}
+          open={Boolean(usageQuestionId)}
+          onOpenChange={(open) => !open && setUsageQuestionId(null)}
+          onDeleted={() => window.location.reload()}
+        />
+      )}
+
+      {/* Version Dialog */}
+      {versionQuestionId && (
+        <QuestionVersionDialog
+          questionId={versionQuestionId}
+          open={Boolean(versionQuestionId)}
+          onOpenChange={(open) => !open && setVersionQuestionId(null)}
+          onRollbackComplete={() => window.location.reload()}
+        />
+      )}
+
+      {/* Analytics Dialog */}
+      {analyticsQuestionId && (
+        <QuestionAnalyticsDialog
+          questionId={analyticsQuestionId}
+          open={Boolean(analyticsQuestionId)}
+          onOpenChange={(open) => !open && setAnalyticsQuestionId(null)}
+        />
+      )}
     </>
   );
 }
