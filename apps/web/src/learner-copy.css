@@ -61,3 +61,18 @@
     gap: 6px;
   }
 }
+
+/* Sembunyikan scrollbar di area konten Drilling */
+.learner-shell .latveria-content-scroll:has(.practice-view-container),
+.learner-shell .latveria-content-scroll:has(.practice-view-container) .navigator-grid-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.learner-shell .latveria-content-scroll:has(.practice-view-container)::-webkit-scrollbar,
+.learner-shell
+  .latveria-content-scroll:has(.practice-view-container)
+  .navigator-grid-container::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
