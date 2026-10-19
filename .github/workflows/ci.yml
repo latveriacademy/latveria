@@ -3,7 +3,7 @@ name: CI and images
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, staging]
     tags: ["v*"]
   workflow_dispatch:
 
@@ -133,7 +133,7 @@ jobs:
 
   publish:
     needs: containers
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -165,9 +165,13 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.component }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,format=long
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=staging,enable=${{ github.ref == 'refs/heads/staging' }}
+            type=sha,format=long,prefix=sha-,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long,prefix=staging-,enable=${{ github.ref == 'refs/heads/staging' }}
             type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v6
         with:
           context: .

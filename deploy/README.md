@@ -1,69 +1,95 @@
-# Deployment image terpisah
+# Deployment image terpisah (Staging & Production)
 
-GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL dan WebSocket, lalu membangun dan menguji container aplikasi. Setelah seluruh pemeriksaan lolos, push `main` atau tag `v*` menerbitkan tiga image AMD64 dan ARM64:
+GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL dan WebSocket, lalu membangun dan menguji container aplikasi. Setelah seluruh pemeriksaan lolos, publikasi image multiplatform (AMD64 & ARM64) ke GitHub Packages (GHCR) dilakukan:
 
 - `ghcr.io/latveriacademy/latveria-frontend`
 - `ghcr.io/latveriacademy/latveria-backend`
 - `ghcr.io/latveriacademy/latveria-tex-worker`
 
-Tag `latest` mengikuti `main`; `sha-<SHA lengkap>` menunjuk commit tertentu; tag Git seperti `v1.0.0` dipakai pada ketiga image. Publish memakai `GITHUB_TOKEN` bawaan Actions dengan izin `packages: write`.
+### Strategi Tag Image
 
-Frontend Nginx melayani SPA pada port 8080 dan meneruskan `/api/*` serta upgrade WebSocket ke backend Bun 1.3.14 pada port 3001. Browser memakai satu origin; tidak diperlukan URL API pada build frontend. Image backend berisi Bun, dependency runtime, shared, CLI, dan migrasi, tanpa frontend dist. Build frontend juga memakai Bun. TeX worker menyediakan compiler pada port internal 3002; Compose menetapkan `TEX_WORKER_URL=http://tex-worker:3002` untuk backend. Build/start tidak menerapkan migrasi secara otomatis.
+- **Staging**: dipicu saat push ke branch `staging`. Menghasilkan tag `:staging` dan `:staging-<sha>`.
+- **Production**: dipicu saat push ke branch `main` atau tag Git `v*` (misal `v1.0.0`). Menghasilkan tag `:latest`, `:sha-<sha>`, serta semver tag (`:v1.0.0`, `:1.0`, dll).
 
-## Penyiapan server
+Frontend Nginx melayani SPA dan mem-proxy `/api/*` serta WebSocket ke backend Bun pada port 3001. TeX worker internal berjalan pada port 3002.
 
-Server hanya memerlukan Docker Engine dan Compose v2, `compose.production.yaml`, serta `apps/api/.env.local`. Tidak perlu checkout source, memasang runtime JavaScript di host, atau build di server. Unduh Compose dan contoh env dari commit/release yang akan digunakan, lalu:
+---
+
+## 1. Setup Staging Server
+
+Staging memakai `compose.staging.yaml` dan image dengan tag `IMAGE_TAG=staging`.
 
 ```sh
 mkdir -p apps/api
-cp deploy/env.production.example apps/api/.env.local
-openssl rand -hex 32
+cp deploy/env.staging.example apps/api/.env.staging
 ```
 
-Isi `POSTGRES_PASSWORD`, URL database, dan `BETTER_AUTH_SECRET` pada `.env.local`. Gunakan dua nilai acak terpisah untuk password dan secret; saat memindahkan DB/sesi lama, pertahankan secret lama. `DATABASE_URL` dan `DATABASE_MIGRATION_URL` memakai hostname **postgres**, bukan localhost. URL migrasi wajib menunjuk koneksi PostgreSQL langsung.
-
-Set `BETTER_AUTH_URL` ke origin publik, misalnya `https://belajar.example.com`. Pasang reverse proxy HTTPS ke `127.0.0.1:8080`, dengan header Host asli dan `X-Forwarded-Proto: https`. Backend dan PostgreSQL tidak mengekspos port host. Untuk uji lokal tanpa HTTPS, gunakan `BETTER_AUTH_URL=http://127.0.0.1:8080`.
-
-Jika package GHCR privat, login dengan token `read:packages` melalui `docker login ghcr.io -u USER --password-stdin`. Package juga dapat dibuat public pada pengaturan GitHub Packages agar server bisa pull tanpa token.
-
-Untuk deployment yang dapat diulang, isi `IMAGE_TAG=sha-<SHA lengkap>` dari workflow yang berhasil. Ketiga service aplikasi menggunakan tag yang sama.
+1. Isi `POSTGRES_PASSWORD`, URL database, dan `BETTER_AUTH_SECRET` (generate dengan `openssl rand -hex 32`).
+2. Tentukan `BETTER_AUTH_URL` (contoh: `https://staging.latveria.example.com`).
+3. Port web default staging adalah `8081` (`WEB_PORT=8081`), reverse-proxy host diarahkan ke `127.0.0.1:8081`.
+4. Untuk autentikasi GHCR private pada Watchtower, isi `GHCR_USER` (username GitHub) dan `GHCR_PAT` (Personal Access Token dengan scope `read:packages`). Alternatif: arahkan `DOCKER_CONFIG_PATH=/home/ubuntu/.docker/config.json`.
+5. Jalankan compose:
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml pull
-docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait postgres
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
-docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait
+docker compose --env-file apps/api/.env.staging -f compose.staging.yaml up -d --wait
 ```
 
-Untuk database baru yang membutuhkan katalog dan soal contoh, jalankan seed sekali setelah migrasi:
+Service `migrator` akan otomatis menjalankan `bun scripts/migrate-db.ts` sebelum `backend` start. Untuk inisialisasi awal bank soal contoh, jalankan seed sekali:
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/seed-db.ts
+docker compose --env-file apps/api/.env.staging -f compose.staging.yaml run --rm backend bun scripts/seed-db.ts
 ```
 
-Seed idempoten tetapi berisi soal dummy; ia tidak membuat akun. Signup produksi tetap nonaktif, sehingga akun yang dipakai berasal dari penyiapan database sebelumnya. Perintah promosi admin yang sudah ada tetap dibatasi ke DB localhost.
+### Auto-update Staging via Watchtower
 
-Compose ini memakai PostgreSQL 17 dengan volume persisten. Untuk memindahkan database existing, pindahkan backup ke database target sebelum menjalankan migrasi; volume Compose development tidak otomatis dipakai oleh server baru.
+Container `watchtower` (`nickfedor/watchtower`) otomatis memonitor image `:staging` di GHCR (default tiap 120 detik). Ketika ada push baru di branch `staging`, Watchtower akan menarik image baru dan me-restart container aplikasi yang berlabel `com.centurylinklabs.watchtower.enable=true`.
 
-## Update dan rollback
+---
 
-Untuk update, ubah `IMAGE_TAG` ke tag dari workflow sukses, lalu jalankan pull, migrasi, dan up:
+## 2. Setup Production Server
+
+Production memakai `compose.production.yaml` dan image dengan tag `IMAGE_TAG=latest` atau semantic version.
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml pull
-docker compose --env-file apps/api/.env.local -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
-docker compose --env-file apps/api/.env.local -f compose.production.yaml up -d --wait
-docker compose --env-file apps/api/.env.local -f compose.production.yaml ps
+mkdir -p apps/api
+cp deploy/env.production.example apps/api/.env.production
 ```
 
-Untuk rollback aplikasi, kembalikan `IMAGE_TAG` ke tag sebelumnya lalu pull dan up. Ini mengganti ketiga image aplikasi, bukan membatalkan migrasi SQL. Jika migrasi versi baru tidak kompatibel dengan aplikasi lama, pemulihan database memakai backup sebelum update.
+1. Isi `POSTGRES_PASSWORD`, URL database, dan `BETTER_AUTH_SECRET`.
+2. Tentukan `BETTER_AUTH_URL` (contoh: `https://latveria.example.com`).
+3. Port web default production adalah `8080` (`WEB_PORT=8080`), reverse-proxy host diarahkan ke `127.0.0.1:8080`.
+4. Isi kredensial GHCR private (`GHCR_USER` & `GHCR_PAT`) untuk Watchtower.
+5. Jalankan compose:
 
 ```sh
-docker compose --env-file apps/api/.env.local -f compose.production.yaml logs --tail=100 backend frontend tex-worker
-curl --fail https://belajar.example.com/api/health
+docker compose --env-file apps/api/.env.production -f compose.production.yaml up -d --wait
 ```
 
-## Memeriksa image lokal
+Service `migrator` otomatis menjalankan migrasi skema database yang belum diterapkan sebelum service `backend` aktif.
+
+---
+
+## 3. Update Manual dan Rollback
+
+Jika ingin memperbarui secara manual atau rollback ke commit SHA tertentu:
+
+1. Ubah `IMAGE_TAG` pada file `.env` (misalnya `IMAGE_TAG=sha-abc1234...`).
+2. Jalankan:
+
+```sh
+docker compose --env-file apps/api/.env.production -f compose.production.yaml pull
+docker compose --env-file apps/api/.env.production -f compose.production.yaml up -d --wait
+```
+
+Untuk melihat log:
+
+```sh
+docker compose --env-file apps/api/.env.production -f compose.production.yaml logs -f backend frontend
+```
+
+---
+
+## 4. Memeriksa image lokal
 
 ```sh
 docker build -f apps/api/Dockerfile -t latveria-backend:local .
@@ -71,4 +97,4 @@ docker build -f apps/web/Dockerfile -t latveria-frontend:local .
 docker build -f apps/tex-worker/Dockerfile -t latveria-tex-worker:local .
 ```
 
-Gunakan env produksi untuk database uji terpisah dengan `IMAGE_PREFIX=latveria`, `IMAGE_TAG=local`, dan `BETTER_AUTH_URL=http://127.0.0.1:8080`. Jalankan Compose dengan project name khusus, misalnya `-p latveria-smoke`, lalu migrasi/seed dan `up -d --wait` seperti di atas. `bun run test:containers` memeriksa asset, deep link, proxy API, sesi wajib, signup produksi yang tertutup, dan kompilasi TeX nyata. `SMOKE_URL` dapat mengganti URL target tes.
+`bun run test:containers` menjalankan smoke test lengkap container: assets, deep link, proxy API, proteksi signup produksi, dan kompilasi TeX nyata.
