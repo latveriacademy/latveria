@@ -81,6 +81,7 @@ jobs:
       DATABASE_MIGRATION_URL: postgresql://latveria:ci-password@postgres:5432/latveria
       BETTER_AUTH_SECRET: ci-only-secret-not-for-production-123456789
       BETTER_AUTH_URL: http://127.0.0.1:8080
+      S3_SECRET_ACCESS_KEY: ci-storage-secret-123456
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -118,7 +119,7 @@ jobs:
           tags: latveria-tex-worker:ci
           cache-from: type=gha,scope=tex-worker
           cache-to: type=gha,mode=max,scope=tex-worker
-      - run: docker compose -f compose.production.yaml up -d --wait postgres
+      - run: docker compose -f compose.production.yaml up -d --wait postgres storage
       # Migrate dan seed dijalankan dua kali dengan sengaja: run kedua memverifikasi idempotensi.
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts
       - run: docker compose -f compose.production.yaml run --rm backend bun scripts/migrate-db.ts

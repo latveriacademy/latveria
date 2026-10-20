@@ -24,9 +24,9 @@ mkdir -p apps/api
 cp deploy/env.staging.example apps/api/.env.staging
 ```
 
-1. Isi `POSTGRES_PASSWORD`, URL database, dan `BETTER_AUTH_SECRET` (generate dengan `openssl rand -hex 32`).
+1. Isi `POSTGRES_PASSWORD`, URL database, `BETTER_AUTH_SECRET`, dan `S3_SECRET_ACCESS_KEY` (generate dengan `openssl rand -hex 32` / `openssl rand -hex 16`).
 2. Tentukan `BETTER_AUTH_URL` (contoh: `https://staging.latveria.example.com`).
-3. Port web default staging adalah `8081` (`WEB_PORT=8081`), reverse-proxy host diarahkan ke `127.0.0.1:8081`.
+3. Port web default staging adalah `8081` (`WEB_PORT=8081`), reverse-proxy host diarahkan ke `127.0.0.1:8081`. Console S3 RustFS berjalan di port `9003` (`STORAGE_CONSOLE_PORT=9003`).
 4. Untuk autentikasi GHCR private pada Watchtower, isi `GHCR_USER` (username GitHub) dan `GHCR_PAT` (Personal Access Token dengan scope `read:packages`). Alternatif: arahkan `DOCKER_CONFIG_PATH=/home/ubuntu/.docker/config.json`.
 5. Jalankan compose:
 
@@ -34,7 +34,7 @@ cp deploy/env.staging.example apps/api/.env.staging
 docker compose --env-file apps/api/.env.staging -f compose.staging.yaml up -d --wait
 ```
 
-Service `migrator` akan otomatis menjalankan `bun scripts/migrate-db.ts` sebelum `backend` start. Untuk inisialisasi awal bank soal contoh, jalankan seed sekali:
+Service `storage` (`rustfs/rustfs`) menyediakan object storage S3 ringan dan cepat dengan volume `storage_data`. Service `migrator` otomatis menjalankan `bun scripts/migrate-db.ts` serta memastikan bucket avatar tersedia sebelum `backend` start. Untuk inisialisasi awal bank soal contoh, jalankan seed sekali:
 
 ```sh
 docker compose --env-file apps/api/.env.staging -f compose.staging.yaml run --rm backend bun scripts/seed-db.ts
@@ -55,9 +55,9 @@ mkdir -p apps/api
 cp deploy/env.production.example apps/api/.env.production
 ```
 
-1. Isi `POSTGRES_PASSWORD`, URL database, dan `BETTER_AUTH_SECRET`.
+1. Isi `POSTGRES_PASSWORD`, URL database, `BETTER_AUTH_SECRET`, dan `S3_SECRET_ACCESS_KEY`.
 2. Tentukan `BETTER_AUTH_URL` (contoh: `https://latveria.example.com`).
-3. Port web default production adalah `8080` (`WEB_PORT=8080`), reverse-proxy host diarahkan ke `127.0.0.1:8080`.
+3. Port web default production adalah `8080` (`WEB_PORT=8080`), reverse-proxy host diarahkan ke `127.0.0.1:8080`. Console S3 RustFS berjalan di port `9001` (`STORAGE_CONSOLE_PORT=9001`). Jika menggunakan Cloudflare R2 / AWS S3 eksternal, atur `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, dan `S3_SECRET_ACCESS_KEY` ke bucket eksternal.
 4. Isi kredensial GHCR private (`GHCR_USER` & `GHCR_PAT`) untuk Watchtower.
 5. Jalankan compose:
 
@@ -65,7 +65,7 @@ cp deploy/env.production.example apps/api/.env.production
 docker compose --env-file apps/api/.env.production -f compose.production.yaml up -d --wait
 ```
 
-Service `migrator` otomatis menjalankan migrasi skema database yang belum diterapkan sebelum service `backend` aktif.
+Service `storage` (`rustfs/rustfs`) menyediakan S3 lokal dengan persistensi volume `storage_data`. Service `migrator` otomatis menjalankan migrasi skema database dan memastikan bucket S3 tersedia sebelum `backend` aktif.
 
 ---
 

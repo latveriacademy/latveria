@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
@@ -38,6 +39,51 @@ export function getS3Client() {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || "latveria123",
     bucket: process.env.S3_BUCKET || "latveria-avatars",
   });
+}
+
+let bucketEnsured = false;
+
+export async function ensureBucketExists(): Promise<void> {
+  if (bucketEnsured) return;
+  const endpoint = process.env.S3_ENDPOINT || "http://127.0.0.1:9002";
+  const region = process.env.S3_REGION || "us-east-1";
+  const accessKey = process.env.S3_ACCESS_KEY_ID || "latveria";
+  const secretKey = process.env.S3_SECRET_ACCESS_KEY || "latveria123";
+  const bucket = process.env.S3_BUCKET || "latveria-avatars";
+
+  try {
+    const url = new URL(`/${bucket}`, endpoint);
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+    const dateStamp = amzDate.slice(0, 8);
+    const payloadHash = crypto.createHash("sha256").update("").digest("hex");
+    const canonicalHeaders = `host:${url.host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+    const canonicalRequest = `PUT\n/${bucket}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+    const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
+    const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${crypto.createHash("sha256").update(canonicalRequest).digest("hex")}`;
+    const kDate = crypto
+      .createHmac("sha256", "AWS4" + secretKey)
+      .update(dateStamp)
+      .digest();
+    const kRegion = crypto.createHmac("sha256", kDate).update(region).digest();
+    const kService = crypto.createHmac("sha256", kRegion).update("s3").digest();
+    const kSigning = crypto.createHmac("sha256", kService).update("aws4_request").digest();
+    const signature = crypto.createHmac("sha256", kSigning).update(stringToSign).digest("hex");
+
+    await fetch(url.href, {
+      method: "PUT",
+      headers: {
+        "x-amz-date": amzDate,
+        "x-amz-content-sha256": payloadHash,
+        Authorization: `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // Abaikan jika bucket sudah ada atau endpoint tidak merespons
+  }
+  bucketEnsured = true;
 }
 
 export function extractAvatarKey(url: string): string | null {
@@ -91,6 +137,7 @@ export async function uploadAvatar(userId: string, file: unknown) {
     });
   }
 
+  await ensureBucketExists();
   const filename = `avatar-${userId}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext}`;
   const s3 = getS3Client();
   const buffer = await file.arrayBuffer();
