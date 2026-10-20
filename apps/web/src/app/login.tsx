@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { credentialsSchema, signupSchema, type User } from "@latveria/shared";
 import { api } from "../lib/api";
@@ -7,12 +7,23 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Brand } from "../components/ui/dashboard";
 import { ThemeToggle } from "../components/theme-toggle";
+import { Eye, EyeOff } from "lucide-react";
 
 export function Login() {
   const navigate = useNavigate();
   const [register, setRegister] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/auth/registration", { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data: { enabled: boolean }) => setRegistrationEnabled(data.enabled))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   return (
     <main className="mx-auto grid min-h-dvh max-w-xl content-center gap-6 px-6 py-12 motion-page-enter">
       <div className="flex items-center justify-between">
@@ -20,7 +31,7 @@ export function Login() {
         <ThemeToggle />
       </div>
       <h1 className="!mb-0 !text-5xl text-[var(--ink)]" style={{ fontFamily: "var(--font-serif)" }}>
-        Masuk ruang belajar
+        {register ? "Daftar akun" : "Masuk ruang belajar"}
       </h1>
       <form
         className="grid gap-4 border border-[var(--edge)] bg-[var(--surface)] p-6 rounded-md shadow-sm motion-fade-up"
@@ -68,12 +79,28 @@ export function Login() {
         </label>
         <label className="grid gap-1 text-[var(--ink)] font-medium">
           Kata sandi
-          <Input
-            name="password"
-            type="password"
-            required
-            autoComplete={register ? "new-password" : "current-password"}
-          />
+          <span className="relative">
+            <Input
+              className="w-full pr-12"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete={register ? "new-password" : "current-password"}
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-1 grid min-w-11 place-items-center text-[var(--soft-ink)] hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--emerald)]"
+              aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((visible) => !visible)}
+            >
+              {showPassword ? (
+                <EyeOff size={18} aria-hidden="true" />
+              ) : (
+                <Eye size={18} aria-hidden="true" />
+              )}
+            </button>
+          </span>
         </label>
         {error && (
           <p role="alert" className="text-red-500 text-sm motion-fade-in">
@@ -83,9 +110,9 @@ export function Login() {
         <Button disabled={pending} loading={pending}>
           {register ? "Daftar" : "Masuk"}
         </Button>
-        {import.meta.env.DEV && (
+        {registrationEnabled && (
           <Button variant="ghost" type="button" onClick={() => setRegister(!register)}>
-            {register ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar lokal"}
+            {register ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar"}
           </Button>
         )}
       </form>

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { credentialsSchema, signupSchema } from "@latveria/shared";
 import type { AppEnv } from "./types";
-import { getAuth } from "./lib/auth";
+import { getAuth, registrationEnabled } from "./lib/auth";
 import { allowedOrigins } from "./lib/origins";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "./lib/db";
@@ -33,6 +33,7 @@ export const app = new Hono<AppEnv>();
 
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
+app.get("/api/auth/registration", (c) => c.json({ enabled: registrationEnabled() }));
 app.route("/", publicAvatarHandler);
 app.route("/", latexHandler);
 

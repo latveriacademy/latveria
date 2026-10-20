@@ -6,6 +6,10 @@ import { getDb } from "./db";
 import * as schema from "./db/auth-schema";
 import { allowedOrigins } from "./origins";
 
+export function registrationEnabled() {
+  return process.env.NODE_ENV === "development" || process.env.ALLOW_SIGN_UP === "true";
+}
+
 function createAuth() {
   if (
     !process.env.BETTER_AUTH_SECRET ||
@@ -19,7 +23,7 @@ function createAuth() {
     baseURL: process.env.BETTER_AUTH_URL,
     trustedOrigins: allowedOrigins(),
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
-    emailAndPassword: { enabled: true, disableSignUp: process.env.NODE_ENV !== "development" },
+    emailAndPassword: { enabled: true, disableSignUp: !registrationEnabled() },
     databaseHooks: {
       session: {
         create: {

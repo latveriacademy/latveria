@@ -13,6 +13,8 @@ GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQ
 
 Frontend Nginx melayani SPA dan mem-proxy `/api/*` serta WebSocket ke backend Bun pada port 3001. TeX worker internal berjalan pada port 3002.
 
+Pendaftaran akun dimatikan secara default pada kedua stack. Set `ALLOW_SIGN_UP=true` di env stack yang ingin menerima pendaftaran publik (contoh staging); UI membaca status dari backend dan hanya menampilkan tombol Daftar ketika backend mengizinkan signup. Setelah mengubah env, jalankan ulang `docker compose --env-file ... -f ... up -d --force-recreate backend` agar proses autentikasi memuat pengaturan baru.
+
 ---
 
 ## 1. Setup Staging Server
