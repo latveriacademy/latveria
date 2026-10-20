@@ -165,6 +165,8 @@ jobs:
         id: metadata
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.component }}
+          flavor: |
+            latest=false
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
             type=raw,value=staging,enable=${{ github.ref == 'refs/heads/staging' || startsWith(github.ref, 'refs/tags/staging-v') }}
