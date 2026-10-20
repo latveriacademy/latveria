@@ -8,8 +8,10 @@ GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQ
 
 ### Strategi Tag Image
 
-- **Staging**: dipicu saat push ke branch `staging`. Menghasilkan tag `:staging` dan `:staging-<sha>`.
-- **Production**: dipicu saat push ke branch `main` atau tag Git `v*` (misal `v1.0.0`). Menghasilkan tag `:latest`, `:sha-<sha>`, serta semver tag (`:v1.0.0`, `:1.0`, dll).
+- **Staging**: push branch `staging` atau tag Git `staging-v*` (misal `staging-v1.0.0`) menghasilkan image `:staging` dan `:staging-<sha>`; tag Git juga menghasilkan image `:staging-v1.0.0`.
+- **Production**: push branch `main` atau tag Git `v*` (misal `v1.0.0`) menghasilkan image `:latest` dan `:sha-<sha>`; tag Git juga menghasilkan `:v1.0.0`, `:1.0.0`, dan `:1.0`.
+
+Tag rilis dipublish setelah checks dan smoke container berhasil. Buat tag pada commit yang sudah tersedia di branch tujuan (contoh: `git tag staging-v1.0.0 origin/staging` atau `git tag v1.0.0 origin/main`, kemudian `git push origin <tag>`). Kedua keluarga tag tidak menimpa kanal image milik environment lainnya.
 
 Frontend Nginx melayani SPA dan mem-proxy `/api/*` serta WebSocket ke backend Bun pada port 3001. TeX worker internal berjalan pada port 3002.
 
