@@ -6,15 +6,16 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-latveria}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
       POSTGRES_DB: ${POSTGRES_DB:-latveria}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 15
+      start_period: 10s
+      retries: 5
 
   storage:
     image: rustfs/rustfs:latest
@@ -25,7 +26,7 @@ services:
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
       RUSTFS_CONSOLE_ENABLE: "true"
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-latveria}
-      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?Isi S3_SECRET_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:-}
     volumes:
       - storage_data:/data
     ports:
@@ -34,9 +35,10 @@ services:
       - "9000"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:9000/health"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 15
+      start_period: 10s
+      retries: 5
 
   migrator:
     image: ${IMAGE_PREFIX:-ghcr.io/latveriacademy/latveria}-backend:${IMAGE_TAG:-staging}
@@ -44,11 +46,11 @@ services:
     command: ["bun", "scripts/migrate-db.ts"]
     environment:
       NODE_ENV: production
-      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?Isi DATABASE_MIGRATION_URL}
+      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:-}
       S3_ENDPOINT: ${S3_ENDPOINT:-http://storage:9000}
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-latveria}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_BUCKET: ${S3_BUCKET:-latveria-avatars}
     depends_on:
       postgres:
@@ -65,6 +67,7 @@ services:
       - "3002"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=staging"
 
   backend:
     image: ${IMAGE_PREFIX:-ghcr.io/latveriacademy/latveria}-backend:${IMAGE_TAG:-staging}
@@ -75,15 +78,15 @@ services:
       PORT: 3001
       SERVE_WEB: "false"
       TEX_WORKER_URL: http://tex-worker:3002
-      DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL}
-      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:?Isi DATABASE_MIGRATION_URL}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Isi BETTER_AUTH_SECRET}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Isi BETTER_AUTH_URL}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:-}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       ALLOW_SIGN_UP: ${ALLOW_SIGN_UP:-false}
       S3_ENDPOINT: ${S3_ENDPOINT:-http://storage:9000}
       S3_REGION: ${S3_REGION:-us-east-1}
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-latveria}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_BUCKET: ${S3_BUCKET:-latveria-avatars}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-/api/avatar}
     depends_on:
@@ -99,6 +102,7 @@ services:
       - "3001"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=staging"
 
   frontend:
     image: ${IMAGE_PREFIX:-ghcr.io/latveriacademy/latveria}-frontend:${IMAGE_TAG:-staging}
@@ -110,6 +114,7 @@ services:
         condition: service_healthy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+      - "com.centurylinklabs.watchtower.scope=staging"
 
   watchtower:
     image: nickfedor/watchtower:latest
@@ -117,7 +122,8 @@ services:
     environment:
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_LABEL_ENABLE: "true"
-      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-120}
+      WATCHTOWER_SCOPE: "staging"
+      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-300}
       WATCHTOWER_ROLLING_RESTART: "true"
       REPO_USER: ${GHCR_USER:-}
       REPO_PASS: ${GHCR_PAT:-}

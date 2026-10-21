@@ -42,7 +42,7 @@ USER texuser
 
 EXPOSE 3002
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -f http://127.0.0.1:3002/health || exit 1
 
 CMD ["bun", "src/index.ts"]

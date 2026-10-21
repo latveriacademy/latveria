@@ -23,5 +23,5 @@ COPY --chown=bun:bun apps/api/drizzle ./apps/api/drizzle
 WORKDIR /app/apps/api
 USER bun
 EXPOSE 3001
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 CMD bun -e "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD bun -e "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 CMD ["bun", "src/index.ts"]
