@@ -31,7 +31,8 @@
     "db:migrate": "bun run --filter @latveria/api db:migrate",
     "db:check": "bun run --filter @latveria/api db:check",
     "db:seed": "bun run --filter @latveria/api db:seed",
-    "db:admin": "bun run --filter @latveria/api db:admin"
+    "db:admin": "bun run --filter @latveria/api db:admin",
+    "db:user": "bun run --filter @latveria/api db:user"
   },
   "devDependencies": {
     "eslint": "^9.39.5",

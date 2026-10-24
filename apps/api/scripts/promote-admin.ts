@@ -9,11 +9,12 @@ async function main() {
   if (!email) throw new Error("Gunakan: bun run db:admin email@contoh.test");
   const url = getDatabaseUrl("DATABASE_URL");
   // Allow for Supabase databases by checking for pooler URL
+  const hostname = new URL(url).hostname;
   if (
-    !["localhost", "127.0.0.1"].includes(new URL(url).hostname) &&
+    !["localhost", "127.0.0.1", "postgres"].includes(hostname) &&
     !url.includes("pooler.supabase")
   )
-    throw new Error("Promosi hanya tersedia untuk database lokal atau Supabase.");
+    throw new Error("Promosi hanya tersedia untuk database lokal, docker, atau Supabase.");
   const client = postgres(url, { max: 1, prepare: false });
   try {
     const result = await drizzle(client)
