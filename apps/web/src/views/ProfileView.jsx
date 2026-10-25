@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ProfileEditorDialog } from "../components/profile-editor-dialog";
+import { ChangePasswordDialog } from "../components/change-password-dialog";
 import { useApp } from "../context/AppContext";
 import { ACHIEVEMENTS_LIST } from "../data/achievementsData";
 import {
@@ -7,6 +8,7 @@ import {
   Flame,
   ShieldCheck,
   Edit3,
+  KeyRound,
   Crosshair,
   Moon,
   Archive,
@@ -25,6 +27,7 @@ export const ProfileView = () => {
 
   // Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
@@ -183,14 +186,24 @@ export const ProfileView = () => {
               )}
             </div>
 
-            <button
-              type="button"
-              className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit3 size={13} />
-              <span>Edit profil</span>
-            </button>
+            <div className="flex flex-col gap-2 w-full">
+              <button
+                type="button"
+                className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95 justify-center"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit3 size={13} />
+                <span>Edit profil</span>
+              </button>
+              <button
+                type="button"
+                className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95 justify-center"
+                onClick={() => setIsChangingPassword(true)}
+              >
+                <KeyRound size={13} />
+                <span>Ubah kata sandi</span>
+              </button>
+            </div>
           </div>
 
           {/* Right: Academic Credentials & Metadata */}
@@ -344,6 +357,16 @@ export const ProfileView = () => {
           }}
         />
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordDialog
+        open={isChangingPassword}
+        onOpenChange={setIsChangingPassword}
+        onSuccess={() => {
+          sound.playSelect();
+          showToast("KATA SANDI DIUBAH", "Kata sandi Anda berhasil diperbarui.", "success");
+        }}
+      />
     </div>
   );
 };
