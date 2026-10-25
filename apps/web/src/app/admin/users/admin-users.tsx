@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router";
-import { User, Eye, EyeOff, Loader2, Trash2, Lock, Unlock, BarChart3 } from "lucide-react";
+import {
+  User,
+  Eye,
+  EyeOff,
+  Loader2,
+  Trash2,
+  Lock,
+  Unlock,
+  BarChart3,
+  UserPlus,
+  Upload,
+} from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { ConfirmDialog } from "../../../components/confirm-dialog";
 import { PageHeading, StatTile } from "../../../components/ui/dashboard";
@@ -13,6 +24,8 @@ import {
 } from "../../../components/ui/select";
 import { api, ApiError } from "../../../lib/api";
 import { UserDetailView } from "./admin-user-detail-view";
+import { CreateUserDialog } from "./create-user-dialog";
+import { ImportUsersDialog } from "./import-users-dialog";
 
 interface OverviewStats {
   totalUsers: number;
@@ -31,6 +44,7 @@ export interface UserStats {
   name: string;
   codename: string;
   email: string;
+  role?: string;
   isDemo: boolean;
   hideFromLeaderboard: boolean;
   createdAt: string;
@@ -112,10 +126,13 @@ export function AdminUsers() {
   const [resetTarget, setResetTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") ?? "1", 10);
   const search = searchParams.get("search") ?? "";
   const demoFilter = searchParams.get("demo") ?? "";
+  const roleFilter = searchParams.get("role") ?? "";
   const status = searchParams.get("status") ?? "";
   const sortBy = searchParams.get("sort") ?? "created_at";
   const sortOrder = searchParams.get("order") ?? "desc";
@@ -139,6 +156,7 @@ export function AdminUsers() {
       params.set("limit", "20");
       if (search) params.set("search", search);
       if (demoFilter) params.set("demo", demoFilter);
+      if (roleFilter) params.set("role", roleFilter);
       if (status) params.set("status", status);
       params.set("sort", sortBy);
       params.set("order", sortOrder);
@@ -150,7 +168,7 @@ export function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, demoFilter, status, sortBy, sortOrder]);
+  }, [page, search, demoFilter, roleFilter, status, sortBy, sortOrder]);
 
   const fetchUserDetail = useCallback(async (userId: string) => {
     try {
@@ -314,7 +332,22 @@ export function AdminUsers() {
 
   return (
     <div className="motion-page-enter">
-      <PageHeading title="Manajemen User" description="Kelola akun dan statistik peserta" />
+      <PageHeading
+        title="Manajemen User"
+        description="Kelola akun dan statistik peserta"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload size={16} className="mr-1.5" />
+              Impor Pengguna
+            </Button>
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <UserPlus size={16} className="mr-1.5" />
+              Tambah Pengguna
+            </Button>
+          </div>
+        }
+      />
 
       {error && (
         <div className="mb-4 p-4 border border-red-500/50 bg-red-500/10 rounded-md text-red-400">
@@ -398,6 +431,20 @@ export function AdminUsers() {
                   <SelectItem value="">Semua</SelectItem>
                   <SelectItem value="false">User Biasa</SelectItem>
                   <SelectItem value="true">Demo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-[var(--soft-ink)]">Peran:</span>
+              <Select value={roleFilter} onValueChange={(v) => updateFilter("role", v)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Peserta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Peserta</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="all">Semua</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -598,6 +645,11 @@ export function AdminUsers() {
                           </td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1 flex-wrap">
+                              {user.role === "admin" && (
+                                <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                                  Admin
+                                </span>
+                              )}
                               {user.isDeactivated && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-500">
                                   Nonaktif
@@ -694,6 +746,22 @@ export function AdminUsers() {
         confirmLabel="Ya, hapus semua"
         destructive
         onConfirm={() => handleBulkAction("delete")}
+      />
+      <CreateUserDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onSuccess={() => {
+          fetchList();
+          fetchOverview();
+        }}
+      />
+      <ImportUsersDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onSuccess={() => {
+          fetchList();
+          fetchOverview();
+        }}
       />
     </div>
   );
