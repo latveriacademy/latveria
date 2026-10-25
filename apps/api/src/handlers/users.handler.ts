@@ -11,6 +11,11 @@ import {
 import { eq, sql, desc, asc, ilike, or, and, count, inArray } from "drizzle-orm";
 import { pagination } from "../lib/admin-query";
 import { getUserProgress } from "../services/admin-user-progress";
+import {
+  createAdminUser,
+  bulkCreateAdminUsers,
+  userInputSchema,
+} from "../services/admin-user.service";
 import { toCsv } from "../lib/csv";
 import { invalidateLeaderboardCache } from "../services/leaderboard.service";
 import type { AppEnv } from "../types";
@@ -47,11 +52,12 @@ usersHandler.use("/api/admin/users/*", async (c, next) => {
           hide: z.boolean().optional(),
         })
         .strict(),
+      "bulk-create": z.object({ users: z.array(userInputSchema).min(1).max(500) }).strict(),
     };
     if (schemas[suffix] && !schemas[suffix].safeParse(body).success)
       throw new HTTPException(400, { message: "Data perubahan user tidak valid." });
     const target = c.req.path.split("/")[4];
-    if (target !== "bulk-action") {
+    if (target && target !== "bulk-action" && target !== "bulk-create") {
       const [found] = await getDb()
         .select({ id: userTable.id })
         .from(userTable)
@@ -183,17 +189,68 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
   });
 });
 
+// Create single user
+usersHandler.post("/api/admin/users", async (c) => {
+  const db = getDb();
+  const body = await c.req.json().catch(() => null);
+  const parsed = userInputSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? "Data pengguna tidak valid." }, 400);
+  }
+
+  try {
+    const user = await createAdminUser(db, parsed.data);
+    return c.json({ success: true, user }, 201);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Gagal membuat pengguna." }, 400);
+  }
+});
+
+// Bulk create users
+usersHandler.post("/api/admin/users/bulk-create", async (c) => {
+  const db = getDb();
+  const body = await c.req.json().catch(() => null);
+  const parsed = z
+    .object({
+      users: z.array(userInputSchema).min(1).max(500),
+    })
+    .safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: "Daftar pengguna tidak valid (maksimal 500 pengguna per batch)." }, 400);
+  }
+
+  const { created, failed } = await bulkCreateAdminUsers(db, parsed.data.users);
+
+  return c.json({
+    success: true,
+    total: parsed.data.users.length,
+    createdCount: created.length,
+    failedCount: failed.length,
+    results: { created, failed },
+  });
+});
+
 // List users with enhanced filters
 usersHandler.get("/api/admin/users", async (c) => {
   const db = getDb();
   const { page, limit } = pagination(c.req.query(), 20);
   const search = c.req.query("search") ?? "";
   const demoFilter = c.req.query("demo") ?? "";
+  const roleFilter = c.req.query("role") ?? "";
   const sortBy = c.req.query("sort") ?? "created_at";
   const sortOrder = c.req.query("order") ?? "desc";
   const status = c.req.query("status") ?? "";
 
-  const conditions = [eq(userTable.role, "user")];
+  const conditions = [];
+  if (roleFilter === "admin") {
+    conditions.push(eq(userTable.role, "admin"));
+  } else if (roleFilter === "all") {
+    // Show both user and admin
+  } else {
+    // Default to "user"
+    conditions.push(eq(userTable.role, "user"));
+  }
 
   if (search) {
     const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
@@ -224,6 +281,7 @@ usersHandler.get("/api/admin/users", async (c) => {
       id: userTable.id,
       name: userTable.name,
       email: userTable.email,
+      role: userTable.role,
       isDemo: userTable.isDemo,
       hideFromLeaderboard: userTable.hideFromLeaderboard,
       createdAt: userTable.createdAt,

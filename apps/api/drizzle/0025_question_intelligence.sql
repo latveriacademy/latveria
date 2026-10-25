@@ -88,4 +88,4 @@ END $$;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "question_revisions_question_idx" ON "question_revisions" ("question_id", "created_at");
 --> statement-breakpoint
-UPDATE "questions" SET "content_fingerprint" = encode(sha256(prompt::bytea), 'hex') WHERE "content_fingerprint" IS NULL;
+UPDATE "questions" SET "content_fingerprint" = encode(sha256(convert_to(prompt, 'UTF8')), 'hex') WHERE "content_fingerprint" IS NULL;

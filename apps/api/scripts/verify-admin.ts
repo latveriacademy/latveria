@@ -155,6 +155,41 @@ try {
       .status,
     400,
   );
+
+  // Verify single user creation
+  const newEmail = `created-${crypto.randomUUID()}@example.test`;
+  const createRes = await request("/admin/users", admin.cookie, {
+    email: newEmail,
+    password: "Password123!",
+    name: "Created User",
+    role: "user",
+  });
+  assert.equal(createRes.status, 201);
+  const createdJson = await createRes.json();
+  assert.equal(createdJson.success, true);
+  assert.equal(createdJson.user.email, newEmail);
+  ids.push(createdJson.user.id);
+
+  // Verify bulk user creation
+  const bulkEmails = [
+    `bulk-1-${crypto.randomUUID()}@example.test`,
+    `bulk-2-${crypto.randomUUID()}@example.test`,
+  ];
+  const bulkRes = await request("/admin/users/bulk-create", admin.cookie, {
+    users: [
+      { email: bulkEmails[0], password: "Password123!", name: "Bulk 1", role: "user" },
+      { email: bulkEmails[1], password: "Password123!", name: "Bulk 2", role: "admin" },
+    ],
+  });
+  assert.equal(bulkRes.status, 200);
+  const bulkJson = await bulkRes.json();
+  assert.equal(bulkJson.createdCount, 2);
+  const bulkCreatedUsers = await getDb()
+    .select({ id: user.id })
+    .from(user)
+    .where(inArray(user.email, bulkEmails));
+  ids.push(...bulkCreatedUsers.map((u) => u.id));
+
   const login = await request("/auth/sign-in/email", "", learner.credentials);
   const learnerCookie = login.headers
     .getSetCookie()
