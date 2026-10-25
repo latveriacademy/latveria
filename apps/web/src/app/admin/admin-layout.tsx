@@ -13,6 +13,7 @@ import {
   Download,
   Trophy,
   Menu,
+  KeyRound,
 } from "lucide-react";
 import type { User } from "@latveria/shared";
 import {
@@ -24,6 +25,7 @@ import {
 } from "../../components/ui/dashboard-shell";
 import { ThemeToggle } from "../../components/theme-toggle";
 import { LogoutButton } from "../../components/logout-button";
+import { ChangePasswordDialog } from "../../components/change-password-dialog";
 
 const navigation: NavigationItem[] = [
   { id: "summary", label: "Ringkasan", icon: LayoutDashboard, to: "/admin" },
@@ -50,6 +52,7 @@ export function AdminLayout() {
     if (saved !== null) return saved === "true";
     return window.innerWidth > 768;
   });
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => {
@@ -85,12 +88,31 @@ export function AdminLayout() {
               <span className="dossier-badge">Admin</span>
             </div>
             <p className="admin-identity-email">{user.email}</p>
-            <LogoutButton className="nav-button sidebar-logout-btn" />
+            <div className="mt-3 flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPasswordDialogOpen(true)}
+                className="nav-button sidebar-logout-btn"
+              >
+                <KeyRound size={16} aria-hidden="true" />
+                <span>Ubah kata sandi</span>
+              </button>
+              <LogoutButton className="nav-button sidebar-logout-btn" />
+            </div>
           </div>
         </DashboardSidebar>
       }
       header={
         <DashboardHeader home="/admin" onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen}>
+          <button
+            type="button"
+            onClick={() => setPasswordDialogOpen(true)}
+            className="header-tool-btn"
+            title="Ubah kata sandi"
+            aria-label="Ubah kata sandi"
+          >
+            <KeyRound size={17} />
+          </button>
           <div className="admin-mobile-logout">
             <LogoutButton className="header-tool-btn admin-header-logout" />
           </div>
@@ -141,6 +163,7 @@ export function AdminLayout() {
         )}
         <Outlet />
       </div>
+      <ChangePasswordDialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen} />
     </DashboardShell>
   );
 }
