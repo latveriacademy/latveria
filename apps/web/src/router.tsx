@@ -119,6 +119,11 @@ const PassageLibraryPage = lazy(() =>
     default: module.PassageLibraryPage,
   })),
 );
+const LibraryAdminPage = lazy(() =>
+  import("./app/admin/library/library-page").then((module) => ({
+    default: module.LibraryAdminPage,
+  })),
+);
 
 async function guard(role: "user" | "admin") {
   let user: User;
@@ -374,6 +379,7 @@ export const router = createBrowserRouter([
         element: <QuestionPreview />,
       },
       { path: "passages", element: <PassageLibraryPage /> },
+      { path: "library", element: <LibraryAdminPage /> },
       { path: "laporan", element: <AdminReports /> },
       { path: "afirmasi", element: <AdminAffirmations /> },
       { path: "users", element: <AdminUsers /> },

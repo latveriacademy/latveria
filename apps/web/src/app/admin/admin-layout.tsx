@@ -14,6 +14,7 @@ import {
   Trophy,
   Menu,
   KeyRound,
+  Library as LibraryIcon,
 } from "lucide-react";
 import type { User } from "@latveria/shared";
 import {
@@ -31,6 +32,7 @@ const navigation: NavigationItem[] = [
   { id: "summary", label: "Ringkasan", icon: LayoutDashboard, to: "/admin" },
   { id: "tryouts", label: "Tryout", icon: Trophy, to: "/admin/tryouts" },
   { id: "questions", label: "Bank soal", icon: BookOpen, to: "/admin/soal" },
+  { id: "library", label: "Library", icon: LibraryIcon, to: "/admin/library" },
   { id: "reports", label: "Laporan soal", icon: AlertCircle, to: "/admin/laporan" },
   { id: "affirmations", label: "Afirmasi", icon: MessageSquareQuote, to: "/admin/afirmasi" },
   { id: "users", label: "User", icon: Users, to: "/admin/users" },
