@@ -26,6 +26,7 @@ import { warriorHandler } from "./handlers/warrior.handler";
 import { latexHandler } from "./handlers/latex.handler";
 import { questionIntelligenceHandler } from "./handlers/question-intelligence.handler";
 import { passageHandler } from "./handlers/passage.handler";
+import { libraryHandler } from "./handlers/library.handler";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
@@ -143,6 +144,7 @@ app.route("/", irtHandler);
 app.route("/", warriorHandler);
 app.route("/", questionIntelligenceHandler);
 app.route("/", passageHandler);
+app.route("/", libraryHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)
