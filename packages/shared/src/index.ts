@@ -2,12 +2,7 @@ import { z } from "zod";
 import type { LatveriaScoreResult } from "./scoring";
 import type { QuestionWorkflowStatus, QuestionDifficulty } from "./question-intelligence";
 export type { TryoutHistoryEntry } from "./tryout-history";
-export {
-  irtArtifactSchema,
-  type IrtDatasetItem,
-  type IrtDiagnostics,
-  type IrtCalibrationItem,
-} from "./irt-calibration";
+export * from "./irt-calibration";
 export { estimate2pl, type IrtParameter, type IrtEstimate } from "./irt";
 export {
   scoreSimulationSubtest,
@@ -18,19 +13,14 @@ export {
   type SectionCalibration,
 } from "./utbk-scoring";
 export { normalizeTryoutImport, tryoutImportSchema, type TryoutImport } from "./tryout-import";
-export {
-  createTryoutSchema,
-  updateTryoutSchema,
-  isTryoutPackage,
-  type AdminTryoutItem,
-  type AdminTryoutDetail,
-} from "./admin-tryout";
+export * from "./admin-tryout";
 import {
   lexiconAnnotationInputSchema,
   resolveLexiconAnnotations,
   validLexiconRanges,
   type LexiconAnnotation,
 } from "./lexicon";
+export * from "./library";
 export {
   lexiconAnnotationInputSchema,
   lexiconAnnotationSchema,
