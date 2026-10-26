@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractAvatarKey, uploadAvatar } from "./storage.service";
+import { extractAvatarKey, uploadAvatar, uploadLibraryThumbnail } from "./storage.service";
 
 describe("storage.service", () => {
   it("extracts avatar key from relative or full URL", () => {
@@ -33,6 +33,19 @@ describe("storage.service", () => {
     const file = new File([largeBuffer], "large.png", { type: "image/png" });
     await expect(uploadAvatar("user-1", file)).rejects.toThrow(
       "Ukuran foto melebihi batas maksimal",
+    );
+  });
+
+  it("validates library thumbnail upload constraints", async () => {
+    await expect(uploadLibraryThumbnail(null)).rejects.toThrow("File thumbnail tidak ditemukan.");
+
+    const pdfFile = new File(["dummy content"], "thumb.pdf", { type: "application/pdf" });
+    await expect(uploadLibraryThumbnail(pdfFile)).rejects.toThrow("Format gambar tidak didukung");
+
+    const largeBuffer = new Uint8Array(5 * 1024 * 1024 + 1024);
+    const largeFile = new File([largeBuffer], "large.png", { type: "image/png" });
+    await expect(uploadLibraryThumbnail(largeFile)).rejects.toThrow(
+      "Ukuran gambar melebihi batas maksimal",
     );
   });
 });

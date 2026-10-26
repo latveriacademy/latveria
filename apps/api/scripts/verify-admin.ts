@@ -7,6 +7,7 @@ import { questions, topics, practiceAttempts, practiceAnswers } from "../src/lib
 import { learnerSummary } from "@latveria/shared";
 import { verifyAdminTryouts } from "./verify-admin-tryouts";
 import { verifyIrt } from "./verify-irt";
+import { verifyLibrary } from "./verify-library";
 
 if (!["localhost", "127.0.0.1"].includes(new URL(process.env.DATABASE_URL!).hostname))
   throw new Error("Verifikasi admin hanya untuk DB lokal.");
@@ -197,7 +198,8 @@ try {
     .join("; ");
   await verifyAdminTryouts(request, admin.cookie, learnerCookie, learner.id);
   await verifyIrt(request, admin.cookie, { ...learner, cookie: learnerCookie }, signup);
-  console.info("Verifikasi kontrol akun dan tryout admin berhasil.");
+  await verifyLibrary(request, admin.cookie);
+  console.info("Verifikasi kontrol akun, tryout, dan library admin berhasil.");
 } finally {
   if (ids.length) await getDb().delete(user).where(inArray(user.id, ids));
   if (questionIds.length) await getDb().delete(questions).where(inArray(questions.id, questionIds));
