@@ -198,7 +198,7 @@ try {
     .join("; ");
   await verifyAdminTryouts(request, admin.cookie, learnerCookie, learner.id);
   await verifyIrt(request, admin.cookie, { ...learner, cookie: learnerCookie }, signup);
-  await verifyLibrary(request, admin.cookie);
+  await verifyLibrary(request, admin.cookie, learnerCookie);
   console.info("Verifikasi kontrol akun, tryout, dan library admin berhasil.");
 } finally {
   if (ids.length) await getDb().delete(user).where(inArray(user.id, ids));

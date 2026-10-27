@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike } from "drizzle-orm";
+import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   extractYouTubeVideoId,
@@ -81,6 +81,45 @@ export async function getLibraryItemById(id: string): Promise<LibraryItemSummary
   if (!item) {
     throw new HTTPException(404, { message: "Materi library tidak ditemukan." });
   }
+
+  return {
+    id: item.id,
+    title: item.title,
+    slug: item.slug,
+    type: item.type,
+    subtestSlug: item.subtestSlug,
+    content: item.content,
+    url: item.url,
+    thumbnailUrl: item.thumbnailUrl,
+    metadata: item.metadata,
+    tags: item.tags,
+    isPublished: item.isPublished,
+    authorId: item.authorId,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
+export async function getPublishedLibraryItem(slugOrId: string): Promise<LibraryItemSummary> {
+  const db = getDb();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+  const condition = isUuid
+    ? and(
+        or(eq(libraryItems.slug, slugOrId), eq(libraryItems.id, slugOrId)),
+        eq(libraryItems.isPublished, true),
+      )
+    : and(eq(libraryItems.slug, slugOrId), eq(libraryItems.isPublished, true));
+
+  const [item] = await db.select().from(libraryItems).where(condition);
+  if (!item) {
+    throw new HTTPException(404, { message: "Materi library tidak ditemukan." });
+  }
+
+  void db
+    .update(libraryItems)
+    .set({ viewCount: sql`${libraryItems.viewCount} + 1` })
+    .where(eq(libraryItems.id, item.id))
+    .catch(() => {});
 
   return {
     id: item.id,

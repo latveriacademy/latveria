@@ -7,6 +7,7 @@ import {
   deleteLibraryItem,
   getLibraryItemById,
   getLibraryItems,
+  getPublishedLibraryItem,
   togglePublishLibraryItem,
   updateLibraryItem,
 } from "../services/library.service";
@@ -24,6 +25,24 @@ libraryHandler.get("/api/library/media/:key", async (c) => {
     "Content-Type": result.type,
     "Cache-Control": "public, max-age=86400, immutable",
   });
+});
+
+// Learner endpoints
+libraryHandler.get("/api/learner/library", async (c) => {
+  const query = c.req.query();
+  const cari = query.cari?.trim() || undefined;
+  const type = (query.type as LibraryItemType) || undefined;
+  const subtestSlug = query.subtestSlug?.trim() || undefined;
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 12;
+
+  const result = await getLibraryItems({ cari, type, subtestSlug, isPublished: true, page, limit });
+  return c.json(result);
+});
+
+libraryHandler.get("/api/learner/library/:slug", async (c) => {
+  const result = await getPublishedLibraryItem(c.req.param("slug"));
+  return c.json(result);
 });
 
 // Admin endpoints

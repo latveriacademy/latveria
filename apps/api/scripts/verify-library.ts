@@ -11,7 +11,7 @@ type Request = (
   method?: string,
 ) => Promise<Response>;
 
-export async function verifyLibrary(request: Request, adminCookie: string) {
+export async function verifyLibrary(request: Request, adminCookie: string, learnerCookie?: string) {
   const createdIds: string[] = [];
   try {
     // 1. Buat materi video baru
@@ -38,11 +38,18 @@ export async function verifyLibrary(request: Request, adminCookie: string) {
     const fetched: LibraryItemSummary = await getRes.json();
     assert.equal(fetched.id, item.id);
 
-    // 3. Daftar materi dengan filter
-    const listRes = await request("/admin/library?cari=Verifikasi", adminCookie);
-    assert.equal(listRes.status, 200);
-    const list: LibraryItemListResponse = await listRes.json();
-    assert.ok(list.rows.some((r) => r.id === item.id));
+    // 3. Akses peserta ke materi terbit
+    if (learnerCookie) {
+      const learnerListRes = await request("/learner/library?cari=Verifikasi", learnerCookie);
+      assert.equal(learnerListRes.status, 200);
+      const learnerList: LibraryItemListResponse = await learnerListRes.json();
+      assert.ok(learnerList.rows.some((r) => r.id === item.id));
+
+      const learnerItemRes = await request(`/learner/library/${item.slug}`, learnerCookie);
+      assert.equal(learnerItemRes.status, 200);
+      const learnerItem: LibraryItemSummary = await learnerItemRes.json();
+      assert.equal(learnerItem.slug, item.slug);
+    }
 
     // 4. Update materi
     const updateRes = await request(
@@ -65,7 +72,13 @@ export async function verifyLibrary(request: Request, adminCookie: string) {
     const toggled = await toggleRes.json();
     assert.equal(toggled.isPublished, false);
 
-    // 6. Hapus materi
+    // 6. Akses peserta saat materi berstatus draf harus 404
+    if (learnerCookie) {
+      const learnerDraftRes = await request(`/learner/library/${item.slug}`, learnerCookie);
+      assert.equal(learnerDraftRes.status, 404);
+    }
+
+    // 7. Hapus materi
     const deleteRes = await request(`/admin/library/${item.id}`, adminCookie, undefined, "DELETE");
     assert.equal(deleteRes.status, 200);
 
