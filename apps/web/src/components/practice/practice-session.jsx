@@ -56,7 +56,7 @@ export function PracticeSession({
   const flagged = !evaluated && Boolean(session.flagged[index]);
   const answered = Object.values(session.answers).filter(Boolean).length;
   const locked = evaluated || Boolean(session.attemptId) || submitting;
-  const overlayOpen = mobileNavOpen || showCalculator || showSubmit || showReport || showResults;
+  const overlayOpen = mobileNavOpen || showSubmit || showReport || showResults;
 
   useEffect(() => {
     if (evaluated || session.attemptId || session.mode !== "Timed Practice" || timerPaused) return;

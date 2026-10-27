@@ -3097,8 +3097,6 @@ body::after {
    ---------------------------------------------------- */
 .latveria-calculator-floating {
   position: fixed;
-  top: 90px;
-  right: 28px;
   width: 290px;
   background: #06110b;
   border: 1.5px solid var(--accent-gold);
@@ -3127,6 +3125,13 @@ body::after {
   padding: 8px 12px;
   background: #0a1a10;
   border-bottom: 1px solid var(--border-subtle);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.calc-header-drag:active {
+  cursor: grabbing;
 }
 
 .calc-brand {
@@ -3320,8 +3325,7 @@ body::after {
   }
 
   .latveria-calculator-floating {
-    right: 16px;
-    top: 75px;
+    max-width: calc(100vw - 16px);
   }
 }
 
