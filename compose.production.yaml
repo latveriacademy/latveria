@@ -89,6 +89,10 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
       S3_BUCKET: ${S3_BUCKET:-latveria-avatars}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:-/api/avatar}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      DISCORD_INVITE_URL: ${DISCORD_INVITE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy
