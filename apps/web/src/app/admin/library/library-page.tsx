@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router";
 import {
   Plus,
   Search,
@@ -20,11 +21,11 @@ import { PageHeading } from "../../../components/ui/dashboard";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { ConfirmDialog } from "../../../components/confirm-dialog";
-import { LibraryFormDialog } from "./library-form-dialog";
 import { LibraryPreviewDialog } from "./library-preview-dialog";
 import { LibraryItemCard } from "./library-card";
 
 export function LibraryAdminPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<LibraryItemSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -36,9 +37,7 @@ export function LibraryAdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  // Dialogs
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<LibraryItemSummary | null>(null);
+  // Dialogs & Modals
   const [previewItem, setPreviewItem] = useState<LibraryItemSummary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LibraryItemSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -73,13 +72,11 @@ export function LibraryAdminPage() {
   }, [fetchItems]);
 
   const handleOpenCreate = () => {
-    setEditingItem(null);
-    setFormOpen(true);
+    navigate("/admin/library/new");
   };
 
   const handleOpenEdit = (item: LibraryItemSummary) => {
-    setEditingItem(item);
-    setFormOpen(true);
+    navigate(`/admin/library/${item.id}/edit`);
   };
 
   const handleTogglePublish = async (item: LibraryItemSummary) => {
@@ -396,14 +393,6 @@ export function LibraryAdminPage() {
           </table>
         </div>
       )}
-
-      {/* Dialog Form Tambah / Edit */}
-      <LibraryFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        item={editingItem}
-        onSaved={fetchItems}
-      />
 
       {/* Dialog Preview Cepat */}
       <LibraryPreviewDialog
