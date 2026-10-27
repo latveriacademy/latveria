@@ -20,6 +20,7 @@ import type {
   QuestionPackage,
   PackageDetail,
   AdminTryoutSectionDetail,
+  LibraryItemSummary,
 } from "@latveria/shared";
 import { api, ApiError } from "./lib/api";
 import { Login } from "./app/login";
@@ -42,6 +43,16 @@ const LatveriaOSApp = lazy(() =>
 const HistoryResultView = lazy(() =>
   import("./views/history/HistoryResultView").then((module) => ({
     default: module.HistoryResultView,
+  })),
+);
+const LibraryReaderView = lazy(() =>
+  import("./views/library/LibraryReaderView").then((module) => ({
+    default: module.LibraryReaderView,
+  })),
+);
+const LibraryErrorView = lazy(() =>
+  import("./views/library/LibraryErrorView").then((module) => ({
+    default: module.LibraryErrorView,
   })),
 );
 const AdminSubtestPackages = lazy(() =>
@@ -271,11 +282,22 @@ export const router = createBrowserRouter([
         element: <HistoryResultView />,
         errorElement: <HistoryErrorView />,
       },
+      {
+        path: "library/:slug",
+        loader: ({ params }) =>
+          api<LibraryItemSummary>(`/learner/library/${encodeURIComponent(params.slug ?? "")}`),
+        element: <LibraryReaderView />,
+        errorElement: <LibraryErrorView />,
+      },
     ],
   },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/battle", element: <Navigate to="/dashboard?tab=warrior" replace /> },
   { path: "/library", element: <Navigate to="/dashboard?tab=library" replace /> },
+  {
+    path: "/library/:slug",
+    loader: ({ params }) => redirect(`/dashboard/library/${encodeURIComponent(params.slug ?? "")}`),
+  },
   { path: "/leaderboard", element: <Navigate to="/dashboard?tab=leaderboard" replace /> },
   { path: "/profile", element: <Navigate to="/dashboard?tab=profile" replace /> },
   { path: "/settings", element: <Navigate to="/dashboard?tab=settings" replace /> },
