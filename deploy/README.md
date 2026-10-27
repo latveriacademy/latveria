@@ -1,6 +1,6 @@
 # Deployment image terpisah (Staging & Production)
 
-GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL dan WebSocket, lalu membangun dan menguji container aplikasi. Setelah seluruh pemeriksaan lolos, publikasi image multiplatform (AMD64 & ARM64) ke GitHub Packages (GHCR) dilakukan:
+GitHub Actions menjalankan `bun run check`, migrasi/seed/tes integrasi PostgreSQL dan WebSocket, lalu membangun dan menguji container aplikasi. Setelah seluruh pemeriksaan lolos, publikasi image AMD64 (`linux/amd64`) ke GitHub Packages (GHCR) dilakukan:
 
 - `ghcr.io/latveriacademy/latveria-frontend`
 - `ghcr.io/latveriacademy/latveria-backend`
