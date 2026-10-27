@@ -8,6 +8,7 @@ import {
   getAdminConfigs,
   getAffirmations,
   getLearnerConfigs,
+  getLearnerLinkedAccounts,
   getLearnerProfile,
   getReports,
   updateAdminConfig,
@@ -20,6 +21,10 @@ export const systemHandler = new Hono<AppEnv>();
 
 systemHandler.get("/api/learner/profile", async (c) =>
   c.json(await getLearnerProfile(c.get("user").id)),
+);
+
+systemHandler.get("/api/learner/linked-accounts", async (c) =>
+  c.json(await getLearnerLinkedAccounts(c.get("user").id)),
 );
 
 systemHandler.put("/api/learner/profile", async (c) => {

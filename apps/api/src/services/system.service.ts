@@ -10,7 +10,7 @@ import {
   type QuestionReportItem,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
-import { user as accounts } from "../lib/db/auth-schema";
+import { user as accounts, account as accountTable } from "../lib/db/auth-schema";
 import {
   affirmations,
   questionPackages,
@@ -35,6 +35,27 @@ export async function getLearnerProfile(userId: string): Promise<Profile> {
     .where(eq(accounts.id, userId));
   if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
   return profile;
+}
+
+export async function getLearnerLinkedAccounts(userId: string) {
+  const rows = await getDb()
+    .select({
+      id: accountTable.id,
+      providerId: accountTable.providerId,
+      accountId: accountTable.accountId,
+      createdAt: accountTable.createdAt,
+    })
+    .from(accountTable)
+    .where(eq(accountTable.userId, userId));
+
+  return {
+    accounts: rows.map((r) => ({
+      id: r.id,
+      providerId: r.providerId,
+      accountId: r.accountId,
+      createdAt: r.createdAt.toISOString(),
+    })),
+  };
 }
 
 export async function updateLearnerProfile(userId: string, body: unknown): Promise<Profile> {

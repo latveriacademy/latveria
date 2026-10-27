@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { credentialsSchema, signupSchema } from "@latveria/shared";
 import type { AppEnv } from "./types";
-import { getAuth, registrationEnabled } from "./lib/auth";
+import { discordAuthEnabled, getAuth, registrationEnabled } from "./lib/auth";
 import { allowedOrigins } from "./lib/origins";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "./lib/db";
@@ -34,7 +34,13 @@ export const app = new Hono<AppEnv>();
 
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
-app.get("/api/auth/registration", (c) => c.json({ enabled: registrationEnabled() }));
+app.get("/api/auth/registration", (c) =>
+  c.json({
+    enabled: registrationEnabled(),
+    discord: discordAuthEnabled(),
+    discordInviteUrl: process.env.DISCORD_INVITE_URL || "",
+  }),
+);
 app.route("/", publicAvatarHandler);
 app.route("/", latexHandler);
 
@@ -93,14 +99,17 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
 app.use("/api/*", async (c, next) => {
   const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
   if (!session) throw new HTTPException(401, { message: "Silakan masuk terlebih dahulu." });
-  const rawUser = session.user as typeof session.user & { isDeactivated?: boolean };
+  const rawUser = session.user as typeof session.user & {
+    role: "user" | "admin";
+    isDeactivated?: boolean;
+  };
   if (rawUser.isDeactivated) throw new HTTPException(403, { message: "Akun dinonaktifkan." });
   c.set("user", {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role,
-    image: session.user.image,
+    id: rawUser.id,
+    email: rawUser.email,
+    name: rawUser.name,
+    role: rawUser.role,
+    image: rawUser.image,
   });
   if (!["GET", "HEAD"].includes(c.req.method)) {
     if (!allowedOrigins().includes(c.req.header("origin") ?? "")) {
