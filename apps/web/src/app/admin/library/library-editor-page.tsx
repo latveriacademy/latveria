@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import {
   ArrowLeft,
-  Save,
   Loader2,
   Eye,
   FileEdit,
   Trash2,
   CheckCircle2,
   AlertCircle,
+  Clock,
+  Send,
 } from "lucide-react";
 import {
   extractYouTubeVideoId,
@@ -29,7 +30,7 @@ const initialFormState: LibraryFormState = {
   content: "",
   url: "",
   thumbnailUrl: "",
-  tags: "",
+  tags: [],
   isPublished: true,
 };
 
@@ -39,9 +40,11 @@ export function LibraryEditorPage() {
   const isEdit = Boolean(id);
 
   const [form, setForm] = useState<LibraryFormState>(initialFormState);
+  const [initialLoadedForm, setInitialLoadedForm] = useState<LibraryFormState>(initialFormState);
   const [loading, setLoading] = useState<boolean>(isEdit);
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -51,6 +54,23 @@ export function LibraryEditorPage() {
   // Delete state for edit mode
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Unsaved changes dirty checker
+  const isDirty = useMemo(() => {
+    return JSON.stringify(form) !== JSON.stringify(initialLoadedForm);
+  }, [form, initialLoadedForm]);
+
+  // Warn user on window unload if dirty
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   // Fetch initial item data if in edit mode
   useEffect(() => {
@@ -63,7 +83,7 @@ export function LibraryEditorPage() {
       try {
         const item = await api<LibraryItemSummary>(`/admin/library/${id}`);
         if (!mounted) return;
-        setForm({
+        const loaded: LibraryFormState = {
           title: item.title,
           slug: item.slug,
           type: item.type,
@@ -71,9 +91,11 @@ export function LibraryEditorPage() {
           content: item.content ?? "",
           url: item.url ?? "",
           thumbnailUrl: item.thumbnailUrl ?? "",
-          tags: (item.tags ?? []).join(", "),
+          tags: item.tags ?? [],
           isPublished: item.isPublished,
-        });
+        };
+        setForm(loaded);
+        setInitialLoadedForm(loaded);
       } catch (err) {
         if (!mounted) return;
         setErrorMsg(err instanceof Error ? err.message : "Gagal memuat materi library.");
@@ -114,26 +136,60 @@ export function LibraryEditorPage() {
       }
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Gagal mengunggah thumbnail cover.");
+      throw err;
     } finally {
       setUploadingThumb(false);
     }
   };
 
-  const handleSave = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Validation
+  const slugError = useMemo(() => {
+    if (!form.slug.trim()) return null;
+    const isValid = /^[a-z0-9-]+$/.test(form.slug.trim());
+    return isValid
+      ? null
+      : "Slug hanya boleh berisi huruf kecil (a-z), angka (0-9), dan tanda hubung (-).";
+  }, [form.slug]);
+
+  const urlError = useMemo(() => {
+    if (form.type === "article") return null;
+    if (!form.url.trim()) return "Tautan wajib diisi untuk tipe ini.";
+    try {
+      const parsed = new URL(form.url);
+      if (!parsed.protocol.startsWith("http")) {
+        return "Tautan harus diawali dengan https:// atau http://";
+      }
+    } catch {
+      return "Format URL tidak valid. Pastikan menyertakan https://";
+    }
+    if (form.type === "video") {
+      const ytid = extractYouTubeVideoId(form.url);
+      if (!ytid) return "URL harus berupa tautan video YouTube yang valid.";
+    }
+    return null;
+  }, [form.type, form.url]);
+
+  const handleSave = async (overridePublish?: boolean) => {
     if (!form.title.trim()) {
       setErrorMsg("Judul materi wajib diisi.");
       setMobileTab("form");
       return;
     }
-    if ((form.type === "video" || form.type === "link") && !form.url.trim()) {
-      setErrorMsg(`Tautan ${form.type === "video" ? "YouTube" : "eksternal"} wajib diisi.`);
+    if (slugError) {
+      setErrorMsg(slugError);
+      setMobileTab("form");
+      return;
+    }
+    if (urlError) {
+      setErrorMsg(urlError);
       setMobileTab("form");
       return;
     }
 
     setSaving(true);
     setErrorMsg(null);
+
+    const publishStatus = overridePublish !== undefined ? overridePublish : form.isPublished;
 
     const payload: LibraryItemInput = {
       title: form.title.trim(),
@@ -143,11 +199,8 @@ export function LibraryEditorPage() {
       content: form.content.trim() || null,
       url: form.url.trim() || null,
       thumbnailUrl: form.thumbnailUrl.trim() || null,
-      tags: form.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean),
-      isPublished: form.isPublished,
+      tags: form.tags,
+      isPublished: publishStatus,
     };
 
     try {
@@ -156,16 +209,23 @@ export function LibraryEditorPage() {
           method: "PUT",
           body: JSON.stringify(payload),
         });
-        setSuccessMsg("Perubahan materi berhasil disimpan!");
+        setSuccessMsg("Materi berhasil diperbarui!");
       } else {
         await api("/admin/library", {
           method: "POST",
           body: JSON.stringify(payload),
         });
+        setSuccessMsg("Materi baru berhasil disimpan!");
       }
+
+      setInitialLoadedForm({ ...form, isPublished: publishStatus });
+      setLastSavedAt(
+        new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+      );
+
       setTimeout(() => {
         navigate("/admin/library");
-      }, 400);
+      }, 500);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Gagal menyimpan materi library.");
       setSaving(false);
@@ -191,14 +251,14 @@ export function LibraryEditorPage() {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-[var(--ink-muted)] gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-[var(--gold)]" />
-        <p className="text-sm font-medium">Memuat data editor materi...</p>
+        <p className="text-sm font-medium">Memuat editor materi library...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* HEADER NAVIGASI & AKSI */}
+    <div className="space-y-6 max-w-7xl mx-auto pb-28">
+      {/* HEADER NAVIGASI & AKSI ATAS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--edge)] pb-5">
         <div className="flex items-center gap-3">
           <Link
@@ -213,18 +273,31 @@ export function LibraryEditorPage() {
               <span>Admin</span>
               <span>/</span>
               <Link to="/admin/library" className="hover:text-[var(--gold)]">
-                Library
+                Library Materi
               </Link>
               <span>/</span>
-              <span className="text-[var(--ink)]">{isEdit ? "Edit Materi" : "Tambah Baru"}</span>
+              <span className="text-[var(--ink)] font-medium">
+                {isEdit ? "Edit Materi" : "Buat Materi Baru"}
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--ink)] tracking-tight">
-              {isEdit ? "Perbarui Materi Library" : "Buat Materi Pembelajaran Baru"}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--ink)] tracking-tight">
+                {isEdit ? "Perbarui Materi Library" : "Buat Materi Pembelajaran Baru"}
+              </h1>
+              {isDirty ? (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  Belum disimpan
+                </span>
+              ) : lastSavedAt ? (
+                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  Tersimpan {lastSavedAt}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        {/* Tombol Simpan & Status */}
+        {/* Tombol Simpan Header */}
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
           {isEdit && (
             <Button
@@ -232,48 +305,49 @@ export function LibraryEditorPage() {
               variant="outline"
               onClick={() => setDeleteDialogOpen(true)}
               disabled={saving}
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/60"
+              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 text-xs"
               title="Hapus materi ini"
             >
-              <Trash2 className="w-4 h-4 mr-1.5" /> Hapus
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Hapus
             </Button>
           )}
 
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/admin/library")}
+            onClick={() => handleSave(false)}
             disabled={saving}
+            className="text-xs border-[var(--edge)] hover:border-zinc-500"
           >
-            Batal
+            <Clock className="w-3.5 h-3.5 mr-1.5 text-zinc-400" /> Simpan Draf
           </Button>
 
           <Button
             type="button"
-            onClick={() => handleSave()}
+            onClick={() => handleSave(true)}
             disabled={saving}
-            className="bg-[var(--emerald)] hover:bg-[var(--emerald-hover)] text-[#0b1310] font-bold shadow-md px-5"
+            className="bg-[var(--emerald)] hover:bg-[var(--emerald-hover)] text-[#0b1310] font-bold shadow-md px-4 text-xs"
           >
             {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
             ) : (
-              <Save className="w-4 h-4 mr-2" />
+              <Send className="w-3.5 h-3.5 mr-1.5" />
             )}
-            {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Terbitkan Materi"}
+            {saving ? "Menyimpan..." : "Terbitkan Materi"}
           </Button>
         </div>
       </div>
 
       {/* FEEDBACK BANNER */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-3">
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs sm:text-sm flex items-start gap-3 animate-in fade-in">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="flex-1 font-medium">{errorMsg}</div>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-center gap-3">
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm flex items-center gap-3 animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           <div className="flex-1 font-medium">{successMsg}</div>
         </div>
@@ -301,37 +375,37 @@ export function LibraryEditorPage() {
               : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
           }`}
         >
-          <Eye className="w-4 h-4" /> Live Preview
+          <Eye className="w-4 h-4" /> Pratinjau Langsung
         </button>
       </div>
 
-      {/* MAIN TWO-COLUMN WORKSPACE */}
+      {/* WORKSPACE DUA KOLOM */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* KOLOM KIRI: FORMULIR INPUT */}
         <div
-          className={`lg:col-span-7 space-y-6 ${mobileTab === "preview" ? "hidden lg:block" : "block"}`}
+          className={`lg:col-span-7 space-y-6 min-w-0 ${mobileTab === "preview" ? "hidden lg:block" : "block"}`}
         >
-          <form onSubmit={handleSave}>
-            <LibraryEditorForm
-              form={form}
-              onChange={handleFormChange}
-              uploadingThumb={uploadingThumb}
-              onUploadThumbnail={handleUploadThumbnail}
-            />
-          </form>
+          <LibraryEditorForm
+            form={form}
+            onChange={handleFormChange}
+            uploadingThumb={uploadingThumb}
+            onUploadThumbnail={handleUploadThumbnail}
+            slugError={slugError}
+            urlError={urlError}
+          />
         </div>
 
-        {/* KOLOM KANAN: LIVE PREVIEW SISWA (STICKY) */}
+        {/* KOLOM KANAN: PRATINJAU LANGSUNG (STICKY DI DESKTOP) */}
         <div
-          className={`lg:col-span-5 lg:sticky lg:top-6 space-y-3 ${
+          className={`lg:col-span-5 min-w-0 lg:sticky lg:top-6 lg:max-h-[calc(100vh-4rem)] space-y-3 ${
             mobileTab === "form" ? "hidden lg:block" : "block"
           }`}
         >
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)] flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink)] flex items-center gap-1.5">
               <Eye className="w-4 h-4 text-[var(--gold)]" /> Pratinjau Tampilan Peserta
             </span>
-            <span className="text-[11px] text-[var(--ink-muted)] font-mono">Real-time render</span>
+            <span className="text-[11px] text-[var(--ink-muted)] font-mono">Render Otomatis</span>
           </div>
 
           <div className="rounded-2xl border border-[var(--edge)] bg-[var(--surface)] p-2 shadow-sm">
@@ -342,8 +416,63 @@ export function LibraryEditorPage() {
               title={form.title}
               url={form.url}
               content={form.content}
+              thumbnailUrl={form.thumbnailUrl}
+              tags={form.tags}
               youtubeVideoId={youtubeVideoId}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* STICKY BOTTOM ACTION BAR (SELALU TERLIHAT) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--surface)]/95 backdrop-blur-md border-t border-[var(--edge)] py-3.5 px-4 sm:px-8 shadow-2xl">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${form.isPublished ? "bg-emerald-400" : "bg-zinc-400"}`}
+            />
+            <span className="text-xs text-[var(--ink-muted)] hidden sm:inline">
+              Mode Simpan:{" "}
+              <strong className="text-[var(--ink)]">
+                {form.isPublished ? "Tayang Publik" : "Draf Privat"}
+              </strong>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/admin/library")}
+              disabled={saving}
+              className="text-xs"
+            >
+              Batal
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={saving}
+              className="text-xs border-[var(--edge)] hover:border-zinc-500"
+            >
+              <Clock className="w-3.5 h-3.5 mr-1.5 text-zinc-400" /> Simpan Draf
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={saving}
+              className="bg-[var(--emerald)] hover:bg-[var(--emerald-hover)] text-[#0b1310] font-bold shadow-md px-5 text-xs"
+            >
+              {saving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+              ) : (
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              {saving ? "Menyimpan..." : isEdit ? "Perbarui & Tayangkan" : "Terbitkan Materi"}
+            </Button>
           </div>
         </div>
       </div>

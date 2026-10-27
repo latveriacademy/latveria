@@ -5,7 +5,7 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
   return (
     <textarea
       data-slot="textarea"
-      className={cn("latveria-input font-sans resize-y disabled:opacity-50", className)}
+      className={cn("latveria-input font-sans w-full resize-y disabled:opacity-50", className)}
       {...props}
     />
   );

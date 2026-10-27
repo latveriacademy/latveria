@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { LibraryEditorPage } from "./library-editor-page";
 import { LibraryEditorForm, type LibraryFormState } from "./library-editor-form";
 import { LibraryLivePreview } from "./library-live-preview";
+import { LibraryTagInput } from "./library-tag-input";
 
 it("renders LibraryEditorPage with clean navigation, form fields, and live preview", () => {
   const html = renderToStaticMarkup(
@@ -13,10 +14,11 @@ it("renders LibraryEditorPage with clean navigation, form fields, and live previ
   );
 
   expect(html).toContain("Buat Materi Pembelajaran Baru");
-  expect(html).toContain("1. Informasi Utama");
-  expect(html).toContain("2. Konten Materi");
-  expect(html).toContain("3. Cover &amp; Pengaturan");
+  expect(html).toContain("1. Informasi Dasar Materi");
+  expect(html).toContain("2. Konten Materi Pembelajaran");
+  expect(html).toContain("3. Gambar Cover, Tag, &amp; Publikasi");
   expect(html).toContain("Pratinjau Tampilan Peserta");
+  expect(html).toContain("Simpan Draf");
   expect(html).toContain("Terbitkan Materi");
 });
 
@@ -29,7 +31,7 @@ it("renders LibraryEditorForm with YouTube URL and auto-thumbnail helpers for vi
     content: "Catatan rumus penting.",
     url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-    tags: "matematika, utbk",
+    tags: ["matematika", "utbk"],
     isPublished: true,
   };
 
@@ -38,13 +40,14 @@ it("renders LibraryEditorForm with YouTube URL and auto-thumbnail helpers for vi
       form={form}
       onChange={() => {}}
       uploadingThumb={false}
-      onUploadThumbnail={() => {}}
+      onUploadThumbnail={async () => {}}
     />,
   );
 
   expect(html).toContain("Tautan Video YouTube");
-  expect(html).toContain("Auto Thumb");
-  expect(html).toContain("Unggah Gambar");
+  expect(html).toContain("Ambil Cover YouTube");
+  expect(html).toContain("Gambar Cover Materi (Rasio 16:9)");
+  expect(html).toContain("Tag &amp; Kata Kunci Materi");
 });
 
 it("renders LibraryLivePreview properly with subtest and math content", () => {
@@ -63,4 +66,14 @@ it("renders LibraryLivePreview properly with subtest and math content", () => {
   expect(html).toContain("Konsep Barisan dan Deret");
   expect(html).toContain("Penalaran Matematika");
   expect(html).toContain("Tayang");
+  expect(html).toContain("Mode Tampilan:");
+});
+
+it("renders LibraryTagInput chips properly", () => {
+  const tags = ["aljabar", "matriks"];
+  const html = renderToStaticMarkup(<LibraryTagInput tags={tags} onChange={() => {}} />);
+
+  expect(html).toContain("#aljabar");
+  expect(html).toContain("#matriks");
+  expect(html).toContain("2/10 tag");
 });

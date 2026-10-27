@@ -1,14 +1,12 @@
-import { useRef } from "react";
 import {
   FileText,
   Video,
   ExternalLink,
-  Upload,
-  Loader2,
   Sparkles,
-  Code2,
-  Bold,
-  List,
+  AlertCircle,
+  HelpCircle,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import {
   extractYouTubeVideoId,
@@ -17,8 +15,9 @@ import {
   type LibraryItemType,
 } from "@latveria/shared";
 import { Input } from "../../../components/ui/input";
-import { Textarea } from "../../../components/ui/textarea";
-import { Button } from "../../../components/ui/button";
+import { LibraryMarkdownEditor } from "./library-markdown-editor";
+import { LibraryCoverUpload } from "./library-cover-upload";
+import { LibraryTagInput } from "./library-tag-input";
 
 export interface LibraryFormState {
   title: string;
@@ -28,7 +27,7 @@ export interface LibraryFormState {
   content: string;
   url: string;
   thumbnailUrl: string;
-  tags: string;
+  tags: string[];
   isPublished: boolean;
 }
 
@@ -36,7 +35,9 @@ interface LibraryEditorFormProps {
   form: LibraryFormState;
   onChange: <K extends keyof LibraryFormState>(key: K, value: LibraryFormState[K]) => void;
   uploadingThumb: boolean;
-  onUploadThumbnail: (file: File) => void;
+  onUploadThumbnail: (file: File) => Promise<void>;
+  slugError?: string | null;
+  urlError?: string | null;
 }
 
 export function LibraryEditorForm({
@@ -44,9 +45,9 @@ export function LibraryEditorForm({
   onChange,
   uploadingThumb,
   onUploadThumbnail,
+  slugError,
+  urlError,
 }: LibraryEditorFormProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const handleUrlChange = (newUrl: string) => {
     onChange("url", newUrl);
     if (form.type === "video") {
@@ -66,68 +67,72 @@ export function LibraryEditorForm({
     }
   };
 
-  const insertSnippet = (before: string, after: string = "") => {
-    const textarea = document.getElementById("library-content-area") as HTMLTextAreaElement | null;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const current = form.content;
-    const selected = current.substring(start, end) || "teks";
-    const replacement = `${before}${selected}${after}`;
-    const nextContent = current.substring(0, start) + replacement + current.substring(end);
-    onChange("content", nextContent);
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
-    }, 50);
+  const handleGenerateSlugFromTitle = () => {
+    const generated = form.title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .slice(0, 80);
+    onChange("slug", generated);
   };
 
   return (
     <div className="space-y-6">
-      {/* KARTU 1: Detail Utama */}
-      <div className="p-5 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)] flex items-center gap-2">
-          <span>1. Informasi Utama</span>
-        </h3>
+      {/* SEKSI 1: INFORMASI DASAR MATERI */}
+      <div className="p-5 sm:p-6 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-5">
+        <div className="border-b border-[var(--edge)] pb-3 flex items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)]">
+            1. Informasi Dasar Materi
+          </h3>
+          <span className="text-[11px] text-[var(--ink-muted)]">
+            <span className="text-red-400 font-bold">*</span> Wajib diisi
+          </span>
+        </div>
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5">
+        {/* Judul Materi Full Width */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[var(--ink)]">
             Judul Materi <span className="text-red-400">*</span>
           </label>
           <Input
             value={form.title}
             onChange={(e) => onChange("title", e.target.value)}
             placeholder="Contoh: Trik Cepat Penalaran Matematika: Sistem Persamaan Linear"
-            className="text-sm font-medium"
+            className="w-full text-sm font-medium h-11"
             required
           />
+          <p className="text-[11px] text-[var(--ink-muted)]">
+            Gunakan judul yang jelas dan spesifik agar peserta mudah mengenali topik pembelajaran.
+          </p>
         </div>
 
-        {/* Pemilihan Tipe */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5">
-            Tipe Materi Pembelajaran
+        {/* Pemilihan Tipe Materi */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[var(--ink)]">
+            Tipe Format Materi <span className="text-red-400">*</span>
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               {
                 id: "article",
                 label: "Artikel / Modul",
-                desc: "Markdown & Formula LaTeX",
+                desc: "Format teks, Markdown, dan formula LaTeX",
                 icon: FileText,
                 cls: "border-[var(--emerald)] bg-[var(--emerald)]/10 text-[var(--emerald)]",
               },
               {
                 id: "video",
                 label: "Video UTBK",
-                desc: "Embed YouTube interaktif",
+                desc: "Tautan YouTube dengan pemutar interaktif",
                 icon: Video,
                 cls: "border-red-500 bg-red-500/10 text-red-400",
               },
               {
                 id: "link",
-                label: "Tautan Eksternal",
-                desc: "Drive, PDF, atau referensi",
+                label: "Tautan Rujukan",
+                desc: "Dokumen eksternal, Google Drive, atau PDF",
                 icon: ExternalLink,
                 cls: "border-amber-500 bg-amber-500/10 text-amber-400",
               },
@@ -139,33 +144,33 @@ export function LibraryEditorForm({
                   key={t.id}
                   type="button"
                   onClick={() => onChange("type", t.id as LibraryItemType)}
-                  className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
                     active
-                      ? `${t.cls} ring-1 ring-current`
-                      : "border-[var(--edge)] bg-[var(--surface-elevated)]/60 text-[var(--ink-muted)] hover:border-[var(--gold)]/40 hover:text-[var(--ink)]"
+                      ? `${t.cls} ring-2 ring-current shadow-sm`
+                      : "border-[var(--edge)] bg-[var(--surface-elevated)]/70 text-[var(--ink-muted)] hover:border-[var(--gold)]/40 hover:text-[var(--ink)]"
                   }`}
                 >
-                  <div className="flex items-center gap-2 font-bold text-xs mb-1">
+                  <div className="flex items-center gap-2 font-bold text-xs mb-1.5">
                     <Icon className="w-4 h-4 shrink-0" />
                     <span>{t.label}</span>
                   </div>
-                  <p className="text-[10px] opacity-80 leading-snug">{t.desc}</p>
+                  <p className="text-[11px] opacity-80 leading-relaxed">{t.desc}</p>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Subtes & Slug */}
+        {/* Subtes UTBK & Kustom Slug */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5">
-              Subtes UTBK Terkait
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-[var(--ink)]">
+              Kategori Subtes UTBK
             </label>
             <select
               value={form.subtestSlug}
               onChange={(e) => onChange("subtestSlug", e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--gold)] transition-colors"
+              className="w-full h-11 px-3 rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--gold)] transition-colors"
             >
               <option value="">-- Umum / Tanpa Subtes Spesifik --</option>
               {utbkSubtests.map((st) => (
@@ -174,245 +179,219 @@ export function LibraryEditorForm({
                 </option>
               ))}
             </select>
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              Tautkan ke subtes tertentu untuk memudahkan pengelompokan kurikulum.
+            </p>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5">
-              Kustom Slug URL (Opsional)
-            </label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[var(--ink)]">Slug URL (Opsional)</label>
+              {form.title && !form.slug && (
+                <button
+                  type="button"
+                  onClick={handleGenerateSlugFromTitle}
+                  className="text-[11px] text-[var(--gold)] hover:underline flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" /> Buat dari Judul
+                </button>
+              )}
+            </div>
             <Input
               value={form.slug}
               onChange={(e) => onChange("slug", e.target.value)}
-              placeholder="otomatis-dibuat-bila-kosong"
-              className="text-xs font-mono"
+              placeholder="dibuat-otomatis-jika-kosong"
+              className={`w-full text-xs font-mono h-11 ${slugError ? "border-red-500" : ""}`}
             />
+            {slugError ? (
+              <p className="text-[11px] text-red-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {slugError}
+              </p>
+            ) : (
+              <p className="text-[11px] text-[var(--ink-muted)]">
+                Hanya huruf kecil, angka, dan tanda hubung (-).
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* KARTU 2: Konten & Media */}
-      <div className="p-5 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)] flex items-center justify-between">
-          <span>2. Konten Materi</span>
-          <span className="text-[11px] font-normal text-[var(--ink-muted)] lowercase font-mono">
-            {form.type === "article" ? "markdown & katex" : form.type}
+      {/* SEKSI 2: KONTEN MATERI (MENGIKUTI TIPE) */}
+      <div className="p-5 sm:p-6 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-5">
+        <div className="border-b border-[var(--edge)] pb-3 flex items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)]">
+            2. Konten Materi Pembelajaran
+          </h3>
+          <span className="text-[11px] font-mono text-[var(--ink-muted)]">
+            Format:{" "}
+            {form.type === "article"
+              ? "Artikel Lengkap"
+              : form.type === "video"
+                ? "Video YouTube"
+                : "Tautan Eksternal"}
           </span>
-        </h3>
+        </div>
 
-        {/* Input URL jika tipe Video atau Link */}
-        {(form.type === "video" || form.type === "link") && (
-          <div className="p-3.5 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink)]">
-              {form.type === "video" ? "Tautan Video YouTube" : "Tautan Eksternal"}{" "}
-              <span className="text-red-400">*</span>
-            </label>
-            <div className="flex gap-2">
-              <Input
-                value={form.url}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder={
-                  form.type === "video"
-                    ? "https://www.youtube.com/watch?v=... atau https://youtu.be/..."
-                    : "https://drive.google.com/... atau tautan artikel"
-                }
-                className="text-xs"
-                required
-              />
-              {form.type === "video" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAutoYouTubeThumb}
-                  title="Ambil gambar thumbnail YouTube secara otomatis"
-                  className="shrink-0 text-xs h-10 border-[var(--edge)] hover:border-[var(--gold)]"
-                >
-                  <Sparkles className="w-3.5 h-3.5 mr-1 text-[var(--gold)]" /> Auto Thumb
-                </Button>
-              )}
+        {/* Input Tautan Khusus untuk Video & Link */}
+        {form.type === "video" && (
+          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[var(--ink)]">
+                Tautan Video YouTube <span className="text-red-400">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAutoYouTubeThumb}
+                className="text-xs text-[var(--gold)] hover:underline flex items-center gap-1 font-semibold"
+                title="Gunakan gambar cover resmi video YouTube"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Ambil Cover YouTube
+              </button>
             </div>
+            <Input
+              value={form.url}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+              className={`w-full text-xs h-10 ${urlError ? "border-red-500" : ""}`}
+              required
+            />
+            {urlError && (
+              <p className="text-[11px] text-red-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {urlError}
+              </p>
+            )}
             <p className="text-[11px] text-[var(--ink-muted)]">
-              {form.type === "video"
-                ? "Video akan disematkan langsung di pemutar web peserta tanpa iklan luar."
-                : "Peserta akan diarahkan ke tautan ini melalui tombol akses referensi."}
+              Pemutar YouTube akan disematkan langsung di dashboard peserta tanpa gangguan iklan
+              eksternal.
             </p>
           </div>
         )}
 
-        {/* Text Editor dengan LaTeX Toolbar */}
-        <div>
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
-              {form.type === "article"
-                ? "Isi Artikel & Formula Matematika"
-                : "Catatan / Ringkasan Materi"}
+        {form.type === "link" && (
+          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+            <label className="block text-xs font-bold text-[var(--ink)]">
+              Tautan Eksternal Sumber Materi <span className="text-red-400">*</span>
             </label>
+            <Input
+              value={form.url}
+              onChange={(e) => onChange("url", e.target.value)}
+              placeholder="https://drive.google.com/... atau https://situs-sumber.com/modul.pdf"
+              className={`w-full text-xs h-10 ${urlError ? "border-red-500" : ""}`}
+              required
+            />
+            {urlError && (
+              <p className="text-[11px] text-red-400 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {urlError}
+              </p>
+            )}
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              Peserta akan dapat membuka tautan ini langsung dari tombol aksi materi.
+            </p>
+          </div>
+        )}
 
-            {/* Quick LaTeX & Markdown Toolbar */}
-            <div className="flex items-center gap-1 bg-[var(--surface-elevated)] p-1 rounded-md border border-[var(--edge)] text-xs">
-              <button
-                type="button"
-                onClick={() => insertSnippet("$", "$")}
-                className="px-2 py-0.5 rounded hover:bg-[var(--surface-muted)] text-[var(--gold)] font-mono text-[11px]"
-                title="Sisipkan LaTeX Inline $x^2$"
-              >
-                $x$
-              </button>
-              <button
-                type="button"
-                onClick={() => insertSnippet("$$\n", "\n$$")}
-                className="px-2 py-0.5 rounded hover:bg-[var(--surface-muted)] text-[var(--gold)] font-mono text-[11px]"
-                title="Sisipkan LaTeX Blok $$...$$"
-              >
-                $$...$$
-              </button>
-              <div className="w-px h-3 bg-[var(--edge)] mx-0.5" />
-              <button
-                type="button"
-                onClick={() => insertSnippet("**", "**")}
-                className="p-1 rounded hover:bg-[var(--surface-muted)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                title="Tebal"
-              >
-                <Bold className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertSnippet("- ")}
-                className="p-1 rounded hover:bg-[var(--surface-muted)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                title="Daftar Poin"
-              >
-                <List className="w-3 h-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertSnippet("```\n", "\n```")}
-                className="p-1 rounded hover:bg-[var(--surface-muted)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                title="Blok Kode"
-              >
-                <Code2 className="w-3 h-3" />
-              </button>
-            </div>
+        {/* Markdown & KaTeX Editor */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-[var(--ink)]">
+              {form.type === "article"
+                ? "Isi Artikel & Modul Pembelajaran"
+                : "Catatan Penjelas / Ringkasan Materi"}
+            </label>
+            <span className="text-[11px] text-[var(--ink-muted)] flex items-center gap-1">
+              <HelpCircle className="w-3.5 h-3.5 text-[var(--gold)]" />
+              Mendukung Markdown & LaTeX KaTeX
+            </span>
           </div>
 
-          <Textarea
-            id="library-content-area"
+          <LibraryMarkdownEditor
             value={form.content}
-            onChange={(e) => onChange("content", e.target.value)}
-            rows={form.type === "article" ? 14 : 5}
-            placeholder={
-              form.type === "article"
-                ? "Tulis isi modul materi lengkap di sini...\n\nContoh formula matematika:\nMisalkan kurva parabola dinyatakan dengan rumus $f(x) = ax^2 + bx + c$.\n\nUntuk rumus blok tengah:\n$$\nx = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\n$$"
-                : "Tambahkan catatan ringkas, poin penting, atau petunjuk penggunaan materi ini bagi peserta..."
-            }
-            className="font-mono text-xs leading-relaxed bg-[var(--surface-elevated)]"
+            onChange={(val) => onChange("content", val)}
+            minHeight={form.type === "article" ? "min-h-[420px]" : "min-h-[220px]"}
           />
         </div>
       </div>
 
-      {/* KARTU 3: Cover Thumbnail & Pengaturan Publikasi */}
-      <div className="p-5 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)]">
-          3. Cover & Pengaturan
-        </h3>
-
-        {/* Thumbnail Image */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
-              Cover Thumbnail (16:9)
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onUploadThumbnail(file);
-              }}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingThumb}
-              className="text-xs h-8 border-[var(--edge)]"
-            >
-              {uploadingThumb ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-              ) : (
-                <Upload className="w-3.5 h-3.5 mr-1.5" />
-              )}
-              {uploadingThumb ? "Mengunggah..." : "Unggah Gambar"}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-center">
-            <div className="sm:col-span-3">
-              <Input
-                value={form.thumbnailUrl}
-                onChange={(e) => onChange("thumbnailUrl", e.target.value)}
-                placeholder="https://... atau klik tombol Unggah Gambar di atas"
-                className="text-xs font-mono"
-              />
-              <span className="text-[11px] text-[var(--ink-muted)] mt-1.5 block">
-                Gunakan rasio 16:9 untuk hasil terbaik di kartu materi dan kartu rekomendasi
-                belajar.
-              </span>
-            </div>
-
-            <div className="sm:col-span-1 flex justify-center">
-              <div className="w-32 aspect-video rounded-lg border border-[var(--edge)] bg-zinc-900 overflow-hidden relative flex items-center justify-center">
-                {form.thumbnailUrl ? (
-                  <img
-                    src={form.thumbnailUrl}
-                    alt="Cover preview"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.opacity = "0.3";
-                    }}
-                  />
-                ) : (
-                  <span className="text-[10px] text-[var(--ink-muted)] font-mono">No Cover</span>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* SEKSI 3: COVER & TAG & STATUS */}
+      <div className="p-5 sm:p-6 rounded-2xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm space-y-5">
+        <div className="border-b border-[var(--edge)] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--gold)]">
+            3. Gambar Cover, Tag, & Publikasi
+          </h3>
         </div>
 
-        {/* Tags & Status Publikasi */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--edge)]/60">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)] mb-1.5">
-              Tag / Kata Kunci (Pisahkan Koma)
-            </label>
-            <Input
-              value={form.tags}
-              onChange={(e) => onChange("tags", e.target.value)}
-              placeholder="aljabar, matriks, trik-cepat, snbt2026"
-              className="text-xs"
-            />
-          </div>
+        {/* Cover 16:9 Upload */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-[var(--ink)]">
+            Gambar Cover Materi (Rasio 16:9)
+          </label>
+          <LibraryCoverUpload
+            thumbnailUrl={form.thumbnailUrl}
+            onChange={(url) => onChange("thumbnailUrl", url)}
+            uploading={uploadingThumb}
+            onUploadFile={onUploadThumbnail}
+            onAutoYouTubeThumb={handleAutoYouTubeThumb}
+            isVideoType={form.type === "video"}
+          />
+        </div>
 
-          <div className="flex items-center pt-5">
-            <label className="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] hover:border-[var(--emerald)]/40 transition-colors w-full">
-              <input
-                type="checkbox"
-                checked={form.isPublished}
-                onChange={(e) => onChange("isPublished", e.target.checked)}
-                className="rounded border-[var(--edge)] accent-[var(--emerald)] w-4 h-4"
-              />
+        {/* Tag Input Chip */}
+        <div className="space-y-1.5 pt-2 border-t border-[var(--edge)]/60">
+          <label className="block text-xs font-bold text-[var(--ink)]">
+            Tag & Kata Kunci Materi
+          </label>
+          <LibraryTagInput
+            tags={form.tags}
+            onChange={(newTags) => onChange("tags", newTags)}
+            placeholder="Ketik topik materi (contoh: aljabar, matriks) lalu tekan Enter..."
+          />
+        </div>
+
+        {/* Pengaturan Status Publikasi (Tunggal & Jelas) */}
+        <div className="space-y-2 pt-2 border-t border-[var(--edge)]/60">
+          <label className="block text-xs font-bold text-[var(--ink)]">
+            Status Ketersediaan Materi
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => onChange("isPublished", false)}
+              className={`p-3.5 rounded-xl text-left border transition-all flex items-start gap-3 cursor-pointer ${
+                !form.isPublished
+                  ? "border-zinc-500 bg-zinc-500/10 ring-1 ring-zinc-500"
+                  : "border-[var(--edge)] bg-[var(--surface-elevated)]/60 text-[var(--ink-muted)] hover:border-[var(--edge)]/80"
+              }`}
+            >
+              <Clock className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
               <div>
                 <span className="text-xs font-bold text-[var(--ink)] block">
-                  Tayangkan Materi Langsung
+                  Simpan sebagai Draf
                 </span>
-                <span className="text-[10px] text-[var(--ink-muted)] block">
-                  {form.isPublished
-                    ? "Materi dapat dicari & dipelajari oleh seluruh peserta"
-                    : "Materi disimpan sebagai draf privat (hanya terlihat oleh admin)"}
+                <span className="text-[11px] text-[var(--ink-muted)] block mt-0.5 leading-snug">
+                  Hanya tersimpan di panel admin, belum bisa diakses peserta.
                 </span>
               </div>
-            </label>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onChange("isPublished", true)}
+              className={`p-3.5 rounded-xl text-left border transition-all flex items-start gap-3 cursor-pointer ${
+                form.isPublished
+                  ? "border-[var(--emerald)] bg-[var(--emerald)]/10 ring-1 ring-[var(--emerald)]"
+                  : "border-[var(--edge)] bg-[var(--surface-elevated)]/60 text-[var(--ink-muted)] hover:border-[var(--edge)]/80"
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-xs font-bold text-[var(--ink)] block">
+                  Tayangkan Sekarang
+                </span>
+                <span className="text-[11px] text-[var(--ink-muted)] block mt-0.5 leading-snug">
+                  Materi langsung tayang dan dapat dipelajari oleh peserta.
+                </span>
+              </div>
+            </button>
           </div>
         </div>
       </div>

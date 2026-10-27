@@ -4651,6 +4651,8 @@ body::after {
 }
 
 .latveria-input {
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
