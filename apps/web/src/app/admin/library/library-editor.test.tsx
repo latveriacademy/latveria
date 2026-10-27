@@ -77,3 +77,21 @@ it("renders LibraryTagInput chips properly", () => {
   expect(html).toContain("#matriks");
   expect(html).toContain("2/10 tag");
 });
+
+it("renders LibraryLivePreview with draft status badge and external link", () => {
+  const html = renderToStaticMarkup(
+    <LibraryLivePreview
+      type="link"
+      subtestSlug="literasi-dalam-bahasa-indonesia"
+      isPublished={false}
+      title="Rujukan Modul Bahasa"
+      url="https://example.com/modul.pdf"
+      content="Panduan membaca cepat."
+      youtubeVideoId={null}
+    />,
+  );
+
+  expect(html).toContain("Rujukan Modul Bahasa");
+  expect(html).toContain("Draf");
+  expect(html).toContain("Tautan Sumber Materi:");
+});
