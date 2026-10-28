@@ -96,15 +96,28 @@ export interface ReviewAnswerItem {
 export function mergeReviewData<T extends { id: string; passage?: string | null }>(
   sessionQuestions: T[],
   reviewAnswers: ReviewAnswerItem[],
-): T[] {
+): Array<
+  T & {
+    correctAnswer: string;
+    explanation: string;
+    annotations: unknown[];
+  }
+> {
   const byId = new Map(reviewAnswers.map((ra) => [ra.id, ra]));
   return sessionQuestions.map((sq) => {
     const ra = byId.get(sq.id);
-    if (!ra) return sq;
+    if (!ra) {
+      return {
+        ...sq,
+        correctAnswer: "",
+        explanation: "",
+        annotations: (sq as unknown as { annotations?: unknown[] }).annotations ?? [],
+      };
+    }
     return {
       ...sq,
       passage: ra.passage ?? sq.passage ?? null,
-      correctAnswer: INDEX_TO_KEY[ra.correctAnswer],
+      correctAnswer: INDEX_TO_KEY[ra.correctAnswer] ?? "",
       explanation: ra.explanation,
       annotations:
         ra.annotations ?? (sq as unknown as { annotations?: unknown[] }).annotations ?? [],
