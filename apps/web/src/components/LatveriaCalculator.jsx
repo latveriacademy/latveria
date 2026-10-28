@@ -27,6 +27,14 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
 
   useEffect(() => {
     if (!isOpen) return;
+    setPosition((prev) => {
+      const maxX = Math.max(8, window.innerWidth - 300);
+      const maxY = Math.max(8, window.innerHeight - 80);
+      return {
+        x: Math.min(Math.max(8, prev.x), maxX),
+        y: Math.min(Math.max(8, prev.y), maxY),
+      };
+    });
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
     };

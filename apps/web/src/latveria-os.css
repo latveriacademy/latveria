@@ -3357,79 +3357,6 @@ body::after {
   }
 }
 
-@media (max-width: 768px) {
-  .question-header-bar {
-    flex-wrap: wrap;
-    padding: 10px 14px;
-    gap: 8px;
-  }
-
-  .header-subtest-info {
-    max-width: 60%;
-  }
-
-  .subtest-badge-box {
-    overflow: hidden;
-  }
-
-  .subtest-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .header-tools-group {
-    gap: 6px;
-  }
-
-  .tool-btn-label {
-    display: none;
-  }
-
-  .tool-action-btn {
-    padding: 6px 8px;
-    min-width: 32px;
-    justify-content: center;
-  }
-
-  .header-center-info {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    margin-top: 6px;
-  }
-
-  .question-layout-card {
-    padding: 18px 16px;
-  }
-
-  .question-footer-nav {
-    position: sticky;
-    bottom: 0;
-    background: var(--bg-card);
-    border-top: 1px solid var(--border-subtle);
-    padding: 12px 14px;
-    margin-left: -16px;
-    margin-right: -16px;
-    margin-bottom: -18px;
-    z-index: 15;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
-  }
-
-  .eval-answer-comparison-banner {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .ans-compare-divider {
-    display: none;
-  }
-
-  .submit-summary-quad {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ==========================================================================
    LEADERBOARD & COHORT ROSTER
    ========================================================================== */
@@ -5060,7 +4987,216 @@ body::after {
     padding: 18px 16px;
   }
 
-  /* Kalau sudah ada bottom navbar, tidak perlu ada sidebar di mobile */
+  /* Exam viewport scroll reset */
+  .latveria-main-viewport.in-exam-mode .latveria-content-scroll {
+    padding: 14px 14px 0 !important;
+  }
+
+  .question-header-bar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "subtest center"
+      "tools tools";
+    row-gap: 8px;
+    column-gap: 8px;
+    padding: 10px 12px;
+    align-items: center;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+
+  .header-subtest-info {
+    grid-area: subtest;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .btn-exit-minimal {
+    padding: 5px 8px;
+    font-size: 10.5px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .subtest-badge-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .subtest-code {
+    font-size: 10px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  .subtest-name {
+    font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .subtest-package-badge {
+    display: none;
+  }
+
+  .header-center-info {
+    grid-area: center;
+    order: initial;
+    width: auto;
+    justify-content: flex-end;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .timer-display {
+    padding: 4px 8px;
+    font-size: 12px;
+    gap: 5px;
+    border-radius: var(--radius-xs);
+  }
+
+  .time-label {
+    display: none;
+  }
+
+  .btn-timer-pause {
+    font-size: 9px;
+    margin-left: 2px;
+  }
+
+  .eval-quick-score {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .mode-display {
+    font-size: 10.5px;
+  }
+
+  .header-tools-group {
+    grid-area: tools;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .tool-btn-label {
+    display: none;
+  }
+
+  .tool-action-btn {
+    padding: 6px 8px;
+    min-width: 32px;
+    min-height: 32px;
+    justify-content: center;
+  }
+
+  .btn-mobile-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-height: 32px;
+    border-radius: var(--radius-xs);
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-medium);
+    color: var(--accent-gold);
+  }
+
+  .quiz-progress-strip {
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    gap: 10px;
+    border-radius: var(--radius-xs);
+  }
+
+  .question-view-active {
+    min-height: calc(100vh - 14px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .quiz-split-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .quiz-question-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .question-layout-card {
+    padding: 16px 14px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+  }
+
+  .question-footer-nav {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-card);
+    background: color-mix(in srgb, var(--bg-card) 95%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-subtle);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    margin-left: -14px;
+    margin-right: -14px;
+    margin-bottom: 0;
+    z-index: 20;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% + 28px);
+  }
+
+  .question-footer-nav button {
+    flex: 1;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    justify-content: center;
+  }
+
+  .academic-explanation-dossier {
+    padding: 16px 14px;
+    margin-top: 18px;
+    border-radius: var(--radius-xs);
+  }
+
+  .eval-answer-comparison-banner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ans-compare-divider {
+    display: none;
+  }
+
+  .submit-summary-quad {
+    grid-template-columns: 1fr;
+  }
   .has-bottom-nav .latveria-sidebar,
   .latveria-app-shell:has(.latveria-bottom-nav) .latveria-sidebar,
   .learner-shell .latveria-sidebar {
@@ -5352,14 +5488,37 @@ body::after {
   .options-pill-grid.cols-3 {
     grid-template-columns: 1fr;
   }
-  .question-header-bar {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
+  .latveria-main-viewport.in-exam-mode .latveria-content-scroll {
+    padding: 10px 10px 0 !important;
   }
-  .header-tools-group {
-    width: 100%;
-    justify-content: space-between;
+  .question-footer-nav {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    margin-left: -10px;
+    margin-right: -10px;
+    width: calc(100% + 20px);
+  }
+  .question-layout-card {
+    padding: 14px 12px;
+  }
+  .question-prompt {
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+  .options-container {
+    gap: 9px;
+  }
+  .option-choice-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .option-key-badge {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .option-text-body {
+    font-size: 13.5px;
+    line-height: 1.5;
   }
 }
 

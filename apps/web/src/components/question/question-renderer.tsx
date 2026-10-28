@@ -188,11 +188,11 @@ export function QuestionRenderer({
       >
         {/* Left Column (Desktop) / Top Section (Mobile): Stimulus & Passage */}
         {hasStimulus && (
-          <aside className="stimulus-column mb-6 lg:mb-0 lg:sticky lg:top-4 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
+          <aside className="stimulus-column mb-4 lg:mb-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto pr-1">
             <StimulusRenderer
               stimulus={question.stimulus}
               passage={question.passage}
-              className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-4 shadow-sm"
+              className="rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] p-3.5 lg:p-4 shadow-sm"
             />
           </aside>
         )}
@@ -254,7 +254,7 @@ export function QuestionRenderer({
                     onClick={() => handleSingleChoice(option.key)}
                   >
                     <div className="option-key-badge font-mono">{option.key}</div>
-                    <div className="option-text-body font-sans">
+                    <div className="option-text-body font-sans min-w-0">
                       <MathText>{option.text}</MathText>
                     </div>
                     {!evaluated ? (
