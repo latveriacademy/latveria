@@ -1,16 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import {
-  Plus,
-  Search,
-  LayoutGrid,
-  List,
-  Edit2,
-  Trash2,
-  Eye,
-  Loader2,
-  BookOpen,
-} from "lucide-react";
+import { Plus, LayoutGrid, List, Edit2, Trash2, Eye, Loader2, BookOpen } from "lucide-react";
 import {
   utbkSubtests,
   type LibraryItemListResponse,
@@ -19,7 +9,7 @@ import {
 import { api } from "../../../lib/api";
 import { PageHeading } from "../../../components/ui/dashboard";
 import { Button } from "../../../components/ui/button";
-import { Input } from "../../../components/ui/input";
+import { SearchBar } from "../../../components/ui/search-bar";
 import { ConfirmDialog } from "../../../components/confirm-dialog";
 import { LibraryPreviewDialog } from "./library-preview-dialog";
 import { LibraryItemCard } from "./library-card";
@@ -133,15 +123,15 @@ export function LibraryAdminPage() {
       <div className="p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface)] space-y-3 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Pencarian */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-[var(--ink-muted)]" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari materi atau topik..."
-              className="pl-9 h-10 text-xs"
-            />
-          </div>
+          <SearchBar
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+            placeholder="Cari materi atau topik..."
+            aria-label="Cari materi atau topik"
+            sizeVariant="sm"
+            className="h-10 text-xs"
+          />
 
           {/* Filter Tipe */}
           <div>

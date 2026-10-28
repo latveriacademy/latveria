@@ -17,6 +17,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { SearchBar } from "../../../components/ui/search-bar";
 import { ConfirmDialog } from "../../../components/confirm-dialog";
 import { PageHeading, StatTile } from "../../../components/ui/dashboard";
 import {
@@ -450,16 +451,16 @@ export function AdminUsers() {
           )}
 
           <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Cari nama atau email…"
-                aria-label="Cari nama atau email"
-                value={search}
-                onChange={(e) => updateFilter("search", e.target.value)}
-                className="w-64 h-9 px-3 border border-[var(--edge)] rounded-md bg-[var(--bg)] text-[var(--ink)] text-sm focus:border-[var(--gold)] focus:outline-none"
-              />
-            </div>
+            <SearchBar
+              value={search}
+              onChange={(e) => updateFilter("search", e.target.value)}
+              onClear={() => updateFilter("search", "")}
+              placeholder="Cari nama atau email…"
+              aria-label="Cari nama atau email"
+              sizeVariant="sm"
+              className="h-9 text-sm"
+              containerClassName="w-64"
+            />
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-[var(--soft-ink)]">Tipe:</span>

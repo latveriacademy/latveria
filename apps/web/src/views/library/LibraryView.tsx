@@ -7,7 +7,6 @@ import {
   FileText,
   Filter,
   Hash,
-  Search,
   Sparkles,
   Video,
 } from "lucide-react";
@@ -15,7 +14,7 @@ import type { LibraryItemListResponse, LibraryItemSummary } from "@latveria/shar
 import { utbkSubtests } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
+import { SearchBar } from "../../components/ui/search-bar";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import styles from "./library.module.css";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
@@ -68,16 +67,15 @@ export function LibraryView() {
         <TabsContent value="materi" className="space-y-6">
           {/* Bar kontrol pencarian dan filter */}
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] pointer-events-none" />
-              <Input
-                value={cari}
-                onChange={(e) => setCari(e.target.value)}
-                placeholder="Cari materi pembelajaran…"
-                aria-label="Cari materi pembelajaran"
-                className="pl-9 w-full bg-[var(--surface-elevated)]"
-              />
-            </div>
+            <SearchBar
+              value={cari}
+              onChange={(e) => setCari(e.target.value)}
+              onClear={() => setCari("")}
+              placeholder="Cari materi pembelajaran…"
+              aria-label="Cari materi pembelajaran"
+              className="bg-[var(--surface-elevated)]"
+              containerClassName="flex-1"
+            />
 
             <div className="flex flex-wrap items-center gap-2">
               <select

@@ -4736,6 +4736,19 @@ body::after {
   border-color: var(--accent-gold);
 }
 
+.latveria-search-input {
+  padding-left: 2.25rem !important;
+}
+
+.latveria-search-input.has-clear {
+  padding-right: 2.25rem !important;
+}
+
+.latveria-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .options-pill-grid {
   display: grid;
   grid-template-columns: 1fr;

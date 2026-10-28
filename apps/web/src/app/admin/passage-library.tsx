@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Edit3, Eye, FileText, Loader2, Plus, Search, Trash2 } from "lucide-react";
+import { Edit3, Eye, FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import type { PassageLibraryDetail } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { SearchBar } from "../../components/ui/search-bar";
 import { PageHeading } from "../../components/ui/dashboard";
 import { AppDialog } from "../../components/app-dialog";
 import { ConfirmDialog } from "../../components/confirm-dialog";
@@ -156,15 +157,16 @@ export function PassageLibraryPage() {
 
       {/* Search Input */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="relative flex-1">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari judul stimulus..."
-            className="pl-8 text-xs"
-          />
-          <Search className="absolute left-2.5 top-2.5 size-3.5 text-[var(--soft-ink)]" />
-        </div>
+        <SearchBar
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch("")}
+          placeholder="Cari judul stimulus..."
+          aria-label="Cari judul stimulus"
+          sizeVariant="sm"
+          className="text-xs"
+          containerClassName="flex-1"
+        />
       </div>
 
       {loading && (
