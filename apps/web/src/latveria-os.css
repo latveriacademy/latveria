@@ -1523,7 +1523,7 @@ body::after {
 /* Dashboard Dual Panels */
 .dashboard-grid-dual {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -1536,6 +1536,8 @@ body::after {
   box-shadow: var(--shadow-subtle);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel-header {
@@ -1870,8 +1872,9 @@ body::after {
 /* Quad Stats Tiles */
 .stat-tiles-quad {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .quad-tile {
@@ -1879,6 +1882,8 @@ body::after {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .quad-top {
@@ -1894,6 +1899,8 @@ body::after {
   color: var(--text-primary);
   line-height: 1.1;
   margin-bottom: 4px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .quad-bottom {
@@ -1905,6 +1912,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .activity-stream-item {
@@ -1918,6 +1926,8 @@ body::after {
   border-radius: var(--radius-sm);
   text-decoration: none;
   color: inherit;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .activity-stream-item:hover {
@@ -5035,7 +5045,7 @@ body::after {
   }
   .dashboard-grid-dual,
   .profile-grid-dual {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .results-metrics-grid {
     grid-template-columns: 1fr 1fr;
@@ -5046,6 +5056,10 @@ body::after {
 }
 
 @media (max-width: 768px) {
+  .dashboard-panel {
+    padding: 18px 16px;
+  }
+
   /* Kalau sudah ada bottom navbar, tidak perlu ada sidebar di mobile */
   .has-bottom-nav .latveria-sidebar,
   .latveria-app-shell:has(.latveria-bottom-nav) .latveria-sidebar,
@@ -5305,6 +5319,9 @@ body::after {
   .command-hero-card {
     padding: 16px 14px;
   }
+  .dashboard-panel {
+    padding: 16px 14px;
+  }
   .cta-border-box {
     grid-template-columns: 1fr;
     padding: 12px;
@@ -5313,7 +5330,7 @@ body::after {
     grid-template-columns: 1fr;
   }
   .stat-tiles-quad {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .id-card-body {
     grid-template-columns: 1fr;
