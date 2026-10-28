@@ -15,7 +15,8 @@
     "db:seed": "bun scripts/seed-db.ts",
     "db:check": "bun scripts/check-db.ts",
     "db:admin": "bun scripts/promote-admin.ts",
-    "db:user": "bun scripts/create-user.ts"
+    "db:user": "bun scripts/create-user.ts",
+    "db:dummy": "bun scripts/seed-dummy-users.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.6",
