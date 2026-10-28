@@ -298,13 +298,13 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-1">
-                  <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+                <div className="flex items-center gap-0.5 flex-nowrap">
+                  <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" title="Pratinjau soal">
                     <Link
                       to={`/admin/soal/${row.id}`}
                       aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}
                     >
-                      <Eye aria-hidden="true" className="size-3.5 mr-1" />
+                      <Eye aria-hidden="true" className="size-3.5" />
                       <span className={styles.previewLabel}>Pratinjau</span>
                     </Link>
                   </Button>
@@ -312,7 +312,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 text-xs text-[var(--gold)]"
+                    className="h-7 px-2 text-xs text-[var(--gold)] shrink-0"
                     title="Duplikat sebagai soal baru"
                     onClick={() => handleDuplicate(row.id)}
                     disabled={pending}
@@ -323,7 +323,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 text-xs"
+                    className="h-7 px-2 text-xs shrink-0"
                     title="Peta Dependensi & Keamanan"
                     onClick={() => setUsageQuestionId(row.id)}
                   >
@@ -333,7 +333,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 text-xs"
+                    className="h-7 px-2 text-xs shrink-0"
                     title="Histori Versi & Diff"
                     onClick={() => setVersionQuestionId(row.id)}
                   >
@@ -343,7 +343,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="h-7 px-2 text-xs"
+                    className="h-7 px-2 text-xs shrink-0"
                     title="Analitik Performa"
                     onClick={() => setAnalyticsQuestionId(row.id)}
                   >
@@ -351,6 +351,7 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                   </Button>
                 </div>
               </TableCell>
+
             </TableRow>
           ))}
           {!bank.rows.length && (

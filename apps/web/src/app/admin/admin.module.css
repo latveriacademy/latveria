@@ -196,7 +196,8 @@
   width: 48px;
 }
 .actionColumn {
-  width: 136px;
+  width: 180px;
+  white-space: nowrap;
 }
 .questionTable td {
   padding-block: 18px;
@@ -206,7 +207,9 @@
 }
 .promptCell {
   min-width: 0;
+  max-width: 0;
   line-height: 1.6;
+  overflow: hidden;
 }
 .promptText {
   display: -webkit-box;
@@ -214,6 +217,9 @@
   -webkit-line-clamp: 2;
   overflow: hidden;
   overflow-wrap: anywhere;
+}
+.previewLabel {
+  display: none;
 }
 .questionMeta {
   display: flex;
@@ -248,9 +254,6 @@
   }
   .questionTable .actionColumn {
     width: 56px;
-  }
-  .previewLabel {
-    display: none;
   }
   .questionMeta {
     font-size: 11px;
