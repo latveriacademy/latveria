@@ -2,95 +2,23 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { api } from "../lib/api";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { DEFAULT_USER } from "../data/userData";
-import { practiceXP } from "@latveria/shared";
 import { sound } from "../utils/audioFeedback";
+import { practiceAnswersToPayload } from "../lib/practice/practice-answers";
 import {
-  practiceOptionKeys as INDEX_TO_KEY,
-  practiceAnswersToPayload,
-} from "../lib/practice/practice-answers";
+  clearPracticeDraft,
+  loadPracticeDraft,
+  savePracticeDraft,
+} from "../lib/practice/practice-draft";
+import {
+  SHORT_TO_SLUG,
+  topicToSubject,
+  apiQuestionToView,
+  mergeReviewData,
+  formatRecentActivities,
+  buildSessionResults,
+} from "../lib/practice/practice-helpers";
 
 const AppContext = createContext();
-
-// ponytail: map between API slugs and view short codes
-const SLUG_TO_SHORT = {
-  "penalaran-umum": "PU",
-  "pengetahuan-pemahaman-umum": "PPU",
-  "pemahaman-bacaan-menulis": "PBM",
-  "pengetahuan-kuantitatif": "PK",
-  "literasi-bahasa-indonesia": "LBI",
-  "literasi-bahasa-inggris": "LBE",
-  "penalaran-matematika": "PM",
-};
-const SHORT_TO_SLUG = Object.fromEntries(
-  Object.entries(SLUG_TO_SHORT).map(([slug, short]) => [short, slug]),
-);
-
-const SECTION_MAP = {
-  PU: "Tes Skolastik",
-  PPU: "Tes Skolastik",
-  PBM: "Tes Skolastik",
-  PK: "Tes Skolastik",
-  LBI: "Tes Literasi",
-  LBE: "Tes Literasi",
-  PM: "Tes Literasi",
-};
-
-/** Convert API topics to the learner catalog shape. */
-function topicToSubject(topic) {
-  const short = SLUG_TO_SHORT[topic.slug] || topic.short || topic.slug;
-  const category =
-    topic.category === "tka"
-      ? "Tes Kemampuan Akademik"
-      : topic.category === "ujian-mandiri"
-        ? "Ujian Mandiri"
-        : topic.category === "mata-kuliah"
-          ? "Mata Kuliah"
-          : SECTION_MAP[short] || (topic.section === "literasi" ? "Tes Literasi" : "Tes Skolastik");
-  return {
-    id: short,
-    slug: topic.slug,
-    topicId: topic.id,
-    name: topic.name,
-    code: short.startsWith("SNBT-") ? short : `LTV-${short.toUpperCase()}`,
-    category,
-    questionsCount: topic.questionCount,
-    packageCount: Number(topic.packageCount ?? 0),
-    progress: null,
-    accuracy: null,
-    description: topic.description,
-  };
-}
-
-/** Convert API PracticeQuestion to mock shape the view uses */
-function apiQuestionToView(q) {
-  return {
-    id: q.id, // UUID
-    question: q.prompt,
-    passage: q.passage ?? null,
-    annotations: q.annotations ?? [],
-    options: q.options.map((text, i) => ({ key: INDEX_TO_KEY[i], text })),
-    // correctAnswer and explanation not available during practice (API strips them)
-    correctAnswer: null,
-    explanation: null,
-  };
-}
-
-/** Merge review data into session questions after submission */
-function mergeReviewData(sessionQuestions, reviewAnswers) {
-  const byId = new Map(reviewAnswers.map((ra) => [ra.id, ra]));
-  return sessionQuestions.map((sq) => {
-    const ra = byId.get(sq.id);
-    if (!ra) return sq;
-    return {
-      ...sq,
-      passage: ra.passage ?? sq.passage ?? null,
-      correctAnswer: INDEX_TO_KEY[ra.correctAnswer],
-      explanation: ra.explanation,
-      annotations: ra.annotations ?? sq.annotations ?? [],
-      // keep original options from practice (same order)
-    };
-  });
-}
 
 export const AppProvider = ({ children }) => {
   // Navigation State
@@ -194,6 +122,7 @@ export const AppProvider = ({ children }) => {
         role: apiUser.role,
         image: profile.image ?? apiUser.image ?? null,
         id: `LTV-${apiUser.id.slice(0, 4).toUpperCase()}`,
+        userId: apiUser.id,
       }));
       setProfileLoaded(true);
     } catch (error) {
@@ -256,24 +185,10 @@ export const AppProvider = ({ children }) => {
       .then((data) => {
         if (Array.isArray(data)) {
           setHistory(data);
-          // Map history to recentActivities format for dashboard
-          const recentActivities = data.slice(0, 6).map((h) => {
-            const short = SLUG_TO_SHORT[h.slug] || h.slug;
-            return {
-              id: h.id,
-              code: short,
-              subject: h.topic,
-              title: `Selesai ${h.total} Soal ${h.topic}`,
-              xp: h.earnedXP ?? practiceXP(h.correct),
-              time: new Date(h.submittedAt).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }),
-              accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : "0%",
-            };
-          });
-          setUser((prev) => ({ ...prev, recentActivities }));
+          const recentActivities = formatRecentActivities(data);
+          if (recentActivities.length > 0) {
+            setUser((prev) => ({ ...prev, recentActivities }));
+          }
         }
       })
       .catch(() => {});
@@ -307,6 +222,44 @@ export const AppProvider = ({ children }) => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4500);
   };
+
+  const draftRestoredRef = useRef(false);
+  const storageWarnedRef = useRef(false);
+  const userIdentifier =
+    user.userId || user.email || (user.id && !user.id.startsWith("LTV-") ? user.id : "");
+
+  // Pulihkan draf latihan yang belum selesai setelah profil peserta dimuat
+  useEffect(() => {
+    if (!userIdentifier || activeSession || draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = loadPracticeDraft(userIdentifier);
+    if (draft) {
+      setActiveSession(draft);
+      showToast(
+        "Sesi Dipulihkan",
+        `Latihan ${draft.subjectName || "soal"} Anda dipulihkan.`,
+        "info",
+      );
+    }
+  }, [userIdentifier, activeSession]);
+
+  // Simpan autosave draft sesi latihan aktif saat jawaban atau pilihan berubah
+  useEffect(() => {
+    if (!userIdentifier || !activeSession) return;
+    if (activeSession.isEvaluated || activeSession.attemptId) {
+      clearPracticeDraft(userIdentifier);
+      return;
+    }
+    const saved = savePracticeDraft(userIdentifier, activeSession);
+    if (!saved && !storageWarnedRef.current) {
+      storageWarnedRef.current = true;
+      showToast(
+        "Penyimpanan Penuh",
+        "Draf latihan gagal disimpan di perangkat ini, namun latihan tetap dapat dilanjutkan.",
+        "error",
+      );
+    }
+  }, [activeSession, userIdentifier]);
 
   // Open Lexicon Dictionary Annotation
   const openLexicon = (annotation, questionId) => {
@@ -501,51 +454,17 @@ export const AppProvider = ({ children }) => {
       // Merge correct answers + explanations into session questions
       const enrichedQuestions = mergeReviewData(activeSession.questions, reviewData.answers);
 
-      // Calculate results from review data
-      let correctCount = 0;
-      let incorrectCount = 0;
-      let unansweredCount = 0;
-
-      activeSession.questions.forEach((q, idx) => {
-        const userAns = activeSession.answers[idx];
-        const reviewQ = reviewData.answers.find((ra) => ra.id === q.id);
-        if (!userAns) {
-          unansweredCount++;
-        } else if (reviewQ && INDEX_TO_KEY.indexOf(userAns) === reviewQ.correctAnswer) {
-          correctCount++;
-        } else {
-          incorrectCount++;
-        }
-      });
-
-      const accuracy = Math.round((correctCount / activeSession.totalQuestions) * 100);
-      const score = accuracy;
-      const earnedXP = reviewData.attempt.earnedXP;
-
-      const results = {
+      const results = buildSessionResults({
+        activeSession,
+        reviewData,
+        enrichedQuestions,
         attemptId,
-        subjectId: activeSession.subjectId,
-        subjectName: activeSession.subjectName,
-        subjectCode: activeSession.subjectCode,
-        packageId: activeSession.packageId,
-        packageName: activeSession.packageName,
-        mode: activeSession.mode,
-        difficulty: activeSession.difficulty,
-        totalQuestions: activeSession.totalQuestions,
-        correctCount,
-        incorrectCount,
-        unansweredCount,
-        accuracy,
-        score,
-        earnedXP,
-        answers: activeSession.answers,
-        questions: enrichedQuestions,
-        completedAt: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
-      };
+      });
 
       sound.playSuccess();
 
       setSessionResults(results);
+      if (userIdentifier) clearPracticeDraft(userIdentifier);
       setActiveSession((prev) => ({
         ...prev,
         questions: enrichedQuestions,
@@ -577,22 +496,7 @@ export const AppProvider = ({ children }) => {
         .then((data) => {
           if (Array.isArray(data)) {
             setHistory(data);
-            const recentActivities = data.slice(0, 6).map((h) => {
-              const short = SLUG_TO_SHORT[h.slug] || h.slug;
-              return {
-                id: h.id,
-                code: short,
-                subject: h.topic,
-                title: `Selesai ${h.total} Soal ${h.topic}`,
-                xp: h.earnedXP ?? practiceXP(h.correct),
-                time: new Date(h.submittedAt).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                }),
-                accuracy: h.total > 0 ? `${Math.round((h.correct / h.total) * 100)}%` : "0%",
-              };
-            });
+            const recentActivities = formatRecentActivities(data);
             if (recentActivities.length > 0) {
               setUser((prev) => ({ ...prev, recentActivities }));
             }
@@ -607,12 +511,13 @@ export const AppProvider = ({ children }) => {
       submitLock.current = false;
       setSubmitting(false);
     }
-  }, [activeSession, refreshSummary, user.level]);
+  }, [activeSession, refreshSummary, user.level, userIdentifier]);
 
   // Exit Session
   const exitPractice = () => {
     if (submitLock.current) return;
     sound.playClick();
+    if (userIdentifier) clearPracticeDraft(userIdentifier);
     setActiveSession(null);
     setSessionResults(null);
     setSubmissionError("");
