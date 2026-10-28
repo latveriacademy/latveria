@@ -5097,6 +5097,10 @@ body::after {
     display: none;
   }
 
+  .tool-btn-shortcuts {
+    display: none !important;
+  }
+
   .tool-action-btn {
     padding: 6px 8px;
     min-width: 32px;

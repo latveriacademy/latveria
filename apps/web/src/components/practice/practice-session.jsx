@@ -176,7 +176,6 @@ export function PracticeSession({
             <span className="font-mono">{evaluated ? "KEMBALI" : "KELUAR"}</span>
           </Button>
           <div className="subtest-badge-box">
-            <span className="subtest-code font-mono">{session.subjectCode}</span>
             <span className="subtest-name font-serif">{session.subjectName}</span>
             {session.packageName && (
               <span className="subtest-package-badge font-mono text-xs px-2 py-0.5 rounded border border-[var(--edge)] text-[var(--gold)]">
@@ -230,7 +229,7 @@ export function PracticeSession({
         <div className="header-tools-group">
           <Button
             variant="ghost"
-            className="tool-action-btn hidden sm:inline-flex"
+            className="tool-action-btn tool-btn-shortcuts hidden md:inline-flex"
             onClick={() => setShowShortcuts(true)}
             title="Pintasan keyboard (?)"
           >
