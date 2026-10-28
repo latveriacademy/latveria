@@ -11,7 +11,7 @@ export function HistoryView() {
   return (
     <div className="latveria-view-container motion-page-enter">
       <PageHeading
-        title="Drill Log"
+        title="Riwayat Latihan"
         description={`${history.length} sesi drilling tersimpan`}
         actions={
           <Button asChild variant="outline">
@@ -62,9 +62,9 @@ export function HistoryView() {
           </ul>
         ) : (
           <div className={`${styles.empty} motion-fade-up`}>
-            <p>Drill Log masih kosong. Gas selesaikan sesi pertamamu.</p>
+            <p>Riwayat latihan masih kosong. Selesaikan sesi pertamamu.</p>
             <Button asChild>
-              <Link to="/dashboard?tab=practice">Gas drilling</Link>
+              <Link to="/dashboard?tab=practice">Mulai drilling</Link>
             </Button>
           </div>
         )}
@@ -92,7 +92,7 @@ export function HistoryErrorView() {
             </Button>
           )}
           <Button asChild variant="outline">
-            <Link to="/dashboard/riwayat">Drill Log</Link>
+            <Link to="/dashboard/riwayat">Riwayat latihan</Link>
           </Button>
           <Link to="/dashboard?tab=practice">Kembali ke Drilling</Link>
         </div>

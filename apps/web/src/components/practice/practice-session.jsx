@@ -377,7 +377,7 @@ export function PracticeSession({
             setShowResults(false);
             exitPractice();
           }}
-          exitLabel={reviewSession ? "Kembali ke Drill Log" : "Kembali ke Drilling"}
+          exitLabel={reviewSession ? "Kembali ke Riwayat" : "Kembali ke Drilling"}
         />
       )}
     </div>

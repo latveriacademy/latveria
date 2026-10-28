@@ -92,7 +92,6 @@ export const SettingsView = () => {
         <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
           <div className="group-header">
             <span className="group-title font-serif">Integrasi & Tautan Akun</span>
-            <span className="group-sub font-mono">CONNECTED ACCOUNTS</span>
           </div>
 
           <div className="settings-items-list">
@@ -148,14 +147,13 @@ export const SettingsView = () => {
         {/* Appearance Group */}
         <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
           <div className="group-header">
-            <span className="group-title font-serif">Tampilan & Estetika Antarmuka</span>
-            <span className="group-sub font-mono">VISUAL ENVIRONMENT</span>
+            <span className="group-title font-serif">Tampilan & Tema</span>
           </div>
 
           <div className="settings-items-list">
             <div className="setting-row">
               <div className="setting-meta">
-                <span className="setting-name font-sans">Tema Visual Latveria</span>
+                <span className="setting-name font-sans">Tema Visual</span>
                 <span className="setting-desc">
                   Pilih antara mode Latveria Obsidian (hutan hijau gelap) atau Imperial Parchment
                   (kertas arsip bertekstur).
@@ -189,9 +187,9 @@ export const SettingsView = () => {
 
             <div className="setting-row">
               <div className="setting-meta">
-                <span className="setting-name font-sans">Efek Suara Taktil (Web Audio Synth)</span>
+                <span className="setting-name font-sans">Efek Suara Audio</span>
                 <span className="setting-desc">
-                  Umpan balik klik mekanik dan denting institusional lembut saat interaksi sistem.
+                  Umpan balik audio lembut saat memilih jawaban, mengumpulkan latihan, dan navigasi.
                 </span>
               </div>
               <button
@@ -222,7 +220,6 @@ export const SettingsView = () => {
         <section className="settings-group-panel">
           <div className="group-header">
             <span className="group-title font-serif">Preferensi Latihan & Simulasi</span>
-            <span className="group-sub font-mono">PRACTICE ENGINE CONFIGURATION</span>
           </div>
 
           <div className="settings-items-list">
@@ -260,7 +257,7 @@ export const SettingsView = () => {
                   tes.
                 </span>
               </div>
-              <div className="badge-verified font-mono">STANDAR INSTITUSI (AKTIF)</div>
+              <div className="badge-verified font-mono">AKTIF</div>
             </div>
           </div>
         </section>

@@ -164,7 +164,7 @@ export function PracticeCatalog() {
             <Button asChild variant="outline">
               <Link to="/dashboard/riwayat">
                 <History size={16} />
-                Drill Log
+                Riwayat latihan
               </Link>
             </Button>
           </>

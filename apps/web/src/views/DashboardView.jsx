@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router";
 import { useApp } from "../context/AppContext";
 import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
 import { Flame, Target, ArrowUpRight, Play, Quote, RotateCcw } from "lucide-react";
@@ -110,28 +111,51 @@ export const DashboardView = () => {
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
-              <h1 className="hero-headline font-serif">Selamat datang, Warrior {user.name}.</h1>
+              <h1 className="hero-headline font-serif">
+                Selamat datang, {user.codename || user.name}.
+              </h1>
+              {user.targetUniversity ? (
+                <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-[var(--accent-gold)]">
+                  <Target size={13} className="shrink-0" />
+                  <span>
+                    Target PTN: <strong>{user.targetUniversity}</strong>
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCurrentTab("profile")}
+                  className="flex items-center gap-1.5 mt-1 text-xs font-mono text-[var(--text-muted)] hover:text-[var(--accent-gold)] transition-colors cursor-pointer"
+                >
+                  <Target size={13} className="shrink-0" />
+                  <span>Pasang target PTN impianmu di profil →</span>
+                </button>
+              )}
             </div>
 
             {/* Quick Metrics Bar */}
             <div className="hero-metrics-grid">
               <StatTile
-                label="STATUS LEVEL"
+                label="LEVEL & GELAR"
                 value={`LEVEL ${user.level < 10 ? `0${user.level}` : user.level}`}
               >
                 <span className="metric-sub-note">{user.title}</span>
               </StatTile>
 
               <StatTile
-                label="ACTIVE STREAK"
+                label="STREAK HARIAN"
                 value={user.streakDays}
                 icon={<Flame size={20} className="text-orange" />}
               >
-                <span className="metric-sub-note">Konsistensi protokol terjaga</span>
+                <span className="metric-sub-note">
+                  {user.practicedToday
+                    ? "Latihan hari ini selesai"
+                    : "Selesaikan 1 latihan hari ini"}
+                </span>
               </StatTile>
 
               <StatTile
-                label="GLOBAL ACCURACY"
+                label="AKURASI GLOBAL"
                 value={user.accuracy}
                 icon={<Target size={20} className="text-sage" />}
               >
@@ -155,7 +179,7 @@ export const DashboardView = () => {
                 </div>
                 <div className="xp-right font-mono">
                   <span>
-                    <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP MENUJU LEVEL{" "}
+                    <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP menuju Level{" "}
                     {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}
                   </span>
                 </div>
@@ -381,11 +405,11 @@ export const DashboardView = () => {
 
           <div className="stat-tiles-quad">
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
-              <div className="quad-top font-mono">QUESTIONS COMPLETED</div>
+              <div className="quad-top font-mono">SOAL SELESAI</div>
               <div className="quad-number font-serif">
                 <AnimatedNumber value={user.questionsCompleted} />
               </div>
-              <div className="quad-bottom font-mono text-sage">TARGET: 1,000 SOAL</div>
+              <div className="quad-bottom font-mono text-sage">Butir soal terselesaikan</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
@@ -397,13 +421,13 @@ export const DashboardView = () => {
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
-              <div className="quad-top font-mono">LATIHAN SELESAI</div>
+              <div className="quad-top font-mono">SESI LATIHAN</div>
               <div className="quad-number font-serif">{user.attempts}</div>
               <div className="quad-bottom font-mono text-sage">Sesi yang sudah dikumpulkan</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
-              <div className="quad-top font-mono">ACCURACY BENCHMARK</div>
+              <div className="quad-top font-mono">RATA-RATA AKURASI</div>
               <div className="quad-number font-serif">
                 <AnimatedNumber value={user.accuracy} formatter={(n) => `${n}%`} />
               </div>
@@ -414,14 +438,19 @@ export const DashboardView = () => {
 
         {/* Recent Activity Stream */}
         <Panel>
-          <PanelHeader title="Drill Log">
-            <span className="meta-tag-id font-mono">LOG.HIST-0824</span>
+          <PanelHeader title="Riwayat latihan">
+            <Link
+              to="/dashboard/riwayat"
+              className="font-mono text-xs text-[var(--accent-gold)] hover:underline flex items-center gap-1"
+            >
+              Lihat semua <ArrowUpRight size={12} />
+            </Link>
           </PanelHeader>
 
           <div className="activity-stream-list">
             {user.recentActivities.length === 0 ? (
               <p className="text-muted font-sans text-sm px-1 py-3">
-                Belum ada riwayat latihan. Gas drilling pertamamu!
+                Belum ada riwayat latihan. Pilih subtes atau mulai drilling pertamamu!
               </p>
             ) : (
               user.recentActivities.map((act) => (
