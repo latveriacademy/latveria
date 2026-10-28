@@ -457,11 +457,11 @@ export const DashboardView = () => {
               </p>
             ) : (
               user.recentActivities.map((act) => (
-                <div
+                <Link
                   key={act.id}
+                  to={act.id ? `/dashboard/riwayat/${act.id}` : "/dashboard/riwayat"}
                   className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]"
                 >
-                  <div className="activity-sub-badge font-mono">{act.code}</div>
                   <div className="activity-body">
                     <div className="activity-title-text font-sans">{act.title}</div>
                     <div className="activity-meta font-mono">
@@ -471,7 +471,7 @@ export const DashboardView = () => {
                     </div>
                   </div>
                   <div className="activity-xp-pill font-mono">+{act.xp} XP</div>
-                </div>
+                </Link>
               ))
             )}
           </div>
