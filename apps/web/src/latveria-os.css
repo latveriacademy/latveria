@@ -4909,7 +4909,46 @@ body::after {
 }
 
 @media (max-width: 768px) {
-  /* Sidebar jadi overlay drawer di mobile */
+  /* Kalau sudah ada bottom navbar, tidak perlu ada sidebar di mobile */
+  .has-bottom-nav .latveria-sidebar,
+  .latveria-app-shell:has(.latveria-bottom-nav) .latveria-sidebar,
+  .learner-shell .latveria-sidebar {
+    display: none !important;
+  }
+
+  .has-bottom-nav .sidebar-mobile-backdrop,
+  .latveria-app-shell:has(.latveria-bottom-nav) .sidebar-mobile-backdrop,
+  .learner-shell .sidebar-mobile-backdrop {
+    display: none !important;
+  }
+
+  /* Di viewport kecil jika ada bottom navbar, cukup tampilkan logo saja di header (sembunyikan toggle sidebar) */
+  .has-bottom-nav .sidebar-toggle-in-header,
+  .latveria-app-shell:has(.latveria-bottom-nav) .sidebar-toggle-in-header,
+  .learner-shell .sidebar-toggle-in-header {
+    display: none !important;
+  }
+
+  .has-bottom-nav .header-brand-slot,
+  .latveria-app-shell:has(.latveria-bottom-nav) .header-brand-slot,
+  .learner-shell .header-brand-slot {
+    display: flex !important;
+    opacity: 1 !important;
+    max-width: none !important;
+    margin-right: 6px !important;
+    pointer-events: auto !important;
+  }
+
+  .has-bottom-nav .header-meta-group,
+  .latveria-app-shell:has(.latveria-bottom-nav) .header-meta-group,
+  .learner-shell .header-meta-group,
+  .has-bottom-nav .header-stat-pill,
+  .latveria-app-shell:has(.latveria-bottom-nav) .header-stat-pill,
+  .learner-shell .header-stat-pill {
+    display: none !important;
+  }
+
+  /* Sidebar jadi overlay drawer di mobile jika tanpa bottom navbar */
   .latveria-sidebar {
     position: fixed;
     top: 0;

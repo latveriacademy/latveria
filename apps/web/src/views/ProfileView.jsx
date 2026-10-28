@@ -17,13 +17,15 @@ import {
   Camera,
   Trash2,
   Loader2,
+  Settings,
 } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { PageHeading, ProgressBar } from "../components/ui/dashboard";
 import { api } from "../lib/api";
 
 export const ProfileView = () => {
-  const { user, setUser, showToast, profileLoaded, profileError, loadProfile } = useApp();
+  const { user, setUser, showToast, profileLoaded, profileError, loadProfile, setCurrentTab } =
+    useApp();
 
   // Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
@@ -202,6 +204,14 @@ export const ProfileView = () => {
               >
                 <KeyRound size={13} />
                 <span>Ubah kata sandi</span>
+              </button>
+              <button
+                type="button"
+                className="btn-edit-dossier font-mono transition-transform duration-150 hover:scale-105 active:scale-95 justify-center"
+                onClick={() => setCurrentTab("settings")}
+              >
+                <Settings size={13} />
+                <span>Setelan aplikasi</span>
               </button>
             </div>
           </div>

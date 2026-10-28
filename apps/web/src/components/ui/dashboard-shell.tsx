@@ -27,12 +27,19 @@ export function DashboardShell({
   contentId?: string;
 }) {
   return (
-    <div className={cn("latveria-app-shell motion-fade-in", className)} {...props}>
+    <div
+      className={cn(
+        "latveria-app-shell motion-fade-in",
+        bottomNav ? "has-bottom-nav" : undefined,
+        className,
+      )}
+      {...props}
+    >
       <a className="skip-link" href={`#${contentId}`}>
         Lewati navigasi
       </a>
       {sidebar}
-      {sidebarOpen && onCloseSidebar && (
+      {sidebarOpen && onCloseSidebar && !bottomNav && (
         <div
           className="sidebar-mobile-backdrop transition-opacity duration-200 ease-out"
           onClick={onCloseSidebar}
