@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getDb } from "../lib/db";
-import { user as userTable, session } from "../lib/db/auth-schema";
+import { user as userTable, session, account } from "../lib/db/auth-schema";
 import {
   practiceAnswers,
   practiceAttempts,
@@ -130,6 +130,13 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
     .where(eq(userTable.isDemo, true));
   const demoCount = Number(demoResult?.count ?? 0);
 
+  // Hidden users count (hideFromLeaderboard)
+  const [hiddenResult] = await db
+    .select({ count: count() })
+    .from(userTable)
+    .where(eq(userTable.hideFromLeaderboard, true));
+  const hiddenCount = Number(hiddenResult?.count ?? 0);
+
   // Total practice time (sum of all time spent)
   const [totalTimeResult] = await db
     .select({ total: sql<number>`COALESCE(SUM(${practiceAttempts.timeSpentSeconds}), 0)` })
@@ -179,6 +186,7 @@ usersHandler.get("/api/admin/users/stats/overview", async (c) => {
     newThisWeek,
     deactivatedCount,
     demoCount,
+    hiddenCount,
     totalPracticeTime,
     totalQuestionsAnswered,
     avgAccuracy: Math.round(avgAccuracy),
@@ -328,6 +336,24 @@ usersHandler.get("/api/admin/users", async (c) => {
   );
   const progress = await getUserProgress(userIds);
 
+  // Get linked accounts / auth providers for users
+  const userAccounts = userIds.length
+    ? await db
+        .select({
+          userId: account.userId,
+          providerId: account.providerId,
+        })
+        .from(account)
+        .where(inArray(account.userId, userIds))
+    : [];
+
+  const providersByUserId = new Map<string, string[]>();
+  for (const acc of userAccounts) {
+    const list = providersByUserId.get(acc.userId) || [];
+    list.push(acc.providerId);
+    providersByUserId.set(acc.userId, list);
+  }
+
   const rows = users.map((u) => {
     const stats = statsMap.get(u.id) ?? {
       answered: 0,
@@ -335,23 +361,27 @@ usersHandler.get("/api/admin/users", async (c) => {
       timeSpent: 0,
       lastActivity: null,
     };
+    const userProviders = providersByUserId.get(u.id) || [];
+    const hasDiscord = userProviders.includes("discord");
     const summary = progress.get(u.id)!;
     const answered = summary.answered;
     const correct = summary.correct;
     const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
     const { totalXP, level } = summary;
 
-    return {
-      ...u,
-      answered,
-      correct,
-      accuracy,
-      totalXP,
-      level,
-      timeSpent: summary.timeSpent,
-      lastActivity: stats.lastActivity,
-    };
-  });
+      return {
+        ...u,
+        providers: userProviders,
+        hasDiscord,
+        answered,
+        correct,
+        accuracy,
+        totalXP,
+        level,
+        timeSpent: summary.timeSpent,
+        lastActivity: stats.lastActivity,
+      };
+    });
 
   // Get total count
   const [countResult] = await db
@@ -533,8 +563,27 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
     .where(eq(questionReports.userId, userId));
   const reportsCount = Number(reportsCountResult?.count ?? 0);
 
+  // Get linked accounts / auth providers (e.g. credential, discord)
+  const linkedAccounts = await db
+    .select({
+      id: account.id,
+      providerId: account.providerId,
+      accountId: account.accountId,
+      createdAt: account.createdAt,
+    })
+    .from(account)
+    .where(eq(account.userId, userId));
+
+  const providers = linkedAccounts.map((a) => a.providerId);
+  const hasDiscord = providers.includes("discord");
+  const discordAccount = linkedAccounts.find((a) => a.providerId === "discord");
+
   return c.json({
     ...u,
+    providers,
+    hasDiscord,
+    discordAccountId: discordAccount?.accountId ?? null,
+    discordLinkedAt: discordAccount?.createdAt?.toISOString() ?? null,
     answered,
     correct,
     accuracy,

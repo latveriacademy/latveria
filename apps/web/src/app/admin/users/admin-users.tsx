@@ -11,6 +11,10 @@ import {
   BarChart3,
   UserPlus,
   Upload,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { ConfirmDialog } from "../../../components/confirm-dialog";
@@ -33,6 +37,7 @@ interface OverviewStats {
   newThisWeek: number;
   deactivatedCount: number;
   demoCount: number;
+  hiddenCount: number;
   totalPracticeTime: number;
   totalQuestionsAnswered: number;
   avgAccuracy: number;
@@ -51,6 +56,8 @@ export interface UserStats {
   isDeactivated: boolean;
   lastLoginAt: string | null;
   deactivatedAt: string | null;
+  providers?: string[];
+  hasDiscord?: boolean;
   answered: number;
   correct: number;
   accuracy: number;
@@ -74,6 +81,10 @@ export interface UserDetail extends UserStats {
   role: string;
   accountNotes: string;
   failedLoginAttempts: number;
+  providers: string[];
+  hasDiscord: boolean;
+  discordAccountId: string | null;
+  discordLinkedAt: string | null;
   currentXP: number;
   nextLevelXP: number;
   avgTimePerQuestion: number;
@@ -130,6 +141,7 @@ export function AdminUsers() {
   const [isImportOpen, setIsImportOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") ?? "1", 10);
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20));
   const search = searchParams.get("search") ?? "";
   const demoFilter = searchParams.get("demo") ?? "";
   const roleFilter = searchParams.get("role") ?? "";
@@ -153,7 +165,7 @@ export function AdminUsers() {
       setError(null);
       const params = new URLSearchParams();
       params.set("page", String(page));
-      params.set("limit", "20");
+      params.set("limit", String(limit));
       if (search) params.set("search", search);
       if (demoFilter) params.set("demo", demoFilter);
       if (roleFilter) params.set("role", roleFilter);
@@ -168,7 +180,7 @@ export function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, demoFilter, roleFilter, status, sortBy, sortOrder]);
+  }, [page, limit, search, demoFilter, roleFilter, status, sortBy, sortOrder]);
 
   const fetchUserDetail = useCallback(async (userId: string) => {
     try {
@@ -195,12 +207,26 @@ export function AdminUsers() {
     }
   }, [viewUserId, fetchUserDetail]);
 
+  const updateFilters = (updates: Record<string, string>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      let resetPage = false;
+      for (const [key, value] of Object.entries(updates)) {
+        if (!value) next.delete(key);
+        else next.set(key, value);
+        if (key !== "view" && key !== "page") {
+          resetPage = true;
+        }
+      }
+      if (resetPage) {
+        next.delete("page");
+      }
+      return next;
+    });
+  };
+
   const updateFilter = (key: string, value: string) => {
-    const next = new URLSearchParams(searchParams);
-    if (!value) next.delete(key);
-    else next.set(key, value);
-    if (key !== "view") next.delete("page");
-    setSearchParams(next);
+    updateFilters({ [key]: value });
   };
 
   const toggleFlag = async (
@@ -215,6 +241,7 @@ export function AdminUsers() {
         body: JSON.stringify({ [flag]: !currentValue }),
       });
       await fetchList();
+      fetchOverview();
       if (selectedUser && selectedUser.id === userId) {
         await fetchUserDetail(userId);
       }
@@ -232,6 +259,7 @@ export function AdminUsers() {
         body: JSON.stringify({ deactivate }),
       });
       await fetchList();
+      fetchOverview();
       if (selectedUser && selectedUser.id === userId) {
         await fetchUserDetail(userId);
       }
@@ -245,6 +273,7 @@ export function AdminUsers() {
       await api(`/admin/users/${userId}/reset`, { method: "POST" });
       setResetTarget(null);
       await fetchList();
+      fetchOverview();
       if (selectedUser && selectedUser.id === userId) {
         await fetchUserDetail(userId);
       }
@@ -260,6 +289,7 @@ export function AdminUsers() {
       setSelectedUser(null);
       updateFilter("view", "");
       await fetchList();
+      fetchOverview();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menghapus user.");
     }
@@ -323,6 +353,7 @@ export function AdminUsers() {
       });
       setSelectedIds(new Set());
       await fetchList();
+      fetchOverview();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal melakukan aksi.");
     } finally {
@@ -383,7 +414,7 @@ export function AdminUsers() {
                   Sembunyikan
                 </Button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[var(--gold)]">{overview.totalUsers}</div>
                   <div className="text-xs text-[var(--soft-ink)]">Total User</div>
@@ -395,6 +426,14 @@ export function AdminUsers() {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-500">{overview.newThisWeek}</div>
                   <div className="text-xs text-[var(--soft-ink)]">Baru Minggu Ini</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-400">{overview.demoCount}</div>
+                  <div className="text-xs text-[var(--soft-ink)]">User Demo</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-400">{overview.hiddenCount}</div>
+                  <div className="text-xs text-[var(--soft-ink)]">Tersembunyi</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[var(--gold)]">
@@ -469,8 +508,7 @@ export function AdminUsers() {
                 value={`${sortBy}-${sortOrder}`}
                 onValueChange={(v) => {
                   const [s, o] = v.split("-");
-                  updateFilter("sort", s);
-                  updateFilter("order", o);
+                  updateFilters({ sort: s, order: o });
                 }}
               >
                 <SelectTrigger className="w-44">
@@ -552,10 +590,10 @@ export function AdminUsers() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <StatTile label="Total User" value={data.pagination.total} />
                 <StatTile label="Halaman" value={`${page} / ${data.pagination.pageCount}`} />
-                <StatTile label="User Demo" value={data.rows.filter((u) => u.isDemo).length} />
+                <StatTile label="User Demo" value={overview?.demoCount ?? 0} />
                 <StatTile
                   label="Tersembunyi"
-                  value={data.rows.filter((u) => u.hideFromLeaderboard).length}
+                  value={overview?.hiddenCount ?? 0}
                 />
               </div>
 
@@ -645,6 +683,14 @@ export function AdminUsers() {
                           </td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1 flex-wrap">
+                              {user.hasDiscord && (
+                                <span
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-[#5865F2]/20 text-[#5865F2] font-medium"
+                                  title="Terhubung dengan akun Discord"
+                                >
+                                  Discord
+                                </span>
+                              )}
                               {user.role === "admin" && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
                                   Admin
@@ -689,27 +735,72 @@ export function AdminUsers() {
                 </table>
               </div>
 
-              {data.pagination.pageCount > 1 && (
-                <div className="flex items-center justify-center gap-4 mt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1 || loading}
-                    onClick={() => updateFilter("page", String(page - 1))}
-                  >
-                    Sebelumnya
-                  </Button>
-                  <span className="text-sm text-[var(--soft-ink)]">
-                    Halaman {page} dari {data.pagination.pageCount}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= data.pagination.pageCount || loading}
-                    onClick={() => updateFilter("page", String(page + 1))}
-                  >
-                    Berikutnya
-                  </Button>
+              {data && data.pagination.total > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-[var(--line)]">
+                  <div className="flex items-center gap-2 text-sm text-[var(--soft-ink)]">
+                    <span>Tampilkan</span>
+                    <Select
+                      value={String(limit)}
+                      onValueChange={(val) => updateFilter("limit", val)}
+                    >
+                      <SelectTrigger className="w-24 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 / hal</SelectItem>
+                        <SelectItem value="20">20 / hal</SelectItem>
+                        <SelectItem value="50">50 / hal</SelectItem>
+                        <SelectItem value="100">100 / hal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span>user (Total: {data.pagination.total})</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1 || loading}
+                      onClick={() => updateFilter("page", "1")}
+                      title="Halaman pertama"
+                    >
+                      <ChevronsLeft size={16} />
+                      <span className="hidden sm:inline ml-1">Awal</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1 || loading}
+                      onClick={() => updateFilter("page", String(page - 1))}
+                      title="Halaman sebelumnya"
+                    >
+                      <ChevronLeft size={16} />
+                      <span className="hidden sm:inline ml-1">Sebelumnya</span>
+                    </Button>
+                    <span className="text-sm text-[var(--soft-ink)] px-2 whitespace-nowrap">
+                      Halaman {page} dari {data.pagination.pageCount || 1}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= data.pagination.pageCount || loading}
+                      onClick={() => updateFilter("page", String(page + 1))}
+                      title="Halaman berikutnya"
+                    >
+                      <span className="hidden sm:inline mr-1">Berikutnya</span>
+                      <ChevronRight size={16} />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= data.pagination.pageCount || loading}
+                      onClick={() => updateFilter("page", String(data.pagination.pageCount))}
+                      title="Halaman terakhir"
+                    >
+                      <span className="hidden sm:inline mr-1">Akhir</span>
+                      <ChevronsRight size={16} />
+                    </Button>
+                  </div>
                 </div>
               )}
             </>
