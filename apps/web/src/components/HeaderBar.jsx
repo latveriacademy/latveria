@@ -41,10 +41,12 @@ export const HeaderBar = () => {
       </div>
 
       {/* XP Quick Pill */}
-      <div
-        className="header-stat-pill xp-pill transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+      <button
+        type="button"
+        className="header-stat-pill xp-pill font-sans transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
         onClick={() => setCurrentTab("profile")}
         title="Klik untuk membuka Profil & Catatan Prestasi"
+        aria-label="Buka Profil dan Catatan Prestasi"
       >
         <Award
           size={14}
@@ -54,7 +56,7 @@ export const HeaderBar = () => {
           <AnimatedNumber value={user.totalXP} />
         </span>
         <span className="stat-pill-label">EXP</span>
-      </div>
+      </button>
 
       {/* Sound Toggle */}
       <button

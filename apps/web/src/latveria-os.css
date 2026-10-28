@@ -873,7 +873,6 @@ body::after {
 
 /* Profile Popup Menu (uses portal to escape sidebar overflow) */
 .profile-popup-menu {
-  position: fixed;
   min-width: 240px;
   background: var(--bg-card);
   border: 1px solid var(--border-medium);
@@ -3408,6 +3407,11 @@ body::after {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
   width: 280px;
+  transition: border-color 0.15s ease;
+}
+
+.leaderboard-search-box:focus-within {
+  border-color: var(--accent-gold);
 }
 
 /* Filter row with metric tabs */
@@ -4811,7 +4815,8 @@ body::after {
    ========================================================================== */
 .latveria-bottom-nav {
   display: none;
-  height: var(--bottom-nav-height);
+  height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bg-sidebar);
   border-top: 1px solid var(--border-subtle);
   position: fixed;
@@ -4824,11 +4829,19 @@ body::after {
 .bottom-nav-inner {
   display: flex;
   height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bottom-nav-inner::-webkit-scrollbar {
+  display: none;
 }
 
 .bottom-nav-btn {
   text-decoration: none;
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4861,8 +4874,13 @@ body::after {
 }
 
 .bottom-label {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 56px;
+  text-align: center;
 }
 
 /* ==========================================================================
@@ -4923,6 +4941,9 @@ body::after {
 
   .latveria-bottom-nav {
     display: block;
+  }
+  .latveria-content-scroll {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
   .latveria-header-bar {
     padding: 0 10px;

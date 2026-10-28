@@ -258,6 +258,7 @@ export const DashboardView = () => {
                     rotate();
                   }}
                   title="Afirmasi berikutnya"
+                  aria-label="Afirmasi berikutnya"
                 >
                   <RotateCcw size={14} />
                 </button>

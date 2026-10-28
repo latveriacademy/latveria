@@ -86,10 +86,12 @@ export function LexiconDrawer() {
         <DialogPrimitive.Content className={styles.drawer} aria-describedby="lexicon-drawer-desc">
           {/* Header Bar */}
           <div className="lexicon-header">
-            <div className="lexicon-stamp font-mono">
-              <span className="lexicon-dot" />
-              <span>GLOSARIUM AKADEMIK LATVERIA</span>
-            </div>
+            <DialogPrimitive.Title asChild>
+              <div className="lexicon-stamp font-mono">
+                <span className="lexicon-dot" />
+                <span>GLOSARIUM AKADEMIK LATVERIA</span>
+              </div>
+            </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
               <button type="button" className="lexicon-close-btn" aria-label="Tutup glosarium">
                 <X size={18} />

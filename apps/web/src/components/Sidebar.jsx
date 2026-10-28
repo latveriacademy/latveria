@@ -84,12 +84,7 @@ function CompactProfileCard({
           </div>
         )}
       </div>
-      <PopoverContent
-        side="top"
-        className="profile-popup-menu is-open"
-        aria-label="Menu profil"
-        style={{ position: "relative", top: "auto", left: "auto" }}
-      >
+      <PopoverContent side="top" className="profile-popup-menu is-open" aria-label="Menu profil">
         <div className="popup-stats-header">
           <div className="popup-id-row">
             <span className="popup-code font-mono">{user.id}</span>

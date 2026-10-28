@@ -205,6 +205,7 @@ export const LeaderboardView = () => {
               type="text"
               className="search-input font-sans"
               placeholder="Cari kandidat atau nomor ID…"
+              aria-label="Cari kandidat atau nomor ID"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

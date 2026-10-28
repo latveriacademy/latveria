@@ -73,7 +73,8 @@ export function LibraryView() {
               <Input
                 value={cari}
                 onChange={(e) => setCari(e.target.value)}
-                placeholder="Cari materi pembelajaran..."
+                placeholder="Cari materi pembelajaran…"
+                aria-label="Cari materi pembelajaran"
                 className="pl-9 w-full bg-[var(--surface-elevated)]"
               />
             </div>

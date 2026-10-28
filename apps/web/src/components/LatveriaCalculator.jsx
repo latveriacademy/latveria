@@ -217,6 +217,7 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
             className="calc-btn-close"
             onClick={onClose}
             title="Tutup Kalkulator"
+            aria-label="Tutup kalkulator"
           >
             <X size={15} />
           </button>
@@ -324,7 +325,12 @@ export const LatveriaCalculator = ({ isOpen, onClose, isAllowed = true }) => {
             <button type="button" className="calc-key num-key" onClick={handleDecimal}>
               .
             </button>
-            <button type="button" className="calc-key op-key" onClick={handleBackspace}>
+            <button
+              type="button"
+              className="calc-key op-key"
+              onClick={handleBackspace}
+              aria-label="Hapus satu angka"
+            >
               <Delete size={14} />
             </button>
             <button type="button" className="calc-key eq-key" onClick={handleEquals}>
