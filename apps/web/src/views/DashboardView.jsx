@@ -101,6 +101,11 @@ export const DashboardView = () => {
   // Format countdown segment
   const pad = (n) => String(n).padStart(2, "0");
 
+  const rawName = (user.codename || user.name || "Peserta").trim();
+  const warriorGreeting = rawName.toLowerCase().startsWith("warrior")
+    ? rawName
+    : `Warrior ${rawName}`;
+
   return (
     <div className="latveria-view-container dashboard-view">
       {/* Background Seal Watermark */}
@@ -111,9 +116,7 @@ export const DashboardView = () => {
         <div className="hero-main-content">
           <div className="hero-left">
             <div className="hero-salutation">
-              <h1 className="hero-headline font-serif">
-                Selamat datang, {user.codename || user.name}.
-              </h1>
+              <h1 className="hero-headline font-serif">Selamat datang, {warriorGreeting}.</h1>
               {user.targetUniversity ? (
                 <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-[var(--accent-gold)]">
                   <Target size={13} className="shrink-0" />

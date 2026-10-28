@@ -289,94 +289,159 @@ export const LeaderboardView = () => {
         <div className="leaderboard-empty font-mono">Belum ada peserta pada periode ini</div>
       ) : (
         filteredEntries.length > 3 && (
-          <div className="roster-table-container motion-fade-up">
-            <table className="roster-table" aria-label="Tabel Peringkat Akademik">
-              <thead>
-                <tr className="font-mono">
-                  <th className="th-rank">RANK</th>
-                  <th className="th-candidate">KANDIDAT & IDENTITAS</th>
-                  <th className="th-level">LEVEL</th>
-                  <th className="th-xp">
-                    {metric === "xp"
-                      ? "XP"
-                      : metric === "accuracy"
-                        ? "AKURASI"
-                        : metric === "streak"
-                          ? "STREAK"
-                          : metric === "correct"
-                            ? "BENAR"
-                            : "DIJAWAB"}
-                  </th>
-                  {metric !== "streak" && <th className="th-acc">AKURASI</th>}
-                  {metric !== "streak" && <th className="th-questions">SOAL</th>}
-                  <th className="th-level">TOTAL XP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEntries.slice(3).map((cand) => {
-                  const isUser = cand.isCurrentUser;
-                  return (
-                    <tr
-                      key={cand.id}
-                      className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? "user-highlight-row" : ""}`}
-                    >
-                      <td className="td-rank font-mono">
-                        <div className="rank-cell-wrapper">
-                          {cand.rank <= 3 ? (
-                            <span className="rank-crown-pill font-mono">#{cand.rank}</span>
-                          ) : (
-                            <span className="rank-num font-mono">
-                              #{cand.rank < 10 ? `0${cand.rank}` : cand.rank}
-                            </span>
+          <>
+            {/* Desktop Table View */}
+            <div className="roster-table-container roster-desktop-only motion-fade-up">
+              <table className="roster-table" aria-label="Tabel Peringkat Akademik">
+                <thead>
+                  <tr className="font-mono">
+                    <th className="th-rank">RANK</th>
+                    <th className="th-candidate">KANDIDAT & IDENTITAS</th>
+                    <th className="th-level">LEVEL</th>
+                    <th className="th-xp">
+                      {metric === "xp"
+                        ? "XP"
+                        : metric === "accuracy"
+                          ? "AKURASI"
+                          : metric === "streak"
+                            ? "STREAK"
+                            : metric === "correct"
+                              ? "BENAR"
+                              : "DIJAWAB"}
+                    </th>
+                    {metric !== "streak" && <th className="th-acc">AKURASI</th>}
+                    {metric !== "streak" && <th className="th-questions">SOAL</th>}
+                    <th className="th-level">TOTAL XP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEntries.slice(3).map((cand) => {
+                    const isUser = cand.isCurrentUser;
+                    return (
+                      <tr
+                        key={cand.id}
+                        className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? "user-highlight-row" : ""}`}
+                      >
+                        <td className="td-rank font-mono">
+                          <div className="rank-cell-wrapper">
+                            {cand.rank <= 3 ? (
+                              <span className="rank-crown-pill font-mono">#{cand.rank}</span>
+                            ) : (
+                              <span className="rank-num font-mono">
+                                #{cand.rank < 10 ? `0${cand.rank}` : cand.rank}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="td-candidate">
+                          <div className="candidate-cell">
+                            <div className="avatar-chip font-serif">{cand.name.charAt(0)}</div>
+                            <div className="candidate-details">
+                              <div className="candidate-name font-sans">
+                                {cand.name}
+                                {isUser && <span className="you-pill font-mono">YOU</span>}
+                              </div>
+                              <div className="candidate-id font-mono text-muted">{cand.id}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="td-level font-mono">
+                          <span className="level-badge">
+                            LVL {cand.level < 10 ? `0${cand.level}` : cand.level}
+                          </span>
+                        </td>
+
+                        <td className="td-xp font-mono">
+                          <span className="text-gold font-bold">
+                            {formatMetricValue(cand.metricValue, metric)}
+                          </span>
+                        </td>
+
+                        {metric !== "streak" && (
+                          <td className="td-acc font-mono">
+                            <span className="text-sage font-bold">{cand.accuracy ?? "-"}%</span>
+                          </td>
+                        )}
+                        {metric !== "streak" && (
+                          <td className="td-questions font-mono">
+                            <span>{cand.answered ?? 0} Q</span>
+                          </td>
+                        )}
+
+                        <td className="td-level font-mono">
+                          <span className="text-muted">
+                            {cand.totalXP?.toLocaleString() || 0} XP
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card Roster View */}
+            <div className="roster-mobile-list roster-mobile-only motion-fade-up">
+              {filteredEntries.slice(3).map((cand) => {
+                const isUser = cand.isCurrentUser;
+                return (
+                  <div
+                    key={cand.id}
+                    className={`roster-mobile-card ${isUser ? "user-highlight-card" : ""}`}
+                  >
+                    <div className="roster-mobile-main">
+                      <div className="roster-mobile-rank">
+                        {cand.rank <= 3 ? (
+                          <span className="rank-crown-pill font-mono">#{cand.rank}</span>
+                        ) : (
+                          <span className="rank-num font-mono">
+                            #{cand.rank < 10 ? `0${cand.rank}` : cand.rank}
+                          </span>
+                        )}
+                      </div>
+                      <div className="avatar-chip font-serif">{cand.name.charAt(0)}</div>
+                      <div className="roster-mobile-info">
+                        <div className="candidate-name font-sans">
+                          <span className="font-semibold text-[var(--text-primary)]">
+                            {cand.name}
+                          </span>
+                          {isUser && <span className="you-pill font-mono">YOU</span>}
+                        </div>
+                        <div className="roster-mobile-sub font-mono">
+                          <span>LVL {cand.level < 10 ? `0${cand.level}` : cand.level}</span>
+                          <span className="mx-1 text-muted">·</span>
+                          <span className="text-muted">{cand.id}</span>
+                        </div>
+                      </div>
+                      <div className="roster-mobile-metric font-mono">
+                        <div className="text-gold font-bold text-sm text-right">
+                          {formatMetricValue(cand.metricValue, metric)}
+                        </div>
+                        {metric !== "xp" && (
+                          <div className="text-muted text-[10px] text-right">
+                            {cand.totalXP?.toLocaleString() || 0} XP
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {metric !== "streak" &&
+                      (cand.accuracy !== undefined || cand.answered !== undefined) && (
+                        <div className="roster-mobile-footer font-mono">
+                          {cand.accuracy !== undefined && (
+                            <span className="text-sage">Akurasi: {cand.accuracy ?? "-"}%</span>
+                          )}
+                          {cand.answered !== undefined && (
+                            <span className="text-muted">Soal: {cand.answered ?? 0} Q</span>
                           )}
                         </div>
-                      </td>
-
-                      <td className="td-candidate">
-                        <div className="candidate-cell">
-                          <div className="avatar-chip font-serif">{cand.name.charAt(0)}</div>
-                          <div className="candidate-details">
-                            <div className="candidate-name font-sans">
-                              {cand.name}
-                              {isUser && <span className="you-pill font-mono">YOU</span>}
-                            </div>
-                            <div className="candidate-id font-mono text-muted">{cand.id}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="td-level font-mono">
-                        <span className="level-badge">
-                          LVL {cand.level < 10 ? `0${cand.level}` : cand.level}
-                        </span>
-                      </td>
-
-                      <td className="td-xp font-mono">
-                        <span className="text-gold font-bold">
-                          {formatMetricValue(cand.metricValue, metric)}
-                        </span>
-                      </td>
-
-                      {metric !== "streak" && (
-                        <td className="td-acc font-mono">
-                          <span className="text-sage font-bold">{cand.accuracy ?? "-"}%</span>
-                        </td>
                       )}
-                      {metric !== "streak" && (
-                        <td className="td-questions font-mono">
-                          <span>{cand.answered ?? 0} Q</span>
-                        </td>
-                      )}
-
-                      <td className="td-level font-mono">
-                        <span className="text-muted">{cand.totalXP?.toLocaleString() || 0} XP</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )
       )}
 

@@ -1383,9 +1383,9 @@ body::after {
 
 .hero-main-content {
   display: grid;
-  grid-template-columns: 1fr 310px;
-  gap: 28px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: stretch;
 }
 
 .hero-sub {
@@ -1397,11 +1397,13 @@ body::after {
 }
 
 .hero-headline {
-  font-size: 32px;
+  font-size: clamp(22px, 3.2vw, 30px);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.25;
   color: var(--text-primary);
   margin-bottom: 8px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .hero-description {
@@ -1413,8 +1415,8 @@ body::after {
 
 .hero-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -1423,6 +1425,9 @@ body::after {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 12px 14px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .metric-label-mono {
@@ -3786,6 +3791,69 @@ body::after {
   color: var(--text-muted);
 }
 
+/* Mobile Roster List */
+.roster-mobile-only {
+  display: none;
+}
+.roster-desktop-only {
+  display: block;
+}
+
+.roster-mobile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.roster-mobile-card.user-highlight-card {
+  background: var(--accent-gold-dim);
+  border-color: var(--accent-gold);
+}
+
+.roster-mobile-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.roster-mobile-rank {
+  min-width: 28px;
+  text-align: center;
+}
+
+.roster-mobile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.roster-mobile-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.roster-mobile-metric {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.roster-mobile-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* ==========================================================================
    PROFILE DOSSIER & ACHIEVEMENTS
    ========================================================================== */
@@ -4897,8 +4965,21 @@ body::after {
   }
   .hero-main-content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
   .hero-right-cta {
+    display: block;
+    width: 100%;
+  }
+  .cta-border-box {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    align-items: center;
+  }
+  .cta-crest-center,
+  .cta-heading {
     display: none;
   }
   .dashboard-grid-dual,
@@ -5046,6 +5127,115 @@ body::after {
   .header-desktop-tool {
     display: none !important;
   }
+
+  /* Leaderboard mobile adjustments */
+  .leaderboard-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .metric-tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    display: flex;
+  }
+
+  .metric-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .metric-tab {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .leaderboard-search-box {
+    grid-column: span 2;
+    width: 100%;
+  }
+
+  /* Podium on mobile */
+  .podium-trio-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .podium-card {
+    padding: 12px 14px;
+  }
+
+  .podium-crest {
+    display: none;
+  }
+
+  .podium-top {
+    margin-bottom: 6px;
+  }
+
+  .podium-name-block {
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+
+  .podium-candidate-name {
+    font-size: 15px;
+    margin-bottom: 0;
+  }
+
+  .podium-metrics-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+  }
+
+  /* Roster switch on mobile */
+  .roster-mobile-only {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .roster-desktop-only {
+    display: none !important;
+  }
+
+  .user-position-card {
+    padding: 12px 14px;
+    margin-top: 14px;
+  }
+
+  .user-position-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .user-position-metrics {
+    align-items: flex-start;
+  }
 }
 
 /* Keep the brand readable; secondary header metrics remain in the dashboard. */
@@ -5060,6 +5250,13 @@ body::after {
 @media (max-width: 480px) {
   .latveria-content-scroll {
     padding: 18px 16px 84px;
+  }
+  .command-hero-card {
+    padding: 16px 14px;
+  }
+  .cta-border-box {
+    grid-template-columns: 1fr;
+    padding: 12px;
   }
   .hero-metrics-grid {
     grid-template-columns: 1fr;
