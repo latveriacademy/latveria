@@ -1202,6 +1202,11 @@ body::after {
   background: var(--accent-gold-dim);
 }
 
+.header-mobile-profile-btn,
+.header-mobile-settings-btn {
+  display: none;
+}
+
 .header-avatar-btn {
   display: flex;
   align-items: center;
@@ -5028,6 +5033,18 @@ body::after {
   }
   .header-actions-group {
     gap: 6px;
+  }
+
+  /* Mobile header: profil & settings di header, sembunyikan sound & theme toggle */
+  .header-mobile-profile-btn,
+  .header-mobile-settings-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-desktop-tool {
+    display: none !important;
   }
 }
 

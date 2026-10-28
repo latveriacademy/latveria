@@ -17,8 +17,11 @@ import { TryoutResultView } from "../../components/tryout/tryout-result-view";
 import { TryoutHistory } from "../../components/tryout/tryout-history";
 import { useTryoutHistory } from "../../lib/tryout/use-tryout-history";
 import { tryoutResultPath } from "../../lib/tryout/tryout-results";
+import { useApp } from "../../context/AppContext";
 
 export function BattleWorldView() {
+  const app = useApp();
+  const setCurrentTab = app?.setCurrentTab;
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const requestedResult = params.get("result");
@@ -520,6 +523,7 @@ export function BattleWorldView() {
         void loadSession(id, { resumeOnly: true });
       }}
       onHistory={() => navigate("/dashboard?tab=tryout&history=1")}
+      onWarriorBattle={setCurrentTab ? () => setCurrentTab("warrior") : undefined}
       history={history.rows}
       historyLoading={history.loading}
       historyError={history.error}

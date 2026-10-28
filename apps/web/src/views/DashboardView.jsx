@@ -195,6 +195,16 @@ export const DashboardView = () => {
                 <span>Pilih subtes</span>
                 <ArrowUpRight size={15} />
               </Button>
+              <Button
+                variant="outline"
+                type="button"
+                id="btn-goto-warrior"
+                className="btn-latveria-secondary w-full"
+                onClick={() => setCurrentTab("warrior")}
+              >
+                <span>Duel Warrior (PvP)</span>
+                <ArrowUpRight size={15} />
+              </Button>
             </div>
           </div>
         </div>

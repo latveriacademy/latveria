@@ -49,6 +49,14 @@ export function PracticeSession({
   const [timerPaused, setTimerPaused] = useState(false);
   const timerSubmitted = useRef(false);
   const evaluated = Boolean(session.isEvaluated);
+  const wasEvaluated = useRef(evaluated);
+
+  useEffect(() => {
+    if (!wasEvaluated.current && evaluated && !reviewSession && session.results) {
+      setShowResults(true);
+    }
+    wasEvaluated.current = evaluated;
+  }, [evaluated, reviewSession, session.results]);
   const index = session.currentIndex;
   const question = session.questions[index];
   const total = session.totalQuestions;

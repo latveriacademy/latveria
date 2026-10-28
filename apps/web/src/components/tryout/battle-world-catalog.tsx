@@ -38,6 +38,7 @@ export function BattleWorldCatalog({
   onStart,
   onResume,
   onHistory,
+  onWarriorBattle,
   history = [],
   historyLoading = false,
   historyError = "",
@@ -51,6 +52,7 @@ export function BattleWorldCatalog({
   onStart: (id: string) => void;
   onResume: (sessionId: string) => void;
   onHistory?: () => void;
+  onWarriorBattle?: () => void;
   history?: TryoutHistoryEntry[];
   historyLoading?: boolean;
   historyError?: string;
@@ -77,11 +79,19 @@ export function BattleWorldCatalog({
         title="Battle World"
         description="Pilih jenis ujian dan kerjakan tryout berwaktu."
         actions={
-          onHistory && (
-            <Button variant="outline" onClick={onHistory}>
-              Riwayat Tryout
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {onWarriorBattle && (
+              <Button variant="outline" onClick={onWarriorBattle}>
+                <Swords size={15} className="mr-1.5 text-[var(--gold)]" />
+                Warrior Battle
+              </Button>
+            )}
+            {onHistory && (
+              <Button variant="outline" onClick={onHistory}>
+                Riwayat Tryout
+              </Button>
+            )}
+          </div>
         }
       />
       <LatestTryout
