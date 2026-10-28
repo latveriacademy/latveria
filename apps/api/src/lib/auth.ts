@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import * as schema from "./db/auth-schema";
 import { allowedOrigins } from "./origins";
+import { logger } from "./logger";
 
 export function registrationEnabled() {
   return process.env.NODE_ENV === "development" || process.env.ALLOW_SIGN_UP === "true";
@@ -66,17 +67,13 @@ function createAuth() {
 
             const isMember = await verifyDiscordGuildMembership(accessToken);
             if (!isMember) {
-              console.warn(
-                JSON.stringify({
-                  level: "warn",
-                  event: "auth.discord_not_in_guild",
-                  message: "Percobaan login Discord ditolak: bukan anggota server Discord",
-                  discordId: profile.id,
-                  discordUsername: profile.username,
-                  discordEmail: profile.email || null,
-                  timestamp: new Date().toISOString(),
-                }),
-              );
+              logger.warn({
+                event: "auth.discord_not_in_guild",
+                message: "Percobaan login Discord ditolak: bukan anggota server Discord",
+                discordId: profile.id,
+                discordUsername: profile.username,
+                discordEmail: profile.email || null,
+              });
               throw new APIError("FORBIDDEN", {
                 message: "Bukan anggota server Discord yang diwajibkan.",
                 code: "not_in_guild",

@@ -1,5 +1,6 @@
 import { serveStatic } from "hono/bun";
 import { app } from "./app";
+import { logger } from "./lib/logger";
 import { authenticateWarriorWs } from "./services/warrior/warrior-auth-ws.service";
 import type { WarriorSocketData } from "./services/warrior/warrior-room.manager";
 import {
@@ -10,7 +11,7 @@ import {
 
 // Jaga proses tetap hidup jika ada unhandled rejection (mis. Supabase statement timeout)
 process.on("unhandledRejection", (reason) => {
-  console.error("[API] Unhandled rejection (proses tetap berjalan):", reason);
+  logger.error({ reason }, "[API] Unhandled rejection (proses tetap berjalan)");
 });
 
 if (process.env.NODE_ENV === "production") {
@@ -49,4 +50,4 @@ export const server = Bun.serve<WarriorSocketData>({
   },
 });
 
-console.info(`Latveria API listening on http://localhost:${server.port}`);
+logger.info({ port: server.port }, `Latveria API listening on http://localhost:${server.port}`);

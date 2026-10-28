@@ -27,10 +27,13 @@ import { latexHandler } from "./handlers/latex.handler";
 import { questionIntelligenceHandler } from "./handlers/question-intelligence.handler";
 import { passageHandler } from "./handlers/passage.handler";
 import { libraryHandler } from "./handlers/library.handler";
+import { httpLogger, logger } from "./lib/logger";
 
 export { invalidateCatalogCache } from "./services/topic.service";
 
 export const app = new Hono<AppEnv>();
+
+app.use("*", httpLogger());
 
 // Public endpoints
 app.get("/api/health", (c) => c.json({ status: "ok" }));
@@ -98,18 +101,14 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
       message?: string;
     } | null;
     const errorCode = data?.code || (response.status === 403 ? "not_in_guild" : "oauth_error");
-    console.warn(
-      JSON.stringify({
-        level: "warn",
-        event: "auth.oauth_callback_failed",
-        path: c.req.path,
-        errorCode,
-        errorMessage: data?.message,
-        ip: c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
-        userAgent: c.req.header("user-agent") || "unknown",
-        timestamp: new Date().toISOString(),
-      }),
-    );
+    logger.warn({
+      event: "auth.oauth_callback_failed",
+      path: c.req.path,
+      errorCode,
+      errorMessage: data?.message,
+      ip: c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+      userAgent: c.req.header("user-agent") || "unknown",
+    });
     const baseUrl = getAuthRedirectBase(c);
     const loginUrl = new URL("/login", baseUrl);
     loginUrl.searchParams.set("error", errorCode);
@@ -194,6 +193,6 @@ app.route("/", libraryHandler);
 app.onError((error, c) => {
   if (error instanceof HTTPException)
     return c.json({ error: error.message || "Permintaan ditolak." }, error.status);
-  console.error("API request failed:", error);
+  logger.error({ err: error, path: c.req.path, method: c.req.method }, "API request failed");
   return c.json({ error: "Operasi gagal. Coba lagi." }, 500);
 });
