@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Clock,
   Flag,
+  Keyboard,
   Layers,
   RotateCcw,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { PracticeResultsDialog } from "./practice-results-dialog";
 import { QuestionReportDialog } from "../question/question-report-dialog";
 import { ConfirmDialog } from "../confirm-dialog";
 import { SubmissionSummary } from "./submission-summary";
+import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 import { practiceOptionKeys } from "../../lib/practice/practice-answers";
 
 export function PracticeSession({
@@ -45,6 +47,7 @@ export function PracticeSession({
   const [showSubmit, setShowSubmit] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [timeLeft, setTimeLeft] = useState(session.totalQuestions * 90);
   const [timerPaused, setTimerPaused] = useState(false);
   const timerSubmitted = useRef(false);
@@ -64,7 +67,7 @@ export function PracticeSession({
   const flagged = !evaluated && Boolean(session.flagged[index]);
   const answered = Object.values(session.answers).filter(Boolean).length;
   const locked = evaluated || Boolean(session.attemptId) || submitting;
-  const overlayOpen = mobileNavOpen || showSubmit || showReport || showResults;
+  const overlayOpen = mobileNavOpen || showSubmit || showReport || showResults || showShortcuts;
 
   useEffect(() => {
     if (evaluated || session.attemptId || session.mode !== "Timed Practice" || timerPaused) return;
@@ -88,6 +91,32 @@ export function PracticeSession({
         overlayOpen
       )
         return;
+
+      // Submit via Ctrl+Enter or Cmd+Enter
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        if (!locked) {
+          event.preventDefault();
+          setShowSubmit(true);
+        }
+        return;
+      }
+
+      // Shortcut help via '?' or Shift+'/'
+      if (event.key === "?" || (event.shiftKey && event.key === "/")) {
+        event.preventDefault();
+        setShowShortcuts(true);
+        return;
+      }
+
+      // Calculator toggle via 'C' for quantitative subtests
+      if (event.key.toUpperCase() === "C" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (["PK", "PM", "PU"].includes(session.subjectId)) {
+          event.preventDefault();
+          setShowCalculator((prev) => !prev);
+          return;
+        }
+      }
+
       const key = event.key.toUpperCase();
       if (!locked) {
         if (
@@ -117,6 +146,7 @@ export function PracticeSession({
     toggleFlag,
     setActiveSession,
     question.options.length,
+    session.subjectId,
   ]);
 
   const jump = (next) => {
@@ -200,11 +230,20 @@ export function PracticeSession({
         <div className="header-tools-group">
           <Button
             variant="ghost"
+            className="tool-action-btn hidden sm:inline-flex"
+            onClick={() => setShowShortcuts(true)}
+            title="Pintasan keyboard (?)"
+          >
+            <Keyboard size={15} />
+            <span className="tool-btn-label">Pintasan</span>
+          </Button>
+          <Button
+            variant="ghost"
             className={`tool-action-btn ${showCalculator ? "active" : ""}`}
             onClick={() => setShowCalculator(!showCalculator)}
           >
             <Calculator size={15} />
-            Kalkulator
+            <span className="tool-btn-label">Kalkulator</span>
           </Button>
           {!evaluated ? (
             <>
@@ -215,7 +254,7 @@ export function PracticeSession({
                 onClick={() => toggleFlag(index)}
               >
                 <Flag size={15} />
-                {flagged ? "Ditandai" : "Tandai"}
+                <span className="tool-btn-label">{flagged ? "Ditandai" : "Tandai"}</span>
               </Button>
               <Button
                 variant="ghost"
@@ -223,7 +262,7 @@ export function PracticeSession({
                 onClick={() => setShowReport(true)}
               >
                 <AlertCircle size={15} />
-                Laporkan
+                <span className="tool-btn-label">Laporkan</span>
               </Button>
               {index < total - 1 && (
                 <Button disabled={submitting} onClick={() => setShowSubmit(true)}>
@@ -380,6 +419,7 @@ export function PracticeSession({
           exitLabel={reviewSession ? "Kembali ke Riwayat" : "Kembali ke Drilling"}
         />
       )}
+      <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
     </div>
   );
 }

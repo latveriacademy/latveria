@@ -2683,6 +2683,11 @@ body::after {
   background: var(--bg-card-hover);
 }
 
+.option-choice-card:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 1px;
+}
+
 .option-choice-card.selected {
   border-color: var(--accent-gold);
   background: var(--accent-gold-dim);
@@ -3346,6 +3351,35 @@ body::after {
   .question-header-bar {
     flex-wrap: wrap;
     padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .header-subtest-info {
+    max-width: 60%;
+  }
+
+  .subtest-badge-box {
+    overflow: hidden;
+  }
+
+  .subtest-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-tools-group {
+    gap: 6px;
+  }
+
+  .tool-btn-label {
+    display: none;
+  }
+
+  .tool-action-btn {
+    padding: 6px 8px;
+    min-width: 32px;
+    justify-content: center;
   }
 
   .header-center-info {
@@ -3357,6 +3391,19 @@ body::after {
 
   .question-layout-card {
     padding: 18px 16px;
+  }
+
+  .question-footer-nav {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-subtle);
+    padding: 12px 14px;
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: -18px;
+    z-index: 15;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
   }
 
   .eval-answer-comparison-banner {
