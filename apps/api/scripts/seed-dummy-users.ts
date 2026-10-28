@@ -14,7 +14,9 @@ export async function seedDummyUsers(count = 100, password = "dummy12345") {
     !url.includes("pooler.supabase") &&
     !url.includes("supabase.co")
   ) {
-    throw new Error("Pembuatan akun dummy hanya diizinkan untuk database lokal, docker, atau Supabase.");
+    throw new Error(
+      "Pembuatan akun dummy hanya diizinkan untuk database lokal, docker, atau Supabase.",
+    );
   }
 
   const client = postgres(url, { max: 1, prepare: false });
@@ -81,7 +83,9 @@ export async function seedDummyUsers(count = 100, password = "dummy12345") {
 
     // 2. Perbarui user lama jika nama berbeda
     if (usersToUpdate.length > 0) {
-      console.info(`Memperbarui ${usersToUpdate.length} akun dummy yang sudah ada agar sesuai nama dummy 1-${count}...`);
+      console.info(
+        `Memperbarui ${usersToUpdate.length} akun dummy yang sudah ada agar sesuai nama dummy 1-${count}...`,
+      );
       for (const item of usersToUpdate) {
         await db
           .update(user)
@@ -114,7 +118,9 @@ export async function seedDummyUsers(count = 100, password = "dummy12345") {
       }
     }
 
-    console.info(`\nSukses! Total ${count} akun dummy (dummy 1 s/d dummy ${count}) telah aktif di server:`);
+    console.info(
+      `\nSukses! Total ${count} akun dummy (dummy 1 s/d dummy ${count}) telah aktif di server:`,
+    );
     console.info(`- Akun baru dibuat: ${usersToInsert.length}`);
     console.info(`- Akun lama diperbarui: ${usersToUpdate.length}`);
     console.info(`- Format email: dummy1@latveria.test s/d dummy${count}@latveria.test`);

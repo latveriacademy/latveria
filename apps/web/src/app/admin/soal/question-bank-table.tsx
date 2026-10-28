@@ -299,7 +299,13 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-0.5 flex-nowrap">
-                  <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" title="Pratinjau soal">
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs shrink-0"
+                    title="Pratinjau soal"
+                  >
                     <Link
                       to={`/admin/soal/${row.id}`}
                       aria-label={`Pratinjau soal ${(bank.page - 1) * 15 + index + 1}`}
@@ -351,7 +357,6 @@ export function QuestionBankTable({ bank }: { bank: Bank }) {
                   </Button>
                 </div>
               </TableCell>
-
             </TableRow>
           ))}
           {!bank.rows.length && (

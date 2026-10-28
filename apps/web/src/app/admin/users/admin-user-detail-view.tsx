@@ -283,7 +283,9 @@ export function UserDetailView({
           </div>
 
           <div className="border border-[var(--edge)] rounded-md p-4 bg-[var(--surface)]">
-            <h3 className="font-semibold text-[var(--ink)] mb-3">Metode Autentikasi / Provider Login</h3>
+            <h3 className="font-semibold text-[var(--ink)] mb-3">
+              Metode Autentikasi / Provider Login
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-3 rounded border border-[var(--edge)] bg-[var(--bg)] flex items-start gap-3">
                 <div className="p-2 rounded bg-[#5865F2]/10 text-[#5865F2] shrink-0 mt-0.5">

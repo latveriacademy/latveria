@@ -591,10 +591,7 @@ export function AdminUsers() {
                 <StatTile label="Total User" value={data.pagination.total} />
                 <StatTile label="Halaman" value={`${page} / ${data.pagination.pageCount}`} />
                 <StatTile label="User Demo" value={overview?.demoCount ?? 0} />
-                <StatTile
-                  label="Tersembunyi"
-                  value={overview?.hiddenCount ?? 0}
-                />
+                <StatTile label="Tersembunyi" value={overview?.hiddenCount ?? 0} />
               </div>
 
               <div className="overflow-x-auto">

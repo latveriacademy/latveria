@@ -87,55 +87,36 @@ usersHandler.use("/api/admin/users/*", async (c, next) => {
 usersHandler.get("/api/admin/users/stats/overview", async (c) => {
   const db = getDb();
 
-  // Total users
-  const [totalResult] = await db
-    .select({ count: count() })
-    .from(userTable)
-    .where(eq(userTable.role, "user"));
-  const totalUsers = Number(totalResult?.count ?? 0);
-
   // Active today (practiced today)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString();
+
+  // User table aggregated metrics
+  const [userStats] = await db
+    .select({
+      total: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${userTable.role} = 'user'), 0)`,
+      newThisWeek: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${userTable.role} = 'user' AND ${userTable.createdAt} >= ${weekAgoStr}::timestamp), 0)`,
+      deactivated: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${userTable.isDeactivated} = true), 0)`,
+      demo: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${userTable.isDemo} = true), 0)`,
+      hidden: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${userTable.hideFromLeaderboard} = true), 0)`,
+    })
+    .from(userTable);
+
+  const totalUsers = Number(userStats?.total ?? 0);
+  const newThisWeek = Number(userStats?.newThisWeek ?? 0);
+  const deactivatedCount = Number(userStats?.deactivated ?? 0);
+  const demoCount = Number(userStats?.demo ?? 0);
+  const hiddenCount = Number(userStats?.hidden ?? 0);
+
   const [activeTodayResult] = await db
     .select({ count: count(sql`DISTINCT ${practiceAttempts.userId}`) })
     .from(practiceAttempts)
     .where(sql`${practiceAttempts.submittedAt} >= ${todayStr}::timestamp`);
   const activeToday = Number(activeTodayResult?.count ?? 0);
-
-  // New this week
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekAgoStr = weekAgo.toISOString();
-  const [newThisWeekResult] = await db
-    .select({ count: count() })
-    .from(userTable)
-    .where(
-      and(eq(userTable.role, "user"), sql`${userTable.createdAt} >= ${weekAgoStr}::timestamp`),
-    );
-  const newThisWeek = Number(newThisWeekResult?.count ?? 0);
-
-  // Deactivated count
-  const [deactivatedResult] = await db
-    .select({ count: count() })
-    .from(userTable)
-    .where(eq(userTable.isDeactivated, true));
-  const deactivatedCount = Number(deactivatedResult?.count ?? 0);
-
-  // Demo users count
-  const [demoResult] = await db
-    .select({ count: count() })
-    .from(userTable)
-    .where(eq(userTable.isDemo, true));
-  const demoCount = Number(demoResult?.count ?? 0);
-
-  // Hidden users count (hideFromLeaderboard)
-  const [hiddenResult] = await db
-    .select({ count: count() })
-    .from(userTable)
-    .where(eq(userTable.hideFromLeaderboard, true));
-  const hiddenCount = Number(hiddenResult?.count ?? 0);
 
   // Total practice time (sum of all time spent)
   const [totalTimeResult] = await db
@@ -224,9 +205,8 @@ usersHandler.post("/api/admin/users/bulk-create", async (c) => {
     })
     .safeParse(body);
 
-  if (!parsed.success) {
+  if (!parsed.success)
     return c.json({ error: "Daftar pengguna tidak valid (maksimal 500 pengguna per batch)." }, 400);
-  }
 
   const { created, failed } = await bulkCreateAdminUsers(db, parsed.data.users);
 
@@ -251,29 +231,17 @@ usersHandler.get("/api/admin/users", async (c) => {
   const status = c.req.query("status") ?? "";
 
   const conditions = [];
-  if (roleFilter === "admin") {
-    conditions.push(eq(userTable.role, "admin"));
-  } else if (roleFilter === "all") {
-    // Show both user and admin
-  } else {
-    // Default to "user"
-    conditions.push(eq(userTable.role, "user"));
-  }
+  if (roleFilter === "admin") conditions.push(eq(userTable.role, "admin"));
+  else if (roleFilter !== "all") conditions.push(eq(userTable.role, "user"));
 
   if (search) {
     const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
     conditions.push(or(ilike(userTable.name, pattern), ilike(userTable.email, pattern))!);
   }
-  if (demoFilter === "true") {
-    conditions.push(eq(userTable.isDemo, true));
-  } else if (demoFilter === "false") {
-    conditions.push(eq(userTable.isDemo, false));
-  }
-  if (status === "deactivated") {
-    conditions.push(eq(userTable.isDeactivated, true));
-  } else if (status === "active") {
-    conditions.push(eq(userTable.isDeactivated, false));
-  }
+  if (demoFilter === "true") conditions.push(eq(userTable.isDemo, true));
+  else if (demoFilter === "false") conditions.push(eq(userTable.isDemo, false));
+  if (status === "deactivated") conditions.push(eq(userTable.isDeactivated, true));
+  else if (status === "active") conditions.push(eq(userTable.isDeactivated, false));
 
   const orderColumn =
     sortBy === "name"
@@ -339,17 +307,14 @@ usersHandler.get("/api/admin/users", async (c) => {
   // Get linked accounts / auth providers for users
   const userAccounts = userIds.length
     ? await db
-        .select({
-          userId: account.userId,
-          providerId: account.providerId,
-        })
+        .select({ userId: account.userId, providerId: account.providerId })
         .from(account)
         .where(inArray(account.userId, userIds))
     : [];
 
   const providersByUserId = new Map<string, string[]>();
   for (const acc of userAccounts) {
-    const list = providersByUserId.get(acc.userId) || [];
+    const list = providersByUserId.get(acc.userId) ?? [];
     list.push(acc.providerId);
     providersByUserId.set(acc.userId, list);
   }
@@ -361,27 +326,24 @@ usersHandler.get("/api/admin/users", async (c) => {
       timeSpent: 0,
       lastActivity: null,
     };
-    const userProviders = providersByUserId.get(u.id) || [];
-    const hasDiscord = userProviders.includes("discord");
+    const userProviders = providersByUserId.get(u.id) ?? [];
     const summary = progress.get(u.id)!;
     const answered = summary.answered;
-    const correct = summary.correct;
-    const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
-    const { totalXP, level } = summary;
+    const accuracy = answered > 0 ? Math.round((summary.correct / answered) * 100) : 0;
 
-      return {
-        ...u,
-        providers: userProviders,
-        hasDiscord,
-        answered,
-        correct,
-        accuracy,
-        totalXP,
-        level,
-        timeSpent: summary.timeSpent,
-        lastActivity: stats.lastActivity,
-      };
-    });
+    return {
+      ...u,
+      providers: userProviders,
+      hasDiscord: userProviders.includes("discord"),
+      answered,
+      correct: summary.correct,
+      accuracy,
+      totalXP: summary.totalXP,
+      level: summary.level,
+      timeSpent: summary.timeSpent,
+      lastActivity: stats.lastActivity,
+    };
+  });
 
   // Get total count
   const [countResult] = await db
@@ -566,7 +528,6 @@ usersHandler.get("/api/admin/users/:id", async (c) => {
   // Get linked accounts / auth providers (e.g. credential, discord)
   const linkedAccounts = await db
     .select({
-      id: account.id,
       providerId: account.providerId,
       accountId: account.accountId,
       createdAt: account.createdAt,
