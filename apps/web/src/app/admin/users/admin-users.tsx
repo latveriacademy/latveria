@@ -453,7 +453,8 @@ export function AdminUsers() {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Cari nama atau email..."
+                placeholder="Cari nama atau email…"
+                aria-label="Cari nama atau email"
                 value={search}
                 onChange={(e) => updateFilter("search", e.target.value)}
                 className="w-64 h-9 px-3 border border-[var(--edge)] rounded-md bg-[var(--bg)] text-[var(--ink)] text-sm focus:border-[var(--gold)] focus:outline-none"
@@ -601,6 +602,7 @@ export function AdminUsers() {
                       <th className="py-3 px-4 text-sm font-semibold text-[var(--ink)] w-10">
                         <input
                           type="checkbox"
+                          aria-label="Pilih semua pengguna di halaman ini"
                           checked={data.rows.length > 0 && selectedIds.size === data.rows.length}
                           onChange={selectAllUsers}
                           className="rounded border-[var(--edge)]"
@@ -647,6 +649,7 @@ export function AdminUsers() {
                           <td className="py-3 px-4">
                             <input
                               type="checkbox"
+                              aria-label={`Pilih ${user.name}`}
                               checked={selectedIds.has(user.id)}
                               onChange={() => toggleSelectUser(user.id)}
                               className="rounded border-[var(--edge)]"

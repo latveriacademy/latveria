@@ -316,13 +316,14 @@ export function LibraryAdminPage() {
                       </div>
                     </td>
                     <td className="py-2.5 px-4">
-                      <span
+                      <button
+                        type="button"
                         onClick={() => setPreviewItem(item)}
-                        className="font-bold text-[var(--ink)] hover:text-[var(--gold)] cursor-pointer block truncate max-w-md"
+                        className="text-left font-bold text-[var(--ink)] hover:text-[var(--gold)] cursor-pointer block truncate max-w-md"
                         title={item.title}
                       >
                         {item.title}
-                      </span>
+                      </button>
                       {item.url && (
                         <span className="text-[10px] text-[var(--ink-muted)] block truncate max-w-sm">
                           {item.url}

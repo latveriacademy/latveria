@@ -65,6 +65,7 @@ export function LibraryItemCard({
             type="button"
             onClick={() => onPreview(item)}
             className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-80 group-hover:opacity-100 group-hover:bg-black/50 transition-all cursor-pointer"
+            aria-label="Putar video materi"
           >
             <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <Play className="w-4 h-4 fill-white ml-0.5" />
@@ -110,12 +111,15 @@ export function LibraryItemCard({
             </span>
           )}
 
-          <h4
-            onClick={() => onPreview(item)}
-            className="text-sm font-bold text-[var(--ink)] line-clamp-2 hover:text-[var(--gold)] cursor-pointer transition-colors leading-snug"
-            title={item.title}
-          >
-            {item.title}
+          <h4 className="text-sm font-bold text-[var(--ink)] line-clamp-2 leading-snug">
+            <button
+              type="button"
+              onClick={() => onPreview(item)}
+              className="text-left font-bold text-[var(--ink)] hover:text-[var(--gold)] cursor-pointer transition-colors"
+              title={item.title}
+            >
+              {item.title}
+            </button>
           </h4>
 
           {item.content && (
