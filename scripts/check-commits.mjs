@@ -75,12 +75,22 @@ function selfTest() {
   console.info("Commit policy self-check PASSED.");
 }
 
+function isValidRef(ref) {
+  try {
+    git("cat-file", "-e", `${ref}^{commit}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 if (import.meta.main) {
   if (process.argv[2] === "--self-test") selfTest();
   else {
     const head = process.env.COMMIT_HEAD || "HEAD";
     const base = process.env.COMMIT_BASE;
-    const range = process.argv[2] || (base && !/^0+$/.test(base) ? `${base}..${head}` : null);
+    const validBase = base && !/^0+$/.test(base) && isValidRef(base) ? base : null;
+    const range = process.argv[2] || (validBase ? `${validBase}..${head}` : null);
     const commits = git(
       "rev-list",
       "--reverse",
