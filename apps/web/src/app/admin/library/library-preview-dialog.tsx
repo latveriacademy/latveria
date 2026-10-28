@@ -58,7 +58,7 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
             {item.isPublished ? "Tayang" : "Draf"}
           </span>
 
-          <span className="ml-auto flex items-center gap-1 text-[var(--ink-muted)]">
+          <span className="sm:ml-auto flex items-center gap-1 text-[var(--ink-muted)]">
             <Calendar className="w-3 h-3" />
             {new Date(item.createdAt).toLocaleDateString("id-ID", {
               day: "numeric",
@@ -83,8 +83,8 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
 
         {/* External Link Card */}
         {item.type === "link" && item.url && (
-          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 flex items-center justify-between">
-            <div>
+          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <span className="text-xs uppercase font-bold text-amber-400 block mb-1">
                 Tautan Sumber
               </span>
@@ -101,7 +101,7 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
               href={item.url}
               target="_blank"
               rel="noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-semibold shrink-0 ml-4 flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 text-xs font-semibold shrink-0 flex items-center justify-center gap-1 w-full sm:w-auto"
             >
               Buka <ExternalLink className="w-3.5 h-3.5" />
             </a>
@@ -110,11 +110,11 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
 
         {/* Article / Notes Content */}
         {item.content && (
-          <div className="p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] space-y-2">
+          <div className="p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] space-y-2 overflow-hidden">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--gold)]">
               {item.type === "article" ? "Konten Artikel" : "Catatan / Ringkasan Materi"}
             </h4>
-            <div className="prose prose-invert max-w-none text-sm text-[var(--ink)] leading-relaxed space-y-2 whitespace-pre-wrap">
+            <div className="prose prose-invert max-w-none text-sm text-[var(--ink)] leading-relaxed space-y-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] overflow-x-auto">
               <MathText>{item.content}</MathText>
             </div>
           </div>

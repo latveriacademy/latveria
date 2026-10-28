@@ -1,5 +1,5 @@
 import { Link, useLoaderData } from "react-router";
-import { ArrowLeft, ExternalLink, Hash } from "lucide-react";
+import { ArrowLeft, ArrowUp, ExternalLink, Hash } from "lucide-react";
 import type { LibraryItemSummary } from "@latveria/shared";
 import { extractYouTubeVideoId, utbkSubtests } from "@latveria/shared";
 import { MathText } from "../../components/math/math-text";
@@ -12,18 +12,19 @@ export function LibraryReaderView() {
   const youtubeVideoId = item.type === "video" ? extractYouTubeVideoId(item.url || "") : null;
 
   return (
-    <div className="latveria-view-container motion-page-enter max-w-4xl mx-auto space-y-6 pb-16">
-      <div className="flex items-center justify-between">
-        <Button asChild variant="outline" size="sm">
+    <div className="latveria-view-container motion-page-enter max-w-4xl mx-auto space-y-5 sm:space-y-6 pb-20 sm:pb-16 px-1 sm:px-0">
+      {/* Navigasi atas & badge metadata */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="outline" size="sm" className="h-9 px-3">
           <Link to="/dashboard?tab=library">
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Kembali ke Library
+            <ArrowLeft className="w-4 h-4 mr-1.5 shrink-0" />
+            <span>Kembali ke Library</span>
           </Link>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
               item.type === "video"
                 ? "bg-red-500/10 text-red-400 border border-red-500/30"
                 : item.type === "article"
@@ -38,7 +39,10 @@ export function LibraryReaderView() {
                 : "Tautan Rujukan"}
           </span>
           {subtest && (
-            <span className="px-2.5 py-0.5 rounded text-[11px] font-medium bg-[var(--surface-elevated)] text-[var(--ink)] border border-[var(--edge)]">
+            <span
+              className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-[var(--surface-elevated)] text-[var(--ink)] border border-[var(--edge)] max-w-[220px] sm:max-w-none truncate"
+              title={`${subtest.short} - ${subtest.name}`}
+            >
               {subtest.short} - {subtest.name}
             </span>
           )}
@@ -54,8 +58,9 @@ export function LibraryReaderView() {
         }
       />
 
+      {/* Media Video */}
       {item.type === "video" && youtubeVideoId && (
-        <div className="aspect-video w-full rounded-2xl overflow-hidden border border-[var(--edge)] shadow-xl bg-black">
+        <div className="aspect-video w-full rounded-xl sm:rounded-2xl overflow-hidden border border-[var(--edge)] shadow-lg bg-black">
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}`}
             title={item.title}
@@ -66,15 +71,25 @@ export function LibraryReaderView() {
         </div>
       )}
 
+      {/* Cover Gambar jika tersedia untuk Artikel/Rujukan */}
+      {item.type !== "video" && item.thumbnailUrl && (
+        <div className="aspect-[21/9] sm:aspect-[2.4/1] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-[var(--edge)] bg-[var(--surface-elevated)] shadow-sm">
+          <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+        </div>
+      )}
+
+      {/* Kartu Tautan Rujukan Eksternal */}
       {item.type === "link" && item.url && (
-        <Panel className="p-5 border-amber-500/30 bg-amber-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <Panel className="p-4 sm:p-5 border-amber-500/30 bg-amber-500/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="space-y-1 min-w-0 flex-1">
             <span className="text-[11px] text-amber-400 font-bold uppercase tracking-wider block">
               Tautan Dokumen / Modul Rujukan
             </span>
-            <p className="text-xs text-[var(--ink-muted)] font-mono break-all">{item.url}</p>
+            <p className="text-xs text-[var(--ink-muted)] font-mono break-all line-clamp-2 sm:line-clamp-none">
+              {item.url}
+            </p>
           </div>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="w-full sm:w-auto shrink-0 justify-center">
             <a href={item.url} target="_blank" rel="noopener noreferrer">
               <span>Buka Tautan Sumber</span>
               <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
@@ -83,30 +98,53 @@ export function LibraryReaderView() {
         </Panel>
       )}
 
+      {/* Konten Bacaan Utama / Catatan */}
       {item.content && (
-        <Panel className="p-6 sm:p-8 space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--ink-muted)]">
+        <Panel className="p-4 sm:p-6 md:p-8 space-y-4 overflow-hidden">
+          <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--ink-muted)]">
             {item.type === "article" ? "Uraian Materi" : "Catatan Tambahan"}
           </h2>
-          <div className="prose prose-invert max-w-none text-sm sm:text-base text-[var(--ink)] leading-relaxed whitespace-pre-wrap">
+          <div className="prose prose-invert max-w-none text-sm sm:text-base text-[var(--ink)] leading-relaxed sm:leading-loose whitespace-pre-wrap break-words [overflow-wrap:anywhere] overflow-x-auto">
             <MathText>{item.content}</MathText>
           </div>
         </Panel>
       )}
 
+      {/* Tag Topik */}
       {item.tags && item.tags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 pt-2">
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {item.tags.map((t) => (
             <span
               key={t}
               className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] text-[var(--ink-muted)] border border-[var(--edge)] font-mono"
             >
-              <Hash className="w-3 h-3 text-[var(--gold)]" />
-              {t}
+              <Hash className="w-3 h-3 text-[var(--gold)] shrink-0" />
+              <span>{t}</span>
             </span>
           ))}
         </div>
       )}
+
+      {/* Navigasi footer bawah untuk kemudahan mobile */}
+      <div className="pt-4 border-t border-[var(--edge)] flex items-center justify-between gap-3">
+        <Button asChild variant="outline" size="sm" className="h-9 px-3">
+          <Link to="/dashboard?tab=library">
+            <ArrowLeft className="w-4 h-4 mr-1.5 shrink-0" />
+            <span>Kembali ke Library</span>
+          </Link>
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-9 px-3 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <ArrowUp className="w-3.5 h-3.5 mr-1" />
+          <span>Ke atas</span>
+        </Button>
+      </div>
     </div>
   );
 }

@@ -36,6 +36,7 @@ it("renders LibraryReaderView with math content and badges", () => {
   expect(html).toContain("Penalaran Matematika");
   expect(html).toContain("Artikel Konsep");
   expect(html).toContain("Kembali ke Library");
+  expect(html).toContain("Ke atas");
   expect(html).toContain("aljabar");
   expect(html).toContain("matematika");
 });
