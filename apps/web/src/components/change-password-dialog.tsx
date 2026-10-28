@@ -10,9 +10,15 @@ interface ChangePasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  isCreate?: boolean;
 }
 
-export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePasswordDialogProps) {
+export function ChangePasswordDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  isCreate = false,
+}: ChangePasswordDialogProps) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,6 +39,11 @@ export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePa
     if (pending) return;
     setError("");
 
+    if (!isCreate && !currentPassword) {
+      setError("Kata sandi saat ini wajib diisi.");
+      return;
+    }
+
     if (newPassword.length < 8) {
       setError("Kata sandi baru minimal 8 karakter.");
       return;
@@ -45,14 +56,21 @@ export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePa
 
     setPending(true);
     try {
-      await api("/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          revokeOtherSessions: false,
-        }),
-      });
+      if (isCreate) {
+        await api("/learner/set-password", {
+          method: "POST",
+          body: JSON.stringify({ newPassword }),
+        });
+      } else {
+        await api("/auth/change-password", {
+          method: "POST",
+          body: JSON.stringify({
+            currentPassword,
+            newPassword,
+            revokeOtherSessions: false,
+          }),
+        });
+      }
 
       resetForm();
       onOpenChange(false);
@@ -61,12 +79,16 @@ export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePa
       setError(
         err instanceof Error
           ? err.message
-          : "Gagal mengubah kata sandi. Periksa kata sandi lama Anda.",
+          : isCreate
+            ? "Gagal membuat kata sandi."
+            : "Gagal mengubah kata sandi. Periksa kata sandi lama Anda.",
       );
     } finally {
       setPending(false);
     }
   };
+
+  const title = isCreate ? "Buat kata sandi" : "Ubah kata sandi";
 
   return (
     <AppDialog
@@ -75,32 +97,34 @@ export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePa
         if (!next) resetForm();
         onOpenChange(next);
       }}
-      title="Ubah kata sandi"
+      title={title}
       pending={pending}
     >
       <form className="modal-body-form" onSubmit={handleSubmit}>
         <fieldset disabled={pending} className="grid gap-4 border-0 p-0">
-          <label className="grid gap-2 text-sm text-[var(--ink)]">
-            Kata sandi saat ini
-            <div className="relative">
-              <Input
-                type={showCurrent ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                className="w-full pr-10"
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-1 grid min-w-8 place-items-center text-muted hover:text-[var(--ink)]"
-                aria-label={showCurrent ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                onClick={() => setShowCurrent(!showCurrent)}
-              >
-                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </label>
+          {!isCreate && (
+            <label className="grid gap-2 text-sm text-[var(--ink)]">
+              Kata sandi saat ini
+              <div className="relative">
+                <Input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  className="w-full pr-10"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-1 grid min-w-8 place-items-center text-muted hover:text-[var(--ink)]"
+                  aria-label={showCurrent ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  onClick={() => setShowCurrent(!showCurrent)}
+                >
+                  {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+          )}
 
           <label className="grid gap-2 text-sm text-[var(--ink)]">
             Kata sandi baru (minimal 8 karakter)
@@ -159,7 +183,7 @@ export function ChangePasswordDialog({ open, onOpenChange, onSuccess }: ChangePa
           </Button>
           <Button type="submit" loading={pending} loadingText="Menyimpan…">
             <KeyRound size={16} className="mr-1" />
-            Ubah kata sandi
+            {title}
           </Button>
         </DialogFooter>
       </form>

@@ -2,19 +2,48 @@ import React, { useEffect, useState } from "react";
 import { LogoutButton } from "../components/logout-button";
 import { PageHeading } from "../components/ui/dashboard";
 import { ConfirmDialog } from "../components/confirm-dialog";
+import { ProfileEditorDialog } from "../components/profile-editor-dialog";
+import { ChangePasswordDialog } from "../components/change-password-dialog";
 import { useApp } from "../context/AppContext";
 import { LatveriaWatermark } from "../components/LatveriaSeal";
-import { Sun, Moon, Volume2, VolumeX, RotateCcw, Link2, CheckCircle2 } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Link2,
+  CheckCircle2,
+  Mail,
+  KeyRound,
+  UserRound,
+  Edit3,
+  ExternalLink,
+} from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { authClient } from "../lib/auth-client";
 import { api } from "../lib/api";
 
 export const SettingsView = () => {
-  const { theme, setTheme, soundEnabled, setSoundEnabled, showToast } = useApp();
+  const {
+    theme,
+    setTheme,
+    soundEnabled,
+    setSoundEnabled,
+    showToast,
+    user,
+    setUser,
+    setCurrentTab,
+  } = useApp();
 
   // Settings local state
   const [timerDuration, setTimerDuration] = useState(90);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
+
+  // Profile & Password dialog state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
 
   // Linked accounts state
   const [linkedAccounts, setLinkedAccounts] = useState([]);
@@ -22,7 +51,12 @@ export const SettingsView = () => {
 
   const fetchAccounts = () => {
     api("/learner/linked-accounts")
-      .then((data) => setLinkedAccounts(data.accounts || []))
+      .then((data) => {
+        setLinkedAccounts(data.accounts || []);
+        if (typeof data.hasPassword === "boolean") {
+          setHasPassword(data.hasPassword);
+        }
+      })
       .catch(() => setLinkedAccounts([]));
   };
 
@@ -79,22 +113,115 @@ export const SettingsView = () => {
       <PageHeading title="Setelan" />
 
       <div className="settings-sections-wrapper motion-fade-up">
+        {/* Profil Peserta */}
         <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
-          <h2 className="group-title font-serif">Akun</h2>
+          <div className="group-header">
+            <span className="group-title font-serif">Profil Peserta</span>
+          </div>
           <div className="settings-items-list">
             <div className="setting-row">
-              <LogoutButton className="btn-latveria-secondary" />
+              <div className="setting-meta">
+                <span className="setting-name font-sans flex items-center gap-2">
+                  <UserRound className="w-4 h-4 text-gold" />
+                  <span>{user.name || "Peserta"}</span>
+                  {user.codename && (
+                    <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-[var(--surface-elevated)] text-muted border border-[var(--edge)]">
+                      {user.codename}
+                    </span>
+                  )}
+                </span>
+                <span className="setting-desc">
+                  Target PTN:{" "}
+                  <span className="text-gold font-medium">
+                    {user.targetUniversity || "Belum ditentukan"}
+                  </span>
+                  {user.bio ? ` • "${user.bio}"` : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(true)}
+                  className="btn-latveria-secondary text-xs px-3 py-1.5 rounded flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Ubah Profil</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playSelect();
+                    setCurrentTab("profile");
+                  }}
+                  className="btn-latveria-secondary text-xs px-3 py-1.5 rounded flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Buka Dossier</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Integrasi Akun Pihak Ketiga */}
+        {/* Akun & Keamanan */}
         <section className="settings-group-panel transition-all duration-150 hover:border-[var(--edge-strong)]">
           <div className="group-header">
-            <span className="group-title font-serif">Integrasi & Tautan Akun</span>
+            <span className="group-title font-serif">Akun & Keamanan</span>
           </div>
 
           <div className="settings-items-list">
+            {/* Alamat Email */}
+            <div className="setting-row">
+              <div className="setting-meta">
+                <span className="setting-name font-sans flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-gold" />
+                  <span>Alamat Email</span>
+                </span>
+                <span className="setting-desc">
+                  Alamat email utama yang terdaftar untuk akun Latveria Anda.
+                </span>
+              </div>
+              <div className="font-mono text-xs px-3 py-1.5 bg-[var(--surface-elevated)] border border-[var(--edge)] rounded text-[var(--ink)] break-all max-w-[280px]">
+                {user.email || "—"}
+              </div>
+            </div>
+
+            {/* Kata Sandi */}
+            <div className="setting-row">
+              <div className="setting-meta">
+                <span className="setting-name font-sans flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-gold" />
+                  <span>Kata Sandi</span>
+                  {hasPassword ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Aktif
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      Belum Dibuat
+                    </span>
+                  )}
+                </span>
+                <span className="setting-desc">
+                  {hasPassword
+                    ? "Kata sandi aktif dapat diperbarui sewaktu-waktu demi keamanan akun."
+                    : "Akun login via Discord dan belum memiliki kata sandi mandiri. Buat kata sandi untuk login menggunakan email."}
+                </span>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsChangingPassword(true)}
+                  className="btn-latveria-secondary text-xs px-3 py-1.5 rounded flex items-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>{hasPassword ? "Ubah kata sandi" : "Buat kata sandi"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Integrasi Akun Discord */}
             <div className="setting-row">
               <div className="setting-meta">
                 <span className="setting-name font-sans flex items-center gap-2">
@@ -140,6 +267,17 @@ export const SettingsView = () => {
                     <span>{discordLoading ? "Mengarahkan…" : "Hubungkan"}</span>
                   </button>
                 )}
+              </div>
+            </div>
+
+            {/* Sesi Keluar */}
+            <div className="setting-row">
+              <div className="setting-meta">
+                <span className="setting-name font-sans">Sesi Masuk</span>
+                <span className="setting-desc">Keluar dari akun di peramban ini.</span>
+              </div>
+              <div>
+                <LogoutButton className="btn-latveria-secondary text-xs px-3 py-1.5 rounded" />
               </div>
             </div>
           </div>
@@ -298,6 +436,38 @@ export const SettingsView = () => {
         confirmLabel="Ya, reset preferensi"
         destructive
         onConfirm={handleResetData}
+      />
+
+      {/* Edit Profile Modal */}
+      {isEditingProfile && (
+        <ProfileEditorDialog
+          profile={user}
+          onOpenChange={setIsEditingProfile}
+          onSaved={(profile) => {
+            setUser((previous) => ({ ...previous, ...profile }));
+            sound.playSelect();
+            setIsEditingProfile(false);
+            showToast("Profil disimpan", "", "success");
+          }}
+        />
+      )}
+
+      {/* Password Modal */}
+      <ChangePasswordDialog
+        open={isChangingPassword}
+        onOpenChange={setIsChangingPassword}
+        isCreate={!hasPassword}
+        onSuccess={() => {
+          sound.playSelect();
+          setHasPassword(true);
+          showToast(
+            hasPassword ? "KATA SANDI DIUBAH" : "KATA SANDI DIBUAT",
+            hasPassword
+              ? "Kata sandi Anda berhasil diperbarui."
+              : "Kata sandi akun Anda berhasil dibuat.",
+            "success",
+          );
+        }}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ProfileEditorDialog } from "../components/profile-editor-dialog";
 import { ChangePasswordDialog } from "../components/change-password-dialog";
 import { useApp } from "../context/AppContext";
@@ -31,6 +31,17 @@ export const ProfileView = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
+
+  useEffect(() => {
+    api("/learner/linked-accounts")
+      .then((data) => {
+        if (data && typeof data.hasPassword === "boolean") {
+          setHasPassword(data.hasPassword);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
 
@@ -203,7 +214,7 @@ export const ProfileView = () => {
                 onClick={() => setIsChangingPassword(true)}
               >
                 <KeyRound size={13} />
-                <span>Ubah kata sandi</span>
+                <span>{hasPassword ? "Ubah kata sandi" : "Buat kata sandi"}</span>
               </button>
               <button
                 type="button"
@@ -223,6 +234,10 @@ export const ProfileView = () => {
             </div>
 
             <div className="id-info-grid font-mono">
+              <div className="info-cell">
+                <span className="info-lbl">Email</span>
+                <span className="info-val font-sans break-all">{user.email || "—"}</span>
+              </div>
               <div className="info-cell">
                 <span className="info-lbl">Target PTN</span>
                 <span className="info-val font-sans text-gold">{user.targetUniversity || "—"}</span>
@@ -372,9 +387,17 @@ export const ProfileView = () => {
       <ChangePasswordDialog
         open={isChangingPassword}
         onOpenChange={setIsChangingPassword}
+        isCreate={!hasPassword}
         onSuccess={() => {
           sound.playSelect();
-          showToast("KATA SANDI DIUBAH", "Kata sandi Anda berhasil diperbarui.", "success");
+          setHasPassword(true);
+          showToast(
+            hasPassword ? "KATA SANDI DIUBAH" : "KATA SANDI DIBUAT",
+            hasPassword
+              ? "Kata sandi Anda berhasil diperbarui."
+              : "Kata sandi akun Anda berhasil dibuat.",
+            "success",
+          );
         }}
       />
     </div>

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { AppEnv } from "../types";
+import { getAuth } from "../lib/auth";
 import {
   createAffirmation,
   createReport,
@@ -26,6 +27,25 @@ systemHandler.get("/api/learner/profile", async (c) =>
 systemHandler.get("/api/learner/linked-accounts", async (c) =>
   c.json(await getLearnerLinkedAccounts(c.get("user").id)),
 );
+
+systemHandler.post("/api/learner/set-password", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const newPassword = body?.newPassword;
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+    throw new HTTPException(400, { message: "Kata sandi baru minimal 8 karakter." });
+  }
+
+  try {
+    await getAuth().api.setPassword({
+      body: { newPassword },
+      headers: c.req.raw.headers,
+    });
+    return c.json({ status: true, message: "Kata sandi berhasil dibuat." });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Gagal membuat kata sandi.";
+    throw new HTTPException(400, { message });
+  }
+});
 
 systemHandler.put("/api/learner/profile", async (c) => {
   const body = await c.req.json().catch(() => null);

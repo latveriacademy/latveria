@@ -43,12 +43,16 @@ export async function getLearnerLinkedAccounts(userId: string) {
       id: accountTable.id,
       providerId: accountTable.providerId,
       accountId: accountTable.accountId,
+      password: accountTable.password,
       createdAt: accountTable.createdAt,
     })
     .from(accountTable)
     .where(eq(accountTable.userId, userId));
 
+  const hasPassword = rows.some((r) => r.providerId === "credential" && Boolean(r.password));
+
   return {
+    hasPassword,
     accounts: rows.map((r) => ({
       id: r.id,
       providerId: r.providerId,

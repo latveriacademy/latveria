@@ -1,17 +1,19 @@
 import { beforeEach, expect, it, vi } from "vitest";
 
-const { getSession, authHandler } = vi.hoisted(() => ({
+const { getSession, authHandler, setPassword } = vi.hoisted(() => ({
   getSession: vi.fn(),
   authHandler: vi.fn(),
+  setPassword: vi.fn(),
 }));
 vi.mock("./lib/auth", () => ({
-  getAuth: () => ({ api: { getSession }, handler: authHandler }),
+  getAuth: () => ({ api: { getSession, setPassword }, handler: authHandler }),
 }));
 import { app } from "./app";
 
 beforeEach(() => {
   getSession.mockReset();
   authHandler.mockReset();
+  setPassword.mockReset();
   process.env.BETTER_AUTH_URL = "http://localhost:3000";
 });
 it("health does not need database or credentials", async () => {
@@ -95,4 +97,38 @@ it("redirects OAuth callback errors to login page with error query", async () =>
 
   expect(res.status).toBe(302);
   expect(res.headers.get("Location")).toBe("http://localhost:3000/login?error=not_in_guild");
+});
+
+it("validates and sets password for authenticated learner", async () => {
+  getSession.mockResolvedValue({
+    user: { id: "u", role: "user", name: "User", email: "u@example.test" },
+  });
+
+  // Short password rejected
+  const shortRes = await app.request("/api/learner/set-password", {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:3000",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ newPassword: "short" }),
+  });
+  expect(shortRes.status).toBe(400);
+
+  // Valid password succeeds
+  setPassword.mockResolvedValue({ status: true });
+  const validRes = await app.request("/api/learner/set-password", {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:3000",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ newPassword: "validpassword123" }),
+  });
+  expect(validRes.status).toBe(200);
+  expect(setPassword).toHaveBeenCalledWith(
+    expect.objectContaining({
+      body: { newPassword: "validpassword123" },
+    }),
+  );
 });
