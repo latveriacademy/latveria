@@ -47,13 +47,6 @@ function createAuth() {
           getUserInfo: async (token: { accessToken?: string }) => {
             const accessToken = token.accessToken;
             if (!accessToken) return null;
-            const isMember = await verifyDiscordGuildMembership(accessToken);
-            if (!isMember) {
-              throw new APIError("FORBIDDEN", {
-                message: "Bukan anggota server Discord yang diwajibkan.",
-                code: "not_in_guild",
-              });
-            }
 
             const res = await fetch("https://discord.com/api/users/@me", {
               headers: { Authorization: `Bearer ${accessToken}` },
@@ -70,6 +63,25 @@ function createAuth() {
               image_url: string;
               [key: string]: unknown;
             };
+
+            const isMember = await verifyDiscordGuildMembership(accessToken);
+            if (!isMember) {
+              console.warn(
+                JSON.stringify({
+                  level: "warn",
+                  event: "auth.discord_not_in_guild",
+                  message: "Percobaan login Discord ditolak: bukan anggota server Discord",
+                  discordId: profile.id,
+                  discordUsername: profile.username,
+                  discordEmail: profile.email || null,
+                  timestamp: new Date().toISOString(),
+                }),
+              );
+              throw new APIError("FORBIDDEN", {
+                message: "Bukan anggota server Discord yang diwajibkan.",
+                code: "not_in_guild",
+              });
+            }
 
             const imageUrl = profile.avatar
               ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${profile.avatar.startsWith("a_") ? "gif" : "png"}`

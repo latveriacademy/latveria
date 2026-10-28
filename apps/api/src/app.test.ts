@@ -1,11 +1,17 @@
 import { beforeEach, expect, it, vi } from "vitest";
 
-const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
-vi.mock("./lib/auth", () => ({ getAuth: () => ({ api: { getSession } }) }));
+const { getSession, authHandler } = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  authHandler: vi.fn(),
+}));
+vi.mock("./lib/auth", () => ({
+  getAuth: () => ({ api: { getSession }, handler: authHandler }),
+}));
 import { app } from "./app";
 
 beforeEach(() => {
   getSession.mockReset();
+  authHandler.mockReset();
   process.env.BETTER_AUTH_URL = "http://localhost:3000";
 });
 it("health does not need database or credentials", async () => {
@@ -69,4 +75,24 @@ it("accepts only the configured tunnel for development writes", async () => {
   expect((await write("https://latveria.dorrit.dev")).status).toBe(400);
   expect((await write("https://other.dorrit.dev")).status).toBe(403);
   vi.unstubAllEnvs();
+});
+
+it("redirects OAuth callback errors to login page with error query", async () => {
+  authHandler.mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        code: "not_in_guild",
+        message: "Bukan anggota server Discord yang diwajibkan.",
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    ),
+  );
+
+  const res = await app.request("/api/auth/callback/discord?code=xyz&state=abc", {
+    method: "GET",
+    headers: { Host: "localhost:3000" },
+  });
+
+  expect(res.status).toBe(302);
+  expect(res.headers.get("Location")).toBe("http://localhost:3000/login?error=not_in_guild");
 });

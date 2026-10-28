@@ -44,6 +44,18 @@ app.get("/api/auth/registration", (c) =>
 app.route("/", publicAvatarHandler);
 app.route("/", latexHandler);
 
+function getAuthRedirectBase(c: { req: { header: (name: string) => string | undefined } }): string {
+  const host = c.req.header("host");
+  if (host) {
+    for (const origin of allowedOrigins()) {
+      try {
+        if (new URL(origin).host === host) return origin;
+      } catch {}
+    }
+  }
+  return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+}
+
 // CORS headers for Better Auth
 function setCorsHeaders(c: { header: (name: string, value: string) => void }, origin: string) {
   if (!allowedOrigins().includes(origin)) return;
@@ -79,6 +91,30 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
     }
   }
   const response = await getAuth().handler(c.req.raw);
+  if (c.req.path.startsWith("/api/auth/callback/") && response.status >= 400) {
+    const cloned = response.clone();
+    const data = (await cloned.json().catch(() => null)) as {
+      code?: string;
+      message?: string;
+    } | null;
+    const errorCode = data?.code || (response.status === 403 ? "not_in_guild" : "oauth_error");
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        event: "auth.oauth_callback_failed",
+        path: c.req.path,
+        errorCode,
+        errorMessage: data?.message,
+        ip: c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown",
+        userAgent: c.req.header("user-agent") || "unknown",
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    const baseUrl = getAuthRedirectBase(c);
+    const loginUrl = new URL("/login", baseUrl);
+    loginUrl.searchParams.set("error", errorCode);
+    return c.redirect(loginUrl.toString(), 302);
+  }
   if (c.req.path === "/api/auth/sign-in/email" && response.status === 401) {
     const body = await c.req.raw
       .clone()
