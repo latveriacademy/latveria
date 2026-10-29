@@ -2507,6 +2507,8 @@ body:has(.latveria-app-shell) #root {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   padding-bottom: 14px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border-subtle);
@@ -2679,10 +2681,12 @@ body:has(.latveria-app-shell) #root {
 }
 
 .question-prompt {
-  font-size: 18.5px;
+  font-size: 18px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.65;
   color: var(--text-primary);
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 /* Pilihan Jawaban A - E */
@@ -5183,6 +5187,23 @@ body:has(.latveria-app-shell) #root {
     border-radius: var(--radius-sm);
   }
 
+  .q-card-top-meta {
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+    gap: 8px 10px;
+  }
+
+  .question-prompt-box {
+    margin-bottom: 16px;
+  }
+
+  .question-prompt {
+    font-size: 16px;
+    line-height: 1.65;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
   .question-footer-nav {
     margin-top: auto;
     position: sticky;
@@ -5534,9 +5555,18 @@ body:has(.latveria-app-shell) #root {
   .question-layout-card {
     padding: 14px 12px;
   }
+  .q-card-top-meta {
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+  .question-prompt-box {
+    margin-bottom: 14px;
+  }
   .question-prompt {
-    font-size: 15.5px;
-    line-height: 1.55;
+    font-size: 15px;
+    line-height: 1.65;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
   .options-container {
     gap: 9px;

@@ -1,9 +1,11 @@
 .tikz-diagram {
-  display: block;
+  display: flex;
+  justify-content: center;
   max-width: 100%;
   margin: 20px 0;
   color: var(--text-primary, var(--ink));
   animation: motionScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow-x: auto;
 }
 .tikz-diagram svg {
   display: block;
@@ -21,6 +23,23 @@
   font-size: 18px;
   font-weight: 400;
   color: var(--text-primary, var(--ink));
+}
+.tikz-label .math-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card, #111a14);
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+@media (max-width: 768px) {
+  .tikz-diagram {
+    margin: 14px 0;
+  }
+  .tikz-label {
+    font-size: 15px;
+  }
 }
 .tikz-error {
   display: block;

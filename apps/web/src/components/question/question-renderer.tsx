@@ -201,7 +201,11 @@ export function QuestionRenderer({
         <div className="question-content-column space-y-4">
           {/* Question Prompt Box */}
           <div className="question-prompt-box">
-            <h2 className="question-prompt font-serif text-lg leading-relaxed text-[var(--ink)]">
+            <div
+              className="question-prompt font-serif text-lg leading-relaxed text-[var(--ink)]"
+              role="heading"
+              aria-level={2}
+            >
               <AnnotatedText
                 annotations={question.annotations || []}
                 onOpen={
@@ -210,7 +214,7 @@ export function QuestionRenderer({
               >
                 {promptText}
               </AnnotatedText>
-            </h2>
+            </div>
           </div>
 
           {/* Answer Controls: True/False Group vs Single Choice */}

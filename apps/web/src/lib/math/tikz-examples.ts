@@ -26,7 +26,7 @@ export const tikzExamples = [
 \draw (0,0)--(4,5)--(8,0);
 \draw[dashed] (4,-2)--(4,5)--(4,2);
 \draw[dashed] (4,0)--(4,5);
-\node[below] at (4,-2) {$8\text{ m}$};
+\node[below left] at (2,-1) {$8\text{ m}$};
 \node[right] at (4,2.5) {$5\text{ m}$};
 \node[left] at (4,0) {$3\text{ m}$};
 \end{tikzpicture}`,
