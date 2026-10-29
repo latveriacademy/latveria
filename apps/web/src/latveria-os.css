@@ -397,10 +397,23 @@ body::after {
 /* ==========================================================================
    APP SHELL LAYOUT
    ========================================================================== */
+html:has(.latveria-app-shell),
+body:has(.latveria-app-shell),
+body:has(.latveria-app-shell) #root {
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+}
+
 .latveria-app-shell {
   display: flex;
   width: 100vw;
-  height: 100vh;
+  width: 100dvw;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   background-color: var(--bg-app);
   overflow: hidden;
 }
@@ -410,9 +423,11 @@ body::after {
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  height: 100vh;
+  height: 100%;
+  max-height: 100%;
   position: relative;
   background-color: var(--bg-app);
+  overflow: hidden;
 }
 
 .latveria-main-viewport.in-exam-mode {
@@ -425,6 +440,8 @@ body::after {
   overflow-x: hidden;
   padding: 28px 36px 48px;
   position: relative;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .latveria-view-container {

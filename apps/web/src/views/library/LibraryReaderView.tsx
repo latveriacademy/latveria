@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useLoaderData } from "react-router";
 import { ArrowLeft, ArrowUp, ExternalLink, Hash } from "lucide-react";
 import type { LibraryItemSummary } from "@latveria/shared";
@@ -10,6 +11,24 @@ export function LibraryReaderView() {
   const item = useLoaderData<LibraryItemSummary>();
   const subtest = utbkSubtests.find((s) => s.slug === item.subtestSlug);
   const youtubeVideoId = item.type === "video" ? extractYouTubeVideoId(item.url || "") : null;
+
+  useEffect(() => {
+    const scrollContainer = document.querySelector(".latveria-content-scroll");
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
+  }, [item?.id]);
+
+  const handleScrollToTop = () => {
+    const scrollContainer = document.querySelector(".latveria-content-scroll");
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.documentElement?.scrollTo({ top: 0, behavior: "smooth" });
+    document.body?.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="latveria-view-container motion-page-enter max-w-4xl mx-auto space-y-5 sm:space-y-6 pb-20 sm:pb-16 px-1 sm:px-0">
@@ -139,7 +158,7 @@ export function LibraryReaderView() {
           variant="ghost"
           size="sm"
           className="h-9 px-3 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onClick={handleScrollToTop}
         >
           <ArrowUp className="w-3.5 h-3.5 mr-1" />
           <span>Ke atas</span>
