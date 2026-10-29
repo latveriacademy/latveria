@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { DialogFooter } from "./ui/dialog";
+import { TargetUniversityPicker } from "./target-university-picker";
 
 export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
   const [form, setForm] = useState({
@@ -47,7 +48,6 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
           {[
             { key: "name", label: "Nama", maxLength: 100, autoComplete: "name", required: true },
             { key: "codename", label: "Nama panggilan", maxLength: 100, autoComplete: "nickname" },
-            { key: "targetUniversity", label: "Target PTN dan program studi", maxLength: 200 },
             { key: "motto", label: "Motto", maxLength: 200 },
           ].map(({ key, label, ...props }) => (
             <label key={key} className="grid gap-2 text-sm">
@@ -59,6 +59,14 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
               />
             </label>
           ))}
+          <div className="grid gap-2 text-sm">
+            <span>Target PTN dan program studi</span>
+            <TargetUniversityPicker
+              value={form.targetUniversity ?? ""}
+              disabled={pending}
+              onChange={(val) => setForm({ ...form, targetUniversity: val })}
+            />
+          </div>
           <label className="grid gap-2 text-sm">
             Bio
             <Textarea
