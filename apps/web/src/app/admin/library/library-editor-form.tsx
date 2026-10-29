@@ -27,6 +27,8 @@ export interface LibraryFormState {
   content: string;
   url: string;
   thumbnailUrl: string;
+  materialUrl: string;
+  materialTitle: string;
   tags: string[];
   isPublished: boolean;
 }
@@ -38,6 +40,7 @@ interface LibraryEditorFormProps {
   onUploadThumbnail: (file: File) => Promise<void>;
   slugError?: string | null;
   urlError?: string | null;
+  materialUrlError?: string | null;
 }
 
 export function LibraryEditorForm({
@@ -47,6 +50,7 @@ export function LibraryEditorForm({
   onUploadThumbnail,
   slugError,
   urlError,
+  materialUrlError,
 }: LibraryEditorFormProps) {
   const handleUrlChange = (newUrl: string) => {
     onChange("url", newUrl);
@@ -234,36 +238,79 @@ export function LibraryEditorForm({
 
         {/* Input Tautan Khusus untuk Video & Link */}
         {form.type === "video" && (
-          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/5 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[var(--ink)]">
-                Tautan Video YouTube <span className="text-red-400">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={handleAutoYouTubeThumb}
-                className="text-xs text-[var(--gold)] hover:underline flex items-center gap-1 font-semibold"
-                title="Gunakan gambar cover resmi video YouTube"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Ambil Cover YouTube
-              </button>
-            </div>
-            <Input
-              value={form.url}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
-              className={`w-full text-xs h-10 ${urlError ? "border-red-500" : ""}`}
-              required
-            />
-            {urlError && (
-              <p className="text-[11px] text-red-400 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> {urlError}
+          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/5 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[var(--ink)]">
+                  Tautan Video YouTube <span className="text-red-400">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoYouTubeThumb}
+                  className="text-xs text-[var(--gold)] hover:underline flex items-center gap-1 font-semibold"
+                  title="Gunakan gambar cover resmi video YouTube"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Ambil Cover YouTube
+                </button>
+              </div>
+              <Input
+                value={form.url}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                className={`w-full text-xs h-10 ${urlError ? "border-red-500" : ""}`}
+                required
+              />
+              {urlError && (
+                <p className="text-[11px] text-red-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {urlError}
+                </p>
+              )}
+              <p className="text-[11px] text-[var(--ink-muted)]">
+                Pemutar YouTube akan disematkan langsung di dashboard peserta tanpa gangguan iklan
+                eksternal.
               </p>
-            )}
-            <p className="text-[11px] text-[var(--ink-muted)]">
-              Pemutar YouTube akan disematkan langsung di dashboard peserta tanpa gangguan iklan
-              eksternal.
-            </p>
+            </div>
+
+            {/* Tautan Materi / Slide yang Sedang Dibahas */}
+            <div className="pt-3 border-t border-red-500/20 space-y-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[var(--gold)]" />
+                    <span>Tautan Materi yang Sedang Dibahas (Google Drive, Slide, Modul PDF)</span>
+                  </label>
+                  <span className="text-[11px] text-[var(--ink-muted)]">Opsional</span>
+                </div>
+                <Input
+                  value={form.materialUrl}
+                  onChange={(e) => onChange("materialUrl", e.target.value)}
+                  placeholder="https://drive.google.com/... atau tautan slide materi"
+                  className={`w-full text-xs h-10 ${materialUrlError ? "border-red-500" : ""}`}
+                />
+                {materialUrlError && (
+                  <p className="text-[11px] text-red-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {materialUrlError}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-semibold text-[var(--ink-muted)]">
+                  Nama / Label Tombol Materi (Opsional)
+                </label>
+                <Input
+                  value={form.materialTitle}
+                  onChange={(e) => onChange("materialTitle", e.target.value)}
+                  placeholder="Contoh: Slide Pembahasan & Latihan Soal (Google Drive)"
+                  className="w-full text-xs h-9"
+                />
+              </div>
+
+              <p className="text-[11px] text-[var(--ink-muted)]">
+                Tombol khusus akan otomatis muncul di bawah video agar peserta bisa langsung
+                mengakses slide atau dokumen materi tanpa harus mencari link drive manual.
+              </p>
+            </div>
           </div>
         )}
 

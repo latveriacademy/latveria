@@ -9,6 +9,8 @@ export interface LibraryItemMetadata {
   youtubeId?: string | null;
   durationMinutes?: number | null;
   externalAuthor?: string | null;
+  materialUrl?: string | null;
+  materialTitle?: string | null;
   [key: string]: unknown;
 }
 
@@ -29,6 +31,20 @@ export const libraryItemInputSchema = z.object({
   content: z.string().nullable().optional(),
   url: z.string().trim().url("URL tidak valid").nullable().optional().or(z.literal("")),
   thumbnailUrl: z.string().trim().nullable().optional().or(z.literal("")),
+  materialUrl: z
+    .string()
+    .trim()
+    .url("URL materi tidak valid")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  materialTitle: z
+    .string()
+    .trim()
+    .max(200, "Judul materi maksimal 200 karakter")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
   tags: z.array(z.string().trim().min(1)).default([]),
   isPublished: z.boolean().default(true),
   metadata: z.record(z.string(), z.unknown()).optional(),

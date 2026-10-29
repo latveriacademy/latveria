@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLoaderData } from "react-router";
-import { ArrowLeft, ArrowUp, ExternalLink, Hash } from "lucide-react";
+import { ArrowLeft, ArrowUp, ExternalLink, FileText, Hash } from "lucide-react";
 import type { LibraryItemSummary } from "@latveria/shared";
 import { extractYouTubeVideoId, utbkSubtests } from "@latveria/shared";
 import { MathText } from "../../components/math/math-text";
@@ -88,6 +88,38 @@ export function LibraryReaderView() {
             className="w-full h-full border-0"
           />
         </div>
+      )}
+
+      {/* Tombol Akses Materi yang Sedang Dibahas di Video / Dokumen Pendukung */}
+      {item.metadata?.materialUrl && (
+        <Panel className="p-4 sm:p-5 border-[var(--gold)]/40 bg-[var(--gold)]/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-xl sm:rounded-2xl shadow-sm">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5 text-[var(--gold)]" />
+            </div>
+            <div className="space-y-0.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[var(--gold)] font-bold uppercase tracking-wider">
+                  Materi yang Sedang Dibahas
+                </span>
+                {/drive\.google\.com/i.test(item.metadata.materialUrl) && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-medium">
+                    Google Drive
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-[var(--ink)] truncate">
+                {item.metadata.materialTitle || "Buka Dokumen / Slide Pembahasan Materi"}
+              </p>
+            </div>
+          </div>
+          <Button asChild size="default" className="w-full sm:w-auto shrink-0 justify-center">
+            <a href={item.metadata.materialUrl} target="_blank" rel="noopener noreferrer">
+              <span>Buka Materi Pembahasan</span>
+              <ExternalLink className="w-4 h-4 ml-1.5" />
+            </a>
+          </Button>
+        </Panel>
       )}
 
       {/* Cover Gambar jika tersedia untuk Artikel/Rujukan */}

@@ -22,6 +22,8 @@ interface LibraryLivePreviewProps {
   thumbnailUrl?: string;
   tags?: string[];
   youtubeVideoId: string | null;
+  materialUrl?: string;
+  materialTitle?: string;
 }
 
 export function LibraryLivePreview({
@@ -34,6 +36,8 @@ export function LibraryLivePreview({
   thumbnailUrl,
   tags = [],
   youtubeVideoId,
+  materialUrl,
+  materialTitle,
 }: LibraryLivePreviewProps) {
   const [viewMode, setViewMode] = useState<"detail" | "card">("detail");
   const subtest = utbkSubtests.find((s) => s.slug === subtestSlug);
@@ -141,6 +145,41 @@ export function LibraryLivePreview({
                   </span>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Akses Dokumen / Slide Materi Pembahasan jika ada */}
+          {type === "video" && materialUrl && (
+            <div className="p-3.5 rounded-xl border border-[var(--gold)]/40 bg-[var(--gold)]/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-lg bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-[var(--gold)]" />
+                </div>
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-[var(--gold)] font-bold uppercase tracking-wider">
+                      Materi yang Dibahas
+                    </span>
+                    {/drive\.google\.com/i.test(materialUrl) && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-medium">
+                        Google Drive
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-semibold text-[var(--ink)] truncate">
+                    {materialTitle || "Slide Pembahasan & Latihan"}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={materialUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-[var(--gold)]/20 text-[var(--gold)] hover:bg-[var(--gold)]/30 font-semibold text-xs flex items-center justify-center gap-1 shrink-0"
+              >
+                <span>Buka Materi</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
           )}
 

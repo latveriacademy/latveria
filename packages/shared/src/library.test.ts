@@ -42,6 +42,8 @@ describe("Library shared utilities", () => {
       content: "Rumus turunan $f'(x) = \\lim_{h \\to 0} \\frac{f(x+h)-f(x)}{h}$",
       tags: ["kalkulus", "matematika"],
       isPublished: true,
+      materialUrl: "https://drive.google.com/file/d/xyz/view",
+      materialTitle: "Slide Turunan & Latihan",
     });
     expect(valid.success).toBe(true);
 

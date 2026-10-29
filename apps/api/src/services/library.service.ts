@@ -6,6 +6,7 @@ import {
   slugifyTitle,
   type LibraryItemInput,
   type LibraryItemListResponse,
+  type LibraryItemMetadata,
   type LibraryItemSummary,
   type LibraryItemType,
 } from "@latveria/shared";
@@ -167,7 +168,14 @@ export async function createLibraryItem(
   const slug = await resolveUniqueSlug(rawSlug);
 
   let thumbnailUrl = data.thumbnailUrl?.trim() || null;
-  const metadata = { ...(data.metadata || {}) };
+  const metadata: LibraryItemMetadata = { ...(data.metadata || {}) };
+
+  if (data.materialUrl !== undefined) {
+    metadata.materialUrl = data.materialUrl?.trim() || null;
+  }
+  if (data.materialTitle !== undefined) {
+    metadata.materialTitle = data.materialTitle?.trim() || null;
+  }
 
   if (data.type === "video" && data.url) {
     const ytid = extractYouTubeVideoId(data.url);
@@ -233,7 +241,14 @@ export async function updateLibraryItem(
 
   let thumbnailUrl =
     data.thumbnailUrl !== undefined ? data.thumbnailUrl?.trim() || null : existing.thumbnailUrl;
-  const metadata = { ...(existing.metadata || {}), ...(data.metadata || {}) };
+  const metadata: LibraryItemMetadata = { ...(existing.metadata || {}), ...(data.metadata || {}) };
+
+  if (data.materialUrl !== undefined) {
+    metadata.materialUrl = data.materialUrl?.trim() || null;
+  }
+  if (data.materialTitle !== undefined) {
+    metadata.materialTitle = data.materialTitle?.trim() || null;
+  }
 
   const effectiveType = data.type || existing.type;
   const effectiveUrl = data.url !== undefined ? data.url?.trim() || null : existing.url;

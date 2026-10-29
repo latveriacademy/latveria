@@ -81,6 +81,40 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
           </div>
         )}
 
+        {/* Akses Dokumen / Slide Materi Pembahasan jika ada */}
+        {item.metadata?.materialUrl && (
+          <div className="p-4 rounded-xl border border-[var(--gold)]/40 bg-[var(--gold)]/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-9 h-9 rounded-xl bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/25 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-[var(--gold)]" />
+              </div>
+              <div className="space-y-0.5 min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-[var(--gold)] font-bold uppercase tracking-wider">
+                    Materi yang Sedang Dibahas
+                  </span>
+                  {/drive\.google\.com/i.test(item.metadata.materialUrl) && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-medium">
+                      Google Drive
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs font-semibold text-[var(--ink)] truncate">
+                  {item.metadata.materialTitle || "Buka Dokumen / Slide Pembahasan Materi"}
+                </p>
+              </div>
+            </div>
+            <a
+              href={item.metadata.materialUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-[var(--gold)]/20 text-[var(--gold)] hover:bg-[var(--gold)]/30 text-xs font-semibold shrink-0 flex items-center justify-center gap-1 w-full sm:w-auto"
+            >
+              <span>Buka Materi</span> <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
+
         {/* External Link Card */}
         {item.type === "link" && item.url && (
           <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">

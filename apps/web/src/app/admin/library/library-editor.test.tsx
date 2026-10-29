@@ -31,6 +31,8 @@ it("renders LibraryEditorForm with YouTube URL and auto-thumbnail helpers for vi
     content: "Catatan rumus penting.",
     url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    materialUrl: "https://drive.google.com/file/d/sample-slide/view",
+    materialTitle: "Slide Pembahasan & Latihan Soal",
     tags: ["matematika", "utbk"],
     isPublished: true,
   };
@@ -46,8 +48,35 @@ it("renders LibraryEditorForm with YouTube URL and auto-thumbnail helpers for vi
 
   expect(html).toContain("Tautan Video YouTube");
   expect(html).toContain("Ambil Cover YouTube");
+  expect(html).toContain("Tautan Materi yang Sedang Dibahas");
+  expect(html).toContain("Nama / Label Tombol Materi (Opsional)");
+  expect(html).toContain("https://drive.google.com/file/d/sample-slide/view");
+  expect(html).toContain("Slide Pembahasan &amp; Latihan Soal");
   expect(html).toContain("Gambar Cover Materi (Rasio 16:9)");
   expect(html).toContain("Tag &amp; Kata Kunci Materi");
+});
+
+it("renders LibraryLivePreview properly with video material action button", () => {
+  const html = renderToStaticMarkup(
+    <LibraryLivePreview
+      type="video"
+      subtestSlug="penalaran-matematika"
+      isPublished={true}
+      title="Video Bahas Tuntas Geometri"
+      url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      content="Catatan geometri ruang."
+      youtubeVideoId="dQw4w9WgXcQ"
+      materialUrl="https://drive.google.com/file/d/slide-geo/view"
+      materialTitle="Slide Geometri Ruang UTBK"
+    />,
+  );
+
+  expect(html).toContain("Video Bahas Tuntas Geometri");
+  expect(html).toContain("Materi yang Dibahas");
+  expect(html).toContain("Google Drive");
+  expect(html).toContain("Slide Geometri Ruang UTBK");
+  expect(html).toContain("Buka Materi");
+  expect(html).toContain("https://drive.google.com/file/d/slide-geo/view");
 });
 
 it("renders LibraryLivePreview properly with subtest and math content", () => {

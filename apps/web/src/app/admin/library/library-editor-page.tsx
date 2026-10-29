@@ -30,6 +30,8 @@ const initialFormState: LibraryFormState = {
   content: "",
   url: "",
   thumbnailUrl: "",
+  materialUrl: "",
+  materialTitle: "",
   tags: [],
   isPublished: true,
 };
@@ -91,6 +93,8 @@ export function LibraryEditorPage() {
           content: item.content ?? "",
           url: item.url ?? "",
           thumbnailUrl: item.thumbnailUrl ?? "",
+          materialUrl: item.metadata?.materialUrl ?? "",
+          materialTitle: item.metadata?.materialTitle ?? "",
           tags: item.tags ?? [],
           isPublished: item.isPublished,
         };
@@ -169,6 +173,19 @@ export function LibraryEditorPage() {
     return null;
   }, [form.type, form.url]);
 
+  const materialUrlError = useMemo(() => {
+    if (!form.materialUrl.trim()) return null;
+    try {
+      const parsed = new URL(form.materialUrl);
+      if (!parsed.protocol.startsWith("http")) {
+        return "Tautan materi harus diawali dengan https:// atau http://";
+      }
+      return null;
+    } catch {
+      return "Format URL materi tidak valid. Pastikan menyertakan https://";
+    }
+  }, [form.materialUrl]);
+
   const handleSave = async (overridePublish?: boolean) => {
     if (!form.title.trim()) {
       setErrorMsg("Judul materi wajib diisi.");
@@ -182,6 +199,11 @@ export function LibraryEditorPage() {
     }
     if (urlError) {
       setErrorMsg(urlError);
+      setMobileTab("form");
+      return;
+    }
+    if (materialUrlError) {
+      setErrorMsg(materialUrlError);
       setMobileTab("form");
       return;
     }
@@ -199,8 +221,14 @@ export function LibraryEditorPage() {
       content: form.content.trim() || null,
       url: form.url.trim() || null,
       thumbnailUrl: form.thumbnailUrl.trim() || null,
+      materialUrl: form.materialUrl.trim() || null,
+      materialTitle: form.materialTitle.trim() || null,
       tags: form.tags,
       isPublished: publishStatus,
+      metadata: {
+        materialUrl: form.materialUrl.trim() || null,
+        materialTitle: form.materialTitle.trim() || null,
+      },
     };
 
     try {
@@ -392,6 +420,7 @@ export function LibraryEditorPage() {
             onUploadThumbnail={handleUploadThumbnail}
             slugError={slugError}
             urlError={urlError}
+            materialUrlError={materialUrlError}
           />
         </div>
 
@@ -419,6 +448,8 @@ export function LibraryEditorPage() {
               thumbnailUrl={form.thumbnailUrl}
               tags={form.tags}
               youtubeVideoId={youtubeVideoId}
+              materialUrl={form.materialUrl}
+              materialTitle={form.materialTitle}
             />
           </div>
         </div>
