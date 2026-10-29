@@ -1,6 +1,8 @@
 import { utbkSubtests, type Result } from "@latveria/shared";
 import { practiceOptionKeys as letters } from "./practice-answers";
 
+export type ReviewSession = ReturnType<typeof reviewResultToSession>;
+
 export function reviewResultToSession(result: Result) {
   if (!result.answers.length || result.answers.length !== result.attempt.total)
     throw new Error("Hasil sesi belum lengkap. Coba muat lagi.");

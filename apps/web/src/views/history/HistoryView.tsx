@@ -77,20 +77,59 @@ export function HistoryErrorView() {
   const error = useRouteError();
   const revalidator = useRevalidator();
   const missing = error instanceof ApiError && error.status === 404;
+  const isModuleError =
+    error instanceof Error &&
+    /importing.*module script|failed to fetch dynamically imported module|error loading dynamically imported module|chunkloaderror/i.test(
+      error.message,
+    );
+  const isUnavailable =
+    error instanceof Error &&
+    /belum lengkap|dihapus|privat|tidak lagi tersedia/i.test(error.message);
+
+  let title = "Tidak dapat memuat riwayat";
+  if (missing) {
+    title = "Hasil tidak ditemukan";
+  } else if (isModuleError) {
+    title = "Pembaruan Aplikasi Tersedia";
+  } else if (isUnavailable) {
+    title = "Soal Tidak Lagi Tersedia";
+  }
+
   return (
-    <div className="latveria-view-container">
-      <PageHeading title={missing ? "Hasil tidak ditemukan" : "Tidak dapat memuat riwayat"} />
+    <div className="latveria-view-container motion-page-enter">
+      <PageHeading title={title} />
       <Panel>
         <div className={styles.empty}>
-          {!missing && <p role="alert">{error instanceof Error ? error.message : "Coba lagi."}</p>}
-          {!missing && (
+          {missing && (
+            <p role="alert">Sesi latihan ini tidak ditemukan atau sudah tidak tersedia.</p>
+          )}
+          {isModuleError && (
+            <p role="alert">
+              Versi modul aplikasi telah diperbarui atau koneksi terputus. Muat ulang halaman untuk
+              memuat versi terbaru.
+            </p>
+          )}
+          {isUnavailable && (
+            <p role="alert">
+              Soal pada sesi latihan ini telah dihapus atau disetel privat oleh admin sehingga
+              detail butir soal tidak dapat ditampilkan lagi. Catatan skor Anda tetap tersimpan.
+            </p>
+          )}
+          {!missing && !isModuleError && !isUnavailable && (
+            <p role="alert">{error instanceof Error ? error.message : "Coba lagi."}</p>
+          )}
+
+          {isModuleError ? (
+            <Button onClick={() => window.location.reload()}>Muat ulang halaman</Button>
+          ) : !missing && !isUnavailable ? (
             <Button
               disabled={revalidator.state !== "idle"}
               onClick={() => revalidator.revalidate()}
             >
               Coba lagi
             </Button>
-          )}
+          ) : null}
+
           <Button asChild variant="outline">
             <Link to="/dashboard/riwayat">Riwayat latihan</Link>
           </Button>

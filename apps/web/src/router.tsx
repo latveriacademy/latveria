@@ -34,16 +34,12 @@ import { QuestionPreview } from "./app/admin/soal/question-preview";
 import { Button } from "./components/ui/button";
 import { PageHeading } from "./components/ui/dashboard";
 import { HistoryView, HistoryErrorView } from "./views/history/HistoryView";
+import { HistoryResultView } from "./views/history/HistoryResultView";
 
 const Home = lazy(() => import("./app/landing/landing"));
 const About = lazy(() => import("./app/landing/about"));
 const LatveriaOSApp = lazy(() =>
   import("./LatveriaOSApp").then((module) => ({ default: module.LatveriaOSApp })),
-);
-const HistoryResultView = lazy(() =>
-  import("./views/history/HistoryResultView").then((module) => ({
-    default: module.HistoryResultView,
-  })),
 );
 const LibraryReaderView = lazy(() =>
   import("./views/library/LibraryReaderView").then((module) => ({

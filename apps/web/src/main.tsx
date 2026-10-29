@@ -14,6 +14,12 @@ import "@fontsource/inter/latin-800.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-600.css";
 
+// Auto-reload on deployment chunk changes
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  window.location.reload();
+});
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <React.Suspense

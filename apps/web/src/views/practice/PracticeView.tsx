@@ -1,9 +1,20 @@
 import React, { useState } from "react";
 import { useApp } from "../../context/AppContext";
 import { PracticeSession } from "../../components/practice/practice-session";
+import type { ReviewSession } from "../../lib/practice/practice-review";
 import { PracticeCatalog } from "./PracticeCatalog";
 
-export function PracticeView({ reviewSession, onReviewExit, onReviewStart } = {}) {
+export interface PracticeViewProps {
+  reviewSession?: ReviewSession | null;
+  onReviewExit?: () => void;
+  onReviewStart?: () => void;
+}
+
+export function PracticeView({
+  reviewSession,
+  onReviewExit,
+  onReviewStart,
+}: PracticeViewProps = {}) {
   const { activeSession, setActiveSession, exitPractice } = useApp();
   const [reviewState, setReviewState] = useState(reviewSession ?? null);
   const session = reviewSession ? reviewState : activeSession;
