@@ -13,6 +13,7 @@ import { ProfileView } from "./views/ProfileView";
 import { SettingsView } from "./views/SettingsView";
 import { BattleWorldView } from "./views/tryout/BattleWorldView";
 import { WarriorBattleView } from "./views/WarriorBattleView";
+import { ChatView } from "./views/chat/ChatView";
 import "./learner-copy.css";
 import { useMatch, useNavigation, useOutlet } from "react-router";
 import { DashboardShell } from "./components/ui/dashboard-shell";
@@ -35,6 +36,8 @@ function AppShell() {
         return <PracticeView />;
       case "warrior":
         return <WarriorBattleView />;
+      case "chat":
+        return <ChatView />;
       case "library":
         return <LibraryView />;
       case "tryout":

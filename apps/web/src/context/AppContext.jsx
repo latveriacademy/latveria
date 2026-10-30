@@ -32,6 +32,7 @@ export const AppProvider = ({ children }) => {
           "dashboard",
           "practice",
           "warrior",
+          "chat",
           "library",
           "tryout",
           "leaderboard",
@@ -40,7 +41,13 @@ export const AppProvider = ({ children }) => {
         ].includes(tab)
       ? tab
       : "dashboard";
-  const setCurrentTab = useCallback((next) => navigate(`/dashboard?tab=${next}`), [navigate]);
+  const setCurrentTab = useCallback(
+    (next, options) => {
+      const dmParam = options?.dm ? `&dm=${encodeURIComponent(options.dm)}` : "";
+      navigate(`/dashboard?tab=${next}${dmParam}`);
+    },
+    [navigate],
+  );
 
   // Sidebar collapse state — default terbuka di desktop, tertutup di mobile
   const [sidebarOpen, setSidebarOpen] = useState(() => {

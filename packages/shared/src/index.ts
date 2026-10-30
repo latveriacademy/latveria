@@ -509,6 +509,7 @@ export type PackageDetail = QuestionPackage & {
 
 export * from "./warrior";
 export * from "./friendship";
+export * from "./chat";
 export * from "./latex";
 export * from "./question-intelligence";
 export { sha256 } from "./sha256";

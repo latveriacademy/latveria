@@ -28,6 +28,7 @@ import { questionIntelligenceHandler } from "./handlers/question-intelligence.ha
 import { passageHandler } from "./handlers/passage.handler";
 import { libraryHandler } from "./handlers/library.handler";
 import { friendshipHandler } from "./handlers/friendship.handler";
+import { chatHandler } from "./handlers/chat.handler";
 import { httpLogger, logger } from "./lib/logger";
 
 export { invalidateCatalogCache } from "./services/topic.service";
@@ -191,6 +192,7 @@ app.route("/", questionIntelligenceHandler);
 app.route("/", passageHandler);
 app.route("/", libraryHandler);
 app.route("/", friendshipHandler);
+app.route("/", chatHandler);
 
 app.onError((error, c) => {
   if (error instanceof HTTPException)

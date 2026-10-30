@@ -289,6 +289,7 @@ export const router = createBrowserRouter([
   },
   { path: "/practice", element: <Navigate to="/dashboard?tab=practice" replace /> },
   { path: "/battle", element: <Navigate to="/dashboard?tab=warrior" replace /> },
+  { path: "/chat", element: <Navigate to="/dashboard?tab=chat" replace /> },
   { path: "/library", element: <Navigate to="/dashboard?tab=library" replace /> },
   {
     path: "/library/:slug",

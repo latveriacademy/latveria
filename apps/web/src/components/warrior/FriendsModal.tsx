@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Check, Search, UserCheck, UserPlus, UserX, Users } from "lucide-react";
+import { Check, MessageSquare, Search, UserCheck, UserPlus, UserX, Users } from "lucide-react";
 import type { FriendUserDto, FriendshipDto } from "@latveria/shared";
+import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -26,6 +27,7 @@ export function FriendsModal({
   invitedFriendIds = new Set(),
   onInviteSent,
 }: FriendsModalProps) {
+  const { setCurrentTab } = useApp();
   const [activeTab, setActiveTab] = useState<string>("friends");
   const [friends, setFriends] = useState<FriendUserDto[]>([]);
   const [pendingIncoming, setPendingIncoming] = useState<FriendshipDto[]>([]);
@@ -249,6 +251,17 @@ export function FriendsModal({
                             )}
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            onClose();
+                            setCurrentTab("chat", { dm: friend.id });
+                          }}
+                          title="Kirim Pesan"
+                        >
+                          <MessageSquare size={16} className="text-[var(--gold)]" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
