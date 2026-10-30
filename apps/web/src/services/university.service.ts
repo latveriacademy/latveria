@@ -125,8 +125,13 @@ export function formatTitleCase(str: string): string {
     .trim()
     .split(/\s+/)
     .map((word) => {
-      // Pertahankan singkatan umum jika ada (misal: "IPA", "IPS", "TI")
-      if (/^(ipa|ips|ti|it|dkv|si)$/i.test(word)) return word.toUpperCase();
+      // Pertahankan singkatan dalam kurung atau huruf kapital, misal: (STEI-K), TI, IT, DKV
+      if (/^\([a-z0-9-]+\)$/i.test(word)) {
+        return word.toUpperCase();
+      }
+      if (/^(ipa|ips|ti|it|dkv|si)$/i.test(word)) {
+        return word.toUpperCase();
+      }
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
     .join(" ")
@@ -141,16 +146,12 @@ export function formatTitleCase(str: string): string {
 export function formatTargetPtn(
   universityName: string,
   majorName: string,
-  degree?: string,
+  _degree?: string,
 ): string {
   const cleanUni = universityName.trim();
-  const deg = formatDegree(degree);
   const cleanMajor = formatTitleCase(majorName);
 
   if (!cleanMajor) return cleanUni;
-  if (deg) {
-    return `${cleanUni} - ${deg} ${cleanMajor}`;
-  }
   return `${cleanUni} - ${cleanMajor}`;
 }
 

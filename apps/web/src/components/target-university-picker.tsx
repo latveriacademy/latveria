@@ -64,7 +64,7 @@ export function TargetUniversityPicker({
 
   const handleSelectMajor = (major: MajorItem) => {
     if (!selectedUni) return;
-    const formatted = formatTargetPtn(selectedUni.name, major.name, major.degree);
+    const formatted = formatTargetPtn(selectedUni.name, major.name);
     onChange(formatted);
     setIsOpen(false);
     setStep("university");
@@ -125,7 +125,7 @@ export function TargetUniversityPicker({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          placeholder="Pilih dari daftar atau ketik sendiri (misal: UI - S1 Ilmu Komputer)"
+          placeholder="Contoh: ITB - Komputasi (STEI-K) atau ketik langsung"
           maxLength={200}
           className="pr-9"
         />
@@ -138,7 +138,7 @@ export function TargetUniversityPicker({
               setStep("university");
             }
           }}
-          title={isOpen ? "Tutup pemilih kampus" : "Buka pemilih kampus Indonesia"}
+          title={isOpen ? "Tutup" : "Pilih universitas & prodi"}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)] rounded transition-colors"
           aria-expanded={isOpen}
         >
@@ -151,7 +151,7 @@ export function TargetUniversityPicker({
       </div>
 
       <div className="flex items-center justify-between text-xs text-[var(--ink-muted)]">
-        <span>Gunakan tombol topi untuk memilih dari 140+ PTN & program studi resmi.</span>
+        <span>Pilih dari daftar atau ketik langsung.</span>
         <button
           type="button"
           disabled={disabled}
@@ -162,7 +162,7 @@ export function TargetUniversityPicker({
           className="text-[var(--gold)] hover:underline inline-flex items-center gap-1 font-medium"
         >
           <GraduationCap className="size-3.5" />
-          {isOpen ? "Tutup pemilih" : "Cari di data SNBT"}
+          {isOpen ? "Tutup" : "Pilih dari daftar"}
         </button>
       </div>
 
@@ -173,7 +173,7 @@ export function TargetUniversityPicker({
               <div className="flex items-center justify-between gap-2 pb-1 border-b border-[var(--edge-subtle)]">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)]">
                   <Building2 className="size-3.5 text-[var(--gold)]" />
-                  <span>Langkah 1: Pilih Perguruan Tinggi Negeri</span>
+                  <span>Pilih universitas</span>
                 </div>
                 <Button
                   type="button"
@@ -190,7 +190,7 @@ export function TargetUniversityPicker({
                 value={uniSearch}
                 onChange={(e) => setUniSearch(e.target.value)}
                 onClear={() => setUniSearch("")}
-                placeholder="Cari nama atau singkatan kampus (contoh: ITB, UI, UGM)..."
+                placeholder="Cari universitas (misal: ITB, UI, UGM)…"
                 sizeVariant="sm"
                 autoFocus
               />
@@ -199,11 +199,11 @@ export function TargetUniversityPicker({
                 {loadingUni ? (
                   <div className="py-6 flex flex-col items-center justify-center gap-2 text-xs text-[var(--ink-muted)]">
                     <Loader2 className="size-4 animate-spin text-[var(--gold)]" />
-                    <span>Memuat data kampus Indonesia…</span>
+                    <span>Memuat universitas…</span>
                   </div>
                 ) : filteredUniversities.length === 0 ? (
                   <div className="py-6 text-center text-xs text-[var(--ink-muted)]">
-                    Tidak menemukan kampus dengan kata kunci "{uniSearch}".
+                    Universitas "{uniSearch}" tidak ditemukan.
                   </div>
                 ) : (
                   filteredUniversities.map((uni) => (
@@ -246,7 +246,7 @@ export function TargetUniversityPicker({
                   className="flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline font-medium"
                 >
                   <ArrowLeft className="size-3.5" />
-                  <span>Kembali ke pilihan kampus</span>
+                  <span>Kembali</span>
                 </button>
                 <Button
                   type="button"
@@ -261,14 +261,9 @@ export function TargetUniversityPicker({
 
               {selectedUni && (
                 <div className="p-2 rounded bg-[var(--surface-subtle)] border border-[var(--edge-subtle)] flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="text-xs font-semibold text-[var(--ink)] block truncate">
-                      {selectedUni.name} ({selectedUni.code})
-                    </span>
-                    <span className="text-[11px] text-[var(--ink-muted)] block truncate">
-                      Pilih program studi di bawah:
-                    </span>
-                  </div>
+                  <span className="text-xs font-semibold text-[var(--ink)] block truncate">
+                    {selectedUni.name} {selectedUni.code ? `(${selectedUni.code})` : ""}
+                  </span>
                   <Button
                     type="button"
                     variant="outline"
@@ -285,7 +280,7 @@ export function TargetUniversityPicker({
                 value={majorSearch}
                 onChange={(e) => setMajorSearch(e.target.value)}
                 onClear={() => setMajorSearch("")}
-                placeholder="Cari prodi (contoh: Informatika, Kedokteran, Hukum)..."
+                placeholder="Cari program studi…"
                 sizeVariant="sm"
                 autoFocus
               />
@@ -294,13 +289,13 @@ export function TargetUniversityPicker({
                 {loadingMajors ? (
                   <div className="py-6 flex flex-col items-center justify-center gap-2 text-xs text-[var(--ink-muted)]">
                     <Loader2 className="size-4 animate-spin text-[var(--gold)]" />
-                    <span>Mengambil daftar jurusan & passing grade…</span>
+                    <span>Memuat program studi…</span>
                   </div>
                 ) : filteredMajors.length === 0 ? (
                   <div className="py-6 text-center text-xs text-[var(--ink-muted)]">
                     {majors.length === 0
                       ? "Belum ada data prodi untuk universitas ini."
-                      : `Tidak menemukan prodi dengan kata kunci "${majorSearch}".`}
+                      : `Program studi "${majorSearch}" tidak ditemukan.`}
                   </div>
                 ) : (
                   filteredMajors.map((major) => {

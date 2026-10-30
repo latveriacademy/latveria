@@ -25,11 +25,16 @@ describe("university.service", () => {
 
   it("formats target PTN string correctly", () => {
     expect(formatTargetPtn("Universitas Indonesia", "ILMU KOMPUTER", "Sarjana")).toBe(
-      "Universitas Indonesia - S1 Ilmu Komputer",
+      "Universitas Indonesia - Ilmu Komputer",
     );
 
-    expect(formatTargetPtn("Institut Teknologi Bandung", "TEKNIK ELEKTRO", "Sarjana Terapan")).toBe(
-      "Institut Teknologi Bandung - D4 Teknik Elektro",
+    expect(
+      formatTargetPtn(
+        "Institut Teknologi Bandung",
+        "SEKOLAH TEKNIK ELEKTRO DAN INFORMATIKA - KOMPUTASI (STEI-K)",
+      ),
+    ).toBe(
+      "Institut Teknologi Bandung - Sekolah Teknik Elektro dan Informatika - Komputasi (STEI-K)",
     );
 
     expect(formatTargetPtn("Universitas Gadjah Mada", "AKUNTANSI")).toBe(
