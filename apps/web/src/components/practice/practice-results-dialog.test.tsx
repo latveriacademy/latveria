@@ -67,3 +67,22 @@ it("displays average time per question and total duration when provided", () => 
   expect(html).toContain("Total durasi pengerjaan");
   expect(html).toContain("7m 30s");
 });
+
+it("shows a re-attempt anti-farming explanation when isReattempt is true", () => {
+  const html = renderToStaticMarkup(
+    <PracticeResultsDialog
+      open
+      subject="Penalaran Umum"
+      packageName="Logika 01"
+      correct={9}
+      total={10}
+      unanswered={0}
+      earnedXP={25}
+      isReattempt={true}
+      onClose={() => {}}
+      onExit={() => {}}
+    />,
+  );
+  expect(html).toContain("+25 EXP");
+  expect(html).toContain("Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar");
+});

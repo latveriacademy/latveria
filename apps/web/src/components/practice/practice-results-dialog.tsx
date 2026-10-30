@@ -10,6 +10,7 @@ type Props = {
   total: number;
   unanswered: number;
   earnedXP?: number | null;
+  isReattempt?: boolean;
   score?: number | null;
   scoreLabel?: string;
   averageTimeSeconds?: number | null;
@@ -27,6 +28,7 @@ export function PracticeResultsDialog({
   total,
   unanswered,
   earnedXP,
+  isReattempt,
   score,
   scoreLabel = "Latveria Score",
   averageTimeSeconds,
@@ -99,7 +101,14 @@ export function PracticeResultsDialog({
       )}
       {earnedXP != null && (
         <div className={styles.exp}>
-          <span>EXP diperoleh</span>
+          <div>
+            <span>EXP diperoleh</span>
+            {isReattempt && (
+              <p className="text-[11px] font-normal text-[var(--ink-muted)] mt-0.5">
+                Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar (+bonus).
+              </p>
+            )}
+          </div>
           <strong>+{earnedXP} EXP</strong>
         </div>
       )}

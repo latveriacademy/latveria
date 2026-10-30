@@ -146,6 +146,7 @@ export async function getLeaderboard(
         correctCount: practiceAttempts.correctCount,
         totalCount: practiceAttempts.totalCount,
         score: practiceAttempts.score,
+        earnedXp: practiceAttempts.earnedXp,
         submittedAt: practiceAttempts.submittedAt,
       })
       .from(practiceAttempts)
@@ -182,6 +183,7 @@ export async function getLeaderboard(
         firstAnswerCorrect: number;
         attempts: number;
         periodCorrect: number;
+        periodXP: number;
         scoreTotal: number;
         scoreCount: number;
         lastAt: Date;
@@ -195,6 +197,7 @@ export async function getLeaderboard(
         firstAnswerCorrect: 0,
         attempts: 0,
         periodCorrect: 0,
+        periodXP: 0,
         scoreTotal: 0,
         scoreCount: 0,
         lastAt: new Date(0),
@@ -206,6 +209,7 @@ export async function getLeaderboard(
       if (!stats) continue;
       stats.attempts++;
       stats.periodCorrect += attempt.correctCount;
+      stats.periodXP += attempt.earnedXp ?? 30 + attempt.correctCount * 15;
       stats.lastAt = attempt.submittedAt > stats.lastAt ? attempt.submittedAt : stats.lastAt;
       stats.scoreTotal +=
         attempt.score ??
@@ -228,34 +232,28 @@ export async function getLeaderboard(
       .select({
         userId: practiceAttempts.userId,
         topicId: practiceAttempts.topicId,
+        packageId: practiceAttempts.packageId,
         correctCount: practiceAttempts.correctCount,
         totalCount: practiceAttempts.totalCount,
         submittedAt: practiceAttempts.submittedAt,
+        earnedXP: practiceAttempts.earnedXp,
       })
       .from(practiceAttempts);
 
-    const lifetimeByUser = new Map<string, { attempts: number; correct: number }>();
-    for (const attempt of lifetimeAttempts) {
-      const stats = lifetimeByUser.get(attempt.userId) ?? { attempts: 0, correct: 0 };
-      stats.attempts++;
-      stats.correct += attempt.correctCount;
-      lifetimeByUser.set(attempt.userId, stats);
-    }
-
     for (const [userId, data] of userMetrics) {
       const stats = statsByUser.get(userId)!;
-      const lifetime = lifetimeByUser.get(userId) ?? { attempts: 0, correct: 0 };
       data.answered = stats.answerIds.size;
       data.correct = stats.correctIds.size;
       data.accuracy = data.answered ? Math.round((data.correct / data.answered) * 10000) / 100 : 0;
       data.lastAnswerAt = stats.lastAt;
-      data.totalXP = lifetime.attempts * 30 + lifetime.correct * 15;
-      data.level = learnerSummary(
+      const userSummary = learnerSummary(
         lifetimeAttempts.filter((attempt) => attempt.userId === userId),
-      ).level;
+      );
+      data.totalXP = userSummary.totalXP;
+      data.level = userSummary.level;
       data.metricValue =
         metric === "xp"
-          ? stats.attempts * 30 + stats.periodCorrect * 15
+          ? stats.periodXP
           : metric === "answered"
             ? data.answered
             : metric === "correct"

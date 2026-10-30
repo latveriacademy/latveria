@@ -60,3 +60,48 @@ it("derives progress and current week totals only from saved practices", () => {
   expect(result.weeklyChartData.reduce((sum, day) => sum + day.xp, 0)).toBe(105);
   expect(result.weeklyChartData.find((day) => day.day === "Jum")?.questions).toBe(10);
 });
+
+it("handles re-attempt anti-farming EXP correctly", () => {
+  // First attempt: 10 correct -> 30 + 10 * 15 = 180
+  expect(practiceXP(10, null)).toBe(180);
+
+  // Re-attempt with no improvement: 10 correct, prev was 10 -> 10 EXP bonus
+  expect(practiceXP(10, 10)).toBe(10);
+
+  // Re-attempt with lower score: 7 correct, prev was 10 -> 10 EXP bonus
+  expect(practiceXP(7, 10)).toBe(10);
+
+  // Re-attempt with improvement: 9 correct, prev was 6 -> (9 - 6) * 15 + 10 = 55
+  expect(practiceXP(9, 6)).toBe(55);
+
+  // Re-attempt with 0 correct: -> 5 EXP
+  expect(practiceXP(0, 5)).toBe(5);
+
+  // In learnerSummary: multiple attempts on the same packageId do not duplicate full EXP
+  const repeatedAttempts = [
+    {
+      topicId: "t1",
+      packageId: "pkg-1",
+      correctCount: 10,
+      totalCount: 10,
+      submittedAt: "2026-10-01T10:00:00Z",
+    },
+    {
+      topicId: "t1",
+      packageId: "pkg-1",
+      correctCount: 10,
+      totalCount: 10,
+      submittedAt: "2026-10-01T12:00:00Z",
+    },
+    {
+      topicId: "t1",
+      packageId: "pkg-1",
+      correctCount: 10,
+      totalCount: 10,
+      submittedAt: "2026-10-01T14:00:00Z",
+    },
+  ];
+  // Attempt 1: 180 XP, Attempt 2: 10 XP, Attempt 3: 10 XP -> Total 200 XP (not 540 XP!)
+  const summary = learnerSummary(repeatedAttempts, new Date("2026-10-01T15:00:00Z"));
+  expect(summary.totalXP).toBe(200);
+});

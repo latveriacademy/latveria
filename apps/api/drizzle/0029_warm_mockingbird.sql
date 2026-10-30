@@ -1,0 +1,1 @@
+ALTER TABLE "practice_attempts" ADD COLUMN "earned_xp" integer;

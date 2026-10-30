@@ -23,9 +23,11 @@ export async function getLearnerSummary(userId: string) {
   const attempts = await getDb()
     .select({
       topicId: practiceAttempts.topicId,
+      packageId: practiceAttempts.packageId,
       correctCount: practiceAttempts.correctCount,
       totalCount: practiceAttempts.totalCount,
       submittedAt: practiceAttempts.submittedAt,
+      earnedXP: practiceAttempts.earnedXp,
     })
     .from(practiceAttempts)
     .where(eq(practiceAttempts.userId, userId));
@@ -44,6 +46,7 @@ export async function getLearnerHistory(userId: string): Promise<HistoryItem[]> 
       total: practiceAttempts.totalCount,
       score: practiceAttempts.score,
       rawScore: practiceAttempts.rawScore,
+      earnedXp: practiceAttempts.earnedXp,
       timeSpentSeconds: practiceAttempts.timeSpentSeconds,
       scoreBreakdown: practiceAttempts.scoreBreakdown,
       submittedAt: practiceAttempts.submittedAt,
@@ -57,7 +60,7 @@ export async function getLearnerHistory(userId: string): Promise<HistoryItem[]> 
   return rows.map((row) => ({
     ...row,
     submittedAt: row.submittedAt.toISOString(),
-    earnedXP: practiceXP(row.correct),
+    earnedXP: row.earnedXp ?? practiceXP(row.correct),
     scoreBreakdown: row.scoreBreakdown ? JSON.parse(row.scoreBreakdown) : null,
   }));
 }
@@ -222,7 +225,7 @@ export async function submitPractice(
       return {
         id: saved.id,
         packageId: saved.packageId,
-        earnedXP: practiceXP(saved.correctCount),
+        earnedXP: saved.earnedXp ?? practiceXP(saved.correctCount),
         score: saved.score,
         rawScore: saved.rawScore,
         scoreBreakdown: saved.scoreBreakdown ? JSON.parse(saved.scoreBreakdown) : null,
@@ -285,6 +288,26 @@ export async function submitPractice(
 
     const correctCount = rows.filter((row) => row.answer === submission.answers[row.id]).length;
 
+    let previousBestCorrect: number | null = null;
+    let isReattempt = false;
+    if (validatedPackageId) {
+      const priorAttempts = await tx
+        .select({ correctCount: practiceAttempts.correctCount })
+        .from(practiceAttempts)
+        .where(
+          and(
+            eq(practiceAttempts.userId, userId),
+            eq(practiceAttempts.packageId, validatedPackageId),
+          ),
+        );
+      if (priorAttempts.length > 0) {
+        isReattempt = true;
+        previousBestCorrect = Math.max(...priorAttempts.map((p) => p.correctCount));
+      }
+    }
+
+    const earnedXP = practiceXP(correctCount, previousBestCorrect);
+
     const [attempt] = await tx
       .insert(practiceAttempts)
       .values({
@@ -296,6 +319,7 @@ export async function submitPractice(
         correctCount,
         score: scoreResult.score,
         rawScore: scoreResult.rawScore,
+        earnedXp: earnedXP,
         timeSpentSeconds:
           submission.timeSpentSeconds ?? Math.round(scoreResult.averageTime * rows.length),
         scoreBreakdown: JSON.stringify(scoreResult),
@@ -333,7 +357,9 @@ export async function submitPractice(
     return {
       id: attempt.id,
       packageId: validatedPackageId ?? null,
-      earnedXP: practiceXP(correctCount),
+      earnedXP,
+      isReattempt,
+      previousBestCorrect,
       score: scoreResult.score,
       rawScore: scoreResult.rawScore,
       scoreBreakdown: scoreResult,
@@ -356,6 +382,7 @@ export async function getResultDetail(userId: string, idParam: string): Promise<
       total: practiceAttempts.totalCount,
       score: practiceAttempts.score,
       rawScore: practiceAttempts.rawScore,
+      earnedXp: practiceAttempts.earnedXp,
       timeSpentSeconds: practiceAttempts.timeSpentSeconds,
       scoreBreakdown: practiceAttempts.scoreBreakdown,
       submittedAt: practiceAttempts.submittedAt,
@@ -388,7 +415,7 @@ export async function getResultDetail(userId: string, idParam: string): Promise<
     attempt: {
       ...attempt,
       submittedAt: attempt.submittedAt.toISOString(),
-      earnedXP: practiceXP(attempt.correct),
+      earnedXP: attempt.earnedXp ?? practiceXP(attempt.correct),
       scoreBreakdown: attempt.scoreBreakdown ? JSON.parse(attempt.scoreBreakdown) : null,
     },
     answers: await resolvePassages(answers),

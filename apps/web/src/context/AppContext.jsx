@@ -441,6 +441,7 @@ export const AppProvider = ({ children }) => {
     let attemptId = activeSession.attemptId;
 
     try {
+      let isReattempt = Boolean(activeSession.isReattempt);
       if (!attemptId) {
         const endpoint = activeSession.packageId
           ? `/learner/practice/${activeSession.subjectSlug}/${activeSession.packageId}`
@@ -454,7 +455,8 @@ export const AppProvider = ({ children }) => {
           }),
         });
         attemptId = saved.id;
-        setActiveSession((prev) => ({ ...prev, attemptId }));
+        isReattempt = Boolean(saved.isReattempt);
+        setActiveSession((prev) => ({ ...prev, attemptId, isReattempt }));
       }
       const reviewData = await api(`/learner/results/${attemptId}`);
       if (
@@ -478,7 +480,7 @@ export const AppProvider = ({ children }) => {
       const enrichedQuestions = mergeReviewData(activeSession.questions, reviewData.answers);
 
       const results = buildSessionResults({
-        activeSession,
+        activeSession: { ...activeSession, isReattempt },
         reviewData,
         enrichedQuestions,
         attemptId,

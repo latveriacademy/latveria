@@ -167,6 +167,7 @@ export const practiceAttempts = pgTable(
     totalCount: integer("total_count").notNull(),
     score: integer("score"),
     rawScore: integer("raw_score"),
+    earnedXp: integer("earned_xp"),
     timeSpentSeconds: integer("time_spent_seconds"),
     scoreBreakdown: text("score_breakdown"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).defaultNow().notNull(),

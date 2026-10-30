@@ -411,6 +411,7 @@ export function PracticeSession({
           total={total}
           unanswered={session.results.unansweredCount}
           earnedXP={session.results.earnedXP}
+          isReattempt={session.results.isReattempt}
           score={session.results.score}
           averageTimeSeconds={session.results.averageTimeSeconds}
           totalTimeSeconds={session.results.totalTimeSeconds}

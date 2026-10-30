@@ -167,6 +167,7 @@ export interface SessionResultsParams {
     questions: Array<{ id: string }>;
     answers: Record<number, string | undefined>;
     startTime?: number;
+    isReattempt?: boolean;
   };
   reviewData: {
     attempt: { earnedXP?: number };
@@ -226,6 +227,7 @@ export function buildSessionResults({
     accuracy,
     score,
     earnedXP,
+    isReattempt: activeSession.isReattempt ?? false,
     totalTimeSeconds,
     averageTimeSeconds,
     answers: activeSession.answers,

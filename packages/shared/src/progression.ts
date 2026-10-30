@@ -1,5 +1,10 @@
-export function practiceXP(correctCount: number) {
-  return 30 + correctCount * 15;
+export function practiceXP(correctCount: number, previousBestCorrect: number | null = null) {
+  if (previousBestCorrect === null) {
+    return 30 + correctCount * 15;
+  }
+  const improvement = Math.max(0, correctCount - previousBestCorrect);
+  const bonus = correctCount > 0 ? 10 : 5;
+  return improvement * 15 + bonus;
 }
 
 export function levelProgress(totalXP: number) {
@@ -48,20 +53,46 @@ export function practiceStreak(dates: (Date | string)[], now = new Date()) {
 
 type Attempt = {
   topicId: string;
+  packageId?: string | null;
   correctCount: number;
   totalCount: number;
   submittedAt: Date | string;
+  earnedXP?: number | null;
 };
 export function learnerSummary(attempts: Attempt[], now = new Date()) {
-  // ponytail: O(n) per peserta; pindahkan agregasi ke SQL jika riwayat menjadi sangat besar.
-  const totalXP = attempts.reduce((sum, attempt) => sum + practiceXP(attempt.correctCount), 0);
+  // Sort attempts chronologically to calculate anti-farming re-attempt XP if earnedXP is not pre-recorded
+  const sorted = [...attempts].sort(
+    (a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime(),
+  );
+  const bestByPackage = new Map<string, number>();
+  const attemptsWithXP = sorted.map((attempt) => {
+    let xp = attempt.earnedXP;
+    if (xp == null) {
+      const key = attempt.packageId || null;
+      if (key) {
+        const prevBest = bestByPackage.get(key);
+        if (prevBest !== undefined) {
+          xp = practiceXP(attempt.correctCount, prevBest);
+          bestByPackage.set(key, Math.max(prevBest, attempt.correctCount));
+        } else {
+          xp = practiceXP(attempt.correctCount);
+          bestByPackage.set(key, attempt.correctCount);
+        }
+      } else {
+        xp = practiceXP(attempt.correctCount);
+      }
+    }
+    return { ...attempt, xp };
+  });
+
+  const totalXP = attemptsWithXP.reduce((sum, attempt) => sum + attempt.xp, 0);
   const todayMs = Date.parse(`${practiceDay(now)}T00:00:00Z`);
   const weekday = new Date(todayMs).getUTCDay();
   const monday = todayMs - ((weekday + 6) % 7) * dayMs;
   const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
   const weeklyChartData = days.map((day, index) => {
     const date = new Date(monday + index * dayMs).toISOString().slice(0, 10);
-    const sessions = attempts.filter((attempt) => practiceDay(attempt.submittedAt) === date);
+    const sessions = attemptsWithXP.filter((attempt) => practiceDay(attempt.submittedAt) === date);
     const questions = sessions.reduce((sum, attempt) => sum + attempt.totalCount, 0);
     const correct = sessions.reduce((sum, attempt) => sum + attempt.correctCount, 0);
     return {
@@ -69,7 +100,7 @@ export function learnerSummary(attempts: Attempt[], now = new Date()) {
       fullDay: date,
       questions,
       correct,
-      xp: sessions.reduce((sum, attempt) => sum + practiceXP(attempt.correctCount), 0),
+      xp: sessions.reduce((sum, attempt) => sum + attempt.xp, 0),
       accuracy: questions ? Math.round((correct / questions) * 1000) / 10 : 0,
     };
   });
