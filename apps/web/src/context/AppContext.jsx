@@ -212,6 +212,10 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("latveria_theme", theme);
     document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.classList.toggle("dark", theme === "dark");
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute("content", theme === "parchment" ? "#f5f0e6" : "#07100d");
+    }
   }, [theme]);
 
   // Show Toast

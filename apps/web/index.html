@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#07100d" />
     <meta name="description" content="Latveria — Platform latihan UTBK SNBT bergaya modern." />
     <title>latveriacademy — Latihan UTBK</title>
     <link rel="icon" href="/src/assets/latveria.webp" />
@@ -18,6 +19,10 @@
           localStorage.getItem("latveria_theme") ||
           (window.matchMedia("(prefers-color-scheme: light)").matches ? "parchment" : "dark");
         document.documentElement.setAttribute("data-theme", t);
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) {
+          metaTheme.setAttribute("content", t === "parchment" ? "#f5f0e6" : "#07100d");
+        }
       } catch (_) {}
     </script>
   </head>
