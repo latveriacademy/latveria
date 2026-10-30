@@ -5,6 +5,7 @@ class SoundEngine {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.suppressed = false;
   }
 
   init() {
@@ -19,9 +20,18 @@ class SoundEngine {
     }
   }
 
+  // Temporary suppress audio effects (e.g. while watching video or audio lesson)
+  suppress(state = true) {
+    this.suppressed = Boolean(state);
+  }
+
+  isPlayable() {
+    return Boolean(this.enabled && !this.suppressed);
+  }
+
   // Subtle mechanical shutter / typewriter key tap
   playClick() {
-    if (!this.enabled) return;
+    if (!this.isPlayable()) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -48,7 +58,7 @@ class SoundEngine {
 
   // Soft archival stamp confirmation (for selecting an answer)
   playSelect() {
-    if (!this.enabled) return;
+    if (!this.isPlayable()) return;
     try {
       this.init();
       if (!this.ctx) return;
@@ -75,7 +85,7 @@ class SoundEngine {
 
   // Subtle institutional brass chime for XP / Selesai sesi
   playSuccess() {
-    if (!this.enabled) return;
+    if (!this.isPlayable()) return;
     try {
       this.init();
       if (!this.ctx) return;

@@ -6,6 +6,7 @@ import { extractYouTubeVideoId, utbkSubtests } from "@latveria/shared";
 import { MathText } from "../../components/math/math-text";
 import { Button } from "../../components/ui/button";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
+import { sound } from "../../utils/audioFeedback";
 
 export function LibraryReaderView() {
   const item = useLoaderData<LibraryItemSummary>();
@@ -19,6 +20,16 @@ export function LibraryReaderView() {
     }
     window.scrollTo(0, 0);
   }, [item?.id]);
+
+  // Redam efek suara UI selama membuka materi video agar audio video tidak terganggu
+  useEffect(() => {
+    if (item.type === "video") {
+      sound.suppress(true);
+      return () => {
+        sound.suppress(false);
+      };
+    }
+  }, [item.type]);
 
   const handleScrollToTop = () => {
     const scrollContainer = document.querySelector(".latveria-content-scroll");

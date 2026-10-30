@@ -94,8 +94,12 @@ export const HeaderBar = () => {
         id="sound-toggle-btn"
         className={`header-tool-btn header-desktop-tool transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95 ${soundEnabled ? "active" : ""}`}
         onClick={toggleSound}
-        title={soundEnabled ? "Acoustic Sound: Aktif" : "Acoustic Sound: Hening"}
-        aria-label="Toggle Efek Suara Taktil"
+        title={
+          soundEnabled
+            ? "Efek Suara UI: Aktif (klik tombol, notifikasi & suara taktil)"
+            : "Efek Suara UI: Hening (suara antarmuka dimatikan)"
+        }
+        aria-label="Toggle Efek Suara UI"
       >
         {soundEnabled ? (
           <Volume2 size={16} className="transition-transform duration-200" />
