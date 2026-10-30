@@ -42,6 +42,7 @@ export function WarriorBattleView() {
     mode: "1v1" | "2v2";
     questionCount: number;
     timePerQuestionSeconds: number;
+    subtestSlug?: string | null;
   }) => {
     if (pending) return;
     setPending("create");

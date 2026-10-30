@@ -11,6 +11,7 @@ import { getDb } from "../../lib/db";
 import { user } from "../../lib/db/auth-schema";
 import {
   questions,
+  topics,
   warriorBattleAnswers,
   warriorBattleParticipants,
   warriorBattleQuestions,
@@ -32,6 +33,18 @@ export async function createBattle(userId: string, input: CreateBattleInput) {
   const code = generateRoomCode();
 
   return await db.transaction(async (tx) => {
+    // Resolve topicId from subtestSlug if provided
+    let resolvedTopicId = input.topicId ?? null;
+    if (!resolvedTopicId && input.subtestSlug) {
+      const [matchedTopic] = await tx
+        .select({ id: topics.id })
+        .from(topics)
+        .where(eq(topics.slug, input.subtestSlug));
+      if (matchedTopic) {
+        resolvedTopicId = matchedTopic.id;
+      }
+    }
+
     // 1. Create battle record
     const [battle] = await tx
       .insert(warriorBattles)
@@ -41,7 +54,7 @@ export async function createBattle(userId: string, input: CreateBattleInput) {
         status: "waiting",
         questionCount: input.questionCount,
         timePerQuestionSeconds: input.timePerQuestionSeconds,
-        topicId: input.topicId ?? null,
+        topicId: resolvedTopicId,
         createdBy: userId,
       })
       .returning();
@@ -70,8 +83,8 @@ export async function createBattle(userId: string, input: CreateBattleInput) {
 
     // 4. Select questions from questions bank
     const questionConditions = [eq(questions.questionType, "single_choice")];
-    if (input.topicId) {
-      questionConditions.push(eq(questions.topicId, input.topicId));
+    if (resolvedTopicId) {
+      questionConditions.push(eq(questions.topicId, resolvedTopicId));
     }
 
     const availableQuestions = await tx
@@ -322,6 +335,19 @@ export async function getBattleState(
     }
   }
 
+  let subtestSlug: string | null = null;
+  let subtestName: string | null = null;
+  if (battle.topicId) {
+    const [topic] = await db
+      .select({ slug: topics.slug, name: topics.name })
+      .from(topics)
+      .where(eq(topics.id, battle.topicId));
+    if (topic) {
+      subtestSlug = topic.slug;
+      subtestName = topic.name;
+    }
+  }
+
   const myParticipant = rawParticipants.find((p) => p.userId === forUserId);
 
   return {
@@ -343,6 +369,8 @@ export async function getBattleState(
     startedAt: battle.startedAt ? battle.startedAt.toISOString() : null,
     endedAt: battle.endedAt ? battle.endedAt.toISOString() : null,
     createdBy: battle.createdBy,
+    subtestSlug,
+    subtestName,
     serverNow: new Date().toISOString(),
   };
 }

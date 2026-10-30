@@ -29,6 +29,7 @@ export const createBattleSchema = z.object({
   questionCount: z.coerce.number().int().min(1).max(10).default(5),
   timePerQuestionSeconds: z.coerce.number().int().min(10).max(60).default(20),
   topicId: z.string().uuid().optional().nullable(),
+  subtestSlug: z.string().optional().nullable(),
 });
 export type CreateBattleInput = z.infer<typeof createBattleSchema>;
 
@@ -115,6 +116,8 @@ export const battleStateDtoSchema = z.object({
   startedAt: z.string().nullable().optional(),
   endedAt: z.string().nullable().optional(),
   createdBy: z.string(),
+  subtestSlug: z.string().nullable().optional(),
+  subtestName: z.string().nullable().optional(),
   serverNow: z.string(),
 });
 export type BattleStateDto = z.infer<typeof battleStateDtoSchema>;

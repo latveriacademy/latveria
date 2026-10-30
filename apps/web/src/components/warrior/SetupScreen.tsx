@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Clock, History, Plus, Users } from "lucide-react";
+import { utbkSubtests } from "@latveria/shared";
 import { Button } from "../ui/button";
 import { PageHeading, Panel, PanelHeader } from "../ui/dashboard";
 import styles from "./setup.module.css";
@@ -9,6 +10,7 @@ interface SetupScreenProps {
     mode: "1v1" | "2v2";
     questionCount: number;
     timePerQuestionSeconds: number;
+    subtestSlug?: string | null;
   }) => void;
   onJoinBattle: (code: string) => void;
   onOpenHistory: () => void;
@@ -22,12 +24,20 @@ export function SetupScreen({
   pending = null,
 }: SetupScreenProps) {
   const [mode, setMode] = useState<"1v1" | "2v2">("1v1");
+  const [subtestSlug, setSubtestSlug] = useState<string>("all");
   const [questionCount, setQuestionCount] = useState(5);
   const [joinCode, setJoinCode] = useState("");
   const busy = pending !== null;
   const handleCreate = (event: FormEvent) => {
     event.preventDefault();
-    if (!busy) onCreateBattle({ mode, questionCount, timePerQuestionSeconds: 20 });
+    if (!busy) {
+      onCreateBattle({
+        mode,
+        questionCount,
+        timePerQuestionSeconds: 20,
+        subtestSlug: subtestSlug === "all" ? null : subtestSlug,
+      });
+    }
   };
   const handleJoin = (event: FormEvent) => {
     event.preventDefault();
@@ -68,6 +78,24 @@ export function SetupScreen({
                 ))}
               </div>
             </fieldset>
+
+            <label className={styles.field}>
+              <span>Subtes materi</span>
+              <select
+                className={styles.input}
+                value={subtestSlug}
+                disabled={busy}
+                onChange={(event) => setSubtestSlug(event.target.value)}
+              >
+                <option value="all">Semua Subtes (Acak Campuran)</option>
+                {utbkSubtests.map((subtest) => (
+                  <option key={subtest.slug} value={subtest.slug}>
+                    {subtest.short} — {subtest.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <div className={styles.settings}>
               <label className={styles.field}>
                 <span>Jumlah soal</span>

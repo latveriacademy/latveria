@@ -42,7 +42,7 @@ export function LobbyScreen({
     <div className={styles.screen}>
       <PageHeading
         title={duel ? "Ruang tunggu duel" : "Ruang tunggu tim"}
-        description={`${battleState.mode === "1v1" ? "1 vs 1" : "2 vs 2"} · ${battleState.questionCount} soal · ${battleState.timePerQuestionSeconds} detik per soal`}
+        description={`${battleState.mode === "1v1" ? "1 vs 1" : "2 vs 2"} · ${battleState.subtestName ? `Subtes: ${battleState.subtestName} · ` : ""}${battleState.questionCount} soal · ${battleState.timePerQuestionSeconds} detik per soal`}
         actions={
           <div className={styles.copyGroup}>
             <div>

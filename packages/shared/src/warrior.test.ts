@@ -18,9 +18,11 @@ describe("Warrior Battle Shared Schemas", () => {
       mode: "2v2",
       questionCount: 10,
       timePerQuestionSeconds: 30,
+      subtestSlug: "penalaran-umum",
     });
     expect(custom.mode).toBe("2v2");
     expect(custom.questionCount).toBe(10);
+    expect(custom.subtestSlug).toBe("penalaran-umum");
 
     expect(() => createBattleSchema.parse({ questionCount: 0 })).toThrow();
     expect(() => createBattleSchema.parse({ questionCount: 11 })).toThrow();
