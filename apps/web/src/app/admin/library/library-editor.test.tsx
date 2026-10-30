@@ -56,6 +56,35 @@ it("renders LibraryEditorForm with YouTube URL and auto-thumbnail helpers for vi
   expect(html).toContain("Tag &amp; Kata Kunci Materi");
 });
 
+it("renders LibraryEditorForm with document attachment field for article type", () => {
+  const form: LibraryFormState = {
+    title: "Modul Lengkap Barisan dan Deret",
+    slug: "modul-barisan-deret",
+    type: "article",
+    subtestSlug: "penalaran-matematika",
+    content: "Penjelasan materi dan rumus.",
+    url: "",
+    thumbnailUrl: "",
+    materialUrl: "https://drive.google.com/file/d/slide-dwu/view",
+    materialTitle: "Slide PPT Pembahasan Barisan",
+    tags: ["matematika"],
+    isPublished: true,
+  };
+
+  const html = renderToStaticMarkup(
+    <LibraryEditorForm
+      form={form}
+      onChange={() => {}}
+      uploadingThumb={false}
+      onUploadThumbnail={async () => {}}
+    />,
+  );
+
+  expect(html).toContain("Lampiran Dokumen / Slide Materi (Google Drive, PDF, PPT)");
+  expect(html).toContain("https://drive.google.com/file/d/slide-dwu/view");
+  expect(html).toContain("Slide PPT Pembahasan Barisan");
+});
+
 it("renders LibraryLivePreview properly with video material action button", () => {
   const html = renderToStaticMarkup(
     <LibraryLivePreview

@@ -79,3 +79,37 @@ it("renders video with discussion material action button when materialUrl is pro
   expect(html).toContain("Buka Materi Pembahasan");
   expect(html).toContain("https://drive.google.com/file/d/sample-slide/view");
 });
+
+it("renders article with slide/document attachment button when materialUrl is provided", () => {
+  mockItemData = {
+    id: "test-article-1",
+    title: "Materi DWU: Konsep Dasar Logika",
+    slug: "materi-dwu-logika",
+    type: "article",
+    subtestSlug: "penalaran-umum",
+    content: "Penjelasan logika proposisi.",
+    url: null,
+    thumbnailUrl: null,
+    metadata: {
+      materialUrl: "https://drive.google.com/file/d/dwu-slide-ppt/view",
+      materialTitle: "Slide DWU Presentasi PPT",
+    },
+    tags: ["dwu", "logika"],
+    isPublished: true,
+    authorId: "admin-1",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const html = renderToStaticMarkup(
+    <MemoryRouter>
+      <LibraryReaderView />
+    </MemoryRouter>,
+  );
+
+  expect(html).toContain("Materi DWU: Konsep Dasar Logika");
+  expect(html).toContain("Lampiran Dokumen / Slide Materi");
+  expect(html).toContain("Slide DWU Presentasi PPT");
+  expect(html).toContain("Buka Slide / Dokumen");
+  expect(html).toContain("https://drive.google.com/file/d/dwu-slide-ppt/view");
+});

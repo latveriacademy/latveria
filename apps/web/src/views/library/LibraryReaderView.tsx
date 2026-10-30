@@ -100,7 +100,9 @@ export function LibraryReaderView() {
             <div className="space-y-0.5 min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-[var(--gold)] font-bold uppercase tracking-wider">
-                  Materi yang Sedang Dibahas
+                  {item.type === "video"
+                    ? "Materi yang Sedang Dibahas"
+                    : "Lampiran Dokumen / Slide Materi"}
                 </span>
                 {/drive\.google\.com/i.test(item.metadata.materialUrl) && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-medium">
@@ -109,13 +111,18 @@ export function LibraryReaderView() {
                 )}
               </div>
               <p className="text-sm font-semibold text-[var(--ink)] truncate">
-                {item.metadata.materialTitle || "Buka Dokumen / Slide Pembahasan Materi"}
+                {item.metadata.materialTitle ||
+                  (item.type === "video"
+                    ? "Buka Dokumen / Slide Pembahasan Materi"
+                    : "Buka Dokumen Slide / Modul Lampiran")}
               </p>
             </div>
           </div>
           <Button asChild size="default" className="w-full sm:w-auto shrink-0 justify-center">
             <a href={item.metadata.materialUrl} target="_blank" rel="noopener noreferrer">
-              <span>Buka Materi Pembahasan</span>
+              <span>
+                {item.type === "video" ? "Buka Materi Pembahasan" : "Buka Slide / Dokumen"}
+              </span>
               <ExternalLink className="w-4 h-4 ml-1.5" />
             </a>
           </Button>

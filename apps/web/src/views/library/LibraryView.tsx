@@ -177,6 +177,11 @@ export function LibraryView() {
                             {subtest.short}
                           </span>
                         )}
+                        {item.metadata?.materialUrl && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/40 backdrop-blur-md flex items-center gap-1">
+                            <FileText className="w-2.5 h-2.5" /> Slide / Dokumen
+                          </span>
+                        )}
                       </div>
                     </div>
 

@@ -357,6 +357,49 @@ export function LibraryEditorForm({
             minHeight={form.type === "article" ? "min-h-[420px]" : "min-h-[220px]"}
           />
         </div>
+
+        {/* Lampiran Dokumen / Slide Pendukung untuk Artikel / Rujukan */}
+        {form.type !== "video" && (
+          <div className="p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] space-y-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[var(--gold)]" />
+                  <span>Lampiran Dokumen / Slide Materi (Google Drive, PDF, PPT)</span>
+                </label>
+                <span className="text-[11px] text-[var(--ink-muted)]">Opsional</span>
+              </div>
+              <Input
+                value={form.materialUrl}
+                onChange={(e) => onChange("materialUrl", e.target.value)}
+                placeholder="https://drive.google.com/... atau tautan dokumen presentasi/modul"
+                className={`w-full text-xs h-10 ${materialUrlError ? "border-red-500" : ""}`}
+              />
+              {materialUrlError && (
+                <p className="text-[11px] text-red-400 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {materialUrlError}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold text-[var(--ink-muted)]">
+                Nama / Label Tombol Lampiran (Opsional)
+              </label>
+              <Input
+                value={form.materialTitle}
+                onChange={(e) => onChange("materialTitle", e.target.value)}
+                placeholder="Contoh: Slide Rangkuman Konsep (Google Drive/PDF)"
+                className="w-full text-xs h-9"
+              />
+            </div>
+
+            <p className="text-[11px] text-[var(--ink-muted)]">
+              Peserta akan melihat tombol akses atau unduh slide presentasi/dokumen pendukung
+              langsung pada halaman materi.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* SEKSI 3: COVER & TAG & STATUS */}

@@ -91,7 +91,9 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
               <div className="space-y-0.5 min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-[var(--gold)] font-bold uppercase tracking-wider">
-                    Materi yang Sedang Dibahas
+                    {item.type === "video"
+                      ? "Materi yang Sedang Dibahas"
+                      : "Lampiran Dokumen / Slide Materi"}
                   </span>
                   {/drive\.google\.com/i.test(item.metadata.materialUrl) && (
                     <span className="text-[9px] px-1 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-medium">
@@ -100,7 +102,10 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
                   )}
                 </div>
                 <p className="text-xs font-semibold text-[var(--ink)] truncate">
-                  {item.metadata.materialTitle || "Buka Dokumen / Slide Pembahasan Materi"}
+                  {item.metadata.materialTitle ||
+                    (item.type === "video"
+                      ? "Buka Dokumen / Slide Pembahasan Materi"
+                      : "Buka Dokumen Slide / Modul Lampiran")}
                 </p>
               </div>
             </div>
@@ -110,7 +115,8 @@ export function LibraryPreviewDialog({ item, open, onOpenChange }: LibraryPrevie
               rel="noreferrer"
               className="px-3 py-1.5 rounded-lg bg-[var(--gold)]/20 text-[var(--gold)] hover:bg-[var(--gold)]/30 text-xs font-semibold shrink-0 flex items-center justify-center gap-1 w-full sm:w-auto"
             >
-              <span>Buka Materi</span> <ExternalLink className="w-3.5 h-3.5" />
+              <span>{item.type === "video" ? "Buka Materi" : "Buka Slide"}</span>{" "}
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         )}
