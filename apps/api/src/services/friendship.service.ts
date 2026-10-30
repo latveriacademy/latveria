@@ -139,7 +139,13 @@ export async function searchPotentialFriends(userId: string, query: string) {
       and(
         ne(user.id, userId),
         eq(user.isDeactivated, false),
-        or(ilike(user.name, `%${trimmed}%`), ilike(user.email, `%${trimmed}%`)),
+        eq(user.isDemo, false),
+        eq(user.role, "user"),
+        or(
+          ilike(user.name, `%${trimmed}%`),
+          ilike(user.codename, `%${trimmed}%`),
+          ilike(user.email, `%${trimmed}%`),
+        ),
       ),
     )
     .limit(20);
