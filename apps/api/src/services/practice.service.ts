@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   calculateLatveriaScore,
@@ -94,7 +94,7 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
       })
       .from(questions)
       .where(and(eq(questions.topicId, topic.id), eq(questions.packageId, pkg.id)))
-      .orderBy(questions.id);
+      .orderBy(asc(questions.subtestOrder), asc(questions.order), asc(questions.id));
 
     return {
       topic,
@@ -117,7 +117,7 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
     })
     .from(questions)
     .where(eq(questions.topicId, topic.id))
-    .orderBy(questions.id);
+    .orderBy(asc(questions.subtestOrder), asc(questions.order), asc(questions.id));
   return { topic, items: await resolvePassages(items) };
 }
 

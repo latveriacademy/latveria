@@ -1,16 +1,30 @@
 .latex-diagram {
-  display: inline-flex;
+  display: flex;
   justify-content: center;
   align-items: center;
   max-width: 100%;
-  margin: 0.75rem auto;
+  margin: 1.25rem auto;
   overflow-x: auto;
+  padding: 0.5rem 0;
 }
 
 .latex-diagram svg {
   max-width: 100%;
   height: auto;
   display: block;
+  margin-inline: auto;
+  transition: filter 0.2s ease;
+}
+
+/* Adaptasi diagram LaTeX ke tema gelap agar stroke/fill hitam terlihat kontras */
+:root .latex-diagram svg,
+[data-theme="dark"] .latex-diagram svg {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
+[data-theme="light"] .latex-diagram svg,
+[data-theme="parchment"] .latex-diagram svg {
+  filter: none;
 }
 
 .latex-diagram-loading {
