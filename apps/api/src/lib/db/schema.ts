@@ -435,3 +435,4 @@ export * from "./warrior-schema";
 export * from "./latex-schema";
 export * from "./question-intelligence-schema";
 export * from "./library-schema";
+export * from "./friendship-schema";

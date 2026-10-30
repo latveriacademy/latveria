@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, UserPlus } from "lucide-react";
 import type { BattleStateDto } from "@latveria/shared";
 import { Button } from "../ui/button";
 import { PageHeading, Panel, PanelHeader } from "../ui/dashboard";
@@ -10,6 +10,7 @@ interface LobbyScreenProps {
   onToggleReady: (isReady: boolean) => void;
   onLeave: () => void;
   connected?: boolean;
+  onOpenFriends?: () => void;
 }
 
 export function LobbyScreen({
@@ -17,6 +18,7 @@ export function LobbyScreen({
   onToggleReady,
   onLeave,
   connected = true,
+  onOpenFriends,
 }: LobbyScreenProps) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
@@ -45,6 +47,12 @@ export function LobbyScreen({
         description={`${battleState.mode === "1v1" ? "1 vs 1" : "2 vs 2"} · ${battleState.subtestName ? `Subtes: ${battleState.subtestName} · ` : ""}${battleState.questionCount} soal · ${battleState.timePerQuestionSeconds} detik per soal`}
         actions={
           <div className={styles.copyGroup}>
+            {onOpenFriends && (
+              <Button variant="outline" onClick={onOpenFriends}>
+                <UserPlus size={16} aria-hidden="true" />
+                Undang teman
+              </Button>
+            )}
             <div>
               <span className={styles.muted}>Kode room</span>
               <code className={styles.code}>{battleState.code}</code>

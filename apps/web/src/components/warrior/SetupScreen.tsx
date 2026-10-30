@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Clock, History, Plus, Users } from "lucide-react";
-import { utbkSubtests } from "@latveria/shared";
+import { utbkSubtests, type BattleInviteDto } from "@latveria/shared";
 import { Button } from "../ui/button";
 import { PageHeading, Panel, PanelHeader } from "../ui/dashboard";
 import styles from "./setup.module.css";
@@ -14,6 +14,10 @@ interface SetupScreenProps {
   }) => void;
   onJoinBattle: (code: string) => void;
   onOpenHistory: () => void;
+  onOpenFriends?: () => void;
+  pendingInvites?: BattleInviteDto[];
+  onAcceptInvite?: (inviteId: string) => void;
+  onDeclineInvite?: (inviteId: string) => void;
   pending?: "create" | "join" | null;
 }
 
@@ -21,6 +25,10 @@ export function SetupScreen({
   onCreateBattle,
   onJoinBattle,
   onOpenHistory,
+  onOpenFriends,
+  pendingInvites = [],
+  onAcceptInvite,
+  onDeclineInvite,
   pending = null,
 }: SetupScreenProps) {
   const [mode, setMode] = useState<"1v1" | "2v2">("1v1");
@@ -50,12 +58,55 @@ export function SetupScreen({
         title="Warrior Battle"
         description="Buat room atau gabung dengan kode teman."
         actions={
-          <Button variant="outline" onClick={onOpenHistory} disabled={busy}>
-            <History size={16} aria-hidden="true" />
-            Riwayat battle
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onOpenFriends} disabled={busy}>
+              <Users size={16} aria-hidden="true" />
+              Teman
+            </Button>
+            <Button variant="outline" onClick={onOpenHistory} disabled={busy}>
+              <History size={16} aria-hidden="true" />
+              Riwayat battle
+            </Button>
+          </div>
         }
       />
+
+      {pendingInvites.length > 0 && (
+        <div className={styles.inviteNotice} role="region" aria-label="Undangan battle masuk">
+          <div className={styles.inviteNoticeHeader}>
+            <span className={styles.inviteBadge}>⚔️ Undangan Battle Masuk</span>
+          </div>
+          {pendingInvites.map((inv) => (
+            <div key={inv.id} className={styles.inviteCard}>
+              <div className={styles.inviteInfo}>
+                <strong>{inv.sender.name}</strong> mengundangmu ke battle{" "}
+                <span className="font-semibold text-gold">
+                  {inv.mode === "1v1" ? "1 vs 1" : "2 vs 2"}
+                </span>
+                {inv.subtestName ? ` · Subtes: ${inv.subtestName}` : ""} ({inv.questionCount} soal)
+              </div>
+              <div className={styles.inviteActions}>
+                <Button
+                  size="sm"
+                  className="btn-gold-solid"
+                  onClick={() => onAcceptInvite?.(inv.id)}
+                  disabled={busy}
+                >
+                  Terima & Masuk
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onDeclineInvite?.(inv.id)}
+                  disabled={busy}
+                >
+                  Tolak
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className={styles.layout}>
         <Panel className={styles.panel}>
           <PanelHeader title="Buat room" />

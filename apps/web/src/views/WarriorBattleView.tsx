@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import type { BattleInviteDto } from "@latveria/shared";
 import { api } from "../lib/api";
 
 import { useWarriorBattle } from "../lib/useWarriorBattle";
@@ -8,6 +9,7 @@ import { ArenaScreen } from "../components/warrior/ArenaScreen";
 import { ResultScreen } from "../components/warrior/ResultScreen";
 import { HistoryScreen } from "../components/warrior/HistoryScreen";
 import { ReviewScreen } from "../components/warrior/ReviewScreen";
+import { FriendsModal } from "../components/warrior/FriendsModal";
 import styles from "../components/warrior/battle.module.css";
 import { Button } from "../components/ui/button";
 import { PageHeading, Panel } from "../components/ui/dashboard";
@@ -18,6 +20,57 @@ export function WarriorBattleView() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pending, setPending] = useState<"create" | "join" | null>(null);
   const [reviewBattleId, setReviewBattleId] = useState<string | null>(null);
+  const [isFriendsOpen, setIsFriendsOpen] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<BattleInviteDto[]>([]);
+  const [invitedFriendIds, setInvitedFriendIds] = useState<Set<string>>(new Set());
+
+  const fetchPendingInvites = useCallback(async () => {
+    try {
+      const res = await api<{ invites: BattleInviteDto[] }>("/warrior/invites");
+      setPendingInvites(res.invites || []);
+    } catch {
+      // Polling failure can be silently ignored
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!activeBattleId) {
+      void fetchPendingInvites();
+      const timer = setInterval(fetchPendingInvites, 4000);
+      return () => clearInterval(timer);
+    }
+  }, [activeBattleId, fetchPendingInvites]);
+
+  const handleAcceptInvite = async (inviteId: string) => {
+    try {
+      setErrorMessage(null);
+      const res = await api<{
+        success: boolean;
+        battle: { id: string };
+        code: string;
+      }>(`/warrior/invites/${inviteId}/respond`, {
+        method: "POST",
+        body: JSON.stringify({ action: "accept" }),
+      });
+      setPendingInvites((prev) => prev.filter((inv) => inv.id !== inviteId));
+      setActiveBattleId(res.battle.id);
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Gagal menerima undangan battle.");
+      void fetchPendingInvites();
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    try {
+      await api(`/warrior/invites/${inviteId}/respond`, {
+        method: "POST",
+        body: JSON.stringify({ action: "decline" }),
+      });
+      setPendingInvites((prev) => prev.filter((inv) => inv.id !== inviteId));
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Gagal menolak undangan.");
+    }
+  };
 
   const {
     battleState,
@@ -133,7 +186,18 @@ export function WarriorBattleView() {
           onCreateBattle={handleCreateBattle}
           onJoinBattle={handleJoinBattle}
           onOpenHistory={() => setViewState("history")}
+          onOpenFriends={() => setIsFriendsOpen(true)}
+          pendingInvites={pendingInvites}
+          onAcceptInvite={handleAcceptInvite}
+          onDeclineInvite={handleDeclineInvite}
           pending={pending}
+        />
+        <FriendsModal
+          isOpen={isFriendsOpen}
+          onClose={() => setIsFriendsOpen(false)}
+          activeBattleId={activeBattleId}
+          invitedFriendIds={invitedFriendIds}
+          onInviteSent={(friendId) => setInvitedFriendIds((prev) => new Set([...prev, friendId]))}
         />
       </div>
     );
@@ -180,8 +244,17 @@ export function WarriorBattleView() {
           onToggleReady={toggleReady}
           onLeave={handleExit}
           connected={isConnected}
+          onOpenFriends={() => setIsFriendsOpen(true)}
         />
       )}
+
+      <FriendsModal
+        isOpen={isFriendsOpen}
+        onClose={() => setIsFriendsOpen(false)}
+        activeBattleId={activeBattleId}
+        invitedFriendIds={invitedFriendIds}
+        onInviteSent={(friendId) => setInvitedFriendIds((prev) => new Set([...prev, friendId]))}
+      />
     </div>
   );
 }

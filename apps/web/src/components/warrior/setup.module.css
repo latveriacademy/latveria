@@ -112,6 +112,48 @@
   min-height: 44px;
   margin-top: auto;
 }
+.inviteNotice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-xs);
+  margin-bottom: 24px;
+}
+.inviteNoticeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inviteBadge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.inviteCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+.inviteInfo {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.inviteActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .notice {
   max-width: 1040px;
   margin-bottom: 16px;
