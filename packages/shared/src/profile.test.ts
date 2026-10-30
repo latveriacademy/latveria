@@ -1,12 +1,25 @@
 import { expect, it } from "vitest";
 import { profileSchema } from "./index";
 
-const profile = { name: "Peserta", codename: "", targetUniversity: "", bio: "", motto: "" };
+const profile = {
+  name: "Peserta",
+  codename: "",
+  targetUniversity: "",
+  bio: "",
+  motto: "",
+  hideLeaderboardMetrics: false,
+};
 
 it("trims profile fields while allowing optional details to be empty", () => {
   expect(profileSchema.parse({ ...profile, name: " Peserta ", bio: " Belajar UTBK " })).toEqual({
     ...profile,
     bio: "Belajar UTBK",
+    hideLeaderboardMetrics: false,
+  });
+});
+it("accepts hideLeaderboardMetrics boolean flag", () => {
+  expect(profileSchema.parse({ ...profile, hideLeaderboardMetrics: true })).toMatchObject({
+    hideLeaderboardMetrics: true,
   });
 });
 it("rejects empty names and oversized bios", () => {

@@ -271,10 +271,22 @@ export const LeaderboardView = () => {
                       <span className="text-sage">{candidate.accuracy}%</span>
                     </div>
                   )}
+                  {metric !== "streak" && candidate.accuracy === undefined && (
+                    <div className="p-metric-row">
+                      <span className="text-muted">AKURASI:</span>
+                      <span className="text-muted italic text-[11px]">Privat</span>
+                    </div>
+                  )}
                   {metric !== "streak" && candidate.answered !== undefined && (
                     <div className="p-metric-row">
                       <span className="text-muted">SOAL SELESAI:</span>
                       <span>{candidate.answered} Q</span>
+                    </div>
+                  )}
+                  {metric !== "streak" && candidate.answered === undefined && (
+                    <div className="p-metric-row">
+                      <span className="text-muted">SOAL SELESAI:</span>
+                      <span className="text-muted italic text-[11px]">Privat</span>
                     </div>
                   )}
                 </div>
@@ -361,12 +373,20 @@ export const LeaderboardView = () => {
 
                         {metric !== "streak" && (
                           <td className="td-acc font-mono">
-                            <span className="text-sage font-bold">{cand.accuracy ?? "-"}%</span>
+                            {cand.accuracy !== undefined ? (
+                              <span className="text-sage font-bold">{cand.accuracy}%</span>
+                            ) : (
+                              <span className="text-muted italic text-[11px]">Privat</span>
+                            )}
                           </td>
                         )}
                         {metric !== "streak" && (
                           <td className="td-questions font-mono">
-                            <span>{cand.answered ?? 0} Q</span>
+                            {cand.answered !== undefined ? (
+                              <span>{cand.answered} Q</span>
+                            ) : (
+                              <span className="text-muted italic text-[11px]">Privat</span>
+                            )}
                           </td>
                         )}
 
@@ -426,17 +446,16 @@ export const LeaderboardView = () => {
                         )}
                       </div>
                     </div>
-                    {metric !== "streak" &&
-                      (cand.accuracy !== undefined || cand.answered !== undefined) && (
-                        <div className="roster-mobile-footer font-mono">
-                          {cand.accuracy !== undefined && (
-                            <span className="text-sage">Akurasi: {cand.accuracy ?? "-"}%</span>
-                          )}
-                          {cand.answered !== undefined && (
-                            <span className="text-muted">Soal: {cand.answered ?? 0} Q</span>
-                          )}
-                        </div>
-                      )}
+                    {metric !== "streak" && (
+                      <div className="roster-mobile-footer font-mono">
+                        <span className="text-sage">
+                          Akurasi: {cand.accuracy !== undefined ? `${cand.accuracy}%` : "Privat"}
+                        </span>
+                        <span className="text-muted">
+                          Soal: {cand.answered !== undefined ? `${cand.answered} Q` : "Privat"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

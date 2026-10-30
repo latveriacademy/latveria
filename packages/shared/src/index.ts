@@ -177,6 +177,7 @@ export const profileSchema = z
     bio: z.string().trim().max(500, "Bio maksimal 500 karakter."),
     motto: z.string().trim().max(200, "Motto maksimal 200 karakter."),
     image: z.string().nullable().optional(),
+    hideLeaderboardMetrics: z.boolean().optional().default(false),
   })
   .strict();
 export type Profile = z.infer<typeof profileSchema>;

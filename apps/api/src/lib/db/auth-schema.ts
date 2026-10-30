@@ -19,6 +19,7 @@ export const user = pgTable("user", {
   role: text("role").default("user").notNull(),
   isDemo: boolean("is_demo").default(false).notNull(),
   hideFromLeaderboard: boolean("hide_from_leaderboard").default(false).notNull(),
+  hideLeaderboardMetrics: boolean("hide_leaderboard_metrics").default(false).notNull(),
   isDeactivated: boolean("is_deactivated").default(false).notNull(),
   deactivatedAt: timestamp("deactivated_at"),
   accountNotes: text("account_notes").default("").notNull(),

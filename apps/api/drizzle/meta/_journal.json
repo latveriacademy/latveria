@@ -211,6 +211,13 @@
       "when": 1793355410771,
       "tag": "0029_warm_mockingbird",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793356177252,
+      "tag": "0030_thick_stature",
+      "breakpoints": true
     }
   ]
 }

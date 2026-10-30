@@ -53,6 +53,7 @@ export async function getLeaderboard(
       name: accounts.name,
       codename: accounts.codename,
       isDemo: accounts.isDemo,
+      hideLeaderboardMetrics: accounts.hideLeaderboardMetrics,
     })
     .from(accounts)
     .where(
@@ -70,6 +71,7 @@ export async function getLeaderboard(
       id: string;
       name: string;
       codename: string;
+      hideLeaderboardMetrics: boolean;
       metricValue: number;
       answered: number;
       correct: number;
@@ -86,6 +88,7 @@ export async function getLeaderboard(
       id: user.id,
       name: user.codename || user.name,
       codename: user.codename,
+      hideLeaderboardMetrics: Boolean(user.hideLeaderboardMetrics),
       metricValue: 0,
       answered: 0,
       correct: 0,
@@ -282,6 +285,7 @@ export async function getLeaderboard(
   const entries = sortedUsers.slice(0, limit).map((u, idx) => {
     const rank = idx + 1;
     const isCurrentUser = u.id === currentUserId;
+    const hideDetails = u.hideLeaderboardMetrics && !isCurrentUser;
     return {
       rank,
       id: `LTV-${u.id.slice(0, 4).toUpperCase()}`,
@@ -290,9 +294,9 @@ export async function getLeaderboard(
       metricValue: u.metricValue,
       level: u.level,
       totalXP: u.totalXP,
-      answered: u.answered,
-      correct: u.correct,
-      accuracy: u.accuracy,
+      answered: hideDetails ? undefined : u.answered,
+      correct: hideDetails ? undefined : u.correct,
+      accuracy: hideDetails ? undefined : u.accuracy,
       streak: u.streak,
       isCurrentUser,
     };

@@ -16,6 +16,7 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
     bio: profile.bio,
     motto: profile.motto,
     targetUniversity: profile.targetUniversity,
+    hideLeaderboardMetrics: Boolean(profile.hideLeaderboardMetrics),
   });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -76,6 +77,27 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
               onChange={(event) => setForm({ ...form, bio: event.target.value })}
             />
           </label>
+          <div className="pt-2 border-t border-[var(--edge)]">
+            <label className="flex items-start gap-2.5 cursor-pointer text-xs">
+              <input
+                type="checkbox"
+                checked={form.hideLeaderboardMetrics}
+                onChange={(event) =>
+                  setForm({ ...form, hideLeaderboardMetrics: event.target.checked })
+                }
+                className="mt-0.5 rounded border-[var(--edge)] text-[var(--gold)] focus:ring-[var(--gold)]"
+              />
+              <div className="grid gap-0.5">
+                <span className="font-semibold text-[var(--ink)]">
+                  Sembunyikan metrik detail dari publik
+                </span>
+                <span className="text-[var(--ink-muted)]">
+                  Persentase akurasi dan jumlah soal dijawab hanya dapat dilihat olehmu di papan
+                  peringkat.
+                </span>
+              </div>
+            </label>
+          </div>
         </fieldset>
         {error && (
           <p role="alert" className="text-crimson">

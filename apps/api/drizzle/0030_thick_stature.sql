@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "hide_leaderboard_metrics" boolean DEFAULT false NOT NULL;

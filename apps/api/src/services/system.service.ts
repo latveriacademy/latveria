@@ -26,6 +26,7 @@ const profileFields = {
   bio: accounts.bio,
   motto: accounts.motto,
   image: accounts.image,
+  hideLeaderboardMetrics: accounts.hideLeaderboardMetrics,
 };
 
 export async function getLearnerProfile(userId: string): Promise<Profile> {
