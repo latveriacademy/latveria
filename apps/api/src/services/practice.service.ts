@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   calculateLatveriaScore,
@@ -119,6 +119,60 @@ export async function getPracticeQuestions(slug: string, packageId?: string) {
     .where(eq(questions.topicId, topic.id))
     .orderBy(asc(questions.subtestOrder), asc(questions.order), asc(questions.id));
   return { topic, items: await resolvePassages(items) };
+}
+
+export async function getPracticeCategories(slug: string) {
+  const [topic] = await getDb().select().from(topics).where(eq(topics.slug, slug));
+  if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+
+  const rows = await getDb()
+    .select({
+      category: questions.category,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(questions)
+    .where(eq(questions.topicId, topic.id))
+    .groupBy(questions.category)
+    .orderBy(asc(questions.category));
+
+  return {
+    topic,
+    categories: rows.map((r) => ({
+      name: r.category || "Umum",
+      count: Number(r.count),
+    })),
+  };
+}
+
+export async function getCustomPracticeQuestions(slug: string, category?: string, count = 10) {
+  const [topic] = await getDb().select().from(topics).where(eq(topics.slug, slug));
+  if (!topic) throw new HTTPException(404, { message: "Subtes tidak ditemukan." });
+
+  const conditions = [eq(questions.topicId, topic.id)];
+  if (category && category !== "all" && category !== "semua") {
+    conditions.push(eq(questions.category, category));
+  }
+
+  const items = await getDb()
+    .select({
+      id: questions.id,
+      prompt: questions.prompt,
+      passage: questions.passage,
+      passageId: questions.passageId,
+      options: questions.options,
+      annotations: questions.annotations,
+    })
+    .from(questions)
+    .where(and(...conditions))
+    .orderBy(sql`RANDOM()`)
+    .limit(Math.min(Math.max(count, 1), 50));
+
+  return {
+    topic,
+    isCustom: true,
+    packageName: category && category !== "all" ? `Custom: ${category}` : `Custom: ${topic.name}`,
+    items: await resolvePassages(items),
+  };
 }
 
 export async function submitPractice(

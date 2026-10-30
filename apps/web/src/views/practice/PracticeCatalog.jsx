@@ -18,6 +18,7 @@ import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { SubtestIcon } from "../../components/subtest-icon";
+import { CustomDrillingModal } from "../../components/practice/CustomDrillingModal";
 import styles from "./practice-catalog.module.css";
 
 const PAGE_SIZE = 9;
@@ -57,6 +58,7 @@ export function PracticeCatalog() {
   const [mode, setMode] = useState("Practice");
   const [startingPackage, setStartingPackage] = useState(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -161,6 +163,10 @@ export function PracticeCatalog() {
                 </button>
               )}
             </label>
+            <Button type="button" className="gap-1.5" onClick={() => setShowCustomModal(true)}>
+              <SlidersHorizontal size={15} />
+              Custom Drilling
+            </Button>
             <Button asChild variant="outline">
               <Link to="/dashboard/riwayat">
                 <History size={16} />
@@ -466,6 +472,9 @@ export function PracticeCatalog() {
           )}
         </div>
       </div>
+      {showCustomModal && (
+        <CustomDrillingModal isOpen={showCustomModal} onClose={() => setShowCustomModal(false)} />
+      )}
     </>
   );
 }

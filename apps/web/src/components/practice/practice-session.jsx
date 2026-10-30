@@ -69,8 +69,10 @@ export function PracticeSession({
   const locked = evaluated || Boolean(session.attemptId) || submitting;
   const overlayOpen = mobileNavOpen || showSubmit || showReport || showResults || showShortcuts;
 
+  const isTimed = session.mode === "Timed Practice" || session.mode === "Challenge";
+
   useEffect(() => {
-    if (evaluated || session.attemptId || session.mode !== "Timed Practice" || timerPaused) return;
+    if (evaluated || session.attemptId || !isTimed || timerPaused) return;
     if (timeLeft === 0) {
       if (!timerSubmitted.current) {
         timerSubmitted.current = true;
@@ -80,7 +82,7 @@ export function PracticeSession({
     }
     const interval = setInterval(() => setTimeLeft((previous) => Math.max(0, previous - 1)), 1000);
     return () => clearInterval(interval);
-  }, [evaluated, session.attemptId, session.mode, timerPaused, timeLeft, finishSession]);
+  }, [evaluated, session.attemptId, isTimed, timerPaused, timeLeft, finishSession]);
 
   useEffect(() => {
     const handleKey = (event) => {
@@ -203,7 +205,7 @@ export function PracticeSession({
                 </Button>
               )}
             </div>
-          ) : session.mode === "Timed Practice" ? (
+          ) : isTimed ? (
             <div className={`timer-display font-mono ${timeLeft < 120 ? "timer-warning" : ""}`}>
               <Clock size={15} />
               <span className="time-label">Sisa waktu</span>
@@ -218,8 +220,8 @@ export function PracticeSession({
             </div>
           ) : (
             <span className="mode-display font-mono">
-              {session.mode === "Practice"
-                ? "Tanpa batas waktu"
+              {session.mode === "Practice" || session.mode === "Santai"
+                ? "Tanpa batas waktu (Santai)"
                 : session.mode === "Review"
                   ? "Ulasan"
                   : session.mode}
@@ -410,6 +412,8 @@ export function PracticeSession({
           unanswered={session.results.unansweredCount}
           earnedXP={session.results.earnedXP}
           score={session.results.score}
+          averageTimeSeconds={session.results.averageTimeSeconds}
+          totalTimeSeconds={session.results.totalTimeSeconds}
           onClose={() => setShowResults(false)}
           onExit={() => {
             setShowResults(false);

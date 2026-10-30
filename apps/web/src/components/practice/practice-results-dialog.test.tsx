@@ -47,3 +47,23 @@ it("does not show an EXP reward for read-only history results", () => {
   expect(html).toContain("Kembali ke riwayat");
   expect(html).not.toContain("NaN");
 });
+
+it("displays average time per question and total duration when provided", () => {
+  const html = renderToStaticMarkup(
+    <PracticeResultsDialog
+      open
+      subject="Penalaran Matematika"
+      correct={8}
+      total={10}
+      unanswered={0}
+      averageTimeSeconds={45}
+      totalTimeSeconds={450}
+      onClose={() => {}}
+      onExit={() => {}}
+    />,
+  );
+  expect(html).toContain("Rata-rata waktu per butir");
+  expect(html).toContain("45 dtk / butir");
+  expect(html).toContain("Total durasi pengerjaan");
+  expect(html).toContain("7m 30s");
+});

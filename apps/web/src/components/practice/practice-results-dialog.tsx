@@ -12,6 +12,8 @@ type Props = {
   earnedXP?: number | null;
   score?: number | null;
   scoreLabel?: string;
+  averageTimeSeconds?: number | null;
+  totalTimeSeconds?: number | null;
   onClose: () => void;
   onExit: () => void;
   exitLabel?: string;
@@ -27,6 +29,8 @@ export function PracticeResultsDialog({
   earnedXP,
   score,
   scoreLabel = "Latveria Score",
+  averageTimeSeconds,
+  totalTimeSeconds,
   onClose,
   onExit,
   exitLabel = "Kembali ke Drilling",
@@ -72,6 +76,27 @@ export function PracticeResultsDialog({
           <dd>{unanswered}</dd>
         </div>
       </dl>
+      {averageTimeSeconds != null && averageTimeSeconds > 0 && (
+        <div className={styles.exp}>
+          <span>Rata-rata waktu per butir</span>
+          <strong>
+            {averageTimeSeconds >= 60
+              ? `${Math.floor(averageTimeSeconds / 60)}m ${averageTimeSeconds % 60}s`
+              : `${averageTimeSeconds} dtk`}{" "}
+            / butir
+          </strong>
+        </div>
+      )}
+      {totalTimeSeconds != null && totalTimeSeconds > 0 && (
+        <div className={styles.exp}>
+          <span>Total durasi pengerjaan</span>
+          <strong>
+            {totalTimeSeconds >= 60
+              ? `${Math.floor(totalTimeSeconds / 60)}m ${totalTimeSeconds % 60}s`
+              : `${totalTimeSeconds} dtk`}
+          </strong>
+        </div>
+      )}
       {earnedXP != null && (
         <div className={styles.exp}>
           <span>EXP diperoleh</span>

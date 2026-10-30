@@ -297,6 +297,7 @@ export const AppProvider = ({ children }) => {
       count = 10,
       difficulty = "Latverian Elite",
       packageId = null,
+      customOptions = null,
     ) => {
       if (submitLock.current) return;
       setSubmissionError("");
@@ -311,9 +312,19 @@ export const AppProvider = ({ children }) => {
       setLoading(true);
       try {
         const slug = subject.slug || SHORT_TO_SLUG[subjectId];
-        const url = packageId
-          ? `/api/learner/practice/${slug}/${packageId}`
-          : `/api/learner/practice/${slug}`;
+        let url;
+        if (customOptions?.isCustom) {
+          const catParam =
+            customOptions.category && customOptions.category !== "semua"
+              ? `&category=${encodeURIComponent(customOptions.category)}`
+              : "";
+          url = `/api/learner/practice/${slug}/custom?count=${count}${catParam}`;
+        } else if (packageId) {
+          url = `/api/learner/practice/${slug}/${packageId}`;
+        } else {
+          url = `/api/learner/practice/${slug}`;
+        }
+
         const res = await fetch(url);
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -324,7 +335,7 @@ export const AppProvider = ({ children }) => {
         if (!data.items || data.items.length === 0) {
           showToast(
             "TIDAK ADA SOAL",
-            `Subtes ${subject.name} belum memiliki soal pada paket ini.`,
+            `Subtes ${subject.name} belum memiliki soal pada kategori/paket ini.`,
             "error",
           );
           setLoading(false);
@@ -334,8 +345,8 @@ export const AppProvider = ({ children }) => {
         // Normalize API questions to view shape
         let sessionQuestions = data.items.map(apiQuestionToView);
 
-        // Slice to requested count if specified and smaller than package
-        if (count && sessionQuestions.length > count) {
+        // Slice to requested count if specified and smaller than package (and not custom which already handles count)
+        if (!customOptions?.isCustom && count && sessionQuestions.length > count) {
           // Shuffle then slice
           for (let i = sessionQuestions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -344,6 +355,7 @@ export const AppProvider = ({ children }) => {
           sessionQuestions = sessionQuestions.slice(0, count);
         }
 
+        const isTimed = mode === "Timed Practice" || mode === "Challenge";
         const session = {
           submissionId: crypto.randomUUID(),
           subjectId: subject.id,
@@ -359,8 +371,8 @@ export const AppProvider = ({ children }) => {
           questions: sessionQuestions,
           answers: {}, // { [questionIndex]: 'A' | 'B' | 'C' | 'D' | 'E' }
           flagged: {}, // { [questionIndex]: true }
-          timeRemainingSeconds: mode === "Timed Practice" ? sessionQuestions.length * 90 : null,
-          isTimerRunning: mode === "Timed Practice",
+          timeRemainingSeconds: isTimed ? sessionQuestions.length * 90 : null,
+          isTimerRunning: isTimed,
           startTime: Date.now(),
         };
 

@@ -166,6 +166,7 @@ export interface SessionResultsParams {
     totalQuestions: number;
     questions: Array<{ id: string }>;
     answers: Record<number, string | undefined>;
+    startTime?: number;
   };
   reviewData: {
     attempt: { earnedXP?: number };
@@ -201,6 +202,14 @@ export function buildSessionResults({
   const score = accuracy;
   const earnedXP = reviewData.attempt.earnedXP;
 
+  const totalTimeSeconds = activeSession.startTime
+    ? Math.max(1, Math.round((Date.now() - activeSession.startTime) / 1000))
+    : null;
+  const averageTimeSeconds =
+    totalTimeSeconds && activeSession.totalQuestions > 0
+      ? Math.max(1, Math.round(totalTimeSeconds / activeSession.totalQuestions))
+      : null;
+
   return {
     attemptId,
     subjectId: activeSession.subjectId,
@@ -217,6 +226,8 @@ export function buildSessionResults({
     accuracy,
     score,
     earnedXP,
+    totalTimeSeconds,
+    averageTimeSeconds,
     answers: activeSession.answers,
     questions: enrichedQuestions,
     completedAt: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),

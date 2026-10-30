@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../types";
 import {
+  getCustomPracticeQuestions,
   getLearnerHistory,
   getLearnerSummary,
+  getPracticeCategories,
   getPracticeQuestions,
   getResultDetail,
   submitPractice,
@@ -17,6 +19,18 @@ practiceHandler.get("/api/learner/summary", async (c) =>
 practiceHandler.get("/api/learner/history", async (c) =>
   c.json(await getLearnerHistory(c.get("user").id)),
 );
+
+practiceHandler.get("/api/learner/practice/:slug/categories", async (c) => {
+  const result = await getPracticeCategories(c.req.param("slug"));
+  return c.json(result);
+});
+
+practiceHandler.get("/api/learner/practice/:slug/custom", async (c) => {
+  const category = c.req.query("category") ?? undefined;
+  const count = Number(c.req.query("count") ?? 10);
+  const result = await getCustomPracticeQuestions(c.req.param("slug"), category, count);
+  return c.json(result);
+});
 
 practiceHandler.get("/api/learner/practice/:slug/:packageId", async (c) => {
   const result = await getPracticeQuestions(c.req.param("slug"), c.req.param("packageId"));
