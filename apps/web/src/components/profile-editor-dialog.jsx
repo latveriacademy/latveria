@@ -22,7 +22,7 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
   return (
     <AppDialog open onOpenChange={onOpenChange} title="Edit profil" pending={pending}>
       <form
-        className="modal-body-form"
+        className="modal-body-form min-w-0 max-w-full"
         onSubmit={async (event) => {
           event.preventDefault();
           if (pending) return;
@@ -44,7 +44,7 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
           }
         }}
       >
-        <fieldset disabled={pending} className="grid gap-4 border-0 p-0">
+        <fieldset disabled={pending} className="grid gap-4 border-0 p-0 m-0 min-w-0 max-w-full">
           {[
             { key: "name", label: "Nama", maxLength: 100, autoComplete: "name", required: true },
             { key: "codename", label: "Nama panggilan", maxLength: 100, autoComplete: "nickname" },
@@ -59,7 +59,7 @@ export function ProfileEditorDialog({ profile, onOpenChange, onSaved }) {
               />
             </label>
           ))}
-          <div className="grid gap-2 text-sm">
+          <div className="grid gap-2 text-sm min-w-0 max-w-full">
             <span>Target PTN dan program studi</span>
             <TargetUniversityPicker
               value={form.targetUniversity ?? ""}

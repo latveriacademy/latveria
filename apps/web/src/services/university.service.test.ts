@@ -43,9 +43,15 @@ describe("university.service", () => {
   });
 
   it("falls back to default universities when network fails", async () => {
-    expect(FALLBACK_UNIVERSITIES.length).toBeGreaterThan(0);
-    const list = await fetchUniversities();
-    expect(list.length).toBeGreaterThan(0);
-    expect(list.some((u) => u.code === "UI")).toBe(true);
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = () => Promise.reject(new Error("Network failed"));
+    try {
+      expect(FALLBACK_UNIVERSITIES.length).toBeGreaterThan(0);
+      const list = await fetchUniversities();
+      expect(list.length).toBeGreaterThan(0);
+      expect(list.some((u) => u.code === "UI")).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

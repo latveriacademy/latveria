@@ -119,7 +119,7 @@ export function TargetUniversityPicker({
   }, [majors, majorSearch]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 min-w-0 max-w-full">
       <div className="relative">
         <Input
           value={value}
@@ -167,19 +167,19 @@ export function TargetUniversityPicker({
       </div>
 
       {isOpen && (
-        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-3 shadow-md space-y-3 motion-fade-down text-left">
+        <div className="rounded-lg border border-[var(--edge)] bg-[var(--surface)] p-3 shadow-md space-y-3 motion-fade-down text-left min-w-0 max-w-full overflow-hidden">
           {step === "university" ? (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between gap-2 pb-1 border-b border-[var(--edge-subtle)]">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)]">
-                  <Building2 className="size-3.5 text-[var(--gold)]" />
-                  <span>Pilih universitas</span>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] min-w-0">
+                  <Building2 className="size-3.5 text-[var(--gold)] shrink-0" />
+                  <span className="truncate">Pilih universitas</span>
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-1.5 text-xs"
+                  className="h-6 px-1.5 text-xs shrink-0"
                   onClick={() => setIsOpen(false)}
                 >
                   <X className="size-3" />
@@ -211,11 +211,11 @@ export function TargetUniversityPicker({
                       key={uni.id}
                       type="button"
                       onClick={() => handleSelectUniversity(uni)}
-                      className="w-full text-left p-2 rounded-md hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--edge)] transition-all flex items-center justify-between gap-2 group"
+                      className="w-full text-left p-2 rounded-md hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--edge)] transition-all flex items-center justify-between gap-2 group min-w-0"
                     >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[var(--ink)] group-hover:text-[var(--gold)] truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-semibold text-[var(--ink)] group-hover:text-[var(--gold)] truncate min-w-0 flex-1">
                             {uni.name}
                           </span>
                           {uni.code && (
@@ -243,7 +243,7 @@ export function TargetUniversityPicker({
                 <button
                   type="button"
                   onClick={() => setStep("university")}
-                  className="flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline font-medium"
+                  className="flex items-center gap-1.5 text-xs text-[var(--gold)] hover:underline font-medium shrink-0"
                 >
                   <ArrowLeft className="size-3.5" />
                   <span>Kembali</span>
@@ -252,7 +252,7 @@ export function TargetUniversityPicker({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-1.5 text-xs"
+                  className="h-6 px-1.5 text-xs shrink-0"
                   onClick={() => setIsOpen(false)}
                 >
                   <X className="size-3" />
@@ -260,8 +260,8 @@ export function TargetUniversityPicker({
               </div>
 
               {selectedUni && (
-                <div className="p-2 rounded bg-[var(--surface-subtle)] border border-[var(--edge-subtle)] flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-[var(--ink)] block truncate">
+                <div className="p-2 rounded bg-[var(--surface-subtle)] border border-[var(--edge-subtle)] flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-xs font-semibold text-[var(--ink)] block truncate min-w-0 flex-1">
                     {selectedUni.name} {selectedUni.code ? `(${selectedUni.code})` : ""}
                   </span>
                   <Button
@@ -306,27 +306,33 @@ export function TargetUniversityPicker({
                         key={major.id}
                         type="button"
                         onClick={() => handleSelectMajor(major)}
-                        className="w-full text-left p-2 rounded-md hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--edge)] transition-all flex items-center justify-between gap-2 group"
+                        className="w-full text-left p-2 rounded-md hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--edge)] transition-all flex items-center justify-between gap-2 group min-w-0"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             {deg && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-subtle)] font-medium text-[var(--gold)] shrink-0">
                                 {deg}
                               </span>
                             )}
-                            <span className="text-xs font-medium text-[var(--ink)] group-hover:text-[var(--gold)] truncate">
+                            <span className="text-xs font-medium text-[var(--ink)] group-hover:text-[var(--gold)] truncate min-w-0 flex-1">
                               {title}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-[var(--ink-muted)]">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[10px] text-[var(--ink-muted)]">
                             {major.category && (
-                              <span className="uppercase tracking-wider">{major.category}</span>
+                              <span className="uppercase tracking-wider shrink-0">
+                                {major.category}
+                              </span>
                             )}
                             {major.passing_grade ? (
-                              <span>• Passing Grade: ~{major.passing_grade}</span>
+                              <span className="shrink-0">
+                                • Passing Grade: ~{major.passing_grade}
+                              </span>
                             ) : null}
-                            {major.quota ? <span>• Kuota: {major.quota}</span> : null}
+                            {major.quota ? (
+                              <span className="shrink-0">• Kuota: {major.quota}</span>
+                            ) : null}
                           </div>
                         </div>
                         <span className="text-xs text-[var(--ink-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">

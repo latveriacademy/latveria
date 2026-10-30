@@ -162,8 +162,12 @@ export async function fetchUniversities(): Promise<UniversityItem[]> {
 
   try {
     const [page1Res, page2Res] = await Promise.all([
-      fetch("https://api.ibnuhabib.web.id/api/v1/universities?limit=100&offset=0"),
-      fetch("https://api.ibnuhabib.web.id/api/v1/universities?limit=100&offset=100"),
+      fetch("https://api.ibnuhabib.web.id/api/v1/universities?limit=100&offset=0", {
+        signal: AbortSignal.timeout(3000),
+      }),
+      fetch("https://api.ibnuhabib.web.id/api/v1/universities?limit=100&offset=100", {
+        signal: AbortSignal.timeout(3000),
+      }),
     ]);
 
     if (!page1Res.ok) {
@@ -201,6 +205,7 @@ export async function fetchMajors(universityId: string): Promise<MajorItem[]> {
   try {
     const res = await fetch(
       `https://api.ibnuhabib.web.id/api/v1/majors?university_id=${encodeURIComponent(universityId)}&limit=100&offset=0`,
+      { signal: AbortSignal.timeout(3000) },
     );
     if (!res.ok) {
       throw new Error(`Majors API returned status ${res.status}`);
@@ -212,6 +217,7 @@ export async function fetchMajors(universityId: string): Promise<MajorItem[]> {
     if (data.total && data.total > 100) {
       const page2Res = await fetch(
         `https://api.ibnuhabib.web.id/api/v1/majors?university_id=${encodeURIComponent(universityId)}&limit=100&offset=100`,
+        { signal: AbortSignal.timeout(3000) },
       );
       if (page2Res.ok) {
         const page2Data = (await page2Res.json()) as { items?: MajorItem[] };
