@@ -17,4 +17,8 @@ it("reserves Library for learning material and directs question work elsewhere",
   expect(html).toContain("Buka Battle World");
   expect(html).not.toContain("Mulai Paket");
   expect(html).not.toContain("FILTER PAKET");
+  expect(html).toContain("Artikel");
+  expect(html).toContain("Video");
+  expect(html).toContain("Rujukan");
+  expect(html).not.toContain(">Semua</button>");
 });

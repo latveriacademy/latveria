@@ -10,22 +10,14 @@ import {
   Sparkles,
   Video,
 } from "lucide-react";
-import type {
-  LibraryItemListResponse,
-  LibraryItemSummary,
-} from "@latveria/shared";
+import type { LibraryItemListResponse, LibraryItemSummary } from "@latveria/shared";
 import { utbkSubtests } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { SearchBar } from "../../components/ui/search-bar";
 import { PageHeading, Panel } from "../../components/ui/dashboard";
 import styles from "./library.module.css";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { VocabularyCollection } from "../../components/lexicon/vocabulary-collection";
 
 export function LibraryView() {
@@ -33,7 +25,7 @@ export function LibraryView() {
   const [loading, setLoading] = useState(false);
   const [cari, setCari] = useState("");
   const [subtestSlug, setSubtestSlug] = useState<string>("all");
-  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("article");
 
   const loadMaterials = useCallback(async () => {
     setLoading(true);
@@ -41,11 +33,9 @@ export function LibraryView() {
       const params = new URLSearchParams();
       if (cari.trim()) params.set("cari", cari.trim());
       if (subtestSlug !== "all") params.set("subtestSlug", subtestSlug);
-      if (selectedType !== "all") params.set("type", selectedType);
+      params.set("type", selectedType);
 
-      const res = await api<LibraryItemListResponse>(
-        `/learner/library?${params.toString()}`,
-      );
+      const res = await api<LibraryItemListResponse>(`/learner/library?${params.toString()}`);
       setItems(res.rows || []);
     } catch {
       setItems([]);
@@ -58,13 +48,10 @@ export function LibraryView() {
     loadMaterials();
   }, [loadMaterials]);
 
-  const hasFilter =
-    cari.trim() !== "" || subtestSlug !== "all" || selectedType !== "all";
+  const hasFilter = cari.trim() !== "" || subtestSlug !== "all";
 
   return (
-    <div
-      className={`latveria-view-container motion-page-enter ${styles.container}`}
-    >
+    <div className={`latveria-view-container motion-page-enter ${styles.container}`}>
       <PageHeading
         title="Library"
         description="Materi pendamping dan kosakata LBE yang kamu simpan."
@@ -108,7 +95,6 @@ export function LibraryView() {
               <div className="flex items-center gap-1 bg-[var(--surface-elevated)] p-1 rounded-lg border border-[var(--edge)] text-xs">
                 {(
                   [
-                    { value: "all", label: "Semua" },
                     { value: "article", label: "Artikel" },
                     { value: "video", label: "Video" },
                     { value: "link", label: "Rujukan" },
@@ -143,9 +129,7 @@ export function LibraryView() {
           ) : items.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {items.map((item) => {
-                const subtest = utbkSubtests.find(
-                  (s) => s.slug === item.subtestSlug,
-                );
+                const subtest = utbkSubtests.find((s) => s.slug === item.subtestSlug);
                 return (
                   <div
                     key={item.id}
@@ -204,9 +188,7 @@ export function LibraryView() {
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div className="space-y-1.5">
                         <h3 className="font-bold text-base text-[var(--ink)] leading-snug line-clamp-2 group-hover:text-[var(--gold)] transition-colors">
-                          <Link to={`/dashboard/library/${item.slug}`}>
-                            {item.title}
-                          </Link>
+                          <Link to={`/dashboard/library/${item.slug}`}>{item.title}</Link>
                         </h3>
 
                         {item.content && (
@@ -231,12 +213,7 @@ export function LibraryView() {
                           </div>
                         )}
 
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
+                        <Button asChild variant="outline" size="sm" className="w-full">
                           <Link to={`/dashboard/library/${item.slug}`}>
                             <span>Buka Materi</span>
                           </Link>
@@ -252,12 +229,9 @@ export function LibraryView() {
               <div className="w-12 h-12 rounded-xl bg-[var(--surface-elevated)] border border-[var(--edge)] mx-auto flex items-center justify-center text-[var(--ink-muted)]">
                 <Filter className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-base text-[var(--ink)]">
-                Tidak ada materi yang cocok
-              </h3>
+              <h3 className="font-bold text-base text-[var(--ink)]">Tidak ada materi yang cocok</h3>
               <p className="text-xs text-[var(--ink-muted)] max-w-sm mx-auto">
-                Coba ubah kata kunci pencarian atau sesuaikan pilihan subtes dan
-                tipe materi.
+                Coba ubah kata kunci pencarian atau sesuaikan pilihan subtes dan tipe materi.
               </p>
               <Button
                 variant="outline"
@@ -265,7 +239,6 @@ export function LibraryView() {
                 onClick={() => {
                   setCari("");
                   setSubtestSlug("all");
-                  setSelectedType("all");
                 }}
               >
                 Reset Filter
@@ -278,9 +251,9 @@ export function LibraryView() {
               </div>
               <h2>Materi belum tersedia</h2>
               <p>
-                Library akan menjadi tempat membaca ringkasan konsep, rumus, dan
-                contoh sebelum kamu masuk ke soal. Untuk sekarang, paket soal
-                ada di Drilling dan tryout ada di Battle World.
+                Library akan menjadi tempat membaca ringkasan konsep, rumus, dan contoh sebelum kamu
+                masuk ke soal. Untuk sekarang, paket soal ada di Drilling dan tryout ada di Battle
+                World.
               </p>
               <div className={styles.actions}>
                 <Button asChild>
