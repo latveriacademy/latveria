@@ -2,21 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { useApp } from "../context/AppContext";
 import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
-import {
-  Flame,
-  Target,
-  ArrowUpRight,
-  Play,
-  Quote,
-  RotateCcw,
-} from "lucide-react";
+import { Flame, Target, ArrowUpRight, Play, Quote, RotateCcw } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
-import {
-  Panel,
-  PanelHeader,
-  ProgressBar,
-  StatTile,
-} from "../components/ui/dashboard";
+import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
 import { Button } from "../components/ui/button";
 import { AnimatedNumber } from "../lib/motion";
 import { useTryoutHistory } from "../lib/tryout/use-tryout-history";
@@ -34,9 +22,7 @@ function useUtbkCountdown() {
         const rawDate = cfg?.utbkTargetDate || cfg?.utbk_target_date;
         if (rawDate) {
           // Parse sebagai tanggal lokal WIB jika hanya YYYY-MM-DD
-          const iso = rawDate.includes("T")
-            ? rawDate
-            : `${rawDate}T00:00:00+07:00`;
+          const iso = rawDate.includes("T") ? rawDate : `${rawDate}T00:00:00+07:00`;
           setTargetDate(new Date(iso));
         }
       })
@@ -107,15 +93,10 @@ export const DashboardView = () => {
   const { affirmation, rotate, hasPool } = useAffirmation();
   const tryoutHistory = useTryoutHistory();
 
-  const xpPercentage = Math.min(
-    100,
-    Math.round((user.currentXP / user.nextLevelXP) * 100),
-  );
+  const xpPercentage = Math.min(100, Math.round((user.currentXP / user.nextLevelXP) * 100));
 
   // Determine max values for weekly chart scaling
-  const maxMetricVal = Math.max(
-    ...user.weeklyChartData.map((d) => d[chartMetric]),
-  );
+  const maxMetricVal = Math.max(...user.weeklyChartData.map((d) => d[chartMetric]));
 
   const handleLaunchTraining = (subjectId) => {
     sound.playClick();
@@ -141,9 +122,7 @@ export const DashboardView = () => {
         <div className="hero-main-content">
           <div className="hero-left flex flex-col justify-between">
             <div className="hero-salutation">
-              <h1 className="hero-headline font-serif">
-                Selamat datang, {warriorGreeting}.
-              </h1>
+              <h1 className="hero-headline font-serif">Selamat datang, {warriorGreeting}.</h1>
               {user.targetUniversity ? (
                 <div className="flex items-center gap-1.5 mt-1 text-xs font-mono text-[var(--accent-gold)]">
                   <Target size={13} className="shrink-0" />
@@ -210,13 +189,8 @@ export const DashboardView = () => {
                   </div>
                   <div className="xp-right font-mono">
                     <span>
-                      <AnimatedNumber
-                        value={user.nextLevelXP - user.currentXP}
-                      />{" "}
-                      XP menuju Level{" "}
-                      {user.level + 1 < 10
-                        ? `0${user.level + 1}`
-                        : user.level + 1}
+                      <AnimatedNumber value={user.nextLevelXP - user.currentXP} /> XP menuju Level{" "}
+                      {user.level + 1 < 10 ? `0${user.level + 1}` : user.level + 1}
                     </span>
                   </div>
                 </div>
@@ -303,9 +277,7 @@ export const DashboardView = () => {
                     { label: "DETIK", value: pad(countdown.seconds) },
                   ].map((seg) => (
                     <div key={seg.label} className="countdown-seg">
-                      <span className="countdown-num font-serif">
-                        {seg.value}
-                      </span>
+                      <span className="countdown-num font-serif">{seg.value}</span>
                       <span className="countdown-label">{seg.label}</span>
                     </div>
                   ))}
@@ -341,19 +313,14 @@ export const DashboardView = () => {
               {affirmation ? (
                 <>
                   <Quote size={20} className="affirmation-quote-icon" />
-                  <p className="affirmation-text font-serif">
-                    {affirmation.affirmation}
-                  </p>
+                  <p className="affirmation-text font-serif">{affirmation.affirmation}</p>
                   {affirmation.author && (
-                    <span className="affirmation-author font-mono">
-                      — {affirmation.author}
-                    </span>
+                    <span className="affirmation-author font-mono">— {affirmation.author}</span>
                   )}
                 </>
               ) : (
                 <p className="font-mono text-sm text-[var(--soft-ink)] py-2">
-                  Tetap konsisten. Setiap soal yang dikerjakan adalah langkah
-                  menuju tujuanmu.
+                  Tetap konsisten. Setiap soal yang dikerjakan adalah langkah menuju tujuanmu.
                 </p>
               )}
             </div>
@@ -394,8 +361,7 @@ export const DashboardView = () => {
             <div className="chart-bars-row">
               {user.weeklyChartData.map((item, idx) => {
                 const val = item[chartMetric];
-                const heightPercent =
-                  maxMetricVal > 0 ? Math.round((val / maxMetricVal) * 100) : 0;
+                const heightPercent = maxMetricVal > 0 ? Math.round((val / maxMetricVal) * 100) : 0;
 
                 return (
                   <div
@@ -423,19 +389,14 @@ export const DashboardView = () => {
               <span className="stat-label font-mono">TOTAL MINGGU INI</span>
               <span className="stat-val font-serif">
                 <AnimatedNumber
-                  value={user.weeklyChartData.reduce(
-                    (acc, d) => acc + d.questions,
-                    0,
-                  )}
+                  value={user.weeklyChartData.reduce((acc, d) => acc + d.questions, 0)}
                 />{" "}
                 Soal
               </span>
             </div>
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">RATA-RATA AKURASI</span>
-              <span className="stat-val font-serif text-sage">
-                {user.weeklyAccuracy}%
-              </span>
+              <span className="stat-val font-serif text-sage">{user.weeklyAccuracy}%</span>
             </div>
             <div className="chart-stat-tile">
               <span className="stat-label font-mono">AKUMULASI XP</span>
@@ -459,9 +420,7 @@ export const DashboardView = () => {
               <div className="quad-number font-serif">
                 <AnimatedNumber value={user.questionsCompleted} />
               </div>
-              <div className="quad-bottom font-mono text-sage">
-                Butir soal terselesaikan
-              </div>
+              <div className="quad-bottom font-mono text-sage">Butir soal terselesaikan</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
@@ -469,30 +428,21 @@ export const DashboardView = () => {
               <div className="quad-number font-serif">
                 <AnimatedNumber value={user.totalXP} /> EXP
               </div>
-              <div className="quad-bottom font-mono text-gold">
-                Hanya dari latihan selesai
-              </div>
+              <div className="quad-bottom font-mono text-gold">Hanya dari latihan selesai</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">SESI LATIHAN</div>
               <div className="quad-number font-serif">{user.attempts}</div>
-              <div className="quad-bottom font-mono text-sage">
-                Sesi yang sudah dikumpulkan
-              </div>
+              <div className="quad-bottom font-mono text-sage">Sesi yang sudah dikumpulkan</div>
             </div>
 
             <div className="quad-tile transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.015]">
               <div className="quad-top font-mono">RATA-RATA AKURASI</div>
               <div className="quad-number font-serif">
-                <AnimatedNumber
-                  value={user.accuracy}
-                  formatter={(n) => `${n}%`}
-                />
+                <AnimatedNumber value={user.accuracy} formatter={(n) => `${n}%`} />
               </div>
-              <div className="quad-bottom font-mono text-gold">
-                Persentase jawaban benar
-              </div>
+              <div className="quad-bottom font-mono text-gold">Persentase jawaban benar</div>
             </div>
           </div>
         </Panel>
@@ -511,24 +461,17 @@ export const DashboardView = () => {
           <div className="activity-stream-list">
             {user.recentActivities.length === 0 ? (
               <p className="text-muted font-sans text-sm px-1 py-3">
-                Belum ada riwayat latihan. Pilih subtes atau mulai drilling
-                pertamamu!
+                Belum ada riwayat latihan. Pilih subtes atau mulai drilling pertamamu!
               </p>
             ) : (
               user.recentActivities.map((act) => (
                 <Link
                   key={act.id}
-                  to={
-                    act.id
-                      ? `/dashboard/riwayat/${act.id}`
-                      : "/dashboard/riwayat"
-                  }
+                  to={act.id ? `/dashboard/riwayat/${act.id}` : "/dashboard/riwayat"}
                   className="activity-stream-item transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.01]"
                 >
                   <div className="activity-body">
-                    <div className="activity-title-text font-sans">
-                      {act.title}
-                    </div>
+                    <div className="activity-title-text font-sans">{act.title}</div>
                     <div className="activity-meta font-mono">
                       <span className="text-muted">{act.time}</span>
                       <span className="meta-dot">•</span>
