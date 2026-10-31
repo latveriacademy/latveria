@@ -14,7 +14,6 @@ interface SetupScreenProps {
   }) => void;
   onJoinBattle: (code: string) => void;
   onOpenHistory: () => void;
-  onOpenFriends?: () => void;
   pendingInvites?: BattleInviteDto[];
   onAcceptInvite?: (inviteId: string) => void;
   onDeclineInvite?: (inviteId: string) => void;
@@ -25,7 +24,6 @@ export function SetupScreen({
   onCreateBattle,
   onJoinBattle,
   onOpenHistory,
-  onOpenFriends,
   pendingInvites = [],
   onAcceptInvite,
   onDeclineInvite,
@@ -59,10 +57,6 @@ export function SetupScreen({
         description="Buat room atau gabung dengan kode teman."
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onOpenFriends} disabled={busy}>
-              <Users size={16} aria-hidden="true" />
-              Teman
-            </Button>
             <Button variant="outline" onClick={onOpenHistory} disabled={busy}>
               <History size={16} aria-hidden="true" />
               Riwayat battle

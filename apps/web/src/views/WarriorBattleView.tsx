@@ -186,18 +186,10 @@ export function WarriorBattleView() {
           onCreateBattle={handleCreateBattle}
           onJoinBattle={handleJoinBattle}
           onOpenHistory={() => setViewState("history")}
-          onOpenFriends={() => setIsFriendsOpen(true)}
           pendingInvites={pendingInvites}
           onAcceptInvite={handleAcceptInvite}
           onDeclineInvite={handleDeclineInvite}
           pending={pending}
-        />
-        <FriendsModal
-          isOpen={isFriendsOpen}
-          onClose={() => setIsFriendsOpen(false)}
-          activeBattleId={activeBattleId}
-          invitedFriendIds={invitedFriendIds}
-          onInviteSent={(friendId) => setInvitedFriendIds((prev) => new Set([...prev, friendId]))}
         />
       </div>
     );
