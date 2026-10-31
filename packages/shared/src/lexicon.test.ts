@@ -1,6 +1,11 @@
 import { expect, it } from "vitest";
 import { questionSchema, questionImportSchema } from "./index";
-import { lexiconAnnotationSchema, mathSourcePattern, validLexiconRanges } from "./lexicon";
+import {
+  createVocabularySchema,
+  lexiconAnnotationSchema,
+  mathSourcePattern,
+  validLexiconRanges,
+} from "./lexicon";
 
 const prompt = "The phone was fried. The egg was fried.";
 const annotation = lexiconAnnotationSchema.parse({
@@ -117,4 +122,27 @@ it("accepts annotated imports and preserves compatibility with existing question
   expect(q.annotations[1].term).toBe("responsibility");
   expect(q.annotations[1].start).toBe(36);
   expect(q.annotations[1].end).toBe(50);
+});
+
+it("validates direct vocabulary creation input", () => {
+  const valid = createVocabularySchema.safeParse({
+    term: "resilience",
+    definition: "Daya tahan atau kemampuan untuk bangkit kembali",
+    partOfSpeech: "noun",
+    phonetic: "/rɪˈzɪl.jəns/",
+    context: "Economic resilience is vital during crises.",
+    example: "The community showed remarkable resilience.",
+    synonyms: ["endurance", "grit"],
+  });
+  expect(valid.success).toBe(true);
+  if (valid.success) {
+    expect(valid.data.source).toBe("Kosakata LBE");
+    expect(valid.data.partOfSpeech).toBe("noun");
+  }
+
+  const invalid = createVocabularySchema.safeParse({
+    term: "",
+    definition: "",
+  });
+  expect(invalid.success).toBe(false);
 });

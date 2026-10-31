@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import type { VocabularyEntry } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { Button } from "../ui/button";
@@ -19,6 +20,48 @@ export function VocabularyCollection() {
   const [deleting, setDeleting] = useState<VocabularyEntry | null>(null);
   const [pending, setPending] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  const [adding, setAdding] = useState(false);
+  const [newTerm, setNewTerm] = useState("");
+  const [newDef, setNewDef] = useState("");
+  const [newPos, setNewPos] = useState("noun");
+  const [newPhonetic, setNewPhonetic] = useState("");
+  const [newContext, setNewContext] = useState("");
+  const [addError, setAddError] = useState("");
+  const [addPending, setAddPending] = useState(false);
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTerm.trim() || !newDef.trim()) {
+      setAddError("Kata dan arti wajib diisi.");
+      return;
+    }
+    setAddPending(true);
+    setAddError("");
+    try {
+      await api("/learner/vocabulary", {
+        method: "POST",
+        body: JSON.stringify({
+          term: newTerm.trim(),
+          definition: newDef.trim(),
+          partOfSpeech: newPos.trim() || "noun",
+          phonetic: newPhonetic.trim(),
+          context: newContext.trim() || `${newTerm.trim()}: ${newDef.trim()}`,
+        }),
+      });
+      setAdding(false);
+      setNewTerm("");
+      setNewDef("");
+      setNewPos("noun");
+      setNewPhonetic("");
+      setNewContext("");
+      setRetry((r) => r + 1);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Gagal menambahkan kosakata.");
+    } finally {
+      setAddPending(false);
+    }
+  };
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -40,15 +83,28 @@ export function VocabularyCollection() {
   );
   return (
     <div className={styles.collection}>
-      <div className={styles.search}>
-        <label htmlFor="vocabulary-search">Cari kosakata</label>
-        <Input
-          id="vocabulary-search"
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Kata atau arti"
-        />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3">
+        <div className={styles.search}>
+          <label htmlFor="vocabulary-search">Cari kosakata</label>
+          <Input
+            id="vocabulary-search"
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Kata atau arti"
+          />
+        </div>
+        <Button
+          type="button"
+          onClick={() => {
+            setAdding(true);
+            setAddError("");
+          }}
+          className="shrink-0"
+        >
+          <Plus className="size-4 mr-1.5" />
+          Tambah Kosakata
+        </Button>
       </div>
       {loading ? (
         <p role="status">Memuat kosakata…</p>
@@ -160,6 +216,128 @@ export function VocabularyCollection() {
           }
         }}
       />
+      {adding && (
+        <AppDialog
+          open
+          onOpenChange={(open) => {
+            if (!open && !addPending) setAdding(false);
+          }}
+          title={
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-[var(--accent-gold)] flex items-center gap-1.5">
+              <Plus size={14} />
+              Tambah Kosakata LBE
+            </span>
+          }
+          className="max-w-[480px]"
+        >
+          <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
+            <div>
+              <label
+                htmlFor="add-term"
+                className="block text-xs font-medium text-[var(--soft-ink)] mb-1"
+              >
+                Kata / Istilah (Term) <span className="text-[var(--crimson)]">*</span>
+              </label>
+              <Input
+                id="add-term"
+                value={newTerm}
+                onChange={(e) => setNewTerm(e.target.value)}
+                placeholder="Contoh: resilience"
+                required
+                disabled={addPending}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="add-def"
+                className="block text-xs font-medium text-[var(--soft-ink)] mb-1"
+              >
+                Definisi / Arti <span className="text-[var(--crimson)]">*</span>
+              </label>
+              <Input
+                id="add-def"
+                value={newDef}
+                onChange={(e) => setNewDef(e.target.value)}
+                placeholder="Contoh: Kemampuan untuk pulih dari kesulitan"
+                required
+                disabled={addPending}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="add-pos"
+                  className="block text-xs font-medium text-[var(--soft-ink)] mb-1"
+                >
+                  Kelas Kata (POS)
+                </label>
+                <select
+                  id="add-pos"
+                  value={newPos}
+                  onChange={(e) => setNewPos(e.target.value)}
+                  disabled={addPending}
+                  className="w-full px-3 py-2 rounded-md bg-[var(--surface-elevated)] border border-[var(--edge)] text-xs text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--gold)]"
+                >
+                  <option value="noun">Noun (Nomina)</option>
+                  <option value="verb">Verb (Verba)</option>
+                  <option value="adjective">Adjective (Adjektiva)</option>
+                  <option value="adverb">Adverb (Adverbia)</option>
+                  <option value="phrase">Phrase (Frasa)</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="add-phonetic"
+                  className="block text-xs font-medium text-[var(--soft-ink)] mb-1"
+                >
+                  Fonetik (opsional)
+                </label>
+                <Input
+                  id="add-phonetic"
+                  value={newPhonetic}
+                  onChange={(e) => setNewPhonetic(e.target.value)}
+                  placeholder="/rɪˈzɪl.jəns/"
+                  disabled={addPending}
+                />
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="add-context"
+                className="block text-xs font-medium text-[var(--soft-ink)] mb-1"
+              >
+                Contoh Kalimat / Konteks (opsional)
+              </label>
+              <Input
+                id="add-context"
+                value={newContext}
+                onChange={(e) => setNewContext(e.target.value)}
+                placeholder="The community showed remarkable resilience."
+                disabled={addPending}
+              />
+            </div>
+            {addError && (
+              <p role="alert" className="text-xs text-[var(--crimson)]">
+                {addError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAdding(false)}
+                disabled={addPending}
+              >
+                Batal
+              </Button>
+              <Button type="submit" size="sm" disabled={addPending}>
+                {addPending ? "Menyimpan…" : "Simpan Kosakata"}
+              </Button>
+            </div>
+          </form>
+        </AppDialog>
+      )}
     </div>
   );
 }

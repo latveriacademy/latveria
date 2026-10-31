@@ -28,6 +28,8 @@ export {
   validLexiconRanges,
   mathSourcePattern,
   saveVocabularySchema,
+  createVocabularySchema,
+  type CreateVocabularyInput,
   type LexiconAnnotation,
   type VocabularyEntry,
 } from "./lexicon";

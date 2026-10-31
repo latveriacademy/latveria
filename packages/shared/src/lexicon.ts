@@ -108,6 +108,23 @@ export function validLexiconRanges(prompt: string, annotations: LexiconAnnotatio
 export const saveVocabularySchema = z
   .object({ questionId: z.uuid(), annotationId: z.uuid() })
   .strict();
+
+export const createVocabularySchema = z
+  .object({
+    term: z.string().trim().min(1, "Kata tidak boleh kosong").max(100),
+    definition: z.string().trim().min(1, "Definisi tidak boleh kosong").max(500),
+    partOfSpeech: z.string().trim().min(1, "Kelas kata tidak boleh kosong").max(50).default("noun"),
+    phonetic: z.string().trim().max(100).default(""),
+    context: z.string().trim().max(10000).default(""),
+    example: z.string().trim().max(1000).default(""),
+    etymology: z.string().trim().max(1000).default(""),
+    synonyms: z.array(z.string().trim().min(1).max(100)).max(10).default([]),
+    source: z.string().trim().max(200).default("Kosakata LBE"),
+  })
+  .strict();
+
+export type CreateVocabularyInput = z.infer<typeof createVocabularySchema>;
+
 export type VocabularyEntry = {
   id: string;
   questionId: string | null;
