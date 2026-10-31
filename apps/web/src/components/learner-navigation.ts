@@ -1,4 +1,12 @@
-import { LayoutDashboard, Library, Swords, Trophy, Dumbbell, MessageSquare } from "lucide-react";
+import {
+  LayoutDashboard,
+  Library,
+  Swords,
+  Trophy,
+  Dumbbell,
+  MessageSquare,
+  Users,
+} from "lucide-react";
 import type { NavigationItem } from "./ui/dashboard-shell";
 
 export const learnerNavigation: NavigationItem[] = [
@@ -6,6 +14,7 @@ export const learnerNavigation: NavigationItem[] = [
   { id: "practice", label: "Drilling", icon: Dumbbell },
   { id: "warrior", label: "Warrior Battle", icon: Swords },
   { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "connections", label: "Koneksi", icon: Users },
   { id: "library", label: "Library", icon: Library },
   { id: "tryout", label: "Battle World", icon: Swords },
   { id: "leaderboard", label: "Rank", icon: Trophy },

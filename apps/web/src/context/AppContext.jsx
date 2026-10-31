@@ -33,6 +33,7 @@ export const AppProvider = ({ children }) => {
           "practice",
           "warrior",
           "chat",
+          "connections",
           "library",
           "tryout",
           "leaderboard",
