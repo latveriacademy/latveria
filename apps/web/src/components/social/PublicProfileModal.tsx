@@ -49,9 +49,7 @@ export function PublicProfileModal({
       const data = await api<PublicLearnerProfile>(`/learner/profile/${id}`);
       setProfile(data);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Gagal memuat profil pengguna.",
-      );
+      setError(err instanceof Error ? err.message : "Gagal memuat profil pengguna.");
     } finally {
       setLoading(false);
     }
@@ -77,16 +75,10 @@ export function PublicProfileModal({
         method: "POST",
         body: JSON.stringify({ targetUserId: profile.id }),
       });
-      setProfile((prev) =>
-        prev ? { ...prev, friendshipStatus: "pending_outgoing" } : null,
-      );
+      setProfile((prev) => (prev ? { ...prev, friendshipStatus: "pending_outgoing" } : null));
       onConnectChanged?.();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error
-          ? err.message
-          : "Gagal mengirim permintaan koneksi.",
-      );
+      setActionError(err instanceof Error ? err.message : "Gagal mengirim permintaan koneksi.");
     } finally {
       setActionPending(false);
     }
@@ -113,18 +105,12 @@ export function PublicProfileModal({
         );
       } else {
         setProfile((prev) =>
-          prev
-            ? { ...prev, friendshipStatus: "none", friendshipId: null }
-            : null,
+          prev ? { ...prev, friendshipStatus: "none", friendshipId: null } : null,
         );
       }
       onConnectChanged?.();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error
-          ? err.message
-          : "Gagal merespons permintaan koneksi.",
-      );
+      setActionError(err instanceof Error ? err.message : "Gagal merespons permintaan koneksi.");
     } finally {
       setActionPending(false);
     }
@@ -149,9 +135,7 @@ export function PublicProfileModal({
       setConfirmDelete(false);
       onConnectChanged?.();
     } catch (err: unknown) {
-      setActionError(
-        err instanceof Error ? err.message : "Gagal menghapus pertemanan.",
-      );
+      setActionError(err instanceof Error ? err.message : "Gagal menghapus pertemanan.");
     } finally {
       setActionPending(false);
     }
@@ -169,8 +153,7 @@ export function PublicProfileModal({
     setCurrentTab("warrior");
   };
 
-  const isSelf =
-    profile?.id === currentUser?.id || profile?.friendshipStatus === "self";
+  const isSelf = profile?.id === currentUser?.id || profile?.friendshipStatus === "self";
 
   return (
     <AppDialog
@@ -184,9 +167,7 @@ export function PublicProfileModal({
             Dossier Siswa
           </span>
           {profile?.codename && (
-            <span className="text-xs font-mono text-[var(--ink-muted)]">
-              @{profile.codename}
-            </span>
+            <span className="text-xs font-mono text-[var(--ink-muted)]">@{profile.codename}</span>
           )}
         </div>
       }
@@ -202,9 +183,7 @@ export function PublicProfileModal({
       ) : error || !profile ? (
         <div className="py-10 text-center space-y-3">
           <ShieldAlert className="size-10 text-danger mx-auto opacity-80" />
-          <p className="text-sm text-danger font-medium">
-            {error || "Profil tidak ditemukan."}
-          </p>
+          <p className="text-sm text-danger font-medium">{error || "Profil tidak ditemukan."}</p>
           <Button variant="outline" size="sm" onClick={onClose}>
             Tutup
           </Button>
@@ -262,9 +241,7 @@ export function PublicProfileModal({
               {profile.targetUniversity ? (
                 <div className="inline-flex max-w-full items-start gap-1.5 px-1 py-0.5 rounded-md bg-[var(--gold)]/10 text-[var(--gold)] border border-[var(--gold)]/20 text-xs font-mono">
                   <GraduationCap size={13} className="shrink-0" />
-                  <span className="min-w-0 wrap-break-word">
-                    {profile.targetUniversity}
-                  </span>
+                  <span className="min-w-0 wrap-break-word">{profile.targetUniversity}</span>
                 </div>
               ) : (
                 <p className="text-xs text-[var(--ink-muted)] italic">
@@ -283,9 +260,7 @@ export function PublicProfileModal({
                 </p>
               )}
               {profile.bio && (
-                <p className="text-xs text-[var(--ink-muted)] leading-relaxed">
-                  {profile.bio}
-                </p>
+                <p className="text-xs text-[var(--ink-muted)] leading-relaxed">{profile.bio}</p>
               )}
             </div>
           )}
@@ -335,8 +310,7 @@ export function PublicProfileModal({
                     : "Privat"}
                 </div>
                 <div className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
-                  {profile.totalAnswered !== null &&
-                  profile.totalAnswered !== undefined
+                  {profile.totalAnswered !== null && profile.totalAnswered !== undefined
                     ? `${profile.totalAnswered} Soal`
                     : "Dirahasiakan"}
                 </div>
@@ -353,9 +327,7 @@ export function PublicProfileModal({
                 <div className="font-serif font-bold text-sm sm:text-base text-[var(--ink)]">
                   {profile.connectedCount}
                 </div>
-                <div className="text-[10px] font-mono text-[var(--ink-muted)]">
-                  Teman Terhubung
-                </div>
+                <div className="text-[10px] font-mono text-[var(--ink-muted)]">Teman Terhubung</div>
               </div>
             </div>
           </div>
@@ -384,9 +356,7 @@ export function PublicProfileModal({
             ) : profile.friendshipStatus === "friends" ? (
               confirmDelete ? (
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <span className="text-xs text-danger font-mono">
-                    Hapus dari pertemanan?
-                  </span>
+                  <span className="text-xs text-danger font-mono">Hapus dari pertemanan?</span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -465,12 +435,7 @@ export function PublicProfileModal({
                 <span className="text-xs font-mono text-[var(--ink-muted)]">
                   Menunggu konfirmasi penerima
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  disabled
-                >
+                <Button variant="outline" size="sm" className="text-xs" disabled>
                   Terkirim
                 </Button>
               </div>
