@@ -1,6 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Bell, Check, Swords, UserCheck, Users, X } from "lucide-react";
-import type { FriendshipDto, BattleInviteDto } from "@latveria/shared";
+import { Bell, Check, MessageSquare, Swords, UserCheck, Users, X } from "lucide-react";
+import type {
+  FriendshipDto,
+  BattleInviteDto,
+  ChatMessage,
+  ChatConversationSummary,
+} from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
 import { AppDialog } from "../app-dialog";
@@ -10,12 +15,14 @@ interface NotificationCenterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCountChange?: (count: number) => void;
+  chatNotifications: { global: ChatMessage[]; direct: ChatConversationSummary[] };
 }
 
 export function NotificationCenterModal({
   isOpen,
   onClose,
   onCountChange,
+  chatNotifications,
 }: NotificationCenterModalProps) {
   const { setCurrentTab } = useApp();
   const [friendRequests, setFriendRequests] = useState<FriendshipDto[]>([]);
@@ -94,7 +101,10 @@ export function NotificationCenterModal({
     }
   };
 
-  const totalCount = friendRequests.length + battleInvites.length;
+  const chatCount =
+    chatNotifications.global.length +
+    chatNotifications.direct.reduce((count, item) => count + item.unreadCount, 0);
+  const totalCount = friendRequests.length + battleInvites.length + chatCount;
 
   return (
     <AppDialog
@@ -134,6 +144,40 @@ export function NotificationCenterModal({
           </div>
         ) : (
           <>
+            {chatCount > 0 && (
+              <div className="space-y-2">
+                <div className="text-[11px] font-mono text-gold flex items-center gap-1.5">
+                  <MessageSquare size={13} /> Pesan Baru ({chatCount})
+                </div>
+                {chatNotifications.global.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => {
+                      onClose();
+                      setCurrentTab("chat");
+                    }}
+                  >
+                    Saluran Global · {chatNotifications.global.length} pesan baru
+                  </Button>
+                )}
+                {chatNotifications.direct.map((conversation) => (
+                  <Button
+                    key={conversation.userId}
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={() => {
+                      onClose();
+                      setCurrentTab("chat", { dm: conversation.userId });
+                    }}
+                  >
+                    {conversation.name} · {conversation.unreadCount} pesan baru
+                  </Button>
+                ))}
+              </div>
+            )}
             {/* Undangan Battle */}
             {battleInvites.length > 0 && (
               <div className="space-y-2">

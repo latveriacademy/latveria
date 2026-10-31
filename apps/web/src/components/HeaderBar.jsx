@@ -5,18 +5,22 @@ import { AnimatedNumber } from "../lib/motion";
 import { Flame, Award, UserRound, Settings, Bell } from "lucide-react";
 import { NotificationCenterModal } from "./social/NotificationCenterModal";
 import { api } from "../lib/api";
+import { newGlobalMessages } from "../views/chat/chat-notifications";
 
 export const HeaderBar = () => {
-  const { user, setCurrentTab, toggleSidebar, sidebarOpen } = useApp();
+  const { user, currentTab, setCurrentTab, toggleSidebar, sidebarOpen } = useApp();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatNotifications, setChatNotifications] = useState({ global: [], direct: [] });
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const [friendsData, battleData] = await Promise.allSettled([
+      const [friendsData, battleData, conversationsData, globalData] = await Promise.allSettled([
         api("/friends"),
         api("/warrior/invites"),
+        api("/learner/chat/conversations"),
+        api("/learner/chat/global?limit=50"),
       ]);
       const reqCount =
         friendsData.status === "fulfilled" && friendsData.value?.pendingIncoming
@@ -26,11 +30,31 @@ export const HeaderBar = () => {
         battleData.status === "fulfilled" && battleData.value?.invites
           ? battleData.value.invites.length
           : 0;
-      setUnreadCount(reqCount + inviteCount);
+      const direct =
+        conversationsData.status === "fulfilled"
+          ? conversationsData.value.conversations.filter(
+              (conversation) => conversation.unreadCount > 0,
+            )
+          : [];
+      const seenKey = `latveria_global_chat_seen_${user.userId}`;
+      const seenAt = localStorage.getItem(seenKey);
+      if (!seenAt) localStorage.setItem(seenKey, new Date().toISOString());
+      const global =
+        globalData.status === "fulfilled" && seenAt && currentTab !== "chat"
+          ? newGlobalMessages(globalData.value.messages, user.userId, seenAt)
+          : [];
+      if (currentTab === "chat") localStorage.setItem(seenKey, new Date().toISOString());
+      setChatNotifications({ global, direct });
+      setUnreadCount(
+        reqCount +
+          inviteCount +
+          global.length +
+          direct.reduce((count, item) => count + item.unreadCount, 0),
+      );
     } catch {
       // ignore
     }
-  }, []);
+  }, [currentTab, user.userId]);
 
   useEffect(() => {
     void fetchUnreadCount();
@@ -125,7 +149,8 @@ export const HeaderBar = () => {
       <NotificationCenterModal
         isOpen={notifOpen}
         onClose={() => setNotifOpen(false)}
-        onCountChange={(cnt) => setUnreadCount(cnt)}
+        onCountChange={fetchUnreadCount}
+        chatNotifications={chatNotifications}
       />
     </DashboardHeader>
   );
