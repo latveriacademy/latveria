@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
+import { PublicProfileModal } from "../components/social/PublicProfileModal";
 
 const METRICS = [
   { id: "xp", label: "XP", icon: Trophy },
@@ -61,6 +62,7 @@ export const LeaderboardView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const fetchLeaderboard = useCallback(async () => {
     const cacheKey = getCacheKey(user.id, metric, subtest, period);
@@ -235,8 +237,12 @@ export const LeaderboardView = () => {
             return (
               <div
                 key={candidate.id}
-                className={`podium-card podium-${podiumAccents[idx]} motion-fade-up transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-y-[-2px] hover:shadow-md`}
+                className={`podium-card podium-${podiumAccents[idx]} motion-fade-up transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:translate-y-[-2px] hover:shadow-md cursor-pointer hover:border-gold/60`}
                 style={{ animationDelay: `${idx * 50}ms` }}
+                onClick={() => {
+                  if (candidate.userId) setSelectedUserId(candidate.userId);
+                }}
+                title={`Klik untuk melihat profil ${candidate.name}`}
               >
                 <div className="podium-top font-mono">
                   <span className="podium-rank-tag">{podiumRanks[idx]}</span>
@@ -332,7 +338,11 @@ export const LeaderboardView = () => {
                     return (
                       <tr
                         key={cand.id}
-                        className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] ${isUser ? "user-highlight-row" : ""}`}
+                        className={`roster-row transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-[var(--surface-hover)] cursor-pointer ${isUser ? "user-highlight-row" : ""}`}
+                        onClick={() => {
+                          if (cand.userId) setSelectedUserId(cand.userId);
+                        }}
+                        title={`Klik untuk melihat profil ${cand.name}`}
                       >
                         <td className="td-rank font-mono">
                           <div className="rank-cell-wrapper">
@@ -409,7 +419,11 @@ export const LeaderboardView = () => {
                 return (
                   <div
                     key={cand.id}
-                    className={`roster-mobile-card ${isUser ? "user-highlight-card" : ""}`}
+                    className={`roster-mobile-card cursor-pointer transition-all active:scale-[0.99] ${isUser ? "user-highlight-card" : ""}`}
+                    onClick={() => {
+                      if (cand.userId) setSelectedUserId(cand.userId);
+                    }}
+                    title={`Klik untuk melihat profil ${cand.name}`}
                   >
                     <div className="roster-mobile-main">
                       <div className="roster-mobile-rank">
@@ -488,6 +502,13 @@ export const LeaderboardView = () => {
           </div>
         </div>
       )}
+
+      {/* Profile Modal on Candidate Click */}
+      <PublicProfileModal
+        userId={selectedUserId}
+        isOpen={Boolean(selectedUserId)}
+        onClose={() => setSelectedUserId(null)}
+      />
     </div>
   );
 };
