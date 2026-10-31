@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import {
   affirmationSchema,
@@ -7,17 +7,20 @@ import {
   questionReportSchema,
   type Affirmation,
   type Profile,
+  type PublicLearnerProfile,
   type QuestionReportItem,
 } from "@latveria/shared";
 import { getDb } from "../lib/db";
 import { user as accounts, account as accountTable } from "../lib/db/auth-schema";
 import {
   affirmations,
+  friendships,
   questionPackages,
   questionReports,
   questions,
   systemConfig,
 } from "../lib/db/schema";
+import { getLearnerSummary } from "./practice.service";
 
 const profileFields = {
   name: accounts.name,
@@ -36,6 +39,95 @@ export async function getLearnerProfile(userId: string): Promise<Profile> {
     .where(eq(accounts.id, userId));
   if (!profile) throw new HTTPException(404, { message: "Profil tidak ditemukan." });
   return profile;
+}
+
+export async function getPublicLearnerProfile(
+  currentUserId: string,
+  targetUserId: string,
+): Promise<PublicLearnerProfile> {
+  const db = getDb();
+  const [target] = await db
+    .select({
+      id: accounts.id,
+      name: accounts.name,
+      codename: accounts.codename,
+      targetUniversity: accounts.targetUniversity,
+      bio: accounts.bio,
+      motto: accounts.motto,
+      image: accounts.image,
+      hideLeaderboardMetrics: accounts.hideLeaderboardMetrics,
+      isDeactivated: accounts.isDeactivated,
+    })
+    .from(accounts)
+    .where(eq(accounts.id, targetUserId));
+
+  if (!target || target.isDeactivated) {
+    throw new HTTPException(404, { message: "Pengguna tidak ditemukan." });
+  }
+
+  // Calculate learning progress & summary
+  const summary = await getLearnerSummary(target.id);
+
+  // Count connected friends
+  const connectedRows = await db
+    .select({ id: friendships.id })
+    .from(friendships)
+    .where(
+      and(
+        eq(friendships.status, "accepted"),
+        or(eq(friendships.userId, target.id), eq(friendships.friendId, target.id)),
+      ),
+    );
+
+  // Check relationship between current user and target user
+  let friendshipStatus: PublicLearnerProfile["friendshipStatus"] = "none";
+  let friendshipId: string | null = null;
+
+  if (currentUserId === target.id) {
+    friendshipStatus = "self";
+  } else {
+    const [rel] = await db
+      .select()
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.userId, currentUserId), eq(friendships.friendId, target.id)),
+          and(eq(friendships.userId, target.id), eq(friendships.friendId, currentUserId)),
+        ),
+      );
+
+    if (rel) {
+      friendshipId = rel.id;
+      if (rel.status === "accepted") {
+        friendshipStatus = "friends";
+      } else if (rel.status === "pending") {
+        friendshipStatus = rel.userId === currentUserId ? "pending_outgoing" : "pending_incoming";
+      }
+    }
+  }
+
+  const hidePrivateStats = target.hideLeaderboardMetrics && currentUserId !== target.id;
+  const overallAccuracy = summary.answered
+    ? Math.round((summary.correct / summary.answered) * 1000) / 10
+    : 0;
+
+  return {
+    id: target.id,
+    name: target.name,
+    codename: target.codename,
+    targetUniversity: target.targetUniversity,
+    bio: target.bio,
+    motto: target.motto,
+    image: target.image,
+    totalXP: summary.totalXP,
+    level: summary.level,
+    streakDays: summary.streakDays,
+    accuracy: hidePrivateStats ? null : overallAccuracy,
+    totalAnswered: hidePrivateStats ? null : summary.answered,
+    connectedCount: connectedRows.length,
+    friendshipStatus,
+    friendshipId,
+  };
 }
 
 export async function getLearnerLinkedAccounts(userId: string) {

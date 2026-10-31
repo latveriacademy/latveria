@@ -11,6 +11,7 @@ import {
   getLearnerConfigs,
   getLearnerLinkedAccounts,
   getLearnerProfile,
+  getPublicLearnerProfile,
   getReports,
   updateAdminConfig,
   updateAffirmation,
@@ -23,6 +24,12 @@ export const systemHandler = new Hono<AppEnv>();
 systemHandler.get("/api/learner/profile", async (c) =>
   c.json(await getLearnerProfile(c.get("user").id)),
 );
+
+systemHandler.get("/api/learner/profile/:userId", async (c) => {
+  const currentUserId = c.get("user").id;
+  const targetUserId = c.req.param("userId");
+  return c.json(await getPublicLearnerProfile(currentUserId, targetUserId));
+});
 
 systemHandler.get("/api/learner/linked-accounts", async (c) =>
   c.json(await getLearnerLinkedAccounts(c.get("user").id)),
