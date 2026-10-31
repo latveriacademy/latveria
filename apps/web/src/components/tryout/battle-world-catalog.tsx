@@ -61,7 +61,7 @@ export function BattleWorldCatalog({
   const categories = [
     { value: "utbk", label: "UTBK" },
     { value: "tka", label: "TKA" },
-    { value: "mandiri", label: "Ujian Mandiri" },
+    { value: "mandiri", label: "Mandiri PTN" },
   ];
   const [category, setCategory] = useState("utbk");
   const filteredPackages = packages.filter((pkg) => {

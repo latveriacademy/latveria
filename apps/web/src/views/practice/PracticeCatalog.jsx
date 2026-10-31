@@ -89,23 +89,26 @@ export function PracticeCatalog() {
     if (result.packageId && (!previous || result.submittedAt > previous.submittedAt))
       latestResults.set(result.packageId, result);
   }
+  const getTopicArea = (cat) => {
+    if (cat === "Tes Skolastik") return "tps";
+    if (cat === "Tes Literasi") return "literasi";
+    if (cat === "tka" || cat === "Tes Kemampuan Akademik") return "tka";
+    if (
+      cat === "mandiri" ||
+      cat === "ujian-mandiri" ||
+      cat === "Ujian Mandiri" ||
+      cat === "Mandiri PTN"
+    )
+      return "mandiri";
+    return "lainnya";
+  };
+
   const sectionTopics = topics.filter(
-    (topic) =>
-      section === "semua" ||
-      (section === "tps"
-        ? topic.category === "Tes Skolastik"
-        : section === "literasi"
-          ? topic.category === "Tes Literasi"
-          : !["Tes Skolastik", "Tes Literasi"].includes(topic.category)),
+    (topic) => section === "semua" || section === getTopicArea(topic.category),
   );
   const visible = packages.filter((pkg) => {
     const topic = topics.find((item) => item.slug === pkg.topicSlug);
-    const area =
-      topic?.category === "Tes Skolastik"
-        ? "tps"
-        : topic?.category === "Tes Literasi"
-          ? "literasi"
-          : "tka-mandiri";
+    const area = getTopicArea(topic?.category);
     return (
       (section === "semua" || section === area) &&
       (subtest === "semua" || subtest === pkg.topicSlug) &&
@@ -182,7 +185,8 @@ export function PracticeCatalog() {
             ["semua", "Semua paket"],
             ["tps", "TPS"],
             ["literasi", "Literasi"],
-            ["tka-mandiri", "TKA & Mandiri"],
+            ["tka", "TKA"],
+            ["mandiri", "Mandiri PTN"],
           ].map(([id, label]) => (
             <button
               key={id}

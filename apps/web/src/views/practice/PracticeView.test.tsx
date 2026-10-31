@@ -68,7 +68,8 @@ it("keeps Drilling as question discovery and exposes non-tryout destinations sep
   expect(html).toContain('placeholder="Cari paket soal, subtes, topik…"');
   expect(html).toContain('aria-label="Filter paket"');
   expect(html).toContain('aria-pressed="true"');
-  expect(html).toContain("TKA &amp; Mandiri");
+  expect(html).toContain("TKA");
+  expect(html).toContain("Mandiri PTN");
   expect(html).toContain("Drilling");
   expect(html).not.toContain("Materi belum tersedia");
 });

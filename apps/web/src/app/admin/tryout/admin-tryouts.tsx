@@ -27,6 +27,7 @@ export function AdminTryouts() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<"utbk" | "tka" | "mandiri">("utbk");
   const [targetYear, setTargetYear] = useState("2026");
 
   const [deleteTarget, setDeleteTarget] = useState<TryoutItem | null>(null);
@@ -59,6 +60,7 @@ export function AdminTryouts() {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          category,
           targetYear: targetYear ? Number(targetYear) : 2026,
           published: false,
         }),
@@ -239,6 +241,24 @@ export function AdminTryouts() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label
+                htmlFor="tryout-category"
+                className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
+              >
+                Kategori Ujian
+              </label>
+              <select
+                id="tryout-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as "utbk" | "tka" | "mandiri")}
+                className="w-full rounded-md border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
+              >
+                <option value="utbk">UTBK-SNBT</option>
+                <option value="tka">TKA (Kemampuan Akademik)</option>
+                <option value="mandiri">Mandiri PTN (SIMAK, dsb.)</option>
+              </select>
+            </div>
+            <div>
+              <label
                 htmlFor="tryout-year"
                 className="block font-mono text-xs font-semibold text-[var(--ink)] mb-1"
               >
@@ -254,9 +274,6 @@ export function AdminTryouts() {
                 className="w-full rounded-md border border-[var(--edge)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] focus:border-[var(--gold)] focus:outline-none"
               />
             </div>
-            <p className="text-sm text-[var(--soft-ink)]">
-              Tryout dibuat sebagai draf. Isi soal setiap subtes sebelum dipublikasikan.
-            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--edge)]">
