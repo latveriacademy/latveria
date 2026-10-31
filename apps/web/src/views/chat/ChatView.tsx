@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { PublicProfileModal } from "../../components/social/PublicProfileModal";
 import { GlobalChatRoom } from "./GlobalChatRoom";
 import { DirectMessageRoom } from "./DirectMessageRoom";
+import { chatSearchParams } from "./chat-search-params";
 
 export function ChatView() {
   const { user, setCurrentTab } = useApp();
@@ -80,21 +81,31 @@ export function ChatView() {
     }
   }, []);
 
-  const loadDmMessages = useCallback(async (contactId: string) => {
+  const loadDmMessages = useCallback(async (contactId: string, background = false) => {
     try {
-      setLoadingDm(true);
+      if (!background) setLoadingDm(true);
       const data = await api<{ messages: ChatMessage[] }>(
         `/learner/chat/dm/${encodeURIComponent(contactId)}?limit=50`,
       );
-      setDmMessages(data.messages);
-      setTimeout(() => scrollToBottom(dmScrollRef), 50);
+      if (selectedContactIdRef.current !== contactId) return;
+      setDmMessages((prev) =>
+        prev.length === data.messages.length &&
+        prev.every(
+          (message, index) =>
+            message.id === data.messages[index].id &&
+            message.readAt === data.messages[index].readAt,
+        )
+          ? prev
+          : data.messages,
+      );
+      if (!background) setTimeout(() => scrollToBottom(dmScrollRef), 50);
       setConversations((prev) =>
-        prev.map((c) => (c.userId === contactId ? { ...c, unreadCount: 0 } : c)),
+        prev.map((c) => (c.userId === contactId && c.unreadCount ? { ...c, unreadCount: 0 } : c)),
       );
     } catch (err) {
       console.error("Gagal memuat pesan DM:", err);
     } finally {
-      setLoadingDm(false);
+      if (!background && selectedContactIdRef.current === contactId) setLoadingDm(false);
     }
   }, []);
 
@@ -249,7 +260,7 @@ export function ChatView() {
         if (activeTab === "global") {
           void loadGlobalMessages();
         } else if (selectedContactIdRef.current) {
-          void loadDmMessages(selectedContactIdRef.current);
+          void loadDmMessages(selectedContactIdRef.current, true);
         }
       }
     }, 6000);
@@ -354,7 +365,7 @@ export function ChatView() {
           const nextTab = val as "global" | "dm";
           setActiveTab(nextTab);
           if (nextTab === "global") {
-            setSearchParams({});
+            setSearchParams((current) => chatSearchParams(current, null));
           }
         }}
       >
@@ -395,9 +406,9 @@ export function ChatView() {
           onSelectContact={(contact) => {
             setSelectedContact(contact);
             if (contact) {
-              setSearchParams({ dm: contact.userId });
+              setSearchParams((current) => chatSearchParams(current, contact.userId));
             } else {
-              setSearchParams({});
+              setSearchParams((current) => chatSearchParams(current, null));
             }
           }}
           messages={dmMessages}
