@@ -1,11 +1,11 @@
 import React from "react";
 import {
   Check,
-  Clock,
   Eye,
   GraduationCap,
   MessageSquare,
   Swords,
+  UserCheck,
   UserPlus,
   UserX,
 } from "lucide-react";
@@ -38,51 +38,63 @@ export function FriendItemCard({
   onConfirmRemove: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--edge)] bg-[var(--surface)] hover:border-gold/30 transition-all shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--edge-strong)] hover:shadow-xs group">
+      {/* Identity Block */}
       <div
         className="flex items-center gap-3 min-w-0 cursor-pointer"
         onClick={onInspect}
-        title="Klik untuk melihat profil"
+        title="Klik untuk membuka dossier profil"
       >
-        {friend.image ? (
-          <img
-            src={friend.image}
-            alt={friend.name}
-            className="w-11 h-11 rounded-full object-cover border border-[var(--edge)] ring-1 ring-gold/20"
-          />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-[var(--surface-muted)] border border-[var(--edge)] flex items-center justify-center font-bold text-sm text-gold">
-            {friend.name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-sm text-[var(--ink)] truncate hover:underline">
+        <div className="relative shrink-0">
+          {friend.image ? (
+            <img
+              src={friend.image}
+              alt={friend.name}
+              className="size-11 sm:size-12 rounded-full object-cover border-2 border-[var(--edge)] ring-1 ring-[var(--gold)]/20"
+            />
+          ) : (
+            <div className="size-11 sm:size-12 rounded-full bg-[var(--surface-subtle)] border-2 border-[var(--edge)] flex items-center justify-center font-serif font-bold text-sm text-[var(--gold)]">
+              {friend.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="absolute -bottom-0.5 -right-0.5 bg-sage text-black rounded-full p-0.5 border-2 border-[var(--surface)]">
+            <UserCheck size={10} strokeWidth={2.5} />
+          </span>
+        </div>
+
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-serif font-bold text-sm sm:text-base text-[var(--ink)] truncate group-hover:text-[var(--gold)] transition-colors">
               {friend.name}
             </span>
-            <span className="inline-flex items-center px-1 py-0.2 text-[9px] font-mono rounded bg-sage/15 text-sage">
-              Connected
-            </span>
+            {friend.codename && (
+              <span className="text-[11px] font-mono text-[var(--ink-muted)]">
+                @{friend.codename}
+              </span>
+            )}
           </div>
-          {friend.codename && (
-            <p className="text-xs font-mono text-[var(--ink-muted)]">@{friend.codename}</p>
-          )}
-          {friend.targetUniversity && (
-            <div className="flex items-center gap-1 text-[11px] text-gold/90 truncate mt-0.5">
+          {friend.targetUniversity ? (
+            <div className="flex items-center gap-1 text-[11px] font-mono text-[var(--gold)] truncate">
               <GraduationCap size={12} className="shrink-0" />
               <span className="truncate">{friend.targetUniversity}</span>
             </div>
+          ) : (
+            <span className="text-[10px] text-[var(--ink-muted)] italic">
+              Target kampus belum disetel
+            </span>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Action Toolbar */}
+      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t border-[var(--edge)]/40 sm:border-t-0 w-full sm:w-auto justify-end">
         {confirmRemove ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-danger font-mono">Hapus?</span>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 text-xs"
+              className="h-7 text-xs px-2"
               onClick={onCancelRemove}
             >
               Batal
@@ -90,7 +102,7 @@ export function FriendItemCard({
             <Button
               variant="default"
               size="sm"
-              className="h-8 px-2 text-xs bg-danger text-white"
+              className="h-7 text-xs px-2.5 bg-danger text-white hover:bg-danger/90"
               onClick={onConfirmRemove}
               disabled={isRemoving}
             >
@@ -102,35 +114,38 @@ export function FriendItemCard({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0"
-              title="Lihat Profil"
+              className="h-8 px-2.5 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]"
+              title="Buka Profil"
               onClick={onInspect}
             >
-              <Eye size={14} />
+              <Eye size={13} className="mr-1" />
+              <span className="hidden sm:inline">Profil</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 text-gold hover:text-gold"
-              title="Ajak Warrior Battle"
+              className="h-8 px-2.5 text-xs text-[var(--gold)] hover:border-[var(--gold)]"
+              title="Ajak Duel Battle"
               onClick={onBattle}
             >
-              <Swords size={14} />
+              <Swords size={13} className="mr-1" />
+              <span>Duel</span>
             </Button>
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              className="h-8 w-8 p-0"
-              title="Kirim Pesan (DM)"
+              className="h-8 px-2.5 text-xs bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-medium"
+              title="Kirim Pesan Chat"
               onClick={onChat}
             >
-              <MessageSquare size={14} />
+              <MessageSquare size={13} className="mr-1" />
+              <span>Chat</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted hover:text-danger"
-              title="Hapus Teman"
+              className="h-8 w-8 p-0 text-danger/70 hover:text-danger hover:bg-danger/10"
+              title="Putus Hubungan"
               onClick={onRemove}
             >
               <UserX size={14} />
@@ -142,145 +157,171 @@ export function FriendItemCard({
   );
 }
 
-export function SearchUserCard({
-  user,
+export function RequestItemCard({
+  request,
+  onAccept,
+  onDecline,
+  isProcessing,
   onInspect,
-  onSendRequest,
-  isPending,
 }: {
-  user: SearchUserResult;
-  onInspect: () => void;
-  onSendRequest: () => void;
-  isPending: boolean;
+  request: FriendshipDto;
+  onAccept: () => void;
+  onDecline: () => void;
+  isProcessing: boolean;
+  onInspect?: () => void;
 }) {
+  const user = request.friend;
   return (
-    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--edge)] bg-[var(--surface)] hover:border-gold/30 transition-all shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)]">
       <div
         className="flex items-center gap-3 min-w-0 cursor-pointer"
         onClick={onInspect}
-        title="Lihat Profil"
+        title="Klik untuk melihat profil"
       >
-        {user.image ? (
-          <img
-            src={user.image}
-            alt={user.name}
-            className="w-10 h-10 rounded-full object-cover border border-[var(--edge)]"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--edge)] flex items-center justify-center font-bold text-sm text-gold">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0">
-          <p className="font-semibold text-sm text-[var(--ink)] truncate hover:underline">
-            {user.name}
-          </p>
-          {user.codename && (
-            <p className="text-xs font-mono text-[var(--ink-muted)]">@{user.codename}</p>
+        <div className="size-11 rounded-full bg-[var(--surface-subtle)] border-2 border-[var(--edge)] flex items-center justify-center font-serif font-bold text-sm text-[var(--gold)] shrink-0">
+          {user.image ? (
+            <img src={user.image} alt={user.name} className="size-full rounded-full object-cover" />
+          ) : (
+            user.name.charAt(0).toUpperCase()
           )}
-          {user.targetUniversity && (
-            <p className="text-[11px] text-gold/90 truncate flex items-center gap-1 mt-0.5">
+        </div>
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-serif font-bold text-sm text-[var(--ink)] truncate hover:text-[var(--gold)] transition-colors">
+              {user.name}
+            </span>
+            {user.codename && (
+              <span className="text-[11px] font-mono text-[var(--ink-muted)]">
+                @{user.codename}
+              </span>
+            )}
+          </div>
+          {user.targetUniversity ? (
+            <div className="flex items-center gap-1 text-[11px] font-mono text-[var(--gold)] truncate">
               <GraduationCap size={12} className="shrink-0" />
               <span className="truncate">{user.targetUniversity}</span>
-            </p>
+            </div>
+          ) : (
+            <span className="text-[10px] text-[var(--ink-muted)] italic">
+              Mengajakmu terhubung di Latveria
+            </span>
           )}
         </div>
       </div>
 
-      <div className="shrink-0 flex items-center gap-1.5">
-        <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs" onClick={onInspect}>
-          Profil
+      <div className="flex items-center gap-2 self-end sm:self-center">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-3 text-xs"
+          onClick={onDecline}
+          disabled={isProcessing}
+        >
+          Tolak
         </Button>
-        {user.friendshipStatus === "friends" ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-mono rounded bg-sage/15 text-sage">
-            <Check size={12} /> Berteman
-          </span>
-        ) : user.friendshipStatus === "pending_outgoing" ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-mono rounded bg-gold/15 text-gold">
-            <Clock size={12} /> Terkirim
-          </span>
-        ) : user.friendshipStatus === "pending_incoming" ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-mono rounded bg-accent/20 text-accent">
-            Menunggu Respon
-          </span>
-        ) : (
-          <Button
-            size="sm"
-            className="h-8 px-2.5 text-xs bg-gold text-black hover:bg-gold/90 font-medium"
-            onClick={onSendRequest}
-            disabled={isPending}
-          >
-            <UserPlus size={13} className="mr-1" />
-            Hubungkan
-          </Button>
-        )}
+        <Button
+          variant="default"
+          size="sm"
+          className="h-8 px-3 text-xs bg-sage text-black hover:bg-sage/90 font-medium"
+          onClick={onAccept}
+          disabled={isProcessing}
+        >
+          <Check size={13} className="mr-1" />
+          Terima
+        </Button>
       </div>
     </div>
   );
 }
 
-export function RequestItemCard({
-  item,
-  isIncoming,
+export function SearchUserCard({
+  user,
   onInspect,
-  onRespond,
-  isPending,
+  onConnect,
+  isProcessing,
+  onChat,
 }: {
-  item: FriendshipDto;
-  isIncoming: boolean;
+  user: SearchUserResult;
   onInspect: () => void;
-  onRespond?: (action: "accept" | "decline") => void;
-  isPending?: boolean;
+  onConnect: () => void;
+  isProcessing: boolean;
+  onChat?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--edge)] bg-[var(--surface)] shadow-sm">
-      <div className="flex items-center gap-3 min-w-0 cursor-pointer" onClick={onInspect}>
-        {item.friend.image ? (
-          <img
-            src={item.friend.image}
-            alt={item.friend.name}
-            className="w-10 h-10 rounded-full object-cover border border-[var(--edge)]"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--edge)] flex items-center justify-center font-bold text-sm text-gold">
-            {item.friend.name.charAt(0).toUpperCase()}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--edge-strong)]">
+      <div
+        className="flex items-center gap-3 min-w-0 cursor-pointer"
+        onClick={onInspect}
+        title="Klik untuk membuka profil"
+      >
+        <div className="size-11 rounded-full bg-[var(--surface-subtle)] border-2 border-[var(--edge)] flex items-center justify-center font-serif font-bold text-sm text-[var(--gold)] shrink-0">
+          {user.image ? (
+            <img src={user.image} alt={user.name} className="size-full rounded-full object-cover" />
+          ) : (
+            user.name.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-serif font-bold text-sm text-[var(--ink)] truncate hover:text-[var(--gold)] transition-colors">
+              {user.name}
+            </span>
+            {user.codename && (
+              <span className="text-[11px] font-mono text-[var(--ink-muted)]">
+                @{user.codename}
+              </span>
+            )}
           </div>
-        )}
-        <div className="min-w-0">
-          <p className="font-semibold text-sm text-[var(--ink)] truncate hover:underline">
-            {item.friend.name}
-          </p>
-          {item.friend.codename && (
-            <p className="text-xs font-mono text-[var(--ink-muted)]">@{item.friend.codename}</p>
+          {user.targetUniversity ? (
+            <div className="flex items-center gap-1 text-[11px] font-mono text-[var(--gold)] truncate">
+              <GraduationCap size={12} className="shrink-0" />
+              <span className="truncate">{user.targetUniversity}</span>
+            </div>
+          ) : (
+            <span className="text-[10px] text-[var(--ink-muted)] italic">
+              Pejuang UTBK Latveria
+            </span>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        {isIncoming && onRespond ? (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2 text-xs text-danger"
-              onClick={() => onRespond("decline")}
-              disabled={isPending}
-            >
-              Tolak
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 px-2.5 text-xs bg-sage text-black hover:bg-sage/90 font-medium"
-              onClick={() => onRespond("accept")}
-              disabled={isPending}
-            >
-              Terima
-            </Button>
-          </>
-        ) : (
-          <span className="text-xs font-mono text-gold px-2 py-1 rounded bg-gold/10 border border-gold/20">
-            Menunggu
+      <div className="flex items-center gap-2 self-end sm:self-center">
+        {user.friendshipStatus === "friends" ? (
+          <div className="flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono rounded bg-sage/15 text-sage border border-sage/30">
+              <Check size={11} strokeWidth={2.5} /> Berteman
+            </span>
+            {onChat && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs text-[var(--gold)]"
+                onClick={onChat}
+              >
+                <MessageSquare size={13} className="mr-1" />
+                Chat
+              </Button>
+            )}
+          </div>
+        ) : user.friendshipStatus === "pending_outgoing" ? (
+          <span className="px-2.5 py-1 text-xs font-mono rounded bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/30">
+            Terkirim
           </span>
+        ) : user.friendshipStatus === "pending_incoming" ? (
+          <span className="px-2.5 py-1 text-xs font-mono rounded bg-accent/20 text-accent border border-accent/30 animate-pulse">
+            Menunggu Responmu
+          </span>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 px-3 text-xs bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-medium"
+            onClick={onConnect}
+            disabled={isProcessing}
+          >
+            <UserPlus size={13} className="mr-1" />
+            Hubungkan
+          </Button>
         )}
       </div>
     </div>
