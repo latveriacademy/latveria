@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router";
-import { Globe, MessageSquare, Users } from "lucide-react";
+import { Globe, Users } from "lucide-react";
 import type {
   ChatConversationSummary,
   ChatMessage,
@@ -10,11 +10,14 @@ import type {
 } from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
+import { PageHeading } from "../../components/ui/dashboard";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { PublicProfileModal } from "../../components/social/PublicProfileModal";
 import { GlobalChatRoom } from "./GlobalChatRoom";
 import { DirectMessageRoom } from "./DirectMessageRoom";
 
 export function ChatView() {
-  const { user } = useApp();
+  const { user, setCurrentTab } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const dmParam = searchParams.get("dm");
@@ -332,54 +335,42 @@ export function ChatView() {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Dossier modal for inspecting student profiles
+  const [inspectUserId, setInspectUserId] = useState<string | null>(null);
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-8">
-      {/* Top Header & Tab Switcher */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] shadow-sm">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-            <MessageSquare className="size-5 text-[var(--gold)]" />
-            <span>Latveria Chat</span>
-          </h1>
-          <p className="text-xs text-[var(--ink-muted)] mt-0.5">
-            Ruang komunikasi dan diskusi langsung antar pejuang UTBK.
-          </p>
-        </div>
+      {/* Page Heading using House Reusable Component */}
+      <PageHeading
+        title="Ruang Obrolan"
+        description="Komunikasi dan diskusi realtime antar sesama pejuang UTBK Latveria."
+      />
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[var(--surface-subtle)] border border-[var(--edge-subtle)] self-stretch sm:self-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("global");
-              setSearchParams({});
-            }}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-              activeTab === "global"
-                ? "bg-[var(--surface)] text-[var(--gold)] shadow-sm border border-[var(--edge)]"
-                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-            }`}
-          >
-            <Globe className="size-3.5" />
-            <span>Global Room</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("dm")}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all relative ${
-              activeTab === "dm"
-                ? "bg-[var(--surface)] text-[var(--gold)] shadow-sm border border-[var(--edge)]"
-                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-            }`}
-          >
-            <Users className="size-3.5" />
-            <span>Direct Message</span>
+      {/* Tabs Navigation using House Reusable Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => {
+          const nextTab = val as "global" | "dm";
+          setActiveTab(nextTab);
+          if (nextTab === "global") {
+            setSearchParams({});
+          }
+        }}
+      >
+        <TabsList aria-label="Pilihan Ruang Obrolan" className="w-full sm:w-auto">
+          <TabsTrigger value="global" className="flex-1 sm:flex-initial">
+            <Globe className="size-3.5 mr-1" />
+            <span>Saluran Global</span>
+          </TabsTrigger>
+          <TabsTrigger value="dm" className="flex-1 sm:flex-initial relative">
+            <Users className="size-3.5 mr-1" />
+            <span>Pesan Pribadi</span>
             {conversations.some((c) => c.unreadCount > 0) && (
-              <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse" />
+              <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse ml-1" />
             )}
-          </button>
-        </div>
-      </div>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Main Chat Content */}
       {activeTab === "global" ? (
@@ -393,6 +384,7 @@ export function ChatView() {
           sending={sendingGlobal}
           scrollRef={globalScrollRef}
           formatTime={formatMessageTime}
+          onInspectUser={setInspectUserId}
         />
       ) : (
         <DirectMessageRoom
@@ -419,8 +411,17 @@ export function ChatView() {
           friendsList={friendsList}
           loadingFriends={loadingFriends}
           onOpenFriends={loadFriends}
+          onInspectUser={setInspectUserId}
+          onBattleInvite={() => setCurrentTab("warrior")}
         />
       )}
+
+      {/* Profile Modal */}
+      <PublicProfileModal
+        userId={inspectUserId}
+        isOpen={Boolean(inspectUserId)}
+        onClose={() => setInspectUserId(null)}
+      />
     </div>
   );
 }
