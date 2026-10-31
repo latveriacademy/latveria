@@ -53,3 +53,21 @@ export const respondBattleInviteSchema = z.object({
   action: z.enum(["accept", "decline"]),
 });
 export type RespondBattleInviteInput = z.infer<typeof respondBattleInviteSchema>;
+
+export type PublicLearnerProfile = {
+  id: string;
+  name: string;
+  codename: string;
+  targetUniversity: string;
+  bio: string;
+  motto: string;
+  image: string | null;
+  totalXP: number;
+  level: number;
+  streakDays: number;
+  accuracy?: number | null;
+  totalAnswered?: number | null;
+  connectedCount: number;
+  friendshipStatus: "self" | "none" | "pending_incoming" | "pending_outgoing" | "friends";
+  friendshipId?: string | null;
+};

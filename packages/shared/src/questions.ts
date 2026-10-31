@@ -266,3 +266,47 @@ export const sectionImportSchema = z
 
 export type SectionImportQuestion = z.infer<typeof sectionImportQuestionSchema>;
 export type SectionImportInput = z.infer<typeof sectionImportSchema>;
+
+export type QuestionPackage = {
+  id: string;
+  topicId: string;
+  name: string;
+  description: string | null;
+  order: number;
+  isActive: boolean;
+  packageType: "Tryout" | "Airdrop Fundamental" | "Airdrop Akselerasi" | string;
+  category: "utbk" | "ujian-mandiri" | "tka" | "mata-kuliah" | string;
+  duration: number;
+  isFullTryout: boolean;
+  targetQuestions: number;
+  published: boolean;
+  questionCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LearnerPackage = {
+  id: string;
+  name: string;
+  description: string | null;
+  order: number;
+  questionCount: number;
+  packageType?: "Tryout" | "Airdrop Fundamental" | "Airdrop Akselerasi";
+  category?: string;
+  duration?: number;
+  isFullTryout?: boolean;
+};
+
+export type PackageDetail = QuestionPackage & {
+  topicName: string;
+  topicSlug: string;
+  questions: {
+    id: string;
+    prompt: string;
+    passage?: string | null;
+    passageId?: string | null;
+    category: string | null;
+    source: string;
+    usage: number;
+  }[];
+};

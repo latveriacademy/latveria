@@ -37,4 +37,26 @@ describe("Friendship Shared Schemas", () => {
     expect(respondBattleInviteSchema.parse({ action: "accept" })).toEqual({ action: "accept" });
     expect(respondBattleInviteSchema.parse({ action: "decline" })).toEqual({ action: "decline" });
   });
+
+  it("exports PublicLearnerProfile contract structure", () => {
+    const profile = {
+      id: "u-1",
+      name: "Raditya",
+      codename: "radit",
+      targetUniversity: "ITB - STEI",
+      bio: "Fokus UTBK",
+      motto: "Usaha tidak mengkhianati hasil",
+      image: null,
+      totalXP: 1200,
+      level: 4,
+      streakDays: 5,
+      accuracy: 85.5,
+      totalAnswered: 40,
+      connectedCount: 12,
+      friendshipStatus: "friends" as const,
+      friendshipId: "rel-1",
+    };
+    expect(profile.connectedCount).toBe(12);
+    expect(profile.friendshipStatus).toBe("friends");
+  });
 });
