@@ -45,6 +45,8 @@ export function ChatView() {
   const globalScrollRef = useRef<HTMLDivElement>(null);
   const dmScrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const selectedContactIdRef = useRef<string | null>(null);
+  selectedContactIdRef.current = selectedContact?.userId ?? null;
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
@@ -114,39 +116,42 @@ export function ChatView() {
   }, [loadGlobalMessages, loadConversations]);
 
   useEffect(() => {
-    if (dmParam) {
-      setActiveTab("dm");
-      const existing = conversations.find((c) => c.userId === dmParam);
-      if (existing) {
-        setSelectedContact(existing);
-      } else {
-        api<{ friends: FriendUserDto[] }>("/friends")
-          .then((res) => {
-            const friend = res.friends.find((f) => f.id === dmParam);
-            if (friend) {
-              const summary: ChatConversationSummary = {
-                userId: friend.id,
-                name: friend.name,
-                image: friend.image ?? null,
-                role: "user",
-                codename: friend.codename,
-                lastMessage: "",
-                lastMessageAt: "",
-                unreadCount: 0,
-              };
-              setSelectedContact(summary);
-            }
-          })
-          .catch(() => {});
-      }
+    if (!dmParam || selectedContactIdRef.current === dmParam) return;
+    setActiveTab("dm");
+    const existing = conversations.find((c) => c.userId === dmParam);
+    if (existing) {
+      setSelectedContact(existing);
+      return;
     }
+    let active = true;
+    api<{ friends: FriendUserDto[] }>("/friends")
+      .then((res) => {
+        if (!active) return;
+        const friend = res.friends.find((f) => f.id === dmParam);
+        if (friend) {
+          setSelectedContact({
+            userId: friend.id,
+            name: friend.name,
+            image: friend.image ?? null,
+            role: "user",
+            codename: friend.codename,
+            lastMessage: "",
+            lastMessageAt: "",
+            unreadCount: 0,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, [dmParam, conversations]);
 
   useEffect(() => {
-    if (selectedContact) {
+    if (selectedContact?.userId) {
       void loadDmMessages(selectedContact.userId);
     }
-  }, [selectedContact, loadDmMessages]);
+  }, [selectedContact?.userId, loadDmMessages]);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -174,20 +179,16 @@ export function ChatView() {
                 });
                 setTimeout(() => scrollToBottom(globalScrollRef), 40);
               } else {
-                setSelectedContact((currentContact) => {
-                  if (
-                    currentContact &&
-                    (msg.senderId === currentContact.userId ||
-                      msg.recipientId === currentContact.userId)
-                  ) {
-                    setDmMessages((prev) => {
-                      if (prev.some((m) => m.id === msg.id)) return prev;
-                      return [...prev, msg];
-                    });
-                    setTimeout(() => scrollToBottom(dmScrollRef), 40);
-                  }
-                  return currentContact;
-                });
+                if (
+                  msg.senderId === selectedContactIdRef.current ||
+                  msg.recipientId === selectedContactIdRef.current
+                ) {
+                  setDmMessages((prev) => {
+                    if (prev.some((m) => m.id === msg.id)) return prev;
+                    return [...prev, msg];
+                  });
+                  setTimeout(() => scrollToBottom(dmScrollRef), 40);
+                }
 
                 setConversations((prev) => {
                   const counterpartId = msg.senderId === user.id ? msg.recipientId! : msg.senderId;
@@ -203,7 +204,7 @@ export function ChatView() {
                       lastMessage: msg.message,
                       lastMessageAt: msg.createdAt,
                       unreadCount:
-                        isIncoming && selectedContact?.userId !== counterpartId
+                        isIncoming && selectedContactIdRef.current !== counterpartId
                           ? item.unreadCount + 1
                           : item.unreadCount,
                     });
@@ -247,8 +248,8 @@ export function ChatView() {
       if (document.visibilityState === "visible") {
         if (activeTab === "global") {
           void loadGlobalMessages();
-        } else if (selectedContact) {
-          void loadDmMessages(selectedContact.userId);
+        } else if (selectedContactIdRef.current) {
+          void loadDmMessages(selectedContactIdRef.current);
         }
       }
     }, 6000);
@@ -259,7 +260,7 @@ export function ChatView() {
       clearTimeout(reconnectTimeout);
       if (ws) ws.close();
     };
-  }, [activeTab, selectedContact, user.id, loadGlobalMessages, loadDmMessages, loadConversations]);
+  }, [activeTab, user.id, loadGlobalMessages, loadDmMessages, loadConversations]);
 
   const handleSendGlobal = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

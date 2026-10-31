@@ -285,7 +285,7 @@ export function ConnectionsView() {
               </Button>
             </Panel>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {filteredFriends.map((friend) => (
                 <FriendItemCard
                   key={friend.id}

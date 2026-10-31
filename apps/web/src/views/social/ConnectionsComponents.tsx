@@ -38,7 +38,7 @@ export function FriendItemCard({
   onConfirmRemove: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--edge-strong)] hover:shadow-xs group">
+    <div className="flex flex-col gap-4 p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--edge-strong)] hover:shadow-xs group min-w-0">
       {/* Identity Block */}
       <div
         className="flex items-center gap-3 min-w-0 cursor-pointer"
@@ -87,7 +87,7 @@ export function FriendItemCard({
       </div>
 
       {/* Action Toolbar */}
-      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t border-[var(--edge)]/40 sm:border-t-0 w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-1.5 flex-wrap pt-3 border-t border-[var(--edge)] w-full justify-end">
         {confirmRemove ? (
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-danger font-mono">Hapus?</span>
