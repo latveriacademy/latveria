@@ -1,27 +1,44 @@
+import { useState, useEffect, useCallback } from "react";
 import { useApp } from "../context/AppContext";
 import { DashboardHeader } from "./ui/dashboard-shell";
 import { AnimatedNumber } from "../lib/motion";
-import { Volume2, VolumeX, Sun, Moon, Flame, Award, UserRound, Settings } from "lucide-react";
+import { Flame, Award, UserRound, Settings, Bell } from "lucide-react";
+import { NotificationCenterModal } from "./social/NotificationCenterModal";
+import { api } from "../lib/api";
 
 export const HeaderBar = () => {
-  const {
-    user,
-    theme,
-    setTheme,
-    soundEnabled,
-    setSoundEnabled,
-    setCurrentTab,
-    toggleSidebar,
-    sidebarOpen,
-  } = useApp();
+  const { user, setCurrentTab, toggleSidebar, sidebarOpen } = useApp();
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "parchment" : "dark");
-  };
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const toggleSound = () => {
-    setSoundEnabled(!soundEnabled);
-  };
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const [friendsData, battleData] = await Promise.allSettled([
+        api("/friends"),
+        api("/warrior/invites"),
+      ]);
+      const reqCount =
+        friendsData.status === "fulfilled" && friendsData.value?.pendingIncoming
+          ? friendsData.value.pendingIncoming.length
+          : 0;
+      const inviteCount =
+        battleData.status === "fulfilled" && battleData.value?.invites
+          ? battleData.value.invites.length
+          : 0;
+      setUnreadCount(reqCount + inviteCount);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchUnreadCount();
+    const interval = setInterval(() => {
+      void fetchUnreadCount();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   return (
     <DashboardHeader home="/" onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen}>
@@ -88,43 +105,28 @@ export const HeaderBar = () => {
         <span className="stat-pill-label">EXP</span>
       </button>
 
-      {/* Sound Toggle (Desktop only) */}
+      {/* Notifications Button */}
       <button
         type="button"
-        id="sound-toggle-btn"
-        className={`header-tool-btn header-desktop-tool transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95 ${soundEnabled ? "active" : ""}`}
-        onClick={toggleSound}
-        title={
-          soundEnabled
-            ? "Efek Suara UI: Aktif (klik tombol, notifikasi & suara taktil)"
-            : "Efek Suara UI: Hening (suara antarmuka dimatikan)"
-        }
-        aria-label="Toggle Efek Suara UI"
+        id="notification-center-btn"
+        className="header-tool-btn relative transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95"
+        onClick={() => setNotifOpen(true)}
+        title={unreadCount > 0 ? `${unreadCount} notifikasi baru` : "Pusat Notifikasi"}
+        aria-label="Buka Notifikasi"
       >
-        {soundEnabled ? (
-          <Volume2 size={16} className="transition-transform duration-200" />
-        ) : (
-          <VolumeX size={16} className="transition-transform duration-200" />
+        <Bell size={16} className="transition-transform duration-200" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-gold text-black text-[9px] font-mono font-bold flex items-center justify-center border border-[var(--surface)] shadow-sm animate-pulse">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         )}
       </button>
 
-      {/* Theme Toggle (Desktop only) */}
-      <button
-        type="button"
-        id="theme-toggle-btn"
-        className="header-tool-btn header-desktop-tool transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95"
-        onClick={toggleTheme}
-        title={
-          theme === "dark" ? "Ganti ke Mode Imperial Parchment" : "Ganti ke Mode Latveria Obsidian"
-        }
-        aria-label="Toggle Tema Tampilan"
-      >
-        {theme === "dark" ? (
-          <Sun size={16} className="transition-transform duration-200 rotate-0 hover:rotate-45" />
-        ) : (
-          <Moon size={16} className="transition-transform duration-200 rotate-0 hover:-rotate-12" />
-        )}
-      </button>
+      <NotificationCenterModal
+        isOpen={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onCountChange={(cnt) => setUnreadCount(cnt)}
+      />
     </DashboardHeader>
   );
 };
