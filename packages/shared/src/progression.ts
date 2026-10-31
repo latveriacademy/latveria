@@ -122,3 +122,137 @@ export function learnerSummary(attempts: Attempt[], now = new Date()) {
   };
 }
 export type LearnerSummary = ReturnType<typeof learnerSummary>;
+
+export type RankTitle = {
+  level: number;
+  title: string;
+  badge: string;
+};
+
+export function getRankTitle(level: number): RankTitle {
+  if (level >= 8) return { level, title: "Legenda Latveria", badge: "LEGEND" };
+  if (level >= 6) return { level, title: "Master Strategi UTBK", badge: "MASTER" };
+  if (level >= 5) return { level, title: "Perwira Literasi", badge: "OFFICER" };
+  if (level >= 4) return { level, title: "Spesialis Subtes", badge: "SPECIALIST" };
+  if (level >= 3) return { level, title: "Ksatria Skolastik", badge: "KNIGHT" };
+  if (level >= 2) return { level, title: "Pejuang Latihan", badge: "WARRIOR" };
+  return { level: 1, title: "Novis Akademik", badge: "NOVICE" };
+}
+
+export type LearnerAchievement = {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  unlocked: boolean;
+  currentProgress: number;
+  target: number;
+  icon: string;
+  category: string;
+  xpReward: number;
+};
+
+export function computeLearnerAchievements(
+  summary: {
+    attempts?: number;
+    streakDays?: number;
+    answered?: number;
+    correct?: number;
+    tried?: number;
+    level?: number;
+  } | null,
+): LearnerAchievement[] {
+  const attempts = summary?.attempts ?? 0;
+  const streakDays = summary?.streakDays ?? 0;
+  const answered = summary?.answered ?? 0;
+  const correct = summary?.correct ?? 0;
+  const tried = summary?.tried ?? 0;
+  const level = summary?.level ?? 1;
+
+  return [
+    {
+      id: "first-blood",
+      code: "ACH-01",
+      title: "LANGKAH PERTAMA",
+      description: "Selesaikan sesi latihan pertamamu di sistem akademik Latveria.",
+      unlocked: attempts >= 1,
+      currentProgress: Math.min(attempts, 1),
+      target: 1,
+      icon: "Crosshair",
+      category: "Protokol",
+      xpReward: 50,
+    },
+    {
+      id: "consistency-3",
+      code: "ACH-02",
+      title: "KONSISTENSI TEMPUR",
+      description: "Pertahankan 3 hari streak belajar berturut-turut tanpa jeda.",
+      unlocked: streakDays >= 3,
+      currentProgress: Math.min(streakDays, 3),
+      target: 3,
+      icon: "Flame",
+      category: "Ketahanan",
+      xpReward: 100,
+    },
+    {
+      id: "consistency-7",
+      code: "ACH-03",
+      title: "KSATRIA KETEKUNAN",
+      description: "Pertahankan 7 hari streak belajar berturut-turut tanpa jeda.",
+      unlocked: streakDays >= 7,
+      currentProgress: Math.min(streakDays, 7),
+      target: 7,
+      icon: "Flame",
+      category: "Ketahanan",
+      xpReward: 250,
+    },
+    {
+      id: "scholar-100",
+      code: "ACH-04",
+      title: "INTELEKTUAL MUDA",
+      description: "Jawab akumulasi 100 butir soal latihan terstandar.",
+      unlocked: answered >= 100,
+      currentProgress: Math.min(answered, 100),
+      target: 100,
+      icon: "Award",
+      category: "Kemahiran",
+      xpReward: 150,
+    },
+    {
+      id: "accuracy-50",
+      code: "ACH-05",
+      title: "AKURASI ULUNG",
+      description: "Raih akumulasi 50 jawaban benar dari seluruh latihan.",
+      unlocked: correct >= 50,
+      currentProgress: Math.min(correct, 50),
+      target: 50,
+      icon: "ShieldCheck",
+      category: "Ketelitian",
+      xpReward: 200,
+    },
+    {
+      id: "polymath-7",
+      code: "ACH-06",
+      title: "PENJELAJAH KURIKULUM",
+      description: "Coba seluruh 7 domain subtes UTBK terdaftar.",
+      unlocked: tried >= 7,
+      currentProgress: Math.min(tried, 7),
+      target: 7,
+      icon: "Layers",
+      category: "Kurikulum",
+      xpReward: 300,
+    },
+    {
+      id: "ascendant-5",
+      code: "ACH-07",
+      title: "PAHLAWAN LATVERIA",
+      description: "Capai tingkatan Level 5 pada progres akademik.",
+      unlocked: level >= 5,
+      currentProgress: Math.min(level, 5),
+      target: 5,
+      icon: "Award",
+      category: "Kehormatan",
+      xpReward: 500,
+    },
+  ];
+}

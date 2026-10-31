@@ -1,5 +1,7 @@
 import { expect, it } from "vitest";
 import {
+  computeLearnerAchievements,
+  getRankTitle,
   learnerSummary,
   levelProgress,
   practiceDay,
@@ -104,4 +106,39 @@ it("handles re-attempt anti-farming EXP correctly", () => {
   // Attempt 1: 180 XP, Attempt 2: 10 XP, Attempt 3: 10 XP -> Total 200 XP (not 540 XP!)
   const summary = learnerSummary(repeatedAttempts, new Date("2026-10-01T15:00:00Z"));
   expect(summary.totalXP).toBe(200);
+});
+
+it("computes rank titles based on learner level", () => {
+  expect(getRankTitle(1)).toEqual({ level: 1, title: "Novis Akademik", badge: "NOVICE" });
+  expect(getRankTitle(2)).toEqual({ level: 2, title: "Pejuang Latihan", badge: "WARRIOR" });
+  expect(getRankTitle(3)).toEqual({ level: 3, title: "Ksatria Skolastik", badge: "KNIGHT" });
+  expect(getRankTitle(5)).toEqual({ level: 5, title: "Perwira Literasi", badge: "OFFICER" });
+  expect(getRankTitle(8)).toEqual({ level: 8, title: "Legenda Latveria", badge: "LEGEND" });
+});
+
+it("computes missions and badges dynamically from summary", () => {
+  const achievements = computeLearnerAchievements({
+    attempts: 2,
+    streakDays: 4,
+    answered: 120,
+    correct: 60,
+    tried: 7,
+    level: 5,
+  });
+
+  const firstBlood = achievements.find((a) => a.id === "first-blood");
+  expect(firstBlood?.unlocked).toBe(true);
+
+  const consistency3 = achievements.find((a) => a.id === "consistency-3");
+  expect(consistency3?.unlocked).toBe(true);
+
+  const consistency7 = achievements.find((a) => a.id === "consistency-7");
+  expect(consistency7?.unlocked).toBe(false);
+  expect(consistency7?.currentProgress).toBe(4);
+
+  const polymath = achievements.find((a) => a.id === "polymath-7");
+  expect(polymath?.unlocked).toBe(true);
+
+  const hero = achievements.find((a) => a.id === "ascendant-5");
+  expect(hero?.unlocked).toBe(true);
 });

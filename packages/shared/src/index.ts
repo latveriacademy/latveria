@@ -40,7 +40,11 @@ export {
   practiceDay,
   practiceStreak,
   learnerSummary,
+  getRankTitle,
+  computeLearnerAchievements,
   type LearnerSummary,
+  type RankTitle,
+  type LearnerAchievement,
 } from "./progression";
 export { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "./geometry-examples";
 export {

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { computeLearnerAchievements, getRankTitle } from "@latveria/shared";
 import { ProfileEditorDialog } from "../components/profile-editor-dialog";
 import { ChangePasswordDialog } from "../components/change-password-dialog";
 import { useApp } from "../context/AppContext";
-import { ACHIEVEMENTS_LIST } from "../data/achievementsData";
 import {
   Award,
   Flame,
@@ -24,8 +24,19 @@ import { PageHeading, ProgressBar } from "../components/ui/dashboard";
 import { api } from "../lib/api";
 
 export const ProfileView = () => {
-  const { user, setUser, showToast, profileLoaded, profileError, loadProfile, setCurrentTab } =
-    useApp();
+  const {
+    user,
+    setUser,
+    summary,
+    showToast,
+    profileLoaded,
+    profileError,
+    loadProfile,
+    setCurrentTab,
+  } = useApp();
+
+  const rank = getRankTitle(user.level);
+  const achievements = computeLearnerAchievements(summary);
 
   // Edit Profile Modal State
   const [isEditing, setIsEditing] = useState(false);
@@ -262,7 +273,7 @@ export const ProfileView = () => {
             <div className="id-xp-strip">
               <div className="id-xp-header font-mono">
                 <span className="text-gold font-bold">
-                  LEVEL {user.level < 10 ? `0${user.level}` : user.level}
+                  LEVEL {user.level < 10 ? `0${user.level}` : user.level} · {rank.title}
                 </span>
                 <span>
                   {user.currentXP.toLocaleString()} / {user.nextLevelXP.toLocaleString()} XP (
@@ -318,12 +329,12 @@ export const ProfileView = () => {
         <section className="profile-panel achievements-panel motion-fade-up">
           <div className="panel-header">
             <div className="panel-title-group">
-              <h2 className="panel-title font-serif">Prestasi</h2>
+              <h2 className="panel-title font-serif">Prestasi & Misi</h2>
             </div>
           </div>
 
           <div className="achievements-card-list">
-            {ACHIEVEMENTS_LIST.map((ach) => {
+            {achievements.map((ach) => {
               const Icon = getAchievementIcon(ach.icon);
 
               return (
@@ -346,7 +357,7 @@ export const ProfileView = () => {
 
                     {ach.unlocked ? (
                       <div className="ach-date font-mono text-sage">
-                        DIVERIFIKASI: {ach.unlockedAt} • +{ach.xpReward} XP
+                        TERBUKA • +{ach.xpReward} XP
                       </div>
                     ) : (
                       <div className="ach-progress-row font-mono">

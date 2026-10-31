@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import type { PublicLearnerProfile } from "@latveria/shared";
+import { getRankTitle } from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
 import { AppDialog } from "../app-dialog";
@@ -271,14 +272,14 @@ export function PublicProfileModal({
             <div className="p-2.5 sm:p-3 rounded-lg border border-[var(--edge)] bg-[var(--surface-elevated)] flex flex-col justify-between">
               <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--ink-muted)] mb-1">
                 <Award size={13} className="text-[var(--gold)]" />
-                <span>LEVEL & EXP</span>
+                <span>LEVEL & RANK</span>
               </div>
               <div>
                 <div className="font-serif font-bold text-sm sm:text-base text-[var(--ink)]">
-                  LVL {profile.level}
+                  LVL {profile.level} · {getRankTitle(profile.level).badge}
                 </div>
                 <div className="text-[10px] font-mono text-[var(--gold)] truncate">
-                  {profile.totalXP.toLocaleString()} XP
+                  {getRankTitle(profile.level).title}
                 </div>
               </div>
             </div>
