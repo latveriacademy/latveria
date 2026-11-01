@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Clock, Search, UserCheck, UserPlus, Users } from "lucide-react";
+import { Clock, Search, UserCheck, Users } from "lucide-react";
 import type { FriendUserDto, FriendshipDto } from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
 import { PublicProfileModal } from "../../components/social/PublicProfileModal";
 import { Button } from "../../components/ui/button";
-import { PageHeading, Panel, StatTile } from "../../components/ui/dashboard";
+import { PageHeading, Panel } from "../../components/ui/dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { SearchBar } from "../../components/ui/search-bar";
 import {
@@ -146,55 +146,69 @@ export function ConnectionsView() {
   }, [friends, friendsFilter]);
 
   return (
-    <div className="space-y-6 pb-12 max-w-5xl mx-auto px-4 sm:px-6">
+    <div className="space-y-4 sm:space-y-6 pb-24 max-w-5xl mx-auto px-3 sm:px-6">
       {/* Page Heading using House Reusable Component */}
       <PageHeading
-        title="Hub Koneksi"
-        description="Jejaring pejuang UTBK-SNBT: bangun relasi, pantau progres rekan belajar, dan tantang kemampuan di Warrior Battle."
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs text-[var(--gold)] hover:border-[var(--gold)]"
-            onClick={() => setActiveTab("search")}
-          >
-            <UserPlus size={14} className="mr-1.5" />
-            Cari Kawan Belajar
-          </Button>
-        }
+        title="Friendlist"
+        description="Kelola daftar rekan belajar UTBK-SNBT, pantau progres teman, dan tantang duel di Warrior Battle."
       />
 
-      {/* Top Quick Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatTile
-          label="TEMAN TERHUBUNG"
-          value={friends.length}
-          icon={<Users size={20} className="text-[var(--gold)]" />}
-        >
-          <span className="metric-sub-note">Rekan seperjuangan aktif</span>
-        </StatTile>
+      {/* Quick Metrics (Compact 3-column on mobile & desktop) */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="p-2.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-mono uppercase text-[var(--ink-muted)] truncate">
+              Teman
+            </span>
+            <Users className="size-3.5 sm:size-5 text-[var(--gold)] shrink-0" />
+          </div>
+          <div className="mt-1 sm:mt-2">
+            <span className="text-base sm:text-2xl font-serif font-bold text-[var(--ink)]">
+              {friends.length}
+            </span>
+            <p className="hidden sm:block text-[11px] text-[var(--ink-muted)] mt-0.5">
+              Rekan belajar aktif
+            </p>
+          </div>
+        </div>
 
-        <StatTile
-          label="PERMINTAAN MASUK"
-          value={pendingIncoming.length}
-          icon={
-            <Clock size={20} className={pendingIncoming.length > 0 ? "text-sage" : "text-muted"} />
-          }
-        >
-          <span className="metric-sub-note">
-            {pendingIncoming.length > 0
-              ? `${pendingIncoming.length} siswa menunggu responmu`
-              : "Semua permintaan telah diproses"}
-          </span>
-        </StatTile>
+        <div className="p-2.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-mono uppercase text-[var(--ink-muted)] truncate">
+              Masuk
+            </span>
+            <Clock
+              className={`size-3.5 sm:size-5 shrink-0 ${
+                pendingIncoming.length > 0 ? "text-sage" : "text-[var(--ink-muted)]"
+              }`}
+            />
+          </div>
+          <div className="mt-1 sm:mt-2">
+            <span className="text-base sm:text-2xl font-serif font-bold text-[var(--ink)]">
+              {pendingIncoming.length}
+            </span>
+            <p className="hidden sm:block text-[11px] text-[var(--ink-muted)] mt-0.5">
+              {pendingIncoming.length > 0 ? "Menunggu responmu" : "Tidak ada tertunda"}
+            </p>
+          </div>
+        </div>
 
-        <StatTile
-          label="PERMINTAAN TERKIRIM"
-          value={pendingOutgoing.length}
-          icon={<UserCheck size={20} className="text-muted" />}
-        >
-          <span className="metric-sub-note">Menunggu konfirmasi penerima</span>
-        </StatTile>
+        <div className="p-2.5 sm:p-4 rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] sm:text-xs font-mono uppercase text-[var(--ink-muted)] truncate">
+              Terkirim
+            </span>
+            <UserCheck className="size-3.5 sm:size-5 text-[var(--ink-muted)] shrink-0" />
+          </div>
+          <div className="mt-1 sm:mt-2">
+            <span className="text-base sm:text-2xl font-serif font-bold text-[var(--ink)]">
+              {pendingOutgoing.length}
+            </span>
+            <p className="hidden sm:block text-[11px] text-[var(--ink-muted)] mt-0.5">
+              Menunggu konfirmasi
+            </p>
+          </div>
+        </div>
       </div>
 
       {actionError && (
@@ -205,20 +219,32 @@ export function ConnectionsView() {
 
       {/* Tab Navigation using House Reusable Tabs Component */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList aria-label="Navigasi Hub Koneksi" className="w-full sm:w-auto">
-          <TabsTrigger value="connected" className="flex-1 sm:flex-initial">
-            <Users size={14} className="mr-1.5" />
-            Teman Terhubung ({friends.length})
+        <TabsList aria-label="Navigasi Friendlist" className="w-full sm:w-auto p-1 gap-1">
+          <TabsTrigger
+            value="connected"
+            className="flex-1 sm:flex-initial text-xs px-2 py-1.5 sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 min-w-0"
+          >
+            <Users className="size-3.5 shrink-0" />
+            <span className="hidden sm:inline">Teman Terhubung</span>
+            <span className="sm:hidden truncate">Teman</span>
+            <span className="font-mono text-[10px] opacity-80 shrink-0">({friends.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="search" className="flex-1 sm:flex-initial">
-            <Search size={14} className="mr-1.5" />
-            Cari Siswa
+          <TabsTrigger
+            value="search"
+            className="flex-1 sm:flex-initial text-xs px-2 py-1.5 sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 min-w-0"
+          >
+            <Search className="size-3.5 shrink-0" />
+            <span className="hidden sm:inline">Cari Siswa</span>
+            <span className="sm:hidden truncate">Cari</span>
           </TabsTrigger>
-          <TabsTrigger value="requests" className="flex-1 sm:flex-initial relative">
-            <Clock size={14} className="mr-1.5" />
-            Permintaan
+          <TabsTrigger
+            value="requests"
+            className="flex-1 sm:flex-initial relative text-xs px-2 py-1.5 sm:px-3 sm:py-2 flex items-center justify-center gap-1.5 min-w-0"
+          >
+            <Clock className="size-3.5 shrink-0" />
+            <span className="truncate">Permintaan</span>
             {pendingIncoming.length > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.2 bg-[var(--gold)] text-black rounded-full font-mono text-[10px] font-bold">
+              <span className="ml-0.5 px-1.5 py-0.2 bg-[var(--gold)] text-black rounded-full font-mono text-[10px] font-bold shrink-0">
                 {pendingIncoming.length}
               </span>
             )}
@@ -228,12 +254,12 @@ export function ConnectionsView() {
         {/* Tab 1: Teman Terhubung */}
         <TabsContent value="connected" className="space-y-4">
           {friends.length > 0 && (
-            <div className="max-w-md">
+            <div className="w-full sm:max-w-md">
               <SearchBar
                 value={friendsFilter}
                 onChange={(e) => setFriendsFilter(e.target.value)}
                 onClear={() => setFriendsFilter("")}
-                placeholder="Filter nama, @codename, atau universitas target…"
+                placeholder="Cari dalam daftar teman…"
                 sizeVariant="sm"
               />
             </div>
@@ -306,14 +332,14 @@ export function ConnectionsView() {
 
         {/* Tab 2: Cari Siswa */}
         <TabsContent value="search" className="space-y-4">
-          <Panel className="p-4 sm:p-5 space-y-4">
+          <Panel className="p-3.5 sm:p-5 space-y-3">
             <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <SearchBar
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onClear={() => setSearchQuery("")}
-                  placeholder="Ketik nama, @codename, atau target PTN siswa lain…"
+                  placeholder="Ketik nama, @codename, atau target PTN…"
                   autoFocus
                 />
               </div>
@@ -321,7 +347,7 @@ export function ConnectionsView() {
                 type="submit"
                 variant="default"
                 size="default"
-                className="bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-medium px-4"
+                className="bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-medium px-4 shrink-0"
                 disabled={searching || !searchQuery.trim()}
               >
                 {searching ? "Mencari…" : "Cari"}

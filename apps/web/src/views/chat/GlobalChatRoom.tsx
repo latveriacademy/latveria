@@ -31,9 +31,12 @@ export function GlobalChatRoom({
   onInspectUser,
 }: GlobalChatRoomProps) {
   return (
-    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full md:h-[82vh] md:min-h-[600px] border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
+    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full min-h-0 border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
       {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain">
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
+      >
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center gap-2.5 text-xs text-[var(--ink-muted)]">
             <Loader2 className="size-6 animate-spin text-[var(--gold)]" />

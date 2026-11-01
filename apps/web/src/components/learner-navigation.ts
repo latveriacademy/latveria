@@ -14,7 +14,7 @@ export const learnerNavigation: NavigationItem[] = [
   { id: "practice", label: "Drilling", icon: Dumbbell },
   { id: "warrior", label: "Warrior Battle", icon: Swords },
   { id: "chat", label: "Chat", icon: MessageSquare },
-  { id: "connections", label: "Koneksi", icon: Users },
+  { id: "connections", label: "Friendlist", icon: Users },
   { id: "library", label: "Library", icon: Library },
   { id: "tryout", label: "Battle World", icon: Swords },
   { id: "leaderboard", label: "Rank", icon: Trophy },

@@ -389,14 +389,14 @@ export function ChatView() {
 
   return (
     <div
-      className="flex flex-col flex-1 h-full w-full md:h-auto md:space-y-4 max-w-none md:max-w-7xl md:mx-auto md:pb-8 touch-pan-y"
+      className="flex flex-col flex-1 h-full w-full max-w-none md:max-w-7xl md:mx-auto md:space-y-3 touch-pan-y min-h-0"
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       data-testid="chat-swipe-container"
     >
       {/* Desktop Tabs Switcher */}
-      <div className="hidden md:block">
+      <div className="hidden md:block shrink-0">
         <Tabs
           value={activeTab}
           onValueChange={(val) => {

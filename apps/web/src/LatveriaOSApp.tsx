@@ -85,7 +85,7 @@ function AppShell() {
       )}
       <div
         key={outlet ? "outlet" : currentTab}
-        className={`motion-page-enter w-full${isChatTab ? " h-full flex flex-col flex-1" : ""}`}
+        className={`motion-page-enter w-full${isChatTab ? " h-full flex flex-col flex-1 min-h-0" : ""}`}
       >
         {outlet ?? renderActiveView()}
       </div>

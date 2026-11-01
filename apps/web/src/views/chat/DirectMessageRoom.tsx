@@ -75,14 +75,14 @@ export function DirectMessageRoom({
   });
 
   return (
-    <div className="rounded-none md:rounded-xl border-x-0 md:border-x border-y-0 md:border-y border-[var(--edge)] bg-[var(--surface-elevated)] overflow-hidden flex flex-col md:grid md:grid-cols-12 flex-1 h-full md:h-[82vh] md:min-h-[600px]">
+    <div className="rounded-none md:rounded-xl border-x-0 md:border-x border-y-0 md:border-y border-[var(--edge)] bg-[var(--surface-elevated)] overflow-hidden flex flex-col md:grid md:grid-cols-12 flex-1 h-full min-h-0">
       {/* Kolom Kiri: Percakapan */}
       <div
-        className={`md:col-span-4 lg:col-span-4 border-r border-[var(--edge)] flex flex-col h-full bg-[var(--surface-subtle)] ${
+        className={`md:col-span-4 lg:col-span-4 border-r border-[var(--edge)] flex flex-col h-full min-h-0 bg-[var(--surface-subtle)] ${
           selectedContact ? "hidden md:flex" : "flex"
         }`}
       >
-        <div className="p-3 border-b border-[var(--edge)] space-y-2.5">
+        <div className="p-3 border-b border-[var(--edge)] space-y-2.5 shrink-0">
           <div className="flex items-center justify-between">
             <span className="text-xs font-serif font-bold text-[var(--ink)]">Chat</span>
             <Button
@@ -110,7 +110,7 @@ export function DirectMessageRoom({
         </div>
 
         {/* List Percakapan */}
-        <div className="flex-1 overflow-y-auto divide-y divide-[var(--edge)]/40">
+        <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-[var(--edge)]/40">
           {loadingConversations ? (
             <div className="py-12 flex flex-col items-center justify-center gap-2 text-xs text-[var(--ink-muted)]">
               <Loader2 className="size-5 animate-spin text-[var(--gold)]" />
@@ -190,14 +190,14 @@ export function DirectMessageRoom({
 
       {/* Kolom Kanan: Jendela Obrolan */}
       <div
-        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full bg-[var(--surface)] ${
+        className={`md:col-span-8 lg:col-span-8 flex flex-col h-full min-h-0 bg-[var(--surface)] ${
           selectedContact ? "flex" : "hidden md:flex"
         }`}
       >
         {selectedContact ? (
           <>
             {/* Header Percakapan */}
-            <div className="px-4 py-2.5 bg-[var(--surface-subtle)] border-b border-[var(--edge)] flex items-center justify-between gap-2">
+            <div className="px-4 py-2.5 bg-[var(--surface-subtle)] border-b border-[var(--edge)] flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Button
                   type="button"
@@ -272,7 +272,7 @@ export function DirectMessageRoom({
             {/* Area Pesan */}
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
+              className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
             >
               {loadingDm ? (
                 <div className="h-full flex flex-col items-center justify-center gap-2 text-xs text-[var(--ink-muted)]">
@@ -418,7 +418,7 @@ export function DirectMessageRoom({
                 <p className="text-[11px] max-w-xs mx-auto">
                   {friendSearchQuery
                     ? `Tidak ada teman dengan nama "${friendSearchQuery}".`
-                    : "Tambahkan teman terlebih dahulu melalui Hub Koneksi untuk memulai obrolan."}
+                    : "Tambahkan teman terlebih dahulu melalui Friendlist untuk memulai obrolan."}
                 </p>
               </div>
             ) : (

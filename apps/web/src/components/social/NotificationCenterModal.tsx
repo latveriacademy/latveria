@@ -312,7 +312,7 @@ export function NotificationCenterModal({
             }}
           >
             <Users size={13} className="mr-1.5" />
-            Buka Hub Koneksi
+            Buka Friendlist
           </Button>
           <Button variant="outline" size="sm" className="text-xs" onClick={onClose}>
             Tutup

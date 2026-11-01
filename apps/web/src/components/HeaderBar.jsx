@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { DashboardHeader } from "./ui/dashboard-shell";
 import { AnimatedNumber } from "../lib/motion";
-import { Flame, Award, UserRound, Settings, Bell } from "lucide-react";
+import { Flame, Award, UserRound, Settings, Bell, Users } from "lucide-react";
 import { NotificationCenterModal } from "./social/NotificationCenterModal";
 import { api } from "../lib/api";
 import { newGlobalMessages } from "../views/chat/chat-notifications";
@@ -110,6 +110,18 @@ export const HeaderBar = () => {
             <UserRound size={13} className="text-gold" />
           )}
         </div>
+      </button>
+
+      {/* Mobile Friendlist Button */}
+      <button
+        type="button"
+        id="header-mobile-friends-btn"
+        className="header-tool-btn header-mobile-friends-btn transition-transform duration-150 hover:scale-105 active:scale-95 cursor-pointer"
+        onClick={() => setCurrentTab("connections")}
+        title="Friendlist"
+        aria-label="Buka Friendlist"
+      >
+        <Users size={16} />
       </button>
 
       {/* Mobile Settings Button */}
