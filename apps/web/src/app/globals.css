@@ -7,17 +7,17 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Hermes Agent (Nous Research) Dark Emerald / Verdigris palette */
-  --bg: #0d1411;
-  --bg-subtle: #111d17;
-  --surface: #14221b;
-  --surface-elevated: #1a2b23;
-  --surface-hover: #1f332a;
-  --edge: #22382e;
-  --edge-strong: #2d4a3d;
+  --bg: #0e1a14;
+  --bg-subtle: #13231b;
+  --surface: #182c22;
+  --surface-elevated: #1e382b;
+  --surface-hover: #244234;
+  --edge: #2c493c;
+  --edge-strong: #385d4d;
 
-  --ink: #eef3ef;
-  --soft-ink: #869e90;
-  --muted-ink: #556d60;
+  --ink: #f2f7f3;
+  --soft-ink: #9ab4a5;
+  --muted-ink: #6b8878;
 
   --emerald: #10b981;
   --emerald-hover: #059669;

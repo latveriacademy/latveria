@@ -222,7 +222,7 @@ export const AppProvider = ({ children }) => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute("content", theme === "parchment" ? "#f5f0e6" : "#07100d");
+      metaTheme.setAttribute("content", theme === "parchment" ? "#f5f0e6" : "#0e1a14");
     }
   }, [theme]);
 

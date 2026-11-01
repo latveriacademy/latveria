@@ -5,37 +5,37 @@
 
 :root {
   color-scheme: dark;
-  /* Obsidian Dark (Default Forest Green Theme) */
-  --bg-app: #08150e;
-  --bg-sidebar: #06110b;
-  --bg-header: #08150e;
-  --bg-card: #0d2015;
-  --bg-card-hover: #12281b;
-  --bg-surface-elevated: #163022;
-  --bg-input: #0a1a10;
+  /* Obsidian Dark (Default Forest Green Theme) - Tuned for readable contrast */
+  --bg-app: #0e1a14;
+  --bg-sidebar: #0b1510;
+  --bg-header: #0e1a14;
+  --bg-card: #14261d;
+  --bg-card-hover: #1a3025;
+  --bg-surface-elevated: #1e382b;
+  --bg-input: #102018;
 
-  --border-subtle: rgba(197, 160, 89, 0.2);
-  --border-medium: rgba(197, 160, 89, 0.4);
-  --border-bright: #c5a059;
-  --border-dark: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(197, 160, 89, 0.28);
+  --border-medium: rgba(197, 160, 89, 0.48);
+  --border-bright: #d4b36e;
+  --border-dark: rgba(255, 255, 255, 0.12);
 
-  --accent-gold: #c5a059;
-  --accent-gold-hover: #d7b46d;
-  --accent-gold-dim: rgba(197, 160, 89, 0.12);
-  --accent-gold-glow: rgba(197, 160, 89, 0.25);
+  --accent-gold: #d4b36e;
+  --accent-gold-hover: #e0c384;
+  --accent-gold-dim: rgba(212, 179, 110, 0.15);
+  --accent-gold-glow: rgba(212, 179, 110, 0.28);
 
-  --accent-sage: #7fa98b;
-  --accent-sage-dim: rgba(127, 169, 139, 0.15);
+  --accent-sage: #8eb89a;
+  --accent-sage-dim: rgba(142, 184, 154, 0.18);
 
-  --accent-crimson: #b44343;
-  --accent-crimson-dim: rgba(180, 67, 67, 0.15);
+  --accent-crimson: #c84e4e;
+  --accent-crimson-dim: rgba(200, 78, 78, 0.18);
 
-  --accent-orange: #d9822b;
+  --accent-orange: #e28f3b;
 
-  --text-primary: #f8f6f0;
-  --text-secondary: #bdc8c0;
-  --text-muted: #7e9184;
-  --text-dim: #54665a;
+  --text-primary: #fbf9f4;
+  --text-secondary: #cdd8d0;
+  --text-muted: #8fa295;
+  --text-dim: #63776a;
 
   --font-serif: "Newsreader", "Cinzel", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
