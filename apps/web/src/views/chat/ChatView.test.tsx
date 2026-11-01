@@ -35,7 +35,10 @@ describe("ChatView", () => {
     );
 
     expect(html).toContain('data-testid="mobile-chat-header"');
+    expect(html).toContain('data-testid="chat-swipe-container"');
+    expect(html).toContain("touch-pan-y");
     expect(html).toContain("Saluran Global");
-    expect(html).toContain("Pesan Pribadi");
+    expect(html).toContain("Chat");
+    expect(html).not.toContain("Ruang Obrolan");
   });
 });

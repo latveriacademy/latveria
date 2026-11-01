@@ -10,7 +10,6 @@ import type {
 } from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
-import { PageHeading } from "../../components/ui/dashboard";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { PublicProfileModal } from "../../components/social/PublicProfileModal";
 import { GlobalChatRoom } from "./GlobalChatRoom";
@@ -350,15 +349,54 @@ export function ChatView() {
   // Dossier modal for inspecting student profiles
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
-  return (
-    <div className="flex flex-col flex-1 h-full md:h-auto md:space-y-4 max-w-5xl mx-auto md:pb-8">
-      {/* Desktop Heading & Tabs */}
-      <div className="hidden md:block space-y-4">
-        <PageHeading
-          title="Ruang Obrolan"
-          description="Komunikasi dan diskusi realtime antar sesama pejuang UTBK Latveria."
-        />
+  // Horizontal swipe/drag gesture detection to switch tabs from center
+  const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    // Don't intercept inputs, textareas, buttons, or interactive links
+    if (target?.closest("input, textarea, button, a, [role='button']")) return;
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now(),
+    };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!dragStartRef.current) return;
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+    const deltaTime = Date.now() - dragStartRef.current.time;
+    dragStartRef.current = null;
+
+    // Must be predominantly horizontal gesture (deltaX > deltaY * 1.5)
+    // Distance >= 50px and performed within 600ms
+    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && deltaTime <= 600) {
+      if (deltaX < 0 && activeTab === "global") {
+        setActiveTab("dm");
+      } else if (deltaX > 0 && activeTab === "dm") {
+        setActiveTab("global");
+        setSearchParams((current) => chatSearchParams(current, null));
+      }
+    }
+  };
+
+  const handlePointerCancel = () => {
+    dragStartRef.current = null;
+  };
+
+  return (
+    <div
+      className="flex flex-col flex-1 h-full w-full md:h-auto md:space-y-4 max-w-none md:max-w-7xl md:mx-auto md:pb-8 touch-pan-y"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      data-testid="chat-swipe-container"
+    >
+      {/* Desktop Tabs Switcher */}
+      <div className="hidden md:block">
         <Tabs
           value={activeTab}
           onValueChange={(val) => {
@@ -369,14 +407,14 @@ export function ChatView() {
             }
           }}
         >
-          <TabsList aria-label="Pilihan Ruang Obrolan" className="w-full sm:w-auto">
-            <TabsTrigger value="global" className="flex-1 sm:flex-initial">
+          <TabsList aria-label="Pilihan Obrolan" className="w-auto">
+            <TabsTrigger value="global">
               <Globe className="size-3.5 mr-1" />
               <span>Saluran Global</span>
             </TabsTrigger>
-            <TabsTrigger value="dm" className="flex-1 sm:flex-initial relative">
+            <TabsTrigger value="dm" className="relative">
               <Users className="size-3.5 mr-1" />
-              <span>Pesan Pribadi</span>
+              <span>Chat</span>
               {conversations.some((c) => c.unreadCount > 0) && (
                 <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse ml-1" />
               )}
@@ -385,22 +423,22 @@ export function ChatView() {
         </Tabs>
       </div>
 
-      {/* Mobile-only Custom Header with Global & Pesan Pribadi Tabs */}
+      {/* Mobile-only Custom Header with Global & Chat Tabs */}
       <div
         className="md:hidden shrink-0 bg-[var(--surface-subtle)] border-b border-[var(--edge)] px-3 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2 flex items-center justify-between gap-2 shadow-xs z-10"
         data-testid="mobile-chat-header"
       >
-        <div className="flex items-center gap-1.5 flex-1 bg-[var(--surface-elevated)] p-1 rounded-xl border border-[var(--edge)]">
+        <div className="flex items-center gap-1 flex-1 bg-[var(--surface-elevated)] p-1 rounded-md border border-[var(--edge)]">
           <button
             type="button"
             onClick={() => {
               setActiveTab("global");
               setSearchParams((current) => chatSearchParams(current, null));
             }}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 px-3 rounded text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "global"
                 ? "bg-[var(--gold)] text-black shadow-xs"
-                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                : "text-[var(--text-muted,#9ca3af)] hover:text-[var(--text-main,#f3f4f6)] opacity-90"
             }`}
           >
             <Globe className="size-3.5" />
@@ -409,14 +447,14 @@ export function ChatView() {
           <button
             type="button"
             onClick={() => setActiveTab("dm")}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 relative cursor-pointer ${
+            className={`flex-1 py-1.5 px-3 rounded text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 relative cursor-pointer ${
               activeTab === "dm"
                 ? "bg-[var(--gold)] text-black shadow-xs"
-                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                : "text-[var(--text-muted,#9ca3af)] hover:text-[var(--text-main,#f3f4f6)] opacity-90"
             }`}
           >
             <Users className="size-3.5" />
-            <span>Pesan Pribadi</span>
+            <span>Chat</span>
             {conversations.some((c) => c.unreadCount > 0) && (
               <span
                 className={`size-2 rounded-full ${

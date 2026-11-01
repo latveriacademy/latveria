@@ -1,5 +1,5 @@
 import React from "react";
-import { Globe, Loader2, Send, Shield, Sparkles } from "lucide-react";
+import { Globe, Loader2, Send, Shield } from "lucide-react";
 import type { ChatMessage } from "@latveria/shared";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -31,24 +31,7 @@ export function GlobalChatRoom({
   onInspectUser,
 }: GlobalChatRoomProps) {
   return (
-    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full md:h-[70vh] md:min-h-[500px] border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
-      {/* Room Header Strip */}
-      <div className="px-4 py-2.5 bg-[var(--surface-subtle)] border-b border-[var(--edge)] flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-serif font-bold text-sm text-[var(--ink)]">
-            Saluran Publik Siswa
-          </span>
-          <span className="hidden sm:inline text-[var(--ink-muted)] text-[11px]">
-            • Forum diskusi umum & strategi UTBK
-          </span>
-        </div>
-        <span className="text-[11px] font-mono text-[var(--gold)] flex items-center gap-1.5">
-          <Sparkles className="size-3 text-[var(--gold)]" />
-          Live
-        </span>
-      </div>
-
+    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full md:h-[82vh] md:min-h-[600px] border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
       {/* Messages Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain">
         {loading ? (
