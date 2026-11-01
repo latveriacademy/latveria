@@ -351,82 +351,128 @@ export function ChatView() {
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto pb-8">
-      {/* Page Heading using House Reusable Component */}
-      <PageHeading
-        title="Ruang Obrolan"
-        description="Komunikasi dan diskusi realtime antar sesama pejuang UTBK Latveria."
-      />
-
-      {/* Tabs Navigation using House Reusable Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(val) => {
-          const nextTab = val as "global" | "dm";
-          setActiveTab(nextTab);
-          if (nextTab === "global") {
-            setSearchParams((current) => chatSearchParams(current, null));
-          }
-        }}
-      >
-        <TabsList aria-label="Pilihan Ruang Obrolan" className="w-full sm:w-auto">
-          <TabsTrigger value="global" className="flex-1 sm:flex-initial">
-            <Globe className="size-3.5 mr-1" />
-            <span>Saluran Global</span>
-          </TabsTrigger>
-          <TabsTrigger value="dm" className="flex-1 sm:flex-initial relative">
-            <Users className="size-3.5 mr-1" />
-            <span>Pesan Pribadi</span>
-            {conversations.some((c) => c.unreadCount > 0) && (
-              <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse ml-1" />
-            )}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Main Chat Content */}
-      {activeTab === "global" ? (
-        <GlobalChatRoom
-          currentUserId={user.id}
-          messages={globalMessages}
-          loading={loadingGlobal}
-          input={globalInput}
-          onInputChange={setGlobalInput}
-          onSend={handleSendGlobal}
-          sending={sendingGlobal}
-          scrollRef={globalScrollRef}
-          formatTime={formatMessageTime}
-          onInspectUser={setInspectUserId}
+    <div className="flex flex-col flex-1 h-full md:h-auto md:space-y-4 max-w-5xl mx-auto md:pb-8">
+      {/* Desktop Heading & Tabs */}
+      <div className="hidden md:block space-y-4">
+        <PageHeading
+          title="Ruang Obrolan"
+          description="Komunikasi dan diskusi realtime antar sesama pejuang UTBK Latveria."
         />
-      ) : (
-        <DirectMessageRoom
-          currentUserId={user.id}
-          conversations={conversations}
-          selectedContact={selectedContact}
-          onSelectContact={(contact) => {
-            setSelectedContact(contact);
-            if (contact) {
-              setSearchParams((current) => chatSearchParams(current, contact.userId));
-            } else {
+
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            const nextTab = val as "global" | "dm";
+            setActiveTab(nextTab);
+            if (nextTab === "global") {
               setSearchParams((current) => chatSearchParams(current, null));
             }
           }}
-          messages={dmMessages}
-          loadingConversations={loadingConversations}
-          loadingDm={loadingDm}
-          input={dmInput}
-          onInputChange={setDmInput}
-          onSend={handleSendDm}
-          sending={sendingDm}
-          scrollRef={dmScrollRef}
-          formatTime={formatMessageTime}
-          friendsList={friendsList}
-          loadingFriends={loadingFriends}
-          onOpenFriends={loadFriends}
-          onInspectUser={setInspectUserId}
-          onBattleInvite={() => setCurrentTab("warrior")}
-        />
-      )}
+        >
+          <TabsList aria-label="Pilihan Ruang Obrolan" className="w-full sm:w-auto">
+            <TabsTrigger value="global" className="flex-1 sm:flex-initial">
+              <Globe className="size-3.5 mr-1" />
+              <span>Saluran Global</span>
+            </TabsTrigger>
+            <TabsTrigger value="dm" className="flex-1 sm:flex-initial relative">
+              <Users className="size-3.5 mr-1" />
+              <span>Pesan Pribadi</span>
+              {conversations.some((c) => c.unreadCount > 0) && (
+                <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse ml-1" />
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Mobile-only Custom Header with Global & Pesan Pribadi Tabs */}
+      <div
+        className="md:hidden shrink-0 bg-[var(--surface-subtle)] border-b border-[var(--edge)] px-3 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2 flex items-center justify-between gap-2 shadow-xs z-10"
+        data-testid="mobile-chat-header"
+      >
+        <div className="flex items-center gap-1.5 flex-1 bg-[var(--surface-elevated)] p-1 rounded-xl border border-[var(--edge)]">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("global");
+              setSearchParams((current) => chatSearchParams(current, null));
+            }}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "global"
+                ? "bg-[var(--gold)] text-black shadow-xs"
+                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            }`}
+          >
+            <Globe className="size-3.5" />
+            <span>Saluran Global</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("dm")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 relative cursor-pointer ${
+              activeTab === "dm"
+                ? "bg-[var(--gold)] text-black shadow-xs"
+                : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            }`}
+          >
+            <Users className="size-3.5" />
+            <span>Pesan Pribadi</span>
+            {conversations.some((c) => c.unreadCount > 0) && (
+              <span
+                className={`size-2 rounded-full ${
+                  activeTab === "dm" ? "bg-black" : "bg-red-500"
+                } animate-pulse ml-1`}
+              />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Chat Content */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {activeTab === "global" ? (
+          <GlobalChatRoom
+            currentUserId={user.id}
+            messages={globalMessages}
+            loading={loadingGlobal}
+            input={globalInput}
+            onInputChange={setGlobalInput}
+            onSend={handleSendGlobal}
+            sending={sendingGlobal}
+            scrollRef={globalScrollRef}
+            formatTime={formatMessageTime}
+            onInspectUser={setInspectUserId}
+          />
+        ) : (
+          <DirectMessageRoom
+            currentUserId={user.id}
+            conversations={conversations}
+            selectedContact={selectedContact}
+            onSelectContact={(contact) => {
+              setSelectedContact(contact);
+              if (contact) {
+                setSearchParams((current) => chatSearchParams(current, contact.userId));
+              } else {
+                setSearchParams((current) => chatSearchParams(current, null));
+              }
+            }}
+            messages={dmMessages}
+            loadingConversations={loadingConversations}
+            loadingDm={loadingDm}
+            input={dmInput}
+            onInputChange={setDmInput}
+            onSend={handleSendDm}
+            sending={sendingDm}
+            scrollRef={dmScrollRef}
+            formatTime={formatMessageTime}
+            friendsList={friendsList}
+            loadingFriends={loadingFriends}
+            onOpenFriends={loadFriends}
+            onInspectUser={setInspectUserId}
+            onBattleInvite={() => setCurrentTab("warrior")}
+          />
+        )}
+      </div>
 
       {/* Profile Modal */}
       <PublicProfileModal

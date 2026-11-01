@@ -75,7 +75,7 @@ export function DirectMessageRoom({
   });
 
   return (
-    <div className="rounded-xl border border-[var(--edge)] bg-[var(--surface-elevated)] overflow-hidden grid grid-cols-1 md:grid-cols-12 h-[72vh] min-h-[500px]">
+    <div className="rounded-none md:rounded-xl border-x-0 md:border-x border-y-0 md:border-y border-[var(--edge)] bg-[var(--surface-elevated)] overflow-hidden flex flex-col md:grid md:grid-cols-12 flex-1 h-full md:h-[72vh] md:min-h-[500px]">
       {/* Kolom Kiri: Percakapan */}
       <div
         className={`md:col-span-4 lg:col-span-4 border-r border-[var(--edge)] flex flex-col h-full bg-[var(--surface-subtle)] ${
@@ -332,7 +332,7 @@ export function DirectMessageRoom({
             {/* Input Pesan */}
             <form
               onSubmit={onSend}
-              className="p-3 bg-[var(--surface-subtle)] border-t border-[var(--edge)] flex items-center gap-2"
+              className="shrink-0 p-2.5 sm:p-3 bg-[var(--surface-subtle)] border-t border-[var(--edge)] flex items-center gap-2"
             >
               <Input
                 value={input}

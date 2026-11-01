@@ -31,7 +31,7 @@ export function GlobalChatRoom({
   onInspectUser,
 }: GlobalChatRoomProps) {
   return (
-    <Panel className="p-0 overflow-hidden flex flex-col h-[70vh] min-h-[500px] border-[var(--edge)] bg-[var(--surface-elevated)]">
+    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full md:h-[70vh] md:min-h-[500px] border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
       {/* Room Header Strip */}
       <div className="px-4 py-2.5 bg-[var(--surface-subtle)] border-b border-[var(--edge)] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
@@ -134,7 +134,7 @@ export function GlobalChatRoom({
       {/* Input Section */}
       <form
         onSubmit={onSend}
-        className="p-3 bg-[var(--surface-subtle)] border-t border-[var(--edge)] flex items-center gap-2"
+        className="shrink-0 p-2.5 sm:p-3 bg-[var(--surface-subtle)] border-t border-[var(--edge)] flex items-center gap-2"
       >
         <Input
           value={input}

@@ -57,9 +57,11 @@ function AppShell() {
     }
   };
 
+  const isChatTab = currentTab === "chat";
+
   return (
     <DashboardShell
-      className="learner-shell"
+      className={`learner-shell${isChatTab ? " is-chat-active" : ""}`}
       immersive={immersive}
       sidebarOpen={sidebarOpen}
       onCloseSidebar={toggleSidebar}
@@ -81,7 +83,10 @@ function AppShell() {
           aria-label="Memuat"
         />
       )}
-      <div key={outlet ? "outlet" : currentTab} className="motion-page-enter w-full">
+      <div
+        key={outlet ? "outlet" : currentTab}
+        className={`motion-page-enter w-full${isChatTab ? " h-full flex flex-col flex-1" : ""}`}
+      >
         {outlet ?? renderActiveView()}
       </div>
     </DashboardShell>
