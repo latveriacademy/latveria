@@ -4988,6 +4988,49 @@ body:has(.latveria-app-shell) #root {
   text-align: center;
 }
 
+/* Floating chat button on mobile (bottom-left) */
+.floating-chat-btn {
+  position: fixed;
+  left: 16px;
+  bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: var(--accent-gold);
+  color: var(--bg-app);
+  border: 1px solid var(--accent-gold-hover);
+  box-shadow: 0 4px 16px var(--accent-gold-glow);
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.floating-chat-btn:hover {
+  background: var(--accent-gold-hover);
+  transform: scale(1.06);
+}
+
+.floating-chat-btn:active {
+  transform: scale(0.95);
+}
+
+.floating-chat-btn:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .floating-chat-btn {
+    display: flex;
+  }
+}
+
 /* ==========================================================================
    RESPONSIVE DESIGN BREAKPOINTS
    ========================================================================== */

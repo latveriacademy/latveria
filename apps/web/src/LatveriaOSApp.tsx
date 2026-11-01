@@ -15,6 +15,7 @@ import { BattleWorldView } from "./views/tryout/BattleWorldView";
 import { WarriorBattleView } from "./views/WarriorBattleView";
 import { ChatView } from "./views/chat/ChatView";
 import { ConnectionsView } from "./views/social/ConnectionsView";
+import { FloatingChatButton } from "./components/chat/FloatingChatButton";
 import "./learner-copy.css";
 import { useMatch, useNavigation, useOutlet } from "react-router";
 import { DashboardShell } from "./components/ui/dashboard-shell";
@@ -67,6 +68,7 @@ function AppShell() {
       bottomNav={!immersive && <BottomNav />}
       overlays={
         <>
+          {!immersive && <FloatingChatButton />}
           <LexiconDrawer />
           <ToastNotification />
         </>
