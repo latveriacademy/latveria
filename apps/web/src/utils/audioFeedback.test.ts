@@ -31,6 +31,7 @@ describe("SoundEngine", () => {
     sound.playClick();
     sound.playSelect();
     sound.playSuccess();
+    sound.playNotification();
     expect(initSpy).not.toHaveBeenCalled();
 
     sound.suppress(false);

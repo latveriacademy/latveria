@@ -112,6 +112,38 @@ class SoundEngine {
       // Silence on error
     }
   }
+
+  // Subtle two-tone chime for incoming notifications
+  playNotification() {
+    if (!this.isPlayable()) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      [
+        { freq: 659.25, time: now, dur: 0.12 },
+        { freq: 880.0, time: now + 0.08, dur: 0.22 },
+      ].forEach(({ freq, time, dur }) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, time);
+
+        gain.gain.setValueAtTime(0.045, time);
+        gain.gain.exponentialRampToValueAtTime(0.0005, time + dur);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(time);
+        osc.stop(time + dur + 0.01);
+      });
+    } catch {
+      // Silence on error
+    }
+  }
 }
 
 export const sound = new SoundEngine();

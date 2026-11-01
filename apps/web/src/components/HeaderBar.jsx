@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { DashboardHeader } from "./ui/dashboard-shell";
 import { AnimatedNumber } from "../lib/motion";
@@ -6,13 +6,16 @@ import { Flame, Award, UserRound, Settings, Bell } from "lucide-react";
 import { NotificationCenterModal } from "./social/NotificationCenterModal";
 import { api } from "../lib/api";
 import { newGlobalMessages } from "../views/chat/chat-notifications";
+import { sound } from "../utils/audioFeedback";
 
 export const HeaderBar = () => {
   const { user, currentTab, setCurrentTab, toggleSidebar, sidebarOpen } = useApp();
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(true);
   const [chatNotifications, setChatNotifications] = useState({ global: [], direct: [] });
+  const prevCountRef = useRef(null);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -37,20 +40,45 @@ export const HeaderBar = () => {
             )
           : [];
       const seenKey = `latveria_global_chat_seen_${user.userId}`;
-      const seenAt = localStorage.getItem(seenKey);
-      if (!seenAt) localStorage.setItem(seenKey, new Date().toISOString());
+      const seenAt = typeof localStorage !== "undefined" ? localStorage.getItem(seenKey) : null;
+      if (!seenAt && typeof localStorage !== "undefined") {
+        localStorage.setItem(seenKey, new Date().toISOString());
+      }
       const global =
         globalData.status === "fulfilled" && seenAt && currentTab !== "chat"
           ? newGlobalMessages(globalData.value.messages, user.userId, seenAt)
           : [];
-      if (currentTab === "chat") localStorage.setItem(seenKey, new Date().toISOString());
+      if (currentTab === "chat" && typeof localStorage !== "undefined") {
+        localStorage.setItem(seenKey, new Date().toISOString());
+      }
       setChatNotifications({ global, direct });
-      setUnreadCount(
+
+      const total =
         reqCount +
-          inviteCount +
-          global.length +
-          direct.reduce((count, item) => count + item.unreadCount, 0),
-      );
+        inviteCount +
+        global.length +
+        direct.reduce((count, item) => count + item.unreadCount, 0);
+
+      setUnreadCount(total);
+
+      const notifSeenKey = `latveria_notif_last_seen_count_${user.userId}`;
+      const lastSeen =
+        typeof localStorage !== "undefined" ? Number(localStorage.getItem(notifSeenKey) ?? -1) : -1;
+
+      if (total === 0) {
+        setHasInteracted(true);
+        if (typeof localStorage !== "undefined") localStorage.setItem(notifSeenKey, "0");
+      } else if (total > lastSeen) {
+        setHasInteracted(false);
+      } else {
+        setHasInteracted(true);
+      }
+
+      // Play audio notification when new notification arrives (not on initial mount)
+      if (prevCountRef.current !== null && total > prevCountRef.current) {
+        sound.playNotification();
+      }
+      prevCountRef.current = total;
     } catch {
       // ignore
     }
@@ -133,22 +161,41 @@ export const HeaderBar = () => {
       <button
         type="button"
         id="notification-center-btn"
-        className="header-tool-btn relative transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95"
-        onClick={() => setNotifOpen(true)}
-        title={unreadCount > 0 ? `${unreadCount} notifikasi baru` : "Pusat Notifikasi"}
+        className="header-tool-btn relative transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 active:scale-95 cursor-pointer"
+        onClick={() => {
+          setHasInteracted(true);
+          if (typeof localStorage !== "undefined") {
+            localStorage.setItem(
+              `latveria_notif_last_seen_count_${user.userId}`,
+              String(unreadCount),
+            );
+          }
+          setNotifOpen(true);
+        }}
+        title={unreadCount > 0 ? `${unreadCount} notifikasi` : "Pusat Notifikasi"}
         aria-label="Buka Notifikasi"
       >
         <Bell size={16} className="transition-transform duration-200" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-gold text-black text-[9px] font-mono font-bold flex items-center justify-center border border-[var(--surface)] shadow-sm animate-pulse">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+        {unreadCount > 0 && !hasInteracted && (
+          <span
+            className="absolute top-1.5 right-1.5 size-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)] animate-pulse"
+            data-testid="notification-red-dot"
+          />
         )}
       </button>
 
       <NotificationCenterModal
         isOpen={notifOpen}
-        onClose={() => setNotifOpen(false)}
+        onClose={() => {
+          setNotifOpen(false);
+          setHasInteracted(true);
+          if (typeof localStorage !== "undefined") {
+            localStorage.setItem(
+              `latveria_notif_last_seen_count_${user.userId}`,
+              String(unreadCount),
+            );
+          }
+        }}
         onCountChange={fetchUnreadCount}
         chatNotifications={chatNotifications}
       />
