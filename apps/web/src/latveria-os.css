@@ -4988,10 +4988,10 @@ body:has(.latveria-app-shell) #root {
   text-align: center;
 }
 
-/* Floating chat button on mobile (bottom-left) */
+/* Floating chat button on mobile (bottom-right) */
 .floating-chat-btn {
   position: fixed;
-  left: 16px;
+  right: 16px;
   bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px);
   z-index: 50;
   display: none;
