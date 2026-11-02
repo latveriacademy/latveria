@@ -18,6 +18,7 @@ import { chatSearchParams } from "./chat-search-params";
 
 export function ChatView() {
   const { user, setCurrentTab } = useApp();
+  const currentUserId = user.userId || user.id;
   const [searchParams, setSearchParams] = useSearchParams();
 
   const dmParam = searchParams.get("dm");
@@ -201,9 +202,10 @@ export function ChatView() {
                 }
 
                 setConversations((prev) => {
-                  const counterpartId = msg.senderId === user.id ? msg.recipientId! : msg.senderId;
+                  const counterpartId =
+                    msg.senderId === currentUserId ? msg.recipientId! : msg.senderId;
                   const idx = prev.findIndex((c) => c.userId === counterpartId);
-                  const isIncoming = msg.senderId !== user.id;
+                  const isIncoming = msg.senderId !== currentUserId;
 
                   if (idx >= 0) {
                     const updated = [...prev];
@@ -270,7 +272,7 @@ export function ChatView() {
       clearTimeout(reconnectTimeout);
       if (ws) ws.close();
     };
-  }, [activeTab, user.id, loadGlobalMessages, loadDmMessages, loadConversations]);
+  }, [activeTab, currentUserId, loadGlobalMessages, loadDmMessages, loadConversations]);
 
   const handleSendGlobal = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -470,7 +472,7 @@ export function ChatView() {
       <div className="flex-1 flex flex-col min-h-0">
         {activeTab === "global" ? (
           <GlobalChatRoom
-            currentUserId={user.id}
+            currentUserId={currentUserId}
             messages={globalMessages}
             loading={loadingGlobal}
             input={globalInput}
@@ -483,7 +485,7 @@ export function ChatView() {
           />
         ) : (
           <DirectMessageRoom
-            currentUserId={user.id}
+            currentUserId={currentUserId}
             conversations={conversations}
             selectedContact={selectedContact}
             onSelectContact={(contact) => {

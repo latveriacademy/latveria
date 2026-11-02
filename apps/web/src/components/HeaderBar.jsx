@@ -39,14 +39,15 @@ export const HeaderBar = () => {
               (conversation) => conversation.unreadCount > 0,
             )
           : [];
-      const seenKey = `latveria_global_chat_seen_${user.userId}`;
+      const userId = user.userId || user.id;
+      const seenKey = `latveria_global_chat_seen_${userId}`;
       const seenAt = typeof localStorage !== "undefined" ? localStorage.getItem(seenKey) : null;
       if (!seenAt && typeof localStorage !== "undefined") {
         localStorage.setItem(seenKey, new Date().toISOString());
       }
       const global =
         globalData.status === "fulfilled" && seenAt && currentTab !== "chat"
-          ? newGlobalMessages(globalData.value.messages, user.userId, seenAt)
+          ? newGlobalMessages(globalData.value.messages, userId, seenAt)
           : [];
       if (currentTab === "chat" && typeof localStorage !== "undefined") {
         localStorage.setItem(seenKey, new Date().toISOString());
@@ -61,7 +62,7 @@ export const HeaderBar = () => {
 
       setUnreadCount(total);
 
-      const notifSeenKey = `latveria_notif_last_seen_count_${user.userId}`;
+      const notifSeenKey = `latveria_notif_last_seen_count_${userId}`;
       const lastSeen =
         typeof localStorage !== "undefined" ? Number(localStorage.getItem(notifSeenKey) ?? -1) : -1;
 
