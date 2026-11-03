@@ -69,7 +69,7 @@ it("displays average time per question and total duration when provided", () => 
 });
 
 it("shows a re-attempt anti-farming explanation when isReattempt is true", () => {
-  const html = renderToStaticMarkup(
+  const htmlWithImprovement = renderToStaticMarkup(
     <PracticeResultsDialog
       open
       subject="Penalaran Umum"
@@ -77,12 +77,33 @@ it("shows a re-attempt anti-farming explanation when isReattempt is true", () =>
       correct={9}
       total={10}
       unanswered={0}
-      earnedXP={25}
+      earnedXP={45}
       isReattempt={true}
       onClose={() => {}}
       onExit={() => {}}
     />,
   );
-  expect(html).toContain("+25 EXP");
-  expect(html).toContain("Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar");
+  expect(htmlWithImprovement).toContain("+45 EXP");
+  expect(htmlWithImprovement).toContain(
+    "Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar.",
+  );
+
+  const htmlWithoutImprovement = renderToStaticMarkup(
+    <PracticeResultsDialog
+      open
+      subject="Penalaran Umum"
+      packageName="Logika 01"
+      correct={8}
+      total={10}
+      unanswered={0}
+      earnedXP={0}
+      isReattempt={true}
+      onClose={() => {}}
+      onExit={() => {}}
+    />,
+  );
+  expect(htmlWithoutImprovement).toContain("+0 EXP");
+  expect(htmlWithoutImprovement).toContain(
+    "Pengerjaan ulang paket: tidak ada EXP tambahan karena belum melampaui rekor terbaik sebelumnya.",
+  );
 });

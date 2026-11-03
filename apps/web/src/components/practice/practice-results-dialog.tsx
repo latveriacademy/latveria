@@ -105,7 +105,9 @@ export function PracticeResultsDialog({
             <span>EXP diperoleh</span>
             {isReattempt && (
               <p className="text-[11px] font-normal text-[var(--ink-muted)] mt-0.5">
-                Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar (+bonus).
+                {earnedXP > 0
+                  ? "Pengerjaan ulang paket: EXP dihitung dari peningkatan jawaban benar."
+                  : "Pengerjaan ulang paket: tidak ada EXP tambahan karena belum melampaui rekor terbaik sebelumnya."}
               </p>
             )}
           </div>

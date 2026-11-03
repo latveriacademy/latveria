@@ -3,8 +3,7 @@ export function practiceXP(correctCount: number, previousBestCorrect: number | n
     return 30 + correctCount * 15;
   }
   const improvement = Math.max(0, correctCount - previousBestCorrect);
-  const bonus = correctCount > 0 ? 10 : 5;
-  return improvement * 15 + bonus;
+  return improvement * 15;
 }
 
 export function levelProgress(totalXP: number) {
