@@ -218,6 +218,13 @@
       "when": 1793356177252,
       "tag": "0030_thick_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793768232325,
+      "tag": "0031_hard_skrulls",
+      "breakpoints": true
     }
   ]
 }

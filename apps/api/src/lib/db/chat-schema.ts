@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
 export const chatMessages = pgTable(
@@ -10,6 +10,10 @@ export const chatMessages = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     recipientId: text("recipient_id").references(() => user.id, { onDelete: "cascade" }), // null = global room, non-null = DM
     message: text("message").notNull(),
+    mediaUrl: text("media_url"),
+    isEdited: boolean("is_edited").default(false).notNull(),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    isDeleted: boolean("is_deleted").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
   },
