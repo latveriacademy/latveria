@@ -4,6 +4,7 @@ import type { ChatMessage } from "@latveria/shared";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Panel } from "../../components/ui/dashboard";
+import { formatChatDividerDate, formatFullTimestamp, isDifferentDay } from "./chat-date";
 
 interface GlobalChatRoomProps {
   currentUserId: string;
@@ -51,67 +52,85 @@ export function GlobalChatRoom({
             </p>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, idx) => {
             const isMe = msg.senderId === currentUserId;
-            return (
-              <div
-                key={msg.id}
-                className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-              >
-                {/* Avatar */}
-                <button
-                  type="button"
-                  disabled={isMe || !onInspectUser}
-                  onClick={() => onInspectUser?.(msg.senderId)}
-                  title={isMe ? "Kamu" : `Lihat profil ${msg.senderName}`}
-                  className={`size-8 rounded-full overflow-hidden bg-[var(--surface-subtle)] border border-[var(--edge)] shrink-0 flex items-center justify-center text-xs font-serif font-bold text-[var(--gold)] ring-1 ring-[var(--gold)]/20 ${
-                    !isMe ? "cursor-pointer hover:ring-[var(--gold)] transition-all" : ""
-                  }`}
-                >
-                  {msg.senderImage ? (
-                    <img
-                      src={msg.senderImage}
-                      alt={msg.senderName}
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    msg.senderName.slice(0, 2).toUpperCase()
-                  )}
-                </button>
+            const prevMsg = idx > 0 ? messages[idx - 1] : undefined;
+            const showDateDivider = isDifferentDay(msg.createdAt, prevMsg?.createdAt);
+            const dateLabel = showDateDivider ? formatChatDividerDate(msg.createdAt) : null;
 
-                {/* Message Bubble */}
-                <div
-                  className={`max-w-[82%] sm:max-w-[65%] rounded-2xl px-3.5 py-2.5 text-xs shadow-xs transition-colors ${
-                    isMe
-                      ? "bg-[var(--gold)]/15 border border-[var(--gold)]/35 text-[var(--ink)] rounded-tr-none"
-                      : "bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink)] rounded-tl-none"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <button
-                      type="button"
-                      disabled={isMe || !onInspectUser}
-                      onClick={() => onInspectUser?.(msg.senderId)}
-                      className={`font-serif font-bold text-xs truncate max-w-[140px] sm:max-w-[200px] text-left ${
-                        !isMe
-                          ? "hover:text-[var(--gold)] hover:underline cursor-pointer"
-                          : "text-[var(--gold)]"
-                      }`}
-                    >
-                      {isMe ? "Kamu" : msg.senderName}
-                    </button>
-                    {msg.senderRole === "admin" && (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/40 font-mono font-medium flex items-center gap-0.5">
-                        <Shield className="size-2.5" /> ADMIN
-                      </span>
-                    )}
-                    <span className="text-[10px] text-[var(--ink-muted)] ml-auto shrink-0 font-mono">
-                      {formatTime(msg.createdAt)}
+            return (
+              <React.Fragment key={msg.id}>
+                {showDateDivider && dateLabel && (
+                  <div
+                    data-testid="chat-date-divider"
+                    className="flex items-center justify-center my-3"
+                  >
+                    <span className="px-3 py-0.5 rounded-full text-[10px] font-mono font-medium bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink-muted)] shadow-2xs">
+                      {dateLabel}
                     </span>
                   </div>
-                  <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
+                )}
+                <div
+                  className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                >
+                  {/* Avatar */}
+                  <button
+                    type="button"
+                    disabled={isMe || !onInspectUser}
+                    onClick={() => onInspectUser?.(msg.senderId)}
+                    title={isMe ? "Kamu" : `Lihat profil ${msg.senderName}`}
+                    className={`size-8 rounded-full overflow-hidden bg-[var(--surface-subtle)] border border-[var(--edge)] shrink-0 flex items-center justify-center text-xs font-serif font-bold text-[var(--gold)] ring-1 ring-[var(--gold)]/20 ${
+                      !isMe ? "cursor-pointer hover:ring-[var(--gold)] transition-all" : ""
+                    }`}
+                  >
+                    {msg.senderImage ? (
+                      <img
+                        src={msg.senderImage}
+                        alt={msg.senderName}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      msg.senderName.slice(0, 2).toUpperCase()
+                    )}
+                  </button>
+
+                  {/* Message Bubble */}
+                  <div
+                    className={`max-w-[82%] sm:max-w-[65%] rounded-2xl px-3.5 py-2.5 text-xs shadow-xs transition-colors ${
+                      isMe
+                        ? "bg-[var(--gold)]/15 border border-[var(--gold)]/35 text-[var(--ink)] rounded-tr-none"
+                        : "bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink)] rounded-tl-none"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <button
+                        type="button"
+                        disabled={isMe || !onInspectUser}
+                        onClick={() => onInspectUser?.(msg.senderId)}
+                        className={`font-serif font-bold text-xs truncate max-w-[140px] sm:max-w-[200px] text-left ${
+                          !isMe
+                            ? "hover:text-[var(--gold)] hover:underline cursor-pointer"
+                            : "text-[var(--gold)]"
+                        }`}
+                      >
+                        {isMe ? "Kamu" : msg.senderName}
+                      </button>
+                      {msg.senderRole === "admin" && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/40 font-mono font-medium flex items-center gap-0.5">
+                          <Shield className="size-2.5" /> ADMIN
+                        </span>
+                      )}
+                      <span
+                        className="text-[10px] text-[var(--ink-muted)] ml-auto shrink-0 font-mono cursor-default"
+                        title={formatFullTimestamp(msg.createdAt)}
+                      >
+                        {formatTime(msg.createdAt)}
+                      </span>
+                    </div>
+                    <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })
         )}

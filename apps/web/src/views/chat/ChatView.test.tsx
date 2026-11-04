@@ -156,4 +156,47 @@ describe("ChatView", () => {
     expect(html).toContain("Ayo, gas!");
     expect(html).toContain("Mau duel?");
   });
+
+  it("renders date dividers when messages span multiple days in GlobalChatRoom", () => {
+    const messages: ChatMessage[] = [
+      {
+        id: "msg-day-1",
+        senderId: "uuid-user-2",
+        recipientId: null,
+        message: "Pesan kemarin",
+        createdAt: "2026-10-01T10:00:00Z",
+        senderName: "Budi",
+        senderRole: "user",
+        senderImage: null,
+        readAt: null,
+      },
+      {
+        id: "msg-day-2",
+        senderId: "uuid-user-1",
+        recipientId: null,
+        message: "Pesan hari ini",
+        createdAt: "2026-10-02T10:00:00Z",
+        senderName: "Test User",
+        senderRole: "user",
+        senderImage: null,
+        readAt: null,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <GlobalChatRoom
+        currentUserId="uuid-user-1"
+        messages={messages}
+        loading={false}
+        input=""
+        onInputChange={vi.fn()}
+        onSend={vi.fn()}
+        sending={false}
+        scrollRef={{ current: null }}
+        formatTime={() => "12:00"}
+      />,
+    );
+
+    expect(html).toContain('data-testid="chat-date-divider"');
+  });
 });

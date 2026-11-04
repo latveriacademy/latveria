@@ -15,6 +15,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { SearchBar } from "../../components/ui/search-bar";
 import { AppDialog } from "../../components/app-dialog";
+import { formatChatDividerDate, formatFullTimestamp, isDifferentDay } from "./chat-date";
 
 interface DirectMessageRoomProps {
   currentUserId: string;
@@ -291,37 +292,53 @@ export function DirectMessageRoom({
                   </p>
                 </div>
               ) : (
-                messages.map((msg) => {
+                messages.map((msg, idx) => {
                   const isMe = msg.senderId === currentUserId;
+                  const prevMsg = idx > 0 ? messages[idx - 1] : undefined;
+                  const showDateDivider = isDifferentDay(msg.createdAt, prevMsg?.createdAt);
+                  const dateLabel = showDateDivider ? formatChatDividerDate(msg.createdAt) : null;
+
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-                    >
-                      <div
-                        className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3.5 py-2 text-xs shadow-xs ${
-                          isMe
-                            ? "bg-[var(--gold)]/15 border border-[var(--gold)]/35 text-[var(--ink)] rounded-tr-none"
-                            : "bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink)] rounded-tl-none"
-                        }`}
-                      >
-                        <p className="leading-relaxed whitespace-pre-wrap break-words">
-                          {msg.message}
-                        </p>
+                    <React.Fragment key={msg.id}>
+                      {showDateDivider && dateLabel && (
                         <div
-                          className={`flex items-center gap-1 mt-1 text-[10px] font-mono ${
-                            isMe ? "justify-end text-[var(--gold)]/80" : "text-[var(--ink-muted)]"
+                          data-testid="chat-date-divider"
+                          className="flex items-center justify-center my-3"
+                        >
+                          <span className="px-3 py-0.5 rounded-full text-[10px] font-mono font-medium bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink-muted)] shadow-2xs">
+                            {dateLabel}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                      >
+                        <div
+                          className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3.5 py-2 text-xs shadow-xs ${
+                            isMe
+                              ? "bg-[var(--gold)]/15 border border-[var(--gold)]/35 text-[var(--ink)] rounded-tr-none"
+                              : "bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink)] rounded-tl-none"
                           }`}
                         >
-                          <span>{formatTime(msg.createdAt)}</span>
-                          {isMe && (
-                            <CheckCheck
-                              className={`size-3 ${msg.readAt ? "text-sage" : "opacity-50"}`}
-                            />
-                          )}
+                          <p className="leading-relaxed whitespace-pre-wrap break-words">
+                            {msg.message}
+                          </p>
+                          <div
+                            className={`flex items-center gap-1 mt-1 text-[10px] font-mono cursor-default ${
+                              isMe ? "justify-end text-[var(--gold)]/80" : "text-[var(--ink-muted)]"
+                            }`}
+                            title={formatFullTimestamp(msg.createdAt)}
+                          >
+                            <span>{formatTime(msg.createdAt)}</span>
+                            {isMe && (
+                              <CheckCheck
+                                className={`size-3 ${msg.readAt ? "text-sage" : "opacity-50"}`}
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })
               )}
