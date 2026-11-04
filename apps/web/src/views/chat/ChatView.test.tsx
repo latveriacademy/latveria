@@ -199,4 +199,63 @@ describe("ChatView", () => {
 
     expect(html).toContain('data-testid="chat-date-divider"');
   });
+
+  it("renders edited badge, deleted message text, and media attachments", () => {
+    const messages: ChatMessage[] = [
+      {
+        id: "msg-edited",
+        senderId: "uuid-user-1",
+        recipientId: null,
+        message: "Pesan yang sudah diedit",
+        isEdited: true,
+        createdAt: "2026-10-02T10:00:00Z",
+        senderName: "Test User",
+        senderRole: "user",
+        senderImage: null,
+        readAt: null,
+      },
+      {
+        id: "msg-deleted",
+        senderId: "uuid-user-2",
+        recipientId: null,
+        message: "Pesan ini telah dihapus",
+        isDeleted: true,
+        createdAt: "2026-10-02T10:05:00Z",
+        senderName: "Budi",
+        senderRole: "user",
+        senderImage: null,
+        readAt: null,
+      },
+      {
+        id: "msg-media",
+        senderId: "uuid-user-1",
+        recipientId: null,
+        message: "Lihat gambar ini:",
+        mediaUrl: "/api/chat/media/soal.png",
+        createdAt: "2026-10-02T10:10:00Z",
+        senderName: "Test User",
+        senderRole: "user",
+        senderImage: null,
+        readAt: null,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      <GlobalChatRoom
+        currentUserId="uuid-user-1"
+        messages={messages}
+        loading={false}
+        input=""
+        onInputChange={vi.fn()}
+        onSend={vi.fn()}
+        sending={false}
+        scrollRef={{ current: null }}
+        formatTime={() => "12:00"}
+      />,
+    );
+
+    expect(html).toContain("(diedit)");
+    expect(html).toContain("Pesan ini telah dihapus");
+    expect(html).toContain("/api/chat/media/soal.png");
+  });
 });
