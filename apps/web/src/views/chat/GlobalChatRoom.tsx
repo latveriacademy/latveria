@@ -1,12 +1,12 @@
-import React from "react";
-import { Globe, Loader2, Send, Shield } from "lucide-react";
+import React, { useState } from "react";
+import { Globe, Loader2, X } from "lucide-react";
 import type { ChatMessage } from "@latveria/shared";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
 import { Panel } from "../../components/ui/dashboard";
-import { formatChatDividerDate, formatFullTimestamp, isDifferentDay } from "./chat-date";
+import { formatChatDividerDate, isDifferentDay } from "./chat-date";
+import { ChatBubble } from "./ChatBubble";
+import { ChatInputBar } from "./ChatInputBar";
 
-interface GlobalChatRoomProps {
+export interface GlobalChatRoomProps {
   currentUserId: string;
   messages: ChatMessage[];
   loading: boolean;
@@ -17,6 +17,12 @@ interface GlobalChatRoomProps {
   scrollRef: React.RefObject<HTMLDivElement | null>;
   formatTime: (iso: string) => string;
   onInspectUser?: (userId: string) => void;
+  onEditMessage?: (id: string, newText: string) => Promise<void> | void;
+  onDeleteMessage?: (id: string) => Promise<void> | void;
+  mediaUrl?: string | null;
+  onMediaChange?: (url: string | null) => void;
+  uploadingMedia?: boolean;
+  onUploadMedia?: (file: File) => Promise<void> | void;
 }
 
 export function GlobalChatRoom({
@@ -30,14 +36,19 @@ export function GlobalChatRoom({
   scrollRef,
   formatTime,
   onInspectUser,
+  onEditMessage,
+  onDeleteMessage,
+  mediaUrl,
+  onMediaChange,
+  uploadingMedia,
+  onUploadMedia,
 }: GlobalChatRoomProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   return (
-    <Panel className="p-0 overflow-hidden flex flex-col flex-1 h-full min-h-0 border-[var(--edge)] bg-[var(--surface-elevated)] rounded-none md:rounded-2xl border-x-0 md:border-x border-y-0 md:border-y">
-      {/* Messages Area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
-      >
+    <Panel className="flex-1 flex flex-col min-h-0 p-0 overflow-hidden bg-[var(--surface)] border-[var(--edge)]">
+      {/* Messages Scroll Area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="h-full flex flex-col items-center justify-center gap-2.5 text-xs text-[var(--ink-muted)]">
             <Loader2 className="size-6 animate-spin text-[var(--gold)]" />
@@ -70,66 +81,15 @@ export function GlobalChatRoom({
                     </span>
                   </div>
                 )}
-                <div
-                  className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
-                >
-                  {/* Avatar */}
-                  <button
-                    type="button"
-                    disabled={isMe || !onInspectUser}
-                    onClick={() => onInspectUser?.(msg.senderId)}
-                    title={isMe ? "Kamu" : `Lihat profil ${msg.senderName}`}
-                    className={`size-8 rounded-full overflow-hidden bg-[var(--surface-subtle)] border border-[var(--edge)] shrink-0 flex items-center justify-center text-xs font-serif font-bold text-[var(--gold)] ring-1 ring-[var(--gold)]/20 ${
-                      !isMe ? "cursor-pointer hover:ring-[var(--gold)] transition-all" : ""
-                    }`}
-                  >
-                    {msg.senderImage ? (
-                      <img
-                        src={msg.senderImage}
-                        alt={msg.senderName}
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      msg.senderName.slice(0, 2).toUpperCase()
-                    )}
-                  </button>
-
-                  {/* Message Bubble */}
-                  <div
-                    className={`max-w-[82%] sm:max-w-[65%] rounded-2xl px-3.5 py-2.5 text-xs shadow-xs transition-colors ${
-                      isMe
-                        ? "bg-[var(--gold)]/15 border border-[var(--gold)]/35 text-[var(--ink)] rounded-tr-none"
-                        : "bg-[var(--surface-subtle)] border border-[var(--edge)] text-[var(--ink)] rounded-tl-none"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                      <button
-                        type="button"
-                        disabled={isMe || !onInspectUser}
-                        onClick={() => onInspectUser?.(msg.senderId)}
-                        className={`font-serif font-bold text-xs truncate max-w-[140px] sm:max-w-[200px] text-left ${
-                          !isMe
-                            ? "hover:text-[var(--gold)] hover:underline cursor-pointer"
-                            : "text-[var(--gold)]"
-                        }`}
-                      >
-                        {isMe ? "Kamu" : msg.senderName}
-                      </button>
-                      {msg.senderRole === "admin" && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/40 font-mono font-medium flex items-center gap-0.5">
-                          <Shield className="size-2.5" /> ADMIN
-                        </span>
-                      )}
-                      <span
-                        className="text-[10px] text-[var(--ink-muted)] ml-auto shrink-0 font-mono cursor-default"
-                        title={formatFullTimestamp(msg.createdAt)}
-                      >
-                        {formatTime(msg.createdAt)}
-                      </span>
-                    </div>
-                    <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
-                  </div>
-                </div>
+                <ChatBubble
+                  message={msg}
+                  isMe={isMe}
+                  formatTime={formatTime}
+                  onInspectUser={onInspectUser}
+                  onEditMessage={onEditMessage}
+                  onDeleteMessage={onDeleteMessage}
+                  onPreviewImage={(url) => setPreviewImage(url)}
+                />
               </React.Fragment>
             );
           })
@@ -137,33 +97,44 @@ export function GlobalChatRoom({
       </div>
 
       {/* Input Section */}
-      <form
-        onSubmit={onSend}
-        className="shrink-0 p-2.5 sm:p-3 bg-[var(--surface-subtle)] border-t border-[var(--edge)] flex items-center gap-2"
-      >
-        <Input
-          value={input}
-          onChange={(e) => onInputChange(e.target.value)}
-          placeholder="Tulis pesan ke saluran publik… (Tekan Enter untuk kirim)"
-          disabled={sending}
-          className="text-xs bg-[var(--surface)] border-[var(--edge)] focus:border-[var(--gold)]"
-        />
-        <Button
-          type="submit"
-          disabled={sending || !input.trim()}
-          size="sm"
-          className="bg-[var(--gold)] text-black hover:bg-[var(--gold)]/90 font-medium px-4 h-9 shrink-0"
+      <ChatInputBar
+        input={input}
+        onInputChange={onInputChange}
+        onSend={onSend}
+        sending={sending}
+        placeholder="Tulis pesan ke saluran publik… (Tekan Enter untuk kirim)"
+        mediaUrl={mediaUrl}
+        onMediaChange={onMediaChange}
+        uploadingMedia={uploadingMedia}
+        onUploadMedia={onUploadMedia}
+      />
+
+      {/* Lightbox Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setPreviewImage(null)}
         >
-          {sending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <>
-              <Send className="size-3.5 mr-1.5" />
-              <span>Kirim</span>
-            </>
-          )}
-        </Button>
-      </form>
+          <div
+            className="relative max-w-3xl max-h-[90vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 p-1.5 text-white/80 hover:text-white cursor-pointer"
+              title="Tutup"
+            >
+              <X className="size-6" />
+            </button>
+            <img
+              src={previewImage}
+              alt="Pratinjau Lampiran"
+              className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </Panel>
   );
 }
