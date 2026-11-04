@@ -143,6 +143,43 @@ export async function uploadLibraryThumbnail(file: unknown) {
   return { url, filename };
 }
 
+export async function uploadChatAttachment(file: unknown) {
+  if (!file || !(file instanceof File)) {
+    throw new HTTPException(400, { message: "File gambar tidak ditemukan." });
+  }
+
+  const mime = file.type.toLowerCase();
+  const ext = MIME_EXTENSIONS[mime];
+  if (
+    !ext ||
+    !ALLOWED_AVATAR_MIME_TYPES.includes(mime as (typeof ALLOWED_AVATAR_MIME_TYPES)[number])
+  ) {
+    throw new HTTPException(400, {
+      message: "Format gambar tidak didukung. Gunakan format JPG, PNG, WebP, atau GIF.",
+    });
+  }
+
+  const maxBytes = 5 * 1024 * 1024; // 5 MB
+  if (file.size > maxBytes) {
+    throw new HTTPException(400, {
+      message: "Ukuran gambar melebihi batas maksimal 5 MB.",
+    });
+  }
+
+  await ensureBucketExists();
+  const filename = `chat-media-${Date.now()}-${crypto.randomUUID().slice(0, 8)}${ext}`;
+  const s3 = getS3Client();
+  const buffer = await file.arrayBuffer();
+  await s3.file(filename).write(buffer, { type: file.type });
+
+  const publicBase = (process.env.S3_PUBLIC_URL || "/api/chat/media").trim().replace(/\/+$/, "");
+  const url = publicBase.startsWith("http")
+    ? `${publicBase}/${filename}`
+    : `/api/chat/media/${filename}`;
+
+  return { url, filename };
+}
+
 export async function uploadAvatar(userId: string, file: unknown) {
   if (!file || !(file instanceof File)) {
     throw new HTTPException(400, { message: "File foto profil tidak ditemukan." });

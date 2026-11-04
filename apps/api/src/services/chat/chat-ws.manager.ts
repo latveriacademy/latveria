@@ -88,3 +88,64 @@ export function notifyDmRead(readerId: string, targetUserId: string) {
     }
   }
 }
+
+export function broadcastMessageUpdated(message: ChatMessage) {
+  const payload = JSON.stringify({
+    type: "chat:message_updated",
+    message,
+  } satisfies ChatWsServerMessage);
+
+  if (!message.recipientId) {
+    for (const socket of allSockets) {
+      try {
+        socket.send(payload);
+      } catch (err) {
+        console.error(`[ChatWS] Failed to broadcast message update to ${socket.data.userId}:`, err);
+      }
+    }
+  } else {
+    const targets = new Set<ChatWebSocket>();
+    for (const ws of userSockets.get(message.senderId) ?? []) targets.add(ws);
+    for (const ws of userSockets.get(message.recipientId) ?? []) targets.add(ws);
+    for (const socket of targets) {
+      try {
+        socket.send(payload);
+      } catch (err) {
+        console.error(`[ChatWS] Failed to send message update to ${socket.data.userId}:`, err);
+      }
+    }
+  }
+}
+
+export function broadcastMessageDeleted(
+  messageId: string,
+  recipientId: string | null,
+  senderId: string,
+) {
+  const payload = JSON.stringify({
+    type: "chat:message_deleted",
+    messageId,
+    recipientId,
+  } satisfies ChatWsServerMessage);
+
+  if (!recipientId) {
+    for (const socket of allSockets) {
+      try {
+        socket.send(payload);
+      } catch (err) {
+        console.error(`[ChatWS] Failed to broadcast message delete to ${socket.data.userId}:`, err);
+      }
+    }
+  } else {
+    const targets = new Set<ChatWebSocket>();
+    for (const ws of userSockets.get(senderId) ?? []) targets.add(ws);
+    for (const ws of userSockets.get(recipientId) ?? []) targets.add(ws);
+    for (const socket of targets) {
+      try {
+        socket.send(payload);
+      } catch (err) {
+        console.error(`[ChatWS] Failed to send message delete to ${socket.data.userId}:`, err);
+      }
+    }
+  }
+}

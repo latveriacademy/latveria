@@ -16,6 +16,17 @@ publicAvatarHandler.get("/api/avatar/:key", async (c) => {
   });
 });
 
+publicAvatarHandler.get("/api/chat/media/:key", async (c) => {
+  const result = await getAvatarStream(c.req.param("key"));
+  if (!result) {
+    return c.notFound();
+  }
+  return c.newResponse(result.stream, 200, {
+    "Content-Type": result.type,
+    "Cache-Control": "public, max-age=86400, immutable",
+  });
+});
+
 export const learnerAvatarHandler = new Hono<AppEnv>();
 
 learnerAvatarHandler.post("/api/learner/profile/avatar", async (c) => {

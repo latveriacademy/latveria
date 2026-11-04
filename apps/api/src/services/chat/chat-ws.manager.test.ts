@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   broadcastDmMessage,
   broadcastGlobalMessage,
+  broadcastMessageDeleted,
+  broadcastMessageUpdated,
   notifyDmRead,
   registerChatSocket,
   unregisterChatSocket,
@@ -109,5 +111,50 @@ describe("Chat WebSocket Manager", () => {
     unregisterChatSocket(socket1);
     unregisterChatSocket(socket2);
     unregisterChatSocket(socket3);
+  });
+
+  it("broadcasts message update and deletion correctly", () => {
+    const send1 = vi.fn();
+    const send2 = vi.fn();
+
+    const socket1 = {
+      data: { userId: "user-1", name: "User 1", role: "user" },
+      send: send1,
+    } as unknown as ChatWebSocket;
+
+    const socket2 = {
+      data: { userId: "user-2", name: "User 2", role: "user" },
+      send: send2,
+    } as unknown as ChatWebSocket;
+
+    registerChatSocket(socket1);
+    registerChatSocket(socket2);
+
+    const updatedGlobalMsg = {
+      id: "msg-1",
+      senderId: "user-1",
+      senderName: "User 1",
+      senderImage: null,
+      senderRole: "user",
+      recipientId: null,
+      message: "Hello world (edited)",
+      isEdited: true,
+      editedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    };
+
+    broadcastMessageUpdated(updatedGlobalMsg);
+    expect(send1).toHaveBeenCalledOnce();
+    expect(send2).toHaveBeenCalledOnce();
+    expect(JSON.parse(send1.mock.calls[0][0]).type).toBe("chat:message_updated");
+
+    broadcastMessageDeleted("msg-1", null, "user-1");
+    expect(send1).toHaveBeenCalledTimes(2);
+    expect(send2).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(send1.mock.calls[1][0]).type).toBe("chat:message_deleted");
+
+    unregisterChatSocket(socket1);
+    unregisterChatSocket(socket2);
   });
 });

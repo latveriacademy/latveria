@@ -4,7 +4,13 @@ import type { ChatConversationSummary, ChatMessage } from "@latveria/shared";
 import { getDb } from "../../lib/db";
 import { user } from "../../lib/db/auth-schema";
 import { chatMessages, friendships } from "../../lib/db/schema";
-import { broadcastDmMessage, broadcastGlobalMessage, notifyDmRead } from "./chat-ws.manager";
+import {
+  broadcastDmMessage,
+  broadcastGlobalMessage,
+  broadcastMessageDeleted,
+  broadcastMessageUpdated,
+  notifyDmRead,
+} from "./chat-ws.manager";
 
 export async function getGlobalMessages(limit = 50, before?: string): Promise<ChatMessage[]> {
   const db = getDb();
@@ -26,6 +32,10 @@ export async function getGlobalMessages(limit = 50, before?: string): Promise<Ch
       senderCodename: user.codename,
       recipientId: chatMessages.recipientId,
       message: chatMessages.message,
+      mediaUrl: chatMessages.mediaUrl,
+      isEdited: chatMessages.isEdited,
+      editedAt: chatMessages.editedAt,
+      isDeleted: chatMessages.isDeleted,
       createdAt: chatMessages.createdAt,
       readAt: chatMessages.readAt,
     })
@@ -38,6 +48,7 @@ export async function getGlobalMessages(limit = 50, before?: string): Promise<Ch
   return rows.reverse().map((r) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
+    editedAt: r.editedAt ? r.editedAt.toISOString() : null,
     readAt: r.readAt ? r.readAt.toISOString() : null,
   }));
 }
@@ -45,6 +56,7 @@ export async function getGlobalMessages(limit = 50, before?: string): Promise<Ch
 export async function sendGlobalMessage(
   senderId: string,
   messageText: string,
+  mediaUrl?: string | null,
 ): Promise<ChatMessage> {
   const db = getDb();
   const [sender] = await db.select().from(user).where(eq(user.id, senderId));
@@ -53,8 +65,9 @@ export async function sendGlobalMessage(
   }
 
   const trimmed = messageText.trim();
-  if (!trimmed) {
-    throw new HTTPException(400, { message: "Pesan tidak boleh kosong." });
+  const trimmedMedia = mediaUrl?.trim() || null;
+  if (!trimmed && !trimmedMedia) {
+    throw new HTTPException(400, { message: "Pesan atau gambar tidak boleh kosong." });
   }
 
   const [row] = await db
@@ -63,6 +76,7 @@ export async function sendGlobalMessage(
       senderId,
       recipientId: null,
       message: trimmed,
+      mediaUrl: trimmedMedia,
     })
     .returning();
 
@@ -75,6 +89,10 @@ export async function sendGlobalMessage(
     senderCodename: sender.codename,
     recipientId: null,
     message: row.message,
+    mediaUrl: row.mediaUrl,
+    isEdited: false,
+    editedAt: null,
+    isDeleted: false,
     createdAt: row.createdAt.toISOString(),
     readAt: null,
   };
@@ -93,6 +111,7 @@ export async function getConversations(userId: string): Promise<ChatConversation
       senderId: chatMessages.senderId,
       recipientId: chatMessages.recipientId,
       message: chatMessages.message,
+      mediaUrl: chatMessages.mediaUrl,
       createdAt: chatMessages.createdAt,
       readAt: chatMessages.readAt,
     })
@@ -155,8 +174,9 @@ export async function getConversations(userId: string): Promise<ChatConversation
     const counterpartId = m.senderId === userId ? m.recipientId : m.senderId;
 
     if (!lastMessageMap.has(counterpartId)) {
+      const displayMsg = m.message || (m.mediaUrl ? "📷 [Gambar]" : "");
       lastMessageMap.set(counterpartId, {
-        message: m.message,
+        message: displayMsg,
         createdAt: m.createdAt,
       });
     }
@@ -230,6 +250,10 @@ export async function getDmMessages(
       senderCodename: user.codename,
       recipientId: chatMessages.recipientId,
       message: chatMessages.message,
+      mediaUrl: chatMessages.mediaUrl,
+      isEdited: chatMessages.isEdited,
+      editedAt: chatMessages.editedAt,
+      isDeleted: chatMessages.isDeleted,
       createdAt: chatMessages.createdAt,
       readAt: chatMessages.readAt,
     })
@@ -245,6 +269,7 @@ export async function getDmMessages(
   return rows.reverse().map((r) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
+    editedAt: r.editedAt ? r.editedAt.toISOString() : null,
     readAt: r.readAt ? r.readAt.toISOString() : null,
   }));
 }
@@ -253,6 +278,7 @@ export async function sendDmMessage(
   senderId: string,
   recipientId: string,
   messageText: string,
+  mediaUrl?: string | null,
 ): Promise<ChatMessage> {
   const db = getDb();
   if (senderId === recipientId) {
@@ -270,8 +296,9 @@ export async function sendDmMessage(
   }
 
   const trimmed = messageText.trim();
-  if (!trimmed) {
-    throw new HTTPException(400, { message: "Pesan tidak boleh kosong." });
+  const trimmedMedia = mediaUrl?.trim() || null;
+  if (!trimmed && !trimmedMedia) {
+    throw new HTTPException(400, { message: "Pesan atau gambar tidak boleh kosong." });
   }
 
   const [row] = await db
@@ -280,6 +307,7 @@ export async function sendDmMessage(
       senderId,
       recipientId,
       message: trimmed,
+      mediaUrl: trimmedMedia,
     })
     .returning();
 
@@ -292,12 +320,122 @@ export async function sendDmMessage(
     senderCodename: sender.codename,
     recipientId,
     message: row.message,
+    mediaUrl: row.mediaUrl,
+    isEdited: false,
+    editedAt: null,
+    isDeleted: false,
     createdAt: row.createdAt.toISOString(),
     readAt: null,
   };
 
   broadcastDmMessage(senderId, recipientId, chatMessage);
   return chatMessage;
+}
+
+export async function editMessage(
+  userId: string,
+  messageId: string,
+  newText: string,
+): Promise<ChatMessage> {
+  const db = getDb();
+  const trimmed = newText.trim();
+  if (!trimmed) {
+    throw new HTTPException(400, { message: "Pesan tidak boleh kosong." });
+  }
+
+  const [existing] = await db
+    .select({
+      id: chatMessages.id,
+      senderId: chatMessages.senderId,
+      recipientId: chatMessages.recipientId,
+      message: chatMessages.message,
+      mediaUrl: chatMessages.mediaUrl,
+      isDeleted: chatMessages.isDeleted,
+      createdAt: chatMessages.createdAt,
+      readAt: chatMessages.readAt,
+      senderName: user.name,
+      senderImage: user.image,
+      senderRole: user.role,
+      senderCodename: user.codename,
+    })
+    .from(chatMessages)
+    .innerJoin(user, eq(chatMessages.senderId, user.id))
+    .where(eq(chatMessages.id, messageId));
+
+  if (!existing) {
+    throw new HTTPException(404, { message: "Pesan tidak ditemukan." });
+  }
+  if (existing.senderId !== userId) {
+    throw new HTTPException(403, { message: "Hanya pengirim yang dapat mengedit pesan." });
+  }
+  if (existing.isDeleted) {
+    throw new HTTPException(400, { message: "Pesan yang telah dihapus tidak dapat diedit." });
+  }
+
+  const now = new Date();
+  await db
+    .update(chatMessages)
+    .set({
+      message: trimmed,
+      isEdited: true,
+      editedAt: now,
+    })
+    .where(eq(chatMessages.id, messageId));
+
+  const updatedMessage: ChatMessage = {
+    id: existing.id,
+    senderId: existing.senderId,
+    senderName: existing.senderName,
+    senderImage: existing.senderImage,
+    senderRole: existing.senderRole,
+    senderCodename: existing.senderCodename,
+    recipientId: existing.recipientId,
+    message: trimmed,
+    mediaUrl: existing.mediaUrl,
+    isEdited: true,
+    editedAt: now.toISOString(),
+    isDeleted: false,
+    createdAt: existing.createdAt.toISOString(),
+    readAt: existing.readAt ? existing.readAt.toISOString() : null,
+  };
+
+  broadcastMessageUpdated(updatedMessage);
+  return updatedMessage;
+}
+
+export async function deleteMessage(
+  userId: string,
+  messageId: string,
+): Promise<{ success: boolean; messageId: string }> {
+  const db = getDb();
+  const [existing] = await db
+    .select({
+      id: chatMessages.id,
+      senderId: chatMessages.senderId,
+      recipientId: chatMessages.recipientId,
+      isDeleted: chatMessages.isDeleted,
+    })
+    .from(chatMessages)
+    .where(eq(chatMessages.id, messageId));
+
+  if (!existing) {
+    throw new HTTPException(404, { message: "Pesan tidak ditemukan." });
+  }
+  if (existing.senderId !== userId) {
+    throw new HTTPException(403, { message: "Hanya pengirim yang dapat menghapus pesan." });
+  }
+
+  await db
+    .update(chatMessages)
+    .set({
+      isDeleted: true,
+      message: "Pesan ini telah dihapus",
+      mediaUrl: null,
+    })
+    .where(eq(chatMessages.id, messageId));
+
+  broadcastMessageDeleted(messageId, existing.recipientId, existing.senderId);
+  return { success: true, messageId };
 }
 
 export async function markDmAsRead(userId: string, targetUserId: string) {

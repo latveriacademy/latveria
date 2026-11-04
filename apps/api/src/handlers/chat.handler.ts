@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { sendChatMessageSchema } from "@latveria/shared";
+import { editChatMessageSchema, sendChatMessageSchema } from "@latveria/shared";
 import type { AppEnv } from "../types";
 import {
+  deleteMessage,
+  editMessage,
   getConversations,
   getDmMessages,
   getGlobalMessages,
@@ -10,6 +12,7 @@ import {
   sendDmMessage,
   sendGlobalMessage,
 } from "../services/chat/chat.service";
+import { uploadChatAttachment } from "../services/storage/storage.service";
 
 export const chatHandler = new Hono<AppEnv>();
 
@@ -32,7 +35,7 @@ chatHandler.post("/api/learner/chat/global", async (c) => {
     });
   }
 
-  const message = await sendGlobalMessage(user.id, parsed.data.message);
+  const message = await sendGlobalMessage(user.id, parsed.data.message, parsed.data.mediaUrl);
   return c.json({ message }, 201);
 });
 
@@ -66,8 +69,48 @@ chatHandler.post("/api/learner/chat/dm/:userId", async (c) => {
     });
   }
 
-  const message = await sendDmMessage(user.id, targetUserId, parsed.data.message);
+  const message = await sendDmMessage(
+    user.id,
+    targetUserId,
+    parsed.data.message,
+    parsed.data.mediaUrl,
+  );
   return c.json({ message }, 201);
+});
+
+// Edit pesan chat sendiri
+chatHandler.patch("/api/learner/chat/messages/:id", async (c) => {
+  const user = c.get("user");
+  const messageId = c.req.param("id");
+  const body = await c.req.json().catch(() => null);
+  const parsed = editChatMessageSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new HTTPException(400, {
+      message: parsed.error.issues[0]?.message ?? "Pesan tidak valid.",
+    });
+  }
+
+  const message = await editMessage(user.id, messageId, parsed.data.message);
+  return c.json({ message });
+});
+
+// Hapus pesan chat sendiri
+chatHandler.delete("/api/learner/chat/messages/:id", async (c) => {
+  const user = c.get("user");
+  const messageId = c.req.param("id");
+  const result = await deleteMessage(user.id, messageId);
+  return c.json(result);
+});
+
+// Upload media/gambar chat
+chatHandler.post("/api/learner/chat/upload", async (c) => {
+  const formData = await c.req.formData().catch(() => null);
+  if (!formData) {
+    throw new HTTPException(400, { message: "Data form upload tidak valid." });
+  }
+  const file = formData.get("file") ?? formData.get("image");
+  const result = await uploadChatAttachment(file);
+  return c.json(result);
 });
 
 // Tandai pesan DM sebagai dibaca
