@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router";
-import { Globe, Users } from "lucide-react";
 import type {
   ChatConversationSummary,
   ChatMessage,
   ChatWsClientMessage,
-  ChatWsServerMessage,
   FriendUserDto,
 } from "@latveria/shared";
 import { useApp } from "../../context/AppContext";
 import { api } from "../../lib/api";
-import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { PublicProfileModal } from "../../components/social/PublicProfileModal";
 import { GlobalChatRoom } from "./GlobalChatRoom";
 import { DirectMessageRoom } from "./DirectMessageRoom";
+import { formatMessageTime } from "./chat-date";
 import { chatSearchParams } from "./chat-search-params";
+import { ChatNavHeader } from "./ChatNavHeader";
+import { deleteChatMessage, editChatMessage, sendChatMessageApi, uploadChatFile } from "./chat-api";
+import { useChatSocket } from "./use-chat-socket";
+import { useChatSwipe } from "./use-chat-swipe";
 
 export function ChatView() {
   const { user, setCurrentTab } = useApp();
@@ -43,16 +45,19 @@ export function ChatView() {
   const [friendsList, setFriendsList] = useState<FriendUserDto[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
 
+  // Lampiran media chat
+  const [globalMediaUrl, setGlobalMediaUrl] = useState<string | null>(null);
+  const [uploadingGlobalMedia, setUploadingGlobalMedia] = useState(false);
+  const [dmMediaUrl, setDmMediaUrl] = useState<string | null>(null);
+  const [uploadingDmMedia, setUploadingDmMedia] = useState(false);
+
   const globalScrollRef = useRef<HTMLDivElement>(null);
   const dmScrollRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const selectedContactIdRef = useRef<string | null>(null);
   selectedContactIdRef.current = selectedContact?.userId ?? null;
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement | null>) => {
-    if (ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight;
-    }
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   };
 
   const loadGlobalMessages = useCallback(async () => {
@@ -90,11 +95,7 @@ export function ChatView() {
       if (selectedContactIdRef.current !== contactId) return;
       setDmMessages((prev) =>
         prev.length === data.messages.length &&
-        prev.every(
-          (message, index) =>
-            message.id === data.messages[index].id &&
-            message.readAt === data.messages[index].readAt,
-        )
+        prev.every((m, i) => m.id === data.messages[i].id && m.readAt === data.messages[i].readAt)
           ? prev
           : data.messages,
       );
@@ -164,98 +165,89 @@ export function ChatView() {
     }
   }, [selectedContact?.userId, loadDmMessages]);
 
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/api/chat/ws`;
-
-    let isSubscribed = true;
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-
-    function connect() {
-      try {
-        ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data) as ChatWsServerMessage;
-            if (data.type === "chat:message") {
-              const msg = data.message;
-              if (msg.recipientId === null) {
-                setGlobalMessages((prev) => {
-                  if (prev.some((m) => m.id === msg.id)) return prev;
-                  return [...prev, msg];
-                });
-                setTimeout(() => scrollToBottom(globalScrollRef), 40);
-              } else {
-                if (
-                  msg.senderId === selectedContactIdRef.current ||
-                  msg.recipientId === selectedContactIdRef.current
-                ) {
-                  setDmMessages((prev) => {
-                    if (prev.some((m) => m.id === msg.id)) return prev;
-                    return [...prev, msg];
-                  });
-                  setTimeout(() => scrollToBottom(dmScrollRef), 40);
-                }
-
-                setConversations((prev) => {
-                  const counterpartId =
-                    msg.senderId === currentUserId ? msg.recipientId! : msg.senderId;
-                  const idx = prev.findIndex((c) => c.userId === counterpartId);
-                  const isIncoming = msg.senderId !== currentUserId;
-
-                  if (idx >= 0) {
-                    const updated = [...prev];
-                    const item = updated[idx];
-                    updated.splice(idx, 1);
-                    updated.unshift({
-                      ...item,
-                      lastMessage: msg.message,
-                      lastMessageAt: msg.createdAt,
-                      unreadCount:
-                        isIncoming && selectedContactIdRef.current !== counterpartId
-                          ? item.unreadCount + 1
-                          : item.unreadCount,
-                    });
-                    return updated;
-                  } else {
-                    void loadConversations();
-                    return prev;
-                  }
-                });
-              }
-            } else if (data.type === "chat:read") {
-              setDmMessages((prev) =>
-                prev.map((m) =>
-                  m.recipientId === data.readerId && !m.readAt
-                    ? { ...m, readAt: new Date().toISOString() }
-                    : m,
-                ),
-              );
-            }
-          } catch (err) {
-            console.error("[ChatWS] Parse error:", err);
-          }
-        };
-
-        ws.onclose = () => {
-          if (isSubscribed) {
-            reconnectTimeout = setTimeout(connect, 3000);
-          }
-        };
-      } catch (err) {
-        console.error("[ChatWS] Init error:", err);
-        if (isSubscribed) {
-          reconnectTimeout = setTimeout(connect, 5000);
+  const handleMessageReceived = useCallback(
+    (msg: ChatMessage) => {
+      if (msg.recipientId === null) {
+        setGlobalMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+        setTimeout(() => scrollToBottom(globalScrollRef), 40);
+      } else {
+        if (
+          msg.senderId === selectedContactIdRef.current ||
+          msg.recipientId === selectedContactIdRef.current
+        ) {
+          setDmMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+          setTimeout(() => scrollToBottom(dmScrollRef), 40);
         }
+
+        setConversations((prev) => {
+          const counterpartId = msg.senderId === currentUserId ? msg.recipientId! : msg.senderId;
+          const idx = prev.findIndex((c) => c.userId === counterpartId);
+          const isIncoming = msg.senderId !== currentUserId;
+
+          if (idx >= 0) {
+            const updated = [...prev];
+            const item = updated[idx];
+            updated.splice(idx, 1);
+            updated.unshift({
+              ...item,
+              lastMessage: msg.message,
+              lastMessageAt: msg.createdAt,
+              unreadCount:
+                isIncoming && selectedContactIdRef.current !== counterpartId
+                  ? item.unreadCount + 1
+                  : item.unreadCount,
+            });
+            return updated;
+          } else {
+            void loadConversations();
+            return prev;
+          }
+        });
       }
-    }
+    },
+    [currentUserId, loadConversations],
+  );
 
-    connect();
+  const handleMessageUpdated = useCallback((msg: ChatMessage) => {
+    setGlobalMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
+    setDmMessages((prev) => prev.map((m) => (m.id === msg.id ? msg : m)));
+  }, []);
 
+  const handleMessageDeleted = useCallback((messageId: string) => {
+    setGlobalMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, isDeleted: true, message: "Pesan ini telah dihapus", mediaUrl: null }
+          : m,
+      ),
+    );
+    setDmMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, isDeleted: true, message: "Pesan ini telah dihapus", mediaUrl: null }
+          : m,
+      ),
+    );
+  }, []);
+
+  const handleReadReceived = useCallback((readerId: string) => {
+    setDmMessages((prev) =>
+      prev.map((m) =>
+        m.recipientId === readerId && !m.readAt ? { ...m, readAt: new Date().toISOString() } : m,
+      ),
+    );
+  }, []);
+
+  const wsRef = useChatSocket({
+    currentUserId,
+    selectedContactId: selectedContact?.userId ?? null,
+    onMessageReceived: handleMessageReceived,
+    onMessageUpdated: handleMessageUpdated,
+    onMessageDeleted: handleMessageDeleted,
+    onReadReceived: handleReadReceived,
+  });
+
+  useEffect(() => {
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
         if (activeTab === "global") {
@@ -266,36 +258,91 @@ export function ChatView() {
       }
     }, 6000);
 
-    return () => {
-      isSubscribed = false;
-      clearInterval(interval);
-      clearTimeout(reconnectTimeout);
-      if (ws) ws.close();
-    };
-  }, [activeTab, currentUserId, loadGlobalMessages, loadDmMessages, loadConversations]);
+    return () => clearInterval(interval);
+  }, [activeTab, loadGlobalMessages, loadDmMessages]);
+
+  const handleUploadMedia = async (isDm: boolean, file: File) => {
+    const setUploading = isDm ? setUploadingDmMedia : setUploadingGlobalMedia;
+    const setMedia = isDm ? setDmMediaUrl : setGlobalMediaUrl;
+    setUploading(true);
+    try {
+      const url = await uploadChatFile(file);
+      setMedia(url);
+    } catch (err) {
+      console.error("Gagal mengunggah gambar:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newText: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "chat:edit",
+          messageId,
+          message: newText,
+        } satisfies ChatWsClientMessage),
+      );
+    } else {
+      try {
+        const updated = await editChatMessage(messageId, newText);
+        setGlobalMessages((prev) => prev.map((m) => (m.id === messageId ? updated : m)));
+        setDmMessages((prev) => prev.map((m) => (m.id === messageId ? updated : m)));
+      } catch (err) {
+        console.error("Gagal memperbarui pesan:", err);
+      }
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "chat:delete",
+          messageId,
+        } satisfies ChatWsClientMessage),
+      );
+    } else {
+      try {
+        await deleteChatMessage(messageId);
+        setGlobalMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, isDeleted: true, message: "Pesan ini telah dihapus", mediaUrl: null }
+              : m,
+          ),
+        );
+        setDmMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? { ...m, isDeleted: true, message: "Pesan ini telah dihapus", mediaUrl: null }
+              : m,
+          ),
+        );
+      } catch (err) {
+        console.error("Gagal menghapus pesan:", err);
+      }
+    }
+  };
 
   const handleSendGlobal = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = globalInput.trim();
-    if (!text || sendingGlobal) return;
+    const media = globalMediaUrl;
+    if ((!text && !media) || sendingGlobal) return;
 
     setSendingGlobal(true);
     setGlobalInput("");
+    setGlobalMediaUrl(null);
 
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const payload: ChatWsClientMessage = {
-        type: "chat:send",
-        message: text,
-      };
-      wsRef.current.send(JSON.stringify(payload));
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "chat:send", message: text, mediaUrl: media }));
       setSendingGlobal(false);
     } else {
       try {
-        const res = await api<{ message: ChatMessage }>("/learner/chat/global", {
-          method: "POST",
-          body: JSON.stringify({ message: text }),
-        });
-        setGlobalMessages((prev) => [...prev, res.message]);
+        const msg = await sendChatMessageApi("/learner/chat/global", text, media);
+        setGlobalMessages((prev) => [...prev, msg]);
         setTimeout(() => scrollToBottom(globalScrollRef), 40);
       } catch (err) {
         console.error("Gagal mengirim pesan:", err);
@@ -309,29 +356,28 @@ export function ChatView() {
     if (e) e.preventDefault();
     if (!selectedContact) return;
     const text = dmInput.trim();
-    if (!text || sendingDm) return;
+    const media = dmMediaUrl;
+    if ((!text && !media) || sendingDm) return;
 
     setSendingDm(true);
     setDmInput("");
+    setDmMediaUrl(null);
 
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      const payload: ChatWsClientMessage = {
-        type: "chat:send",
-        recipientId: selectedContact.userId,
-        message: text,
-      };
-      wsRef.current.send(JSON.stringify(payload));
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "chat:send",
+          recipientId: selectedContact.userId,
+          message: text,
+          mediaUrl: media,
+        }),
+      );
       setSendingDm(false);
     } else {
       try {
-        const res = await api<{ message: ChatMessage }>(
-          `/learner/chat/dm/${encodeURIComponent(selectedContact.userId)}`,
-          {
-            method: "POST",
-            body: JSON.stringify({ message: text }),
-          },
-        );
-        setDmMessages((prev) => [...prev, res.message]);
+        const url = `/learner/chat/dm/${encodeURIComponent(selectedContact.userId)}`;
+        const msg = await sendChatMessageApi(url, text, media);
+        setDmMessages((prev) => [...prev, msg]);
         setTimeout(() => scrollToBottom(dmScrollRef), 40);
       } catch (err) {
         console.error("Gagal mengirim pesan DM:", err);
@@ -341,52 +387,24 @@ export function ChatView() {
     }
   };
 
-  const formatMessageTime = (isoString: string) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return "";
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
   // Dossier modal for inspecting student profiles
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
   // Horizontal swipe/drag gesture detection to switch tabs from center
-  const dragStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const { handlePointerDown, handlePointerUp, handlePointerCancel } = useChatSwipe({
+    activeTab,
+    onSwipeToDm: () => setActiveTab("dm"),
+    onSwipeToGlobal: () => {
+      setActiveTab("global");
+      setSearchParams((current) => chatSearchParams(current, null));
+    },
+  });
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement | null;
-    // Don't intercept inputs, textareas, buttons, or interactive links
-    if (target?.closest("input, textarea, button, a, [role='button']")) return;
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      time: Date.now(),
-    };
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!dragStartRef.current) return;
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
-    const deltaTime = Date.now() - dragStartRef.current.time;
-    dragStartRef.current = null;
-
-    // Must be predominantly horizontal gesture (deltaX > deltaY * 1.5)
-    // Distance >= 50px and performed within 600ms
-    if (Math.abs(deltaX) >= 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && deltaTime <= 600) {
-      if (deltaX < 0 && activeTab === "global") {
-        setActiveTab("dm");
-      } else if (deltaX > 0 && activeTab === "dm") {
-        setActiveTab("global");
-        setSearchParams((current) => chatSearchParams(current, null));
-      }
+  const handleTabChange = (nextTab: "global" | "dm") => {
+    setActiveTab(nextTab);
+    if (nextTab === "global") {
+      setSearchParams((current) => chatSearchParams(current, null));
     }
-  };
-
-  const handlePointerCancel = () => {
-    dragStartRef.current = null;
   };
 
   return (
@@ -397,76 +415,11 @@ export function ChatView() {
       onPointerCancel={handlePointerCancel}
       data-testid="chat-swipe-container"
     >
-      {/* Desktop Tabs Switcher */}
-      <div className="hidden md:block shrink-0">
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => {
-            const nextTab = val as "global" | "dm";
-            setActiveTab(nextTab);
-            if (nextTab === "global") {
-              setSearchParams((current) => chatSearchParams(current, null));
-            }
-          }}
-        >
-          <TabsList aria-label="Pilihan Obrolan" className="w-auto">
-            <TabsTrigger value="global">
-              <Globe className="size-3.5 mr-1" />
-              <span>Saluran Global</span>
-            </TabsTrigger>
-            <TabsTrigger value="dm" className="relative">
-              <Users className="size-3.5 mr-1" />
-              <span>Chat</span>
-              {conversations.some((c) => c.unreadCount > 0) && (
-                <span className="size-2 rounded-full bg-[var(--gold)] animate-pulse ml-1" />
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Mobile-only Custom Header with Global & Chat Tabs */}
-      <div
-        className="md:hidden shrink-0 bg-[var(--surface-subtle)] border-b border-[var(--edge)] px-3 pt-[calc(env(safe-area-inset-top,0px)+8px)] pb-2 flex items-center justify-between gap-2 shadow-xs z-10"
-        data-testid="mobile-chat-header"
-      >
-        <div className="flex items-center gap-1 flex-1 bg-[var(--surface-elevated)] p-1 rounded-md border border-[var(--edge)]">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("global");
-              setSearchParams((current) => chatSearchParams(current, null));
-            }}
-            className={`flex-1 py-1.5 px-3 rounded text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === "global"
-                ? "bg-[var(--gold)] text-black shadow-xs"
-                : "text-[var(--text-muted,#9ca3af)] hover:text-[var(--text-main,#f3f4f6)] opacity-90"
-            }`}
-          >
-            <Globe className="size-3.5" />
-            <span>Saluran Global</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("dm")}
-            className={`flex-1 py-1.5 px-3 rounded text-xs font-serif font-bold transition-all flex items-center justify-center gap-1.5 relative cursor-pointer ${
-              activeTab === "dm"
-                ? "bg-[var(--gold)] text-black shadow-xs"
-                : "text-[var(--text-muted,#9ca3af)] hover:text-[var(--text-main,#f3f4f6)] opacity-90"
-            }`}
-          >
-            <Users className="size-3.5" />
-            <span>Chat</span>
-            {conversations.some((c) => c.unreadCount > 0) && (
-              <span
-                className={`size-2 rounded-full ${
-                  activeTab === "dm" ? "bg-black" : "bg-red-500"
-                } animate-pulse ml-1`}
-              />
-            )}
-          </button>
-        </div>
-      </div>
+      <ChatNavHeader
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        hasUnreadDm={conversations.some((c) => c.unreadCount > 0)}
+      />
 
       {/* Main Chat Content */}
       <div className="flex-1 flex flex-col min-h-0">
@@ -482,6 +435,12 @@ export function ChatView() {
             scrollRef={globalScrollRef}
             formatTime={formatMessageTime}
             onInspectUser={setInspectUserId}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            mediaUrl={globalMediaUrl}
+            onMediaChange={setGlobalMediaUrl}
+            uploadingMedia={uploadingGlobalMedia}
+            onUploadMedia={(file) => handleUploadMedia(false, file)}
           />
         ) : (
           <DirectMessageRoom
@@ -510,6 +469,12 @@ export function ChatView() {
             onOpenFriends={loadFriends}
             onInspectUser={setInspectUserId}
             onBattleInvite={() => setCurrentTab("warrior")}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            mediaUrl={dmMediaUrl}
+            onMediaChange={setDmMediaUrl}
+            uploadingMedia={uploadingDmMedia}
+            onUploadMedia={(file) => handleUploadMedia(true, file)}
           />
         )}
       </div>
