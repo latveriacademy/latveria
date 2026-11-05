@@ -155,6 +155,8 @@ describe("ChatView", () => {
     expect(html).toContain("rounded-tr-none");
     expect(html).toContain("Ayo, gas!");
     expect(html).toContain("Mau duel?");
+    expect(html).toContain("md:w-80");
+    expect(html).toContain("hidden md:flex");
   });
 
   it("renders date dividers when messages span multiple days in GlobalChatRoom", () => {

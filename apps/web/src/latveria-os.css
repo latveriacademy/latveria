@@ -374,9 +374,6 @@ body::after {
 .italic {
   font-style: italic;
 }
-.w-full {
-  width: 100%;
-}
 
 /* Scrollbars */
 ::-webkit-scrollbar {

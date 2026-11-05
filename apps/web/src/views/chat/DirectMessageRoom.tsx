@@ -94,8 +94,8 @@ export function DirectMessageRoom({
     <div className="flex-1 flex min-h-0 border border-[var(--edge)] rounded-xl overflow-hidden bg-[var(--surface)]">
       {/* Sidebar Kontak / Daftar Percakapan */}
       <div
-        className={`w-full sm:w-80 md:w-88 border-r border-[var(--edge)] flex flex-col bg-[var(--surface-subtle)] shrink-0 ${
-          selectedContact ? "hidden sm:flex" : "flex"
+        className={`w-full md:w-80 lg:w-88 border-r border-[var(--edge)] flex flex-col bg-[var(--surface-subtle)] shrink-0 ${
+          selectedContact ? "hidden md:flex" : "flex"
         }`}
       >
         {/* Header Kontak */}
@@ -223,7 +223,7 @@ export function DirectMessageRoom({
       {/* Area Obrolan DM */}
       <div
         className={`flex-1 flex flex-col min-h-0 bg-[var(--surface)] ${
-          !selectedContact ? "hidden sm:flex" : "flex"
+          !selectedContact ? "hidden md:flex" : "flex"
         }`}
       >
         {selectedContact ? (
@@ -236,7 +236,7 @@ export function DirectMessageRoom({
                   variant="ghost"
                   size="sm"
                   onClick={() => onSelectContact(null)}
-                  className="sm:hidden p-1.5 h-8 w-8 text-[var(--ink-muted)]"
+                  className="md:hidden p-1.5 h-8 w-8 text-[var(--ink-muted)]"
                   title="Kembali ke daftar percakapan"
                 >
                   <ArrowLeft className="size-4" />

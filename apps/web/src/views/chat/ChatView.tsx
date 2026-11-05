@@ -127,6 +127,19 @@ export function ChatView() {
     void loadConversations();
   }, [loadGlobalMessages, loadConversations]);
 
+  // Di desktop, otomatis pilih percakapan pertama jika belum ada yang dipilih
+  useEffect(() => {
+    if (
+      !selectedContact &&
+      !dmParam &&
+      conversations.length > 0 &&
+      typeof window !== "undefined" &&
+      window.innerWidth >= 768
+    ) {
+      setSelectedContact(conversations[0]);
+    }
+  }, [conversations, selectedContact, dmParam]);
+
   useEffect(() => {
     if (!dmParam || selectedContactIdRef.current === dmParam) return;
     setActiveTab("dm");
