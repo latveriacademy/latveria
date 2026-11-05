@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, Eye, Loader2, MessageSquare, Swords, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Lock, MessageSquare, Swords, UserPlus, X } from "lucide-react";
 import type { ChatConversationSummary, ChatMessage, FriendUserDto } from "@latveria/shared";
 import { Button } from "../../components/ui/button";
 import { SearchBar } from "../../components/ui/search-bar";
@@ -276,6 +276,13 @@ export function DirectMessageRoom({
                         ADMIN
                       </span>
                     )}
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--accent-sage)]/10 text-[var(--accent-sage)] border border-[var(--accent-sage)]/30 font-mono inline-flex items-center gap-0.5 select-none"
+                      title="Pesan obrolan ini diamankan dengan enkripsi at-rest"
+                    >
+                      <Lock className="size-2.5" />
+                      TERENKRIPSI
+                    </span>
                   </div>
                   {selectedContact.codename && (
                     <p className="text-[10px] text-[var(--ink-muted)] truncate font-mono">
@@ -320,6 +327,12 @@ export function DirectMessageRoom({
               ref={scrollRef}
               className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
             >
+              {/* Indikator Keamanan Enkripsi */}
+              <div className="py-1 px-2.5 mx-auto max-w-fit text-center rounded bg-[var(--surface-subtle)] border border-[var(--edge)] text-[10px] text-[var(--ink-muted)] flex items-center justify-center gap-1.5 font-mono select-none">
+                <Lock className="size-3 text-[var(--accent-sage)] shrink-0" />
+                <span>Pesan obrolan ini dienkripsi saat disimpan (at-rest)</span>
+              </div>
+
               {loadingDm ? (
                 <div className="h-full flex flex-col items-center justify-center gap-2 text-xs text-[var(--ink-muted)]">
                   <Loader2 className="size-5 animate-spin text-[var(--gold)]" />

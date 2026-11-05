@@ -157,6 +157,8 @@ describe("ChatView", () => {
     expect(html).toContain("Mau duel?");
     expect(html).toContain("md:w-80");
     expect(html).toContain("hidden md:flex");
+    expect(html).toContain("TERENKRIPSI");
+    expect(html).toContain("Pesan obrolan ini dienkripsi saat disimpan (at-rest)");
   });
 
   it("renders date dividers when messages span multiple days in GlobalChatRoom", () => {

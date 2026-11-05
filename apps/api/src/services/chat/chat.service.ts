@@ -11,6 +11,12 @@ import {
   broadcastMessageUpdated,
   notifyDmRead,
 } from "./chat-ws.manager";
+import {
+  decryptDmText,
+  decryptDmTextOptional,
+  encryptDmText,
+  encryptDmTextOptional,
+} from "./chat-crypto.service";
 
 export async function getGlobalMessages(limit = 50, before?: string): Promise<ChatMessage[]> {
   const db = getDb();
@@ -174,7 +180,9 @@ export async function getConversations(userId: string): Promise<ChatConversation
     const counterpartId = m.senderId === userId ? m.recipientId : m.senderId;
 
     if (!lastMessageMap.has(counterpartId)) {
-      const displayMsg = m.message || (m.mediaUrl ? "📷 [Gambar]" : "");
+      const decryptedMsg = decryptDmText(m.message, userId, counterpartId);
+      const decryptedMedia = decryptDmTextOptional(m.mediaUrl, userId, counterpartId);
+      const displayMsg = decryptedMsg || (decryptedMedia ? "📷 [Gambar]" : "");
       lastMessageMap.set(counterpartId, {
         message: displayMsg,
         createdAt: m.createdAt,
@@ -268,6 +276,8 @@ export async function getDmMessages(
 
   return rows.reverse().map((r) => ({
     ...r,
+    message: decryptDmText(r.message, userId, targetUserId),
+    mediaUrl: decryptDmTextOptional(r.mediaUrl, userId, targetUserId),
     createdAt: r.createdAt.toISOString(),
     editedAt: r.editedAt ? r.editedAt.toISOString() : null,
     readAt: r.readAt ? r.readAt.toISOString() : null,
@@ -301,13 +311,16 @@ export async function sendDmMessage(
     throw new HTTPException(400, { message: "Pesan atau gambar tidak boleh kosong." });
   }
 
+  const encryptedMessage = encryptDmText(trimmed, senderId, recipientId);
+  const encryptedMedia = encryptDmTextOptional(trimmedMedia, senderId, recipientId);
+
   const [row] = await db
     .insert(chatMessages)
     .values({
       senderId,
       recipientId,
-      message: trimmed,
-      mediaUrl: trimmedMedia,
+      message: encryptedMessage,
+      mediaUrl: encryptedMedia,
     })
     .returning();
 
@@ -319,8 +332,8 @@ export async function sendDmMessage(
     senderRole: sender.role,
     senderCodename: sender.codename,
     recipientId,
-    message: row.message,
-    mediaUrl: row.mediaUrl,
+    message: trimmed,
+    mediaUrl: trimmedMedia,
     isEdited: false,
     editedAt: null,
     isDeleted: false,
@@ -373,14 +386,22 @@ export async function editMessage(
   }
 
   const now = new Date();
+  const encryptedMessage = existing.recipientId
+    ? encryptDmText(trimmed, existing.senderId, existing.recipientId)
+    : trimmed;
+
   await db
     .update(chatMessages)
     .set({
-      message: trimmed,
+      message: encryptedMessage,
       isEdited: true,
       editedAt: now,
     })
     .where(eq(chatMessages.id, messageId));
+
+  const decryptedMedia = existing.recipientId
+    ? decryptDmTextOptional(existing.mediaUrl, existing.senderId, existing.recipientId)
+    : existing.mediaUrl;
 
   const updatedMessage: ChatMessage = {
     id: existing.id,
@@ -391,7 +412,7 @@ export async function editMessage(
     senderCodename: existing.senderCodename,
     recipientId: existing.recipientId,
     message: trimmed,
-    mediaUrl: existing.mediaUrl,
+    mediaUrl: decryptedMedia ?? null,
     isEdited: true,
     editedAt: now.toISOString(),
     isDeleted: false,
