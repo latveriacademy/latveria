@@ -77,22 +77,67 @@ export interface LibraryItemListResponse {
 }
 
 /**
- * Ekstraksi YouTube Video ID dari berbagai macam varian URL YouTube:
- * - https://www.youtube.com/watch?v=dQw4w9WgXcQ
- * - https://youtu.be/dQw4w9WgXcQ
+ * Ekstraksi YouTube Video ID dari berbagai varian URL YouTube:
+ * - https://www.youtube.com/watch?v=dQw4w9WgXcQ (publik & unlisted/tidak publik)
+ * - https://youtu.be/dQw4w9WgXcQ (share link unlisted/publik dengan ?si=...)
  * - https://www.youtube.com/embed/dQw4w9WgXcQ
- * - https://www.youtube.com/live/dQw4w9WgXcQ
+ * - https://www.youtube.com/live/dQw4w9WgXcQ (live stream / unlisted live)
  * - https://www.youtube.com/shorts/dQw4w9WgXcQ
- * - https://www.youtube.com/v/dQw4w9WgXcQ
- * - https://m.youtube.com/watch?v=dQw4w9WgXcQ
- * - https://m.youtube.com/live/dQw4w9WgXcQ
+ * - https://studio.youtube.com/video/dQw4w9WgXcQ/edit
+ * - youtu.be/dQw4w9WgXcQ atau youtube.com/watch?v=... (tanpa protokol https)
+ * - <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" ...>
  */
 export function extractYouTubeVideoId(url: string | null | undefined): string | null {
   if (!url) return null;
-  const trimmed = url.trim();
-  const pattern =
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|live\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/;
-  const match = trimmed.match(pattern);
+  let trimmed = url.trim();
+
+  // Ekstrak URL jika pengguna menempelkan kode iframe sematan
+  const iframeMatch = trimmed.match(/src=["']([^"']+)["']/i);
+  if (iframeMatch) {
+    trimmed = iframeMatch[1].trim();
+  }
+
+  // Normalisasi jika tanpa protokol
+  let normalizedUrl = trimmed;
+  if (!/^https?:\/\//i.test(normalizedUrl)) {
+    normalizedUrl = `https://${normalizedUrl}`;
+  }
+
+  try {
+    const parsed = new URL(normalizedUrl);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+
+    // 1. Domain youtu.be
+    if (host === "youtu.be") {
+      const id = parsed.pathname.replace(/^\/+/, "").split("/")[0]?.split("?")[0];
+      if (id && /^[\w-]{11}$/.test(id)) return id;
+    }
+
+    // 2. Domain youtube.com / m.youtube.com / studio.youtube.com / youtube-nocookie.com
+    if (
+      host === "youtube.com" ||
+      host === "youtube-nocookie.com" ||
+      host.endsWith(".youtube.com")
+    ) {
+      // Query param v (e.g. ?v=... atau &v=...)
+      const v = parsed.searchParams.get("v");
+      if (v && /^[\w-]{11}$/.test(v)) return v;
+
+      // Path: /embed/<id>, /live/<id>, /shorts/<id>, /v/<id>, /e/<id>, /video/<id>
+      const pathSegments = parsed.pathname.replace(/^\/+/, "").split("/");
+      const first = pathSegments[0]?.toLowerCase();
+      if (["embed", "live", "shorts", "v", "e", "video"].includes(first) && pathSegments[1]) {
+        const id = pathSegments[1].split("?")[0];
+        if (id && /^[\w-]{11}$/.test(id)) return id;
+      }
+    }
+  } catch {
+    // Fallback regex jika parsing URL gagal
+  }
+
+  const fallbackPattern =
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|e\/|live\/|shorts\/|video\/|watch\?v=|watch\?.+&v=))([\w-]{11})/;
+  const match = trimmed.match(fallbackPattern);
   return match ? match[1] : null;
 }
 

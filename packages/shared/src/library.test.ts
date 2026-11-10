@@ -24,6 +24,24 @@ describe("Library shared utilities", () => {
     );
     expect(extractYouTubeVideoId("https://m.youtube.com/live/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
     expect(extractYouTubeVideoId("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    // Unlisted (tidak publik) & berbagai variasi share / studio / iframe link
+    expect(extractYouTubeVideoId("https://youtu.be/dQw4w9WgXcQ?si=UnlistedTracking123")).toBe(
+      "dQw4w9WgXcQ",
+    );
+    expect(
+      extractYouTubeVideoId(
+        "https://www.youtube.com/watch?feature=shared&list=PL12345&v=dQw4w9WgXcQ",
+      ),
+    ).toBe("dQw4w9WgXcQ");
+    expect(extractYouTubeVideoId("https://studio.youtube.com/video/dQw4w9WgXcQ/edit")).toBe(
+      "dQw4w9WgXcQ",
+    );
+    expect(extractYouTubeVideoId("youtu.be/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(
+      extractYouTubeVideoId(
+        '<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>',
+      ),
+    ).toBe("dQw4w9WgXcQ");
     expect(extractYouTubeVideoId("https://example.com/not-youtube")).toBeNull();
     expect(extractYouTubeVideoId(null)).toBeNull();
   });

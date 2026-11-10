@@ -157,18 +157,24 @@ export function LibraryEditorPage() {
 
   const urlError = useMemo(() => {
     if (form.type === "article") return null;
-    if (!form.url.trim()) return "Tautan wajib diisi untuk tipe ini.";
+    const trimmed = form.url.trim();
+    if (!trimmed) return "Tautan wajib diisi untuk tipe ini.";
+
+    if (form.type === "video") {
+      const ytid = extractYouTubeVideoId(trimmed);
+      if (!ytid)
+        return "URL harus berupa tautan video YouTube (publik atau tidak publik/unlisted) yang valid.";
+      return null;
+    }
+
     try {
-      const parsed = new URL(form.url);
+      const normalized = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+      const parsed = new URL(normalized);
       if (!parsed.protocol.startsWith("http")) {
         return "Tautan harus diawali dengan https:// atau http://";
       }
     } catch {
       return "Format URL tidak valid. Pastikan menyertakan https://";
-    }
-    if (form.type === "video") {
-      const ytid = extractYouTubeVideoId(form.url);
-      if (!ytid) return "URL harus berupa tautan video YouTube yang valid.";
     }
     return null;
   }, [form.type, form.url]);
@@ -213,13 +219,28 @@ export function LibraryEditorPage() {
 
     const publishStatus = overridePublish !== undefined ? overridePublish : form.isPublished;
 
+    let finalUrl = form.url.trim();
+    if (form.type === "video") {
+      const ytid = extractYouTubeVideoId(finalUrl);
+      if (ytid) {
+        // Normalisasi URL agar selalu merupakan URL https:// valid dan bersih
+        if (
+          !/^https?:\/\//i.test(finalUrl) ||
+          finalUrl.includes("<iframe") ||
+          finalUrl.includes("studio.youtube.com")
+        ) {
+          finalUrl = `https://www.youtube.com/watch?v=${ytid}`;
+        }
+      }
+    }
+
     const payload: LibraryItemInput = {
       title: form.title.trim(),
       slug: form.slug.trim() || undefined,
       type: form.type,
       subtestSlug: form.subtestSlug.trim() || null,
       content: form.content.trim() || null,
-      url: form.url.trim() || null,
+      url: finalUrl || null,
       thumbnailUrl: form.thumbnailUrl.trim() || null,
       materialUrl: form.materialUrl.trim() || null,
       materialTitle: form.materialTitle.trim() || null,

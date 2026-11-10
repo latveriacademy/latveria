@@ -266,8 +266,8 @@ export function LibraryEditorForm({
                 </p>
               )}
               <p className="text-[11px] text-[var(--ink-muted)]">
-                Pemutar YouTube akan disematkan langsung di dashboard peserta tanpa gangguan iklan
-                eksternal.
+                Mendukung tautan video YouTube publik maupun tidak publik (unlisted), siaran
+                langsung, dan shorts.
               </p>
             </div>
 
