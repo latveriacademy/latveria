@@ -1,6 +1,9 @@
 import { questionImportSchema, utbkSubtests, type QuestionImport } from "@latveria/shared";
 import { geometryImportExample } from "../math/tikz-examples";
 import { mathImportExample } from "../math/math-import-examples";
+import { masterExamImportExample } from "./master-exam-example";
+
+export { masterExamImportExample } from "./master-exam-example";
 
 export const packageImportExample: QuestionImport = {
   groups: [
@@ -98,6 +101,21 @@ export function importExample(
   subtest?: string,
   packageName?: string,
 ): QuestionImport {
+  if (kind === "full") {
+    if (subtest) {
+      const matched = masterExamImportExample.groups.filter((group) => group.subtes === subtest);
+      const groupsToUse = matched.length > 0 ? matched : masterExamImportExample.groups;
+      return {
+        groups: groupsToUse.map((group) => ({
+          ...group,
+          subtes: subtest,
+          packageName: packageName ?? group.packageName,
+        })),
+      };
+    }
+    return masterExamImportExample;
+  }
+
   const source =
     kind === "geometry"
       ? geometryImportExample
@@ -135,6 +153,7 @@ export function downloadJson(data: unknown, filename: string) {
 }
 
 export const IMPORT_EXAMPLE_KINDS = [
+  { kind: "full", label: "Gunakan contoh lengkap (TKA-SNBT-MANDIRI)" },
   { kind: "basic", label: "Gunakan contoh sederhana" },
   { kind: "math", label: "Gunakan contoh rumus" },
   { kind: "geometry", label: "Gunakan contoh geometri" },

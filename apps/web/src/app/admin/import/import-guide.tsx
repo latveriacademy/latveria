@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { Copy } from "lucide-react";
+import { Copy, Download } from "lucide-react";
 import { utbkSubtests } from "@latveria/shared";
 import { MathText } from "../../../components/math/math-text";
 import { Button } from "../../../components/ui/button";
 import { mathNotationExamples } from "../../../lib/math/math-import-examples";
+import { downloadJson, masterExamImportExample } from "../../../lib/question/question-import";
 import styles from "./import-guide.module.css";
 
 export function ImportGuide() {
   const [selected, setSelected] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
   const [lexiconCopyStatus, setLexiconCopyStatus] = useState("");
+  const [masterCopyStatus, setMasterCopyStatus] = useState("");
   const example = mathNotationExamples[selected];
   const snippet = `"prompt": ${JSON.stringify(example.prompt)}`;
+  const masterSnippet = JSON.stringify(masterExamImportExample, null, 2);
   const lexiconSnippet = JSON.stringify(
     {
       prompt: "Economic hegemony must never supersede ethical inquiry and human discretion.",
@@ -48,6 +51,107 @@ export function ImportGuide() {
       <p className={styles.intro}>
         Lihat aturan format, contoh tampilan rumus, atau slug subtes sesuai kebutuhan.
       </p>
+
+      <details className={styles.section} open>
+        <summary>Kemampuan &amp; Fitur Impor Soal di Web</summary>
+        <div className={styles.body}>
+          <p>
+            Sistem impor soal Latveria dirancang fleksibel untuk mendukung berbagai jenis soal ujian
+            standar (SNBT, UTBK, TKA Saintek/Soshum, dan Seleksi Mandiri PTN):
+          </p>
+          <dl className={styles.fields}>
+            <dt>5 Opsi Pilihan Ganda (A–E)</dt>
+            <dd>
+              Setiap soal wajib memiliki tepat 5 opsi unik. Indeks jawaban benar ditentukan dengan
+              angka <code>correctAnswer</code>: <code>0</code> = A, <code>1</code> = B,{" "}
+              <code>2</code> = C, <code>3</code> = D, <code>4</code> = E.
+            </dd>
+            <dt>Rumus Matematika &amp; Sains (LaTeX)</dt>
+            <dd>
+              Dukungan KaTeX sebaris (<code>$...$</code>), pecahan/limit besar (
+              <code>{String.raw`$\displaystyle ...$`}</code>), dan rumus blok atau sistem persamaan
+              bertingkat (<code>$$...$$</code> dengan{" "}
+              <code>{String.raw`\begin{aligned}...\end{aligned}`}</code>).
+            </dd>
+            <dt>Diagram Geometri &amp; Vektor (TikZ)</dt>
+            <dd>
+              Render diagram bangun datar dan ruang langsung dari blok{" "}
+              <code>{String.raw`\begin{tikzpicture}...\end{tikzpicture}`}</code> menjadi SVG lokal
+              interaktif tanpa ketergantungan server luar.
+            </dd>
+            <dt>
+              Wacana / Teks Bacaan Panjang (<code>passage</code>)
+            </dt>
+            <dd>
+              Field teks stimulus hingga 10.000 karakter untuk soal literasi dan pemahaman bacaan
+              kritis. Wacana akan ditampilkan rapi mendampingi soal.
+            </dd>
+            <dt>Kosakata Interaktif (Lexicon Annotations)</dt>
+            <dd>
+              Khusus subtes Literasi Bahasa Inggris, sediakan daftar <code>annotations</code>{" "}
+              (istilah, arti, jenis kata, fonetik). Peserta dapat mengklik kata pada teks soal untuk
+              membuka kamus mini interaktif.
+            </dd>
+            <dt>Multi-Grup &amp; Auto-Create Paket</dt>
+            <dd>
+              Satu file JSON dapat memuat beberapa grup sekaligus (berbeda subtes, kategori, dan
+              paket). Jika <code>packageName</code> belum ada, sistem akan membuatnya secara
+              otomatis di subtes terkait.
+            </dd>
+            <dt>Validasi Dry-Run &amp; Transaksi Atomik</dt>
+            <dd>
+              Sebelum data tersimpan ke database, sistem melakukan pengecekan mendalam (dry-run).
+              Penyimpanan ke database bersifat transaksi atomik (seluruh batch sukses atau
+              dibatalkan bersih tanpa korupsi data). Batas satu impor: 100 soal dan 200 KB.
+            </dd>
+          </dl>
+        </div>
+      </details>
+
+      <details className={styles.section} open>
+        <summary>Template Lengkap All-in-One (TKA-SNBT-MANDIRI)</summary>
+        <div className={styles.body}>
+          <p>
+            Satu file JSON terpadu yang memuat contoh lengkap dari seluruh tipe soal: rumus kalkulus
+            LaTeX, diagram geometri TikZ, stimulus wacana literasi panjang, anotasi kosakata bahasa
+            Inggris (Lexicon), serta logika silogisme penalaran umum.
+          </p>
+          <div className={styles.codeHeader}>
+            <h4>File Contoh Lengkap (5 Subtes, 6 Soal)</h4>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(masterSnippet);
+                    setMasterCopyStatus("Template JSON lengkap disalin ke clipboard.");
+                  } catch {
+                    setMasterCopyStatus("Salin teks cuplikan di bawah secara manual.");
+                  }
+                }}
+              >
+                <Copy />
+                Salin JSON Lengkap
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  downloadJson(masterExamImportExample, "contoh-soal-tka-snbt-mandiri.json")
+                }
+              >
+                <Download />
+                Unduh .json
+              </Button>
+            </div>
+          </div>
+          <pre className={styles.code} style={{ maxHeight: "320px", overflowY: "auto" }}>
+            <code>{masterSnippet}</code>
+          </pre>
+          {masterCopyStatus && <p role="status">{masterCopyStatus}</p>}
+        </div>
+      </details>
 
       <details className={styles.section}>
         <summary>Struktur JSON dan tujuan paket</summary>

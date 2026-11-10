@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { lexiconImportExample, packageImportExample, parseQuestionImport } from "./question-import";
+import {
+  importExample,
+  lexiconImportExample,
+  masterExamImportExample,
+  packageImportExample,
+  parseQuestionImport,
+} from "./question-import";
 import { parseTikz } from "../math/tikz";
 import { geometryImportExample } from "../math/tikz-examples";
 import { cylinderTankQuestion, openCuboidQuestion, pyramidQuestion } from "@latveria/shared";
@@ -138,5 +144,18 @@ describe("parseQuestionImport", () => {
     expect(annotations[0].term).toBe("hegemony");
     expect(annotations[0].start).toBe(9);
     expect(annotations[0].end).toBe(17);
+  });
+  it("ships a valid master all-in-one exam example across multiple subtests (TKA-SNBT-MANDIRI)", () => {
+    const data = parseQuestionImport(JSON.stringify(masterExamImportExample));
+    expect(data.groups).toHaveLength(5);
+    const subtests = data.groups.map((g) => g.subtes);
+    expect(subtests).toContain("penalaran-matematika");
+    expect(subtests).toContain("pengetahuan-kuantitatif");
+    expect(subtests).toContain("literasi-bahasa-indonesia");
+    expect(subtests).toContain("literasi-bahasa-inggris");
+    expect(subtests).toContain("penalaran-umum");
+
+    const fullExample = importExample("full");
+    expect(fullExample.groups).toHaveLength(5);
   });
 });
