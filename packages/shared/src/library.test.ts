@@ -18,6 +18,12 @@ describe("Library shared utilities", () => {
     expect(extractYouTubeVideoId("https://m.youtube.com/watch?v=dQw4w9WgXcQ&feature=share")).toBe(
       "dQw4w9WgXcQ",
     );
+    expect(extractYouTubeVideoId("https://www.youtube.com/live/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(extractYouTubeVideoId("https://youtube.com/live/dQw4w9WgXcQ?si=abcdef123")).toBe(
+      "dQw4w9WgXcQ",
+    );
+    expect(extractYouTubeVideoId("https://m.youtube.com/live/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
+    expect(extractYouTubeVideoId("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
     expect(extractYouTubeVideoId("https://example.com/not-youtube")).toBeNull();
     expect(extractYouTubeVideoId(null)).toBeNull();
   });

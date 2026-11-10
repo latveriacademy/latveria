@@ -81,14 +81,17 @@ export interface LibraryItemListResponse {
  * - https://www.youtube.com/watch?v=dQw4w9WgXcQ
  * - https://youtu.be/dQw4w9WgXcQ
  * - https://www.youtube.com/embed/dQw4w9WgXcQ
+ * - https://www.youtube.com/live/dQw4w9WgXcQ
+ * - https://www.youtube.com/shorts/dQw4w9WgXcQ
  * - https://www.youtube.com/v/dQw4w9WgXcQ
  * - https://m.youtube.com/watch?v=dQw4w9WgXcQ
+ * - https://m.youtube.com/live/dQw4w9WgXcQ
  */
 export function extractYouTubeVideoId(url: string | null | undefined): string | null {
   if (!url) return null;
   const trimmed = url.trim();
   const pattern =
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/;
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|live\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/;
   const match = trimmed.match(pattern);
   return match ? match[1] : null;
 }

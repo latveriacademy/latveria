@@ -256,7 +256,7 @@ export function LibraryEditorForm({
               <Input
                 value={form.url}
                 onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                placeholder="https://www.youtube.com/watch?v=..., https://youtu.be/..., atau https://youtube.com/live/..."
                 className={`w-full text-xs h-10 ${urlError ? "border-red-500" : ""}`}
                 required
               />
