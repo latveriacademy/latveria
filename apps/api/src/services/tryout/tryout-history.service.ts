@@ -31,7 +31,10 @@ export async function getTryoutHistory(userId: string): Promise<TryoutHistoryEnt
   }));
 }
 
-export async function deleteTryoutSession(userId: string, sessionId: string): Promise<{ success: true }> {
+export async function deleteTryoutSession(
+  userId: string,
+  sessionId: string,
+): Promise<{ success: true }> {
   const sId = idSchema.safeParse(sessionId);
   if (!sId.success) throw new HTTPException(400, { message: "ID sesi tidak valid." });
 
