@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { questionReportReasons } from "@latveria/shared";
 import { api } from "../../lib/api";
 import { AppDialog } from "../app-dialog";
 import { Button } from "../ui/button";
@@ -57,13 +58,7 @@ export function QuestionReportDialog({ open, onOpenChange, questionId, packageId
         >
           <fieldset disabled={pending} className="grid gap-3 border-0 p-0">
             <legend className="mb-2 text-sm font-semibold">Alasan laporan</legend>
-            {[
-              "Soal/jawaban tidak jelas atau ambigu",
-              "Kunci jawaban salah",
-              "Soal mengandung kesalahan faktual",
-              "Gambar atau formula tidak tampil dengan benar",
-              "Lainnya",
-            ].map((item) => (
+            {questionReportReasons.map((item) => (
               <label key={item} className="flex min-h-9 items-center gap-2 text-sm">
                 <input
                   type="radio"

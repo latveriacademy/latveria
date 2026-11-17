@@ -1,5 +1,12 @@
 import { expect, it } from "vitest";
-import { bulkDeleteSchema, questionSchema, submissionSchema, questionImportSchema } from "./index";
+import {
+  bulkDeleteSchema,
+  questionSchema,
+  submissionSchema,
+  questionImportSchema,
+  questionReportSchema,
+  questionReportReasons,
+} from "./index";
 
 it("rejects invalid answers and duplicate options at both trust boundaries", () => {
   expect(
@@ -52,4 +59,48 @@ it("limits imports to 100 questions across all groups", () => {
   expect(questionImportSchema.safeParse({ groups: [group(100)] }).success).toBe(true);
   expect(questionImportSchema.safeParse({ groups: [group(101)] }).success).toBe(false);
   expect(questionImportSchema.safeParse({ groups: [group(50), group(51)] }).success).toBe(false);
+});
+
+it("validates question report reasons and schema boundaries", () => {
+  const validQuestionId = "00000000-0000-4000-8000-000000000001";
+  for (const reason of questionReportReasons) {
+    const res = questionReportSchema.safeParse({
+      questionId: validQuestionId,
+      reason,
+      description: "Penjelasan masalah",
+    });
+    expect(res.success).toBe(true);
+  }
+
+  // Rejects invalid reason
+  expect(
+    questionReportSchema.safeParse({
+      questionId: validQuestionId,
+      reason: "Alasan tidak terdaftar",
+    }).success,
+  ).toBe(false);
+
+  // Rejects invalid questionId
+  expect(
+    questionReportSchema.safeParse({
+      questionId: "invalid-uuid",
+      reason: questionReportReasons[0],
+    }).success,
+  ).toBe(false);
+
+  // Accepts optional packageId (uuid or null or undefined)
+  expect(
+    questionReportSchema.safeParse({
+      questionId: validQuestionId,
+      packageId: "00000000-0000-4000-8000-000000000002",
+      reason: questionReportReasons[0],
+    }).success,
+  ).toBe(true);
+  expect(
+    questionReportSchema.safeParse({
+      questionId: validQuestionId,
+      packageId: null,
+      reason: questionReportReasons[0],
+    }).success,
+  ).toBe(true);
 });
