@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { useApp } from "../context/AppContext";
-import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
+import { LatveriaSeal } from "../components/LatveriaSeal";
 import { Flame, Target, ArrowUpRight, Play, Quote, RotateCcw } from "lucide-react";
 import { sound } from "../utils/audioFeedback";
 import { Panel, PanelHeader, ProgressBar, StatTile } from "../components/ui/dashboard";
@@ -114,9 +114,6 @@ export const DashboardView = () => {
 
   return (
     <div className="latveria-view-container dashboard-view">
-      {/* Background Seal Watermark */}
-      <LatveriaWatermark size={380} opacity={0.03} />
-
       {/* Hero: Personal Academic Command Center */}
       <section className="command-hero-card motion-fade-up">
         <div className="hero-main-content">

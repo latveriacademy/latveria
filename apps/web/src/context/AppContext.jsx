@@ -549,18 +549,6 @@ export const AppProvider = ({ children }) => {
     setSubmissionError("");
   };
 
-  // Mark Daily Training task as completed directly
-  // ponytail: daily training is still mock-only, no API
-  const completeDailyTraining = (taskId) => {
-    sound.playSuccess();
-    setUser((prev) => ({
-      ...prev,
-      todayTraining: prev.todayTraining.map((t) =>
-        t.id === taskId ? { ...t, completed: true } : t,
-      ),
-    }));
-  };
-
   return (
     <AppContext.Provider
       value={{
@@ -601,7 +589,6 @@ export const AppProvider = ({ children }) => {
         toggleFlag,
         finishSession,
         exitPractice,
-        completeDailyTraining,
         sidebarOpen,
         toggleSidebar,
       }}

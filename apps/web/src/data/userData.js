@@ -24,7 +24,6 @@ export const DEFAULT_USER = {
   joinedDate: "",
   status: "",
   securityClearance: "",
-  todayTraining: [],
   recentActivities: [],
   subjectMastery: [],
   weeklyXP: 0,

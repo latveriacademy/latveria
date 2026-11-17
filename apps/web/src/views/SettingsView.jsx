@@ -5,7 +5,6 @@ import { ConfirmDialog } from "../components/confirm-dialog";
 import { ProfileEditorDialog } from "../components/profile-editor-dialog";
 import { ChangePasswordDialog } from "../components/change-password-dialog";
 import { useApp } from "../context/AppContext";
-import { LatveriaWatermark } from "../components/LatveriaSeal";
 import {
   Sun,
   Moon,
@@ -107,8 +106,6 @@ export const SettingsView = () => {
 
   return (
     <div className="latveria-view-container settings-view">
-      <LatveriaWatermark size={360} opacity={0.03} />
-
       {/* Header */}
       <PageHeading title="Setelan" />
 

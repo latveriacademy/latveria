@@ -9,5 +9,3 @@ export const LatveriaSeal = ({ size = 44, className = "" }) => (
     className={`latveria-seal ${className}`}
   />
 );
-
-export const LatveriaWatermark = () => null;

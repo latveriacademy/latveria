@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "../context/AppContext";
-import { LatveriaSeal, LatveriaWatermark } from "../components/LatveriaSeal";
+import { LatveriaSeal } from "../components/LatveriaSeal";
 import { api } from "../lib/api";
 import {
   Trophy,
@@ -127,7 +127,6 @@ export const LeaderboardView = () => {
   if (loading && !data) {
     return (
       <div className="latveria-view-container leaderboard-view">
-        <LatveriaWatermark size={360} opacity={0.03} />
         <div className="leaderboard-loading">
           <Loader2 size={32} className="animate-spin text-gold" />
           <span className="font-mono">Memuat papan peringkat…</span>
@@ -138,8 +137,6 @@ export const LeaderboardView = () => {
 
   return (
     <div className="latveria-view-container leaderboard-view">
-      <LatveriaWatermark size={360} opacity={0.03} />
-
       {/* Header Banner */}
       <section className="leaderboard-header-card">
         <h1 className="leaderboard-title font-serif">Papan peringkat</h1>
