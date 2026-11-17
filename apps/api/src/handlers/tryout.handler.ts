@@ -34,7 +34,7 @@ import {
   startTryout,
   submitTryoutSubtest,
 } from "../services/tryout/tryout.service";
-import { getTryoutHistory } from "../services/tryout/tryout-history.service";
+import { getTryoutHistory, deleteTryoutSession } from "../services/tryout/tryout-history.service";
 import { generateTryoutCertificate } from "../services/tryout/tryout-certificate.service";
 import {
   getAdminTryoutSection,
@@ -56,6 +56,9 @@ tryoutHandler.post("/api/learner/tryouts/start/:packageId", async (c) => {
 
 tryoutHandler.get("/api/learner/tryouts/history", async (c) =>
   c.json(await getTryoutHistory(c.get("user").id)),
+);
+tryoutHandler.delete("/api/learner/tryouts/:sessionId", async (c) =>
+  c.json(await deleteTryoutSession(c.get("user").id, c.req.param("sessionId"))),
 );
 tryoutHandler.get("/api/learner/tryouts/:sessionId", async (c) => {
   const result = await getTryoutSession(c.get("user").id, c.req.param("sessionId"));

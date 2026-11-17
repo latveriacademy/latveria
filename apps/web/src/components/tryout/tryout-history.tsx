@@ -1,4 +1,5 @@
-import { Award } from "lucide-react";
+import { useState } from "react";
+import { Award, Trash2 } from "lucide-react";
 import type { TryoutHistoryEntry } from "@latveria/shared";
 import {
   formatTryoutDate,
@@ -7,6 +8,8 @@ import {
 } from "../../lib/tryout/tryout-results";
 import { PageHeading, Panel } from "../ui/dashboard";
 import { Button } from "../ui/button";
+import { ConfirmDialog } from "../confirm-dialog";
+
 export function TryoutHistory({
   onBack,
   onOpen,
@@ -14,6 +17,7 @@ export function TryoutHistory({
   loading,
   error,
   onReload,
+  onDelete,
 }: {
   onBack: () => void;
   onOpen: (id: string) => void;
@@ -21,7 +25,26 @@ export function TryoutHistory({
   loading: boolean;
   error: string;
   onReload: () => void;
+  onDelete?: (id: string) => Promise<void>;
 }) {
+  const [pendingDelete, setPendingDelete] = useState<TryoutHistoryEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete || !onDelete) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await onDelete(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Gagal menghapus riwayat tryout.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="latveria-view-container space-y-5">
       <PageHeading
@@ -70,12 +93,38 @@ export function TryoutHistory({
                   <Button variant="outline" onClick={() => onOpen(row.id)}>
                     Buka hasil
                   </Button>
+                  {onDelete && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setDeleteError("");
+                        setPendingDelete(row);
+                      }}
+                      title="Hapus riwayat ini"
+                      className="text-red-600 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         )}
       </Panel>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Hapus riwayat tryout?"
+        description={`"${pendingDelete?.name ?? ""}" akan dihapus permanen dari riwayatmu. Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus permanen"
+        pending={deleting}
+        error={deleteError}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

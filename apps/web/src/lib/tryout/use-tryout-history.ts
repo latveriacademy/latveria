@@ -8,6 +8,7 @@ export function useTryoutHistory() {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((n) => n + 1), []);
+
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -25,5 +26,11 @@ export function useTryoutHistory() {
       });
     return () => controller.abort();
   }, [revision]);
-  return { rows, loading, error, reload };
+
+  const deleteSession = useCallback(async (sessionId: string) => {
+    await api(`/learner/tryouts/${sessionId}`, { method: "DELETE" });
+    setRows((prev) => prev.filter((r) => r.id !== sessionId));
+  }, []);
+
+  return { rows, loading, error, reload, deleteSession };
 }

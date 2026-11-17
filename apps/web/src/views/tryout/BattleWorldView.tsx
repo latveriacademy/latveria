@@ -508,6 +508,7 @@ export function BattleWorldView() {
         onReload={history.reload}
         onBack={() => navigate("/dashboard?tab=tryout")}
         onOpen={(id) => navigate(tryoutResultPath(id))}
+        onDelete={history.deleteSession}
       />
     );
   return (
